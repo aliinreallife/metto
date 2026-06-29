@@ -1,6 +1,7 @@
 import { STATIONS, type Station } from "./metro-data"
+import { ROUTE_ADJ as ADJ, STATION_BY_ID } from "./graph"
 
-export const STATION_MAP: Map<string, Station> = new Map(STATIONS.map((s) => [s.id, s]))
+export const STATION_MAP: Map<string, Station> = STATION_BY_ID
 
 // Cost model for "fewest stops + fewest transfers".
 // Each hop between adjacent stations costs RIDE_COST.
@@ -11,26 +12,6 @@ const TRANSFER_PENALTY = 5
 // Rough time estimate for the UI only.
 const SECONDS_PER_STOP = 110
 const SECONDS_PER_TRANSFER = 240
-
-type Edge = { to: string; lines: number[] }
-
-// Build an undirected adjacency map. For each pair of related stations we keep
-// the set of lines that both stations share (the lines you can ride on it).
-const ADJ: Map<string, Edge[]> = (() => {
-  const adj = new Map<string, Edge[]>()
-  for (const s of STATIONS) {
-    const edges: Edge[] = []
-    for (const relId of s.relations) {
-      const rel = STATION_MAP.get(relId)
-      if (!rel) continue
-      const shared = s.lines.filter((l) => rel.lines.includes(l))
-      // Fallback: if no explicit shared line, still connect on this station's line.
-      edges.push({ to: relId, lines: shared.length ? shared : s.lines })
-    }
-    adj.set(s.id, edges)
-  }
-  return adj
-})()
 
 type Hop = { from: string; to: string; line: number }
 

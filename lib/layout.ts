@@ -43,49 +43,37 @@ export function geographicLayout(): Layout {
   return { positions, width: VIEW, height: VIEW }
 }
 
-// Stylized schematic: snap the geographic positions onto a coarse grid so the
-// dense city center declutters, then resolve collisions. This keeps the overall
-// shape recognizable while giving a cleaner transit-diagram feel.
+// Stylized schematic: keep each line's real geometry (so routes stay smooth,
+// never zigzagged) but apply a radial "fisheye" expansion around the network
+// centroid. This magnifies the dense city center where stations cram together,
+// decluttering it into a cleaner transit-diagram feel while the outer reaches
+// compress slightly. Angles from the centroid are preserved, so lines that are
+// straight stay straight.
 export function schematicLayout(): Layout {
   const geo = geographicLayout()
-  const GRID = 26 // grid spacing in logical units
-  const occupied = new Map<string, string>() // cell -> stationId
+  const pts = [...geo.positions.values()]
+  const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length
+  const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length
+  const maxR = Math.max(...pts.map((p) => Math.hypot(p.x - cx, p.y - cy))) || 1
+
+  // Exponent < 1 expands the center relative to the edge.
+  const EXP = 0.62
   const positions = new Map<string, Point>()
-
-  const cellKey = (cx: number, cy: number) => `${cx},${cy}`
-
-  // Place denser/lower-degree-first is unnecessary; iterate in stable order.
-  const ordered = STATIONS.slice().sort((a, b) => {
-    const pa = geo.positions.get(a.id)!
-    const pb = geo.positions.get(b.id)!
-    return pa.y - pb.y || pa.x - pb.x
-  })
-
-  for (const s of ordered) {
-    const p = geo.positions.get(s.id)!
-    let cx = Math.round(p.x / GRID)
-    let cy = Math.round(p.y / GRID)
-    // spiral out to nearest free cell on collision
-    if (occupied.has(cellKey(cx, cy))) {
-      let found = false
-      for (let radius = 1; radius < 40 && !found; radius++) {
-        for (let dx = -radius; dx <= radius && !found; dx++) {
-          for (let dy = -radius; dy <= radius && !found; dy++) {
-            if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue
-            if (!occupied.has(cellKey(cx + dx, cy + dy))) {
-              cx += dx
-              cy += dy
-              found = true
-            }
-          }
-        }
-      }
+  for (const [id, p] of geo.positions) {
+    const dx = p.x - cx
+    const dy = p.y - cy
+    const r = Math.hypot(dx, dy)
+    if (r < 1e-6) {
+      positions.set(id, { x: cx, y: cy })
+      continue
     }
-    occupied.set(cellKey(cx, cy), s.id)
-    positions.set(s.id, { x: cx * GRID, y: cy * GRID })
+    const rNorm = r / maxR
+    const rNew = Math.pow(rNorm, EXP) * maxR
+    const k = rNew / r
+    positions.set(id, { x: cx + dx * k, y: cy + dy * k })
   }
 
-  // Normalize to padded view box.
+  // Normalize back into the padded view box.
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
@@ -96,9 +84,7 @@ export function schematicLayout(): Layout {
     maxX = Math.max(maxX, p.x)
     maxY = Math.max(maxY, p.y)
   }
-  const spanX = maxX - minX || 1
-  const spanY = maxY - minY || 1
-  const span = Math.max(spanX, spanY)
+  const span = Math.max(maxX - minX || 1, maxY - minY || 1)
   for (const [id, p] of positions) {
     positions.set(id, {
       x: PAD + ((p.x - minX) / span) * (VIEW - 2 * PAD),
@@ -109,27 +95,6 @@ export function schematicLayout(): Layout {
   return { positions, width: VIEW, height: VIEW }
 }
 
-export type LineEdge = { a: string; b: string; line: number }
-
-// Unique undirected edges with the line they belong to (one entry per line
-// between a connected pair) for drawing the network.
-export function buildLineEdges(): LineEdge[] {
-  const seen = new Set<string>()
-  const edges: LineEdge[] = []
-  const byId = new Map(STATIONS.map((s) => [s.id, s]))
-  for (const s of STATIONS) {
-    for (const relId of s.relations) {
-      const rel = byId.get(relId)
-      if (!rel) continue
-      const shared = s.lines.filter((l) => rel.lines.includes(l))
-      const lines = shared.length ? shared : s.lines
-      for (const line of lines) {
-        const k = [s.id, relId].sort().join("|") + "|" + line
-        if (seen.has(k)) continue
-        seen.add(k)
-        edges.push({ a: s.id, b: relId, line })
-      }
-    }
-  }
-  return edges
-}
+// Edge building lives in ./graph so the map uses the same repaired adjacency
+// (self-loops removed, line gaps bridged) as the routing engine.
+export { buildLineEdges, type LineEdge } from "./graph"
