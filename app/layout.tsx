@@ -10,9 +10,14 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Tehran Metro — Route Planner & Map',
+  description:
+    'Plan the best route across the Tehran subway with fewest stops and transfers, and explore the full interactive network map. Bilingual English / Persian.',
   generator: 'v0.app',
+  applicationName: 'Tehran Metro',
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Tehran Metro' },
+  manifest: '/manifest.webmanifest',
+  keywords: ['Tehran metro', 'subway', 'route planner', 'مترو تهران', 'مسیریاب'],
   icons: {
     icon: [
       {
@@ -35,9 +40,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
+    { media: '(prefers-color-scheme: light)', color: '#cc0e2d' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
   ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
@@ -46,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
