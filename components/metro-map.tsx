@@ -80,22 +80,28 @@ export function MetroMap({ mode, lang, route, originId, destId, selectedId, onSe
   }, [])
 
   function onPointerDown(e: React.PointerEvent) {
+    // Only start panning for the primary pointer; ignore extra touch points so
+    // multi-touch / horizontal swipes on mobile don't corrupt the drag state.
+    if (!e.isPrimary) return
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
     drag.current = { x: e.clientX, y: e.clientY, tx: t.tx, ty: t.ty, moved: false }
   }
   function onPointerMove(e: React.PointerEvent) {
-    if (!drag.current) return
-    const dx = e.clientX - drag.current.x
-    const dy = e.clientY - drag.current.y
-    if (Math.abs(dx) + Math.abs(dy) > 4) drag.current.moved = true
-    const svg = svgRef.current!
-    const ctm = svg.getScreenCTM()!
+    const d = drag.current
+    const svg = svgRef.current
+    if (!d || !svg) return
+    const ctm = svg.getScreenCTM()
+    if (!ctm || !ctm.a || !ctm.d) return
+    const dx = e.clientX - d.x
+    const dy = e.clientY - d.y
+    if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true
     // convert client delta to view units using scale of the CTM
     const vx = dx / ctm.a
     const vy = dy / ctm.d
-    setT((prev) => ({ ...prev, tx: drag.current!.tx + vx, ty: drag.current!.ty + vy }))
+    setT((prev) => ({ ...prev, tx: d.tx + vx, ty: d.ty + vy }))
   }
-  function onPointerUp() {
+  function onPointerUp(e?: React.PointerEvent) {
+    if (e) (e.target as Element).releasePointerCapture?.(e.pointerId)
     drag.current = null
   }
 
