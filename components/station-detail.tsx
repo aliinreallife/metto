@@ -84,23 +84,18 @@ export function StationDetail({
         </button>
       </div>
 
-      <div>
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {t.getThere}
-        </p>
-        <a
-          href={geoUrl(
-            { lat: station.lat, lng: station.lng },
-            isFa ? station.fa : station.name,
-          )}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent w-fit"
-        >
-          <MapPin className="size-3.5 text-primary" />
-          {t.navigate}
-        </a>
-      </div>
+      <a
+        href={geoUrl(
+          { lat: station.lat, lng: station.lng },
+          isFa ? station.fa : station.name,
+        )}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex w-fit items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+      >
+        <MapPin className="size-3.5 text-primary" />
+        {t.navigate}
+      </a>
 
       {activeAmenities.length > 0 && (
         <div>

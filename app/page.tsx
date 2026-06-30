@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Database,
   Loader2,
+  MapPin,
 } from "lucide-react";
 import { MetroMap } from "@/components/metro-map";
 import { StationCombobox } from "@/components/station-combobox";
@@ -23,6 +24,7 @@ import { NearbyTab } from "@/components/nearby-tab";
 import { InstallButton } from "@/components/pwa";
 import { LINE_COLORS, STATIONS } from "@/lib/metro-data";
 import { STATION_MAP, findRoute } from "@/lib/route";
+import { geoUrl, nearestStations } from "@/lib/geo";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -95,7 +97,18 @@ export default function Page() {
           </span>
           <div className="leading-tight">
             <h1 className="text-base font-bold">{t.appTitle}</h1>
-            <p className="text-xs text-muted-foreground">{t.appSubtitle}</p>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span>{t.appSubtitle}</span>
+              <span>·</span>
+              <a
+                href="https://github.com/aliinreallife"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-foreground transition-colors hover:text-primary"
+              >
+                aliinreallife
+              </a>
+            </div>
           </div>
         </div>
 
@@ -249,15 +262,49 @@ function RouteView({
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
+  const [locating, setLocating] = useState(false);
+
+  function locateOrigin() {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const nearest = nearestStations(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          { limit: 1 },
+        );
+        if (nearest.length > 0) setOriginId(nearest[0].station.id);
+        setLocating(false);
+      },
+      () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
 
   return (
-    <div className="flex size-full min-h-0 flex-col md:flex-row">
-      <aside className="flex max-h-[45dvh] shrink-0 flex-col gap-3 overflow-y-auto border-b border-border bg-background p-4 md:max-h-none md:w-[380px] md:border-b-0 md:border-e">
+    <div className="flex size-full flex-col overflow-y-auto md:min-h-0 md:flex-row md:overflow-hidden">
+      <aside className="flex shrink-0 flex-col gap-3 border-b border-border bg-background p-4 md:w-[380px] md:overflow-y-auto md:border-b-0 md:border-e">
         <div className="flex items-end gap-2">
           <div className="flex flex-1 flex-col gap-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t.from}
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t.from}
+              </label>
+              <button
+                type="button"
+                onClick={locateOrigin}
+                disabled={locating}
+                aria-label="Use my location"
+                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+              >
+                {locating ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <LocateFixed className="size-3.5" />
+                )}
+              </button>
+            </div>
             <StationCombobox
               value={originId}
               onChange={setOriginId}
@@ -302,6 +349,33 @@ function RouteView({
               }}
             />
           ) : null}
+
+          {route &&
+            originId &&
+            (() => {
+              const origin = STATION_MAP.get(originId);
+              if (!origin) return null;
+              return (
+                <a
+                  href={geoUrl(
+                    { lat: origin.lat, lng: origin.lng },
+                    isFa ? origin.fa : origin.name,
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                >
+                  <MapPin className="size-4 shrink-0 text-primary" />
+                  <span>
+                    {t.getThereToStart}
+                    {" · "}
+                    <span className="font-semibold">
+                      {isFa ? origin.fa : origin.name}
+                    </span>
+                  </span>
+                </a>
+              );
+            })()}
 
           {route ? (
             <RoutePanel route={route} lang={lang} />
@@ -368,7 +442,7 @@ function RouteView({
               <span>
                 {t.dataBy}{" "}
                 <span className="font-medium text-foreground">
-                  tehran-metro-data
+                  mostafa-kheibary/tehran-metro-data
                 </span>
               </span>
             </a>
@@ -376,7 +450,7 @@ function RouteView({
         </div>
       </aside>
 
-      <main className="relative min-h-0 flex-1 p-3">
+      <main className="h-72 shrink-0 p-3 md:relative md:h-auto md:min-h-0 md:flex-1">
         <MetroMap
           mode="schematic"
           lang={lang}
