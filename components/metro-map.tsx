@@ -45,6 +45,19 @@ export function MetroMap({
   const positions = layout.positions;
 
   const [t, setT] = useState<Transform>({ scale: 1, tx: 0, ty: 0 });
+  // Track the SVG's actual pixel width so we can correct for the viewBox→pixel
+  // ratio when computing label sizes (SVG user-units ≠ screen pixels).
+  const [svgW, setSvgW] = useState(1000);
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) =>
+      setSvgW(entry.contentRect.width || 1000),
+    );
+    ro.observe(el);
+    setSvgW(el.clientWidth || 1000);
+    return () => ro.disconnect();
+  }, []);
   const drag = useRef<{
     x: number;
     y: number;
@@ -206,10 +219,10 @@ export function MetroMap({
   const isFa = lang === "fa";
   const baseStroke = mode === "schematic" ? 6 : 4.5;
   const lineWidth = baseStroke / Math.sqrt(t.scale);
-  // Labels are sized in view units so they stay a constant ~13 px on screen
-  // at every zoom level. A solid background rect is drawn behind each label
-  // instead of a stroke halo — much more legible over coloured lines.
-  const labelFont = 13 / t.scale;
+  // Convert a target screen size (px) into SVG user-units, accounting for
+  // both the viewBox→pixel ratio (svgW/1000) and the current pan/zoom scale.
+  // Result: labels always render at ~14 px on screen at any zoom or container size.
+  const labelFont = (14 * 1000) / (svgW * t.scale);
   // Rough per-character width used to size the background rect.
   const labelCharW = labelFont * 0.58;
 
