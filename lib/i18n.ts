@@ -65,6 +65,7 @@ export const STRINGS = {
     navigate: "Get there",
     getThereToStart: "Get to your starting point",
     orUseGps: "or tap the locate icon to set your nearest station as origin",
+
     changeLocation: "Change",
     credits: "Credits",
     builtBy: "Built by",
@@ -134,6 +135,7 @@ export const STRINGS = {
     navigate: "رفتن به آنجا",
     getThereToStart: "رفتن به مبدأ",
     orUseGps: "یا آیکون موقعیت را لمس کنید تا نزدیک‌ترین ایستگاه مبدأ شود",
+
     changeLocation: "تغییر",
     credits: "اعتبارها",
     builtBy: "ساخته‌شده توسط",
