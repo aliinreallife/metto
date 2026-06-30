@@ -97,18 +97,7 @@ export default function Page() {
           </span>
           <div className="leading-tight">
             <h1 className="text-base font-bold">{t.appTitle}</h1>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <span>{t.appSubtitle}</span>
-              <span>·</span>
-              <a
-                href="https://github.com/aliinreallife"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-foreground transition-colors hover:text-primary"
-              >
-                aliinreallife
-              </a>
-            </div>
+            <p className="text-xs text-muted-foreground">{t.appSubtitle}</p>
           </div>
         </div>
 
@@ -223,9 +212,9 @@ export default function Page() {
             href="https://github.com/aliinreallife"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs transition-colors hover:text-foreground"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
           >
-            <ExternalLink className="size-3.5 text-primary" />
+            <ExternalLink className="size-3 text-primary" />
             <span className="text-muted-foreground">{t.builtBy}</span>
             <span className="font-semibold text-foreground">aliinreallife</span>
           </a>
@@ -233,9 +222,9 @@ export default function Page() {
             href="https://github.com/mostafa-kheibary/tehran-metro-data"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs transition-colors hover:text-foreground"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
           >
-            <Database className="size-3.5 text-primary" />
+            <Database className="size-3 text-primary" />
             <span className="text-muted-foreground">{t.dataBy}</span>
             <span className="font-semibold text-foreground">
               mostafa-kheibary
@@ -412,11 +401,19 @@ function RouteView({
           {route ? (
             <RoutePanel route={route} lang={lang} />
           ) : !selected ? (
-            <p className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
-              {originId && destId && originId === destId
-                ? t.sameStation
-                : t.pickBoth}
-            </p>
+            <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
+              <p>
+                {originId && destId && originId === destId
+                  ? t.sameStation
+                  : t.pickBoth}
+              </p>
+              {!originId && (
+                <p className="mt-2 flex items-center justify-center gap-1.5 text-xs">
+                  <LocateFixed className="size-3.5 shrink-0" />
+                  {t.orUseGps}
+                </p>
+              )}
+            </div>
           ) : null}
 
           {originId && destId && originId !== destId && !route && (
