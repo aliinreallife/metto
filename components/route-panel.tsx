@@ -1,31 +1,52 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { ArrowRight, ChevronDown, Clock, Repeat, TrainFront, Footprints } from "lucide-react"
-import { LINE_COLORS } from "@/lib/metro-data"
-import { STATION_MAP, type RouteResult } from "@/lib/route"
-import { STRINGS, persianDigits, type Lang } from "@/lib/i18n"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import {
+  ArrowRight,
+  ChevronDown,
+  Clock,
+  Repeat,
+  TrainFront,
+  Footprints,
+} from "lucide-react";
+import { LINE_COLORS } from "@/lib/metro-data";
+import { STATION_MAP, type RouteResult } from "@/lib/route";
+import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
-export function RoutePanel({ route, lang }: { route: RouteResult; lang: Lang }) {
-  const t = STRINGS[lang]
-  const isFa = lang === "fa"
+export function RoutePanel({
+  route,
+  lang,
+}: {
+  route: RouteResult;
+  lang: Lang;
+}) {
+  const t = STRINGS[lang];
+  const isFa = lang === "fa";
   const name = (id: string) => {
-    const s = STATION_MAP.get(id)
-    return s ? (isFa ? s.fa : s.name) : id
-  }
-  const mins = Math.round(route.estimatedSeconds / 60)
+    const s = STATION_MAP.get(id);
+    return s ? (isFa ? s.fa : s.name) : id;
+  };
+  const mins = Math.round(route.estimatedSeconds / 60);
 
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-3 gap-2">
-        <Stat icon={<TrainFront className="size-4" />} value={persianDigits(route.numStops, lang)} label={t.stops} />
+        <Stat
+          icon={<TrainFront className="size-4" />}
+          value={persianDigits(route.numStops, lang)}
+          label={t.stops}
+        />
         <Stat
           icon={<Repeat className="size-4" />}
           value={persianDigits(route.numTransfers, lang)}
           label={route.numTransfers === 1 ? t.transfer : t.transfers}
         />
-        <Stat icon={<Clock className="size-4" />} value={persianDigits(mins, lang)} label={t.minEst} />
+        <Stat
+          icon={<Clock className="size-4" />}
+          value={"~" + persianDigits(mins, lang)}
+          label={t.minEst}
+        />
       </div>
 
       <ol className="flex flex-col gap-2">
@@ -35,7 +56,8 @@ export function RoutePanel({ route, lang }: { route: RouteResult; lang: Lang }) 
               <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground">
                 <Footprints className="size-3.5" />
                 <span>
-                  {t.transferTo} {persianDigits(seg.line, lang)} {t.via} {name(seg.stations[0])}
+                  {t.transferTo} {persianDigits(seg.line, lang)} {t.via}{" "}
+                  {name(seg.stations[0])}
                 </span>
               </div>
             )}
@@ -49,17 +71,25 @@ export function RoutePanel({ route, lang }: { route: RouteResult; lang: Lang }) 
         ))}
       </ol>
     </div>
-  )
+  );
 }
 
-function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+function Stat({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+}) {
   return (
     <div className="flex flex-col items-center gap-0.5 rounded-lg border border-border bg-card px-2 py-2.5">
       <span className="text-muted-foreground">{icon}</span>
       <span className="text-lg font-bold leading-none">{value}</span>
       <span className="text-[11px] text-muted-foreground">{label}</span>
     </div>
-  )
+  );
 }
 
 function SegmentCard({
@@ -68,26 +98,35 @@ function SegmentCard({
   name,
   lang,
 }: {
-  line: number
-  stations: string[]
-  name: (id: string) => string
-  lang: Lang
+  line: number;
+  stations: string[];
+  name: (id: string) => string;
+  lang: Lang;
 }) {
-  const [open, setOpen] = useState(false)
-  const t = STRINGS[lang]
-  const color = LINE_COLORS[line]
-  const intermediates = stations.slice(1, -1)
-  const board = stations[0]
-  const alight = stations[stations.length - 1]
-  const hops = stations.length - 1
+  const [open, setOpen] = useState(false);
+  const t = STRINGS[lang];
+  const color = LINE_COLORS[line];
+  const intermediates = stations.slice(1, -1);
+  const board = stations[0];
+  const alight = stations[stations.length - 1];
+  const hops = stations.length - 1;
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-stretch gap-3 p-3">
         <div className="flex flex-col items-center pt-0.5">
-          <span className="size-3 rounded-full ring-2 ring-offset-1 ring-offset-card" style={{ backgroundColor: color, color }} />
-          <span className="my-0.5 w-0.5 flex-1 rounded" style={{ backgroundColor: color }} />
-          <span className="size-3 rounded-full" style={{ backgroundColor: color }} />
+          <span
+            className="size-3 rounded-full ring-2 ring-offset-1 ring-offset-card"
+            style={{ backgroundColor: color, color }}
+          />
+          <span
+            className="my-0.5 w-0.5 flex-1 rounded"
+            style={{ backgroundColor: color }}
+          />
+          <span
+            className="size-3 rounded-full"
+            style={{ backgroundColor: color }}
+          />
         </div>
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2">
@@ -108,7 +147,12 @@ function SegmentCard({
             className="my-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
             disabled={intermediates.length === 0}
           >
-            <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+            <ChevronDown
+              className={cn(
+                "size-3.5 transition-transform",
+                open && "rotate-180",
+              )}
+            />
             {intermediates.length > 0
               ? `${persianDigits(intermediates.length, lang)} ${t.stops}`
               : "—"}
@@ -129,5 +173,5 @@ function SegmentCard({
         </div>
       </div>
     </div>
-  )
+  );
 }

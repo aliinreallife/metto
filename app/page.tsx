@@ -47,7 +47,7 @@ const LINE_NUMBERS = Object.keys(LINE_COLORS)
   .sort((a, b) => a - b);
 
 export default function Page() {
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLang] = useState<Lang>("fa");
   const [tab, setTab] = useState<Tab>("route");
   const [originId, setOriginId] = useState<string | null>(null);
   const [destId, setDestId] = useState<string | null>(null);
