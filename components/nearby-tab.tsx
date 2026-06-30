@@ -1,69 +1,97 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { LocateFixed, Loader2, MapPin, Car, Navigation, Flag, Train } from "lucide-react"
-import { StationCombobox } from "@/components/station-combobox"
-import { LINE_COLORS } from "@/lib/metro-data"
+import { useMemo, useState } from "react";
+import {
+  LocateFixed,
+  Loader2,
+  MapPin,
+  Navigation,
+  Flag,
+  Train,
+} from "lucide-react";
+import { StationCombobox } from "@/components/station-combobox";
+import { LINE_COLORS } from "@/lib/metro-data";
 import {
   nearestStations,
   formatDistance,
-  directionsUrl,
-  snappUrl,
-  tapsiUrl,
+  geoUrl,
   type AmenityKey,
-} from "@/lib/geo"
-import { STATION_MAP } from "@/lib/route"
-import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n"
-import { cn } from "@/lib/utils"
+} from "@/lib/geo";
+import { STATION_MAP } from "@/lib/route";
+import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
+import { cn } from "@/lib/utils";
 
 type Props = {
-  lang: Lang
-  onSetOrigin: (id: string) => void
-  onSetDest: (id: string) => void
-}
+  lang: Lang;
+  onSetOrigin: (id: string) => void;
+  onSetDest: (id: string) => void;
+};
 
 type LocState =
   | { kind: "none" }
   | { kind: "locating" }
   | { kind: "gps"; lat: number; lng: number }
   | { kind: "station"; lat: number; lng: number; stationId: string }
-  | { kind: "error"; message: string }
+  | { kind: "error"; message: string };
 
-const AMENITY_KEYS = Object.keys(AMENITY_LABELS) as AmenityKey[]
+const AMENITY_KEYS = Object.keys(AMENITY_LABELS) as AmenityKey[];
 
 export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
-  const t = STRINGS[lang]
-  const isFa = lang === "fa"
-  const [loc, setLoc] = useState<LocState>({ kind: "none" })
-  const [amenity, setAmenity] = useState<AmenityKey | null>(null)
+  const t = STRINGS[lang];
+  const isFa = lang === "fa";
+  const [loc, setLoc] = useState<LocState>({ kind: "none" });
+  const [selectedAmenities, setSelectedAmenities] = useState<AmenityKey[]>([]);
 
-  const coords = loc.kind === "gps" || loc.kind === "station" ? { lat: loc.lat, lng: loc.lng } : null
+  const coords =
+    loc.kind === "gps" || loc.kind === "station"
+      ? { lat: loc.lat, lng: loc.lng }
+      : null;
 
   const results = useMemo(() => {
-    if (!coords) return []
-    return nearestStations(coords.lat, coords.lng, { amenity, limit: 15 })
-  }, [coords, amenity])
+    if (!coords) return [];
+    return nearestStations(coords.lat, coords.lng, {
+      amenities: selectedAmenities,
+      limit: 15,
+    });
+  }, [coords, selectedAmenities]);
+
+  function toggleAmenity(key: AmenityKey) {
+    setSelectedAmenities((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  }
 
   function useGps() {
     if (!("geolocation" in navigator)) {
-      setLoc({ kind: "error", message: t.gpsUnavailable })
-      return
+      setLoc({ kind: "error", message: t.gpsUnavailable });
+      return;
     }
-    setLoc({ kind: "locating" })
+    setLoc({ kind: "locating" });
     navigator.geolocation.getCurrentPosition(
-      (pos) => setLoc({ kind: "gps", lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => setLoc({ kind: "error", message: err.code === err.PERMISSION_DENIED ? t.gpsDenied : t.gpsUnavailable }),
+      (pos) =>
+        setLoc({
+          kind: "gps",
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        }),
+      (err) =>
+        setLoc({
+          kind: "error",
+          message:
+            err.code === err.PERMISSION_DENIED ? t.gpsDenied : t.gpsUnavailable,
+        }),
       { enableHighAccuracy: true, timeout: 10000 },
-    )
+    );
   }
 
   function pickStation(id: string | null) {
     if (!id) {
-      setLoc({ kind: "none" })
-      return
+      setLoc({ kind: "none" });
+      return;
     }
-    const s = STATION_MAP.get(id)
-    if (s) setLoc({ kind: "station", lat: s.lat, lng: s.lng, stationId: s.id })
+    const s = STATION_MAP.get(id);
+    if (s) setLoc({ kind: "station", lat: s.lat, lng: s.lng, stationId: s.id });
   }
 
   const locationLabel =
@@ -71,10 +99,10 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
       ? t.useMyLocation
       : loc.kind === "station"
         ? (() => {
-            const s = STATION_MAP.get(loc.stationId)
-            return s ? (isFa ? s.fa : s.name) : ""
+            const s = STATION_MAP.get(loc.stationId);
+            return s ? (isFa ? s.fa : s.name) : "";
           })()
-        : ""
+        : "";
 
   return (
     <div className="flex size-full min-h-0 flex-col overflow-y-auto bg-background">
@@ -85,7 +113,9 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
             <LocateFixed className="size-4 text-primary" />
             <h2 className="text-sm font-bold">{t.yourLocation}</h2>
             {coords && (
-              <span className="ms-auto truncate text-xs text-muted-foreground">{locationLabel}</span>
+              <span className="ms-auto truncate text-xs text-muted-foreground">
+                {locationLabel}
+              </span>
             )}
           </div>
 
@@ -123,7 +153,9 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
           />
 
           {loc.kind === "error" && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{loc.message}</p>
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {loc.message}
+            </p>
           )}
         </section>
 
@@ -135,17 +167,30 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
           <>
             {/* Amenity filter */}
             <section>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.findAmenity}</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t.findAmenity}
+              </p>
               <div className="flex flex-wrap gap-1.5">
-                <FilterChip active={amenity === null} onClick={() => setAmenity(null)}>
+                <FilterChip
+                  active={selectedAmenities.length === 0}
+                  onClick={() => setSelectedAmenities([])}
+                >
                   <Train className="size-3.5" />
                   {t.nearestStations}
                 </FilterChip>
-                {AMENITY_KEYS.map((key) => (
-                  <FilterChip key={key} active={amenity === key} onClick={() => setAmenity(key)}>
-                    {AMENITY_LABELS[key][lang]}
-                  </FilterChip>
-                ))}
+                {AMENITY_KEYS.map((key) => {
+                  const Icon = AMENITY_ICON_MAP[key];
+                  return (
+                    <FilterChip
+                      key={key}
+                      active={selectedAmenities.includes(key)}
+                      onClick={() => toggleAmenity(key)}
+                    >
+                      {Icon && <Icon className="size-3.5" />}
+                      {AMENITY_LABELS[key][lang]}
+                    </FilterChip>
+                  );
+                })}
               </div>
             </section>
 
@@ -157,14 +202,21 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
                 </li>
               )}
               {results.map(({ station, km }, i) => (
-                <li key={station.id} className="rounded-xl border border-border bg-card p-3">
+                <li
+                  key={station.id}
+                  className="rounded-xl border border-border bg-card p-3"
+                >
                   <div className="flex items-start gap-3">
                     <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                       {persianDigits(i + 1, lang)}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">{isFa ? station.fa : station.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{isFa ? station.name : station.fa}</p>
+                      <p className="truncate font-semibold">
+                        {isFa ? station.fa : station.name}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {isFa ? station.name : station.fa}
+                      </p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         {station.lines.map((l) => (
                           <span
@@ -184,31 +236,16 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
 
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
                     <a
-                      href={directionsUrl({ lat: station.lat, lng: station.lng }, coords)}
+                      href={geoUrl(
+                        { lat: station.lat, lng: station.lng },
+                        isFa ? station.fa : station.name,
+                      )}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
                     >
                       <MapPin className="size-3.5 text-primary" />
                       {t.navigate}
-                    </a>
-                    <a
-                      href={snappUrl()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-                    >
-                      <Car className="size-3.5 text-primary" />
-                      {t.snapp}
-                    </a>
-                    <a
-                      href={tapsiUrl()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-                    >
-                      <Car className="size-3.5 text-primary" />
-                      {t.tapsi}
                     </a>
                     <span className="ms-auto flex gap-1.5">
                       <button
@@ -238,7 +275,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function FilterChip({
@@ -246,9 +283,9 @@ function FilterChip({
   onClick,
   children,
 }: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
 }) {
   return (
     <button
@@ -263,5 +300,5 @@ function FilterChip({
     >
       {children}
     </button>
-  )
+  );
 }

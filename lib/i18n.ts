@@ -1,4 +1,4 @@
-export type Lang = "en" | "fa"
+export type Lang = "en" | "fa";
 
 export const STRINGS = {
   en: {
@@ -56,15 +56,13 @@ export const STRINGS = {
     yourLocation: "Your location",
     gpsDenied: "Location access denied. Pick a station instead.",
     gpsUnavailable: "Couldn't get your location. Pick a station instead.",
-    setLocation: "Set your location to find the nearest stations and amenities.",
+    setLocation:
+      "Set your location to find the nearest stations and amenities.",
     nearestStations: "Nearest stations",
     findAmenity: "Find nearest…",
     nearestWith: "Nearest with",
     away: "away",
-    navigate: "Directions",
-    taxi: "Taxi",
-    snapp: "Snapp",
-    tapsi: "Tapsi",
+    navigate: "Open with…",
     getThere: "Get there",
     changeLocation: "Change",
     credits: "Credits",
@@ -126,22 +124,20 @@ export const STRINGS = {
     yourLocation: "موقعیت شما",
     gpsDenied: "دسترسی به موقعیت رد شد. یک ایستگاه انتخاب کنید.",
     gpsUnavailable: "موقعیت شما به‌دست نیامد. یک ایستگاه انتخاب کنید.",
-    setLocation: "برای یافتن نزدیک‌ترین ایستگاه‌ها و امکانات، موقعیت خود را تعیین کنید.",
+    setLocation:
+      "برای یافتن نزدیک‌ترین ایستگاه‌ها و امکانات، موقعیت خود را تعیین کنید.",
     nearestStations: "نزدیک‌ترین ایستگاه‌ها",
     findAmenity: "یافتن نزدیک‌ترین…",
     nearestWith: "نزدیک‌ترین با",
     away: "فاصله",
-    navigate: "مسیریابی",
-    taxi: "تاکسی",
-    snapp: "اسنپ",
-    tapsi: "تپسی",
+    navigate: "باز کردن با…",
     getThere: "رفتن به آنجا",
     changeLocation: "تغییر",
     credits: "اعتبارها",
     builtBy: "ساخته‌شده توسط",
     dataBy: "داده‌های مترو از",
   },
-} as const
+} as const;
 
 export const AMENITY_LABELS: Record<string, { en: string; fa: string }> = {
   wc: { en: "Restroom", fa: "سرویس بهداشتی" },
@@ -154,11 +150,11 @@ export const AMENITY_LABELS: Record<string, { en: string; fa: string }> = {
   prayerRoom: { en: "Prayer room", fa: "نمازخانه" },
   parking: { en: "Bike parking", fa: "پارکینگ دوچرخه" },
   police: { en: "Metro police", fa: "پلیس مترو" },
-}
+};
 
 export function persianDigits(input: string | number, lang: Lang): string {
-  const s = String(input)
-  if (lang !== "fa") return s
-  const map = "۰۱۲۳۴۵۶۷۸۹"
-  return s.replace(/\d/g, (d) => map[Number(d)])
+  const s = String(input);
+  if (lang !== "fa") return s;
+  const map = "۰۱۲۳۴۵۶۷۸۹";
+  return s.replace(/\d/g, (d) => map[Number(d)]);
 }
