@@ -222,7 +222,7 @@ export function MetroMap({
   // Convert a target screen size (px) into SVG user-units, accounting for
   // both the viewBox→pixel ratio (svgW/1000) and the current pan/zoom scale.
   // Result: labels always render at ~14 px on screen at any zoom or container size.
-  const labelFont = (14 * 1000) / (svgW * t.scale);
+  const labelFont = (18 * 1000) / (svgW * t.scale);
   // Rough per-character width used to size the background rect.
   const labelCharW = labelFont * 0.58;
 
@@ -322,26 +322,22 @@ export function MetroMap({
                     const label = isFa ? s.fa : s.name;
                     const lx = p.x + r + labelFont * 0.45;
                     const ly = p.y - r - labelFont * 0.15;
-                    const pad = labelFont * 0.25;
-                    const bgW = label.length * labelCharW + pad * 2;
-                    const bgH = labelFont * 1.35;
+                    const isRtl = isFa;
                     return (
                       <g className="pointer-events-none">
-                        <rect
-                          x={lx - pad}
-                          y={ly - labelFont * 1.0}
-                          width={bgW}
-                          height={bgH}
-                          rx={labelFont * 0.18}
-                          fill="var(--background)"
-                          opacity={0.82}
-                        />
                         <text
                           x={lx}
                           y={ly}
                           fontSize={labelFont}
                           fill="var(--foreground)"
-                          fontWeight={onRoute || isEndpoint ? 800 : 600}
+                          stroke="var(--background)"
+                          strokeWidth={labelFont * 0.12}
+                          strokeLinejoin="round"
+                          paintOrder="stroke"
+                          fontWeight={onRoute || isEndpoint ? 800 : 700}
+                          textAnchor={isRtl ? "end" : "start"}
+                          direction={isRtl ? "rtl" : "ltr"}
+                          style={{ fontFamily: "'Vazirmatn', sans-serif" }}
                         >
                           {label}
                         </text>
