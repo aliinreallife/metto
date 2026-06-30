@@ -2,12 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
-import { ArrowUpDown, TrainFront, Globe, Map as MapIcon, ListTree, Route as RouteIcon, Loader2 } from "lucide-react"
+import {
+  ArrowUpDown,
+  TrainFront,
+  Globe,
+  Map as MapIcon,
+  ListTree,
+  Route as RouteIcon,
+  LocateFixed,
+  Github,
+  Database,
+  Loader2,
+} from "lucide-react"
 import { MetroMap } from "@/components/metro-map"
 import { StationCombobox } from "@/components/station-combobox"
 import { RoutePanel } from "@/components/route-panel"
 import { StationDetail } from "@/components/station-detail"
 import { StationsTab } from "@/components/stations-tab"
+import { NearbyTab } from "@/components/nearby-tab"
 import { InstallButton } from "@/components/pwa"
 import { LINE_COLORS, STATIONS } from "@/lib/metro-data"
 import { STATION_MAP, findRoute } from "@/lib/route"
@@ -23,7 +35,7 @@ const RealMap = dynamic(() => import("@/components/real-map").then((m) => m.Real
   ),
 })
 
-type Tab = "route" | "stations" | "map"
+type Tab = "route" | "stations" | "nearby" | "map"
 
 const LINE_NUMBERS = Object.keys(LINE_COLORS)
   .map(Number)
@@ -59,6 +71,7 @@ export default function Page() {
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "route", label: t.tabRoute, icon: <RouteIcon className="size-5" /> },
     { id: "stations", label: t.tabStations, icon: <ListTree className="size-5" /> },
+    { id: "nearby", label: t.tabNearby, icon: <LocateFixed className="size-5" /> },
     { id: "map", label: t.tabMap, icon: <MapIcon className="size-5" /> },
   ]
 
@@ -127,6 +140,20 @@ export default function Page() {
           />
         )}
 
+        {tab === "nearby" && (
+          <NearbyTab
+            lang={lang}
+            onSetOrigin={(id) => {
+              setOriginId(id)
+              setTab("route")
+            }}
+            onSetDest={(id) => {
+              setDestId(id)
+              setTab("route")
+            }}
+          />
+        )}
+
         {tab === "map" && (
           <div className="relative size-full">
             <RealMap
@@ -161,7 +188,7 @@ export default function Page() {
       </div>
 
       {/* mobile bottom tab bar */}
-      <nav className="z-20 grid grid-cols-3 border-t border-border bg-card/90 backdrop-blur md:hidden">
+      <nav className="z-20 grid grid-cols-4 border-t border-border bg-card/90 backdrop-blur md:hidden">
         {tabs.map((tb) => (
           <button
             key={tb.id}
@@ -272,6 +299,31 @@ function RouteView({
           <p className="mt-2 text-[11px] text-muted-foreground">
             {persianDigits(STATIONS.length, lang)} {isFa ? "ایستگاه" : "stations"}
           </p>
+
+          <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-[11px] text-muted-foreground">
+            <a
+              href="https://github.com/aliinreallife"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 transition-colors hover:text-foreground"
+            >
+              <Github className="size-3.5" />
+              <span>
+                {t.builtBy} <span className="font-medium text-foreground">aliinreallife</span>
+              </span>
+            </a>
+            <a
+              href="https://github.com/mostafa-kheibary/tehran-metro-data"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 transition-colors hover:text-foreground"
+            >
+              <Database className="size-3.5" />
+              <span>
+                {t.dataBy} <span className="font-medium text-foreground">tehran-metro-data</span>
+              </span>
+            </a>
+          </div>
         </div>
       </aside>
 

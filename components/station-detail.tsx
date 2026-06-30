@@ -1,18 +1,21 @@
 "use client"
 
-import { X, Navigation, Flag, Check } from "lucide-react"
+import { X, Navigation, Flag, Check, MapPin, Car } from "lucide-react"
 import { LINE_COLORS, type Station } from "@/lib/metro-data"
 import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n"
+import { directionsUrl, snappUrl, tapsiUrl } from "@/lib/geo"
 
 export function StationDetail({
   station,
   lang,
+  userLoc,
   onClose,
   onSetOrigin,
   onSetDest,
 }: {
   station: Station
   lang: Lang
+  userLoc?: { lat: number; lng: number } | null
   onClose: () => void
   onSetOrigin: () => void
   onSetDest: () => void
@@ -72,6 +75,39 @@ export function StationDetail({
           <Flag className="size-4" />
           {t.to}
         </button>
+      </div>
+
+      <div>
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.getThere}</p>
+        <div className="flex flex-wrap gap-1.5">
+          <a
+            href={directionsUrl({ lat: station.lat, lng: station.lng }, userLoc)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+          >
+            <MapPin className="size-3.5 text-primary" />
+            {t.navigate}
+          </a>
+          <a
+            href={snappUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+          >
+            <Car className="size-3.5 text-primary" />
+            {t.snapp}
+          </a>
+          <a
+            href={tapsiUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+          >
+            <Car className="size-3.5 text-primary" />
+            {t.tapsi}
+          </a>
+        </div>
       </div>
 
       {activeAmenities.length > 0 && (
