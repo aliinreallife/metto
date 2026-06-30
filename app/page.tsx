@@ -216,6 +216,34 @@ export default function Page() {
         )}
       </div>
 
+      {/* credits – pinned above tab bar, route tab only, mobile only */}
+      {tab === "route" && (
+        <div className="z-20 flex items-center justify-between border-t border-border bg-card/90 px-4 py-2 backdrop-blur md:hidden">
+          <a
+            href="https://github.com/aliinreallife"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs transition-colors hover:text-foreground"
+          >
+            <ExternalLink className="size-3.5 text-primary" />
+            <span className="text-muted-foreground">{t.builtBy}</span>
+            <span className="font-semibold text-foreground">aliinreallife</span>
+          </a>
+          <a
+            href="https://github.com/mostafa-kheibary/tehran-metro-data"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs transition-colors hover:text-foreground"
+          >
+            <Database className="size-3.5 text-primary" />
+            <span className="text-muted-foreground">{t.dataBy}</span>
+            <span className="font-semibold text-foreground">
+              mostafa-kheibary
+            </span>
+          </a>
+        </div>
+      )}
+
       {/* mobile bottom tab bar */}
       <nav className="z-20 grid grid-cols-4 border-t border-border bg-card/90 backdrop-blur md:hidden">
         {tabs.map((tb) => (
@@ -285,52 +313,56 @@ function RouteView({
   return (
     <div className="flex size-full flex-col overflow-y-auto md:min-h-0 md:flex-row md:overflow-hidden">
       <aside className="flex shrink-0 flex-col gap-3 border-b border-border bg-background p-4 md:w-[380px] md:overflow-y-auto md:border-b-0 md:border-e">
-        <div className="flex items-end gap-2">
-          <div className="flex flex-1 flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t.from}
-              </label>
-              <button
-                type="button"
-                onClick={locateOrigin}
-                disabled={locating}
-                aria-label="Use my location"
-                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-              >
-                {locating ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <LocateFixed className="size-3.5" />
-                )}
-              </button>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t.from}
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <StationCombobox
+                value={originId}
+                onChange={setOriginId}
+                placeholder={t.origin}
+                lang={lang}
+                accentClass="bg-primary"
+              />
             </div>
-            <StationCombobox
-              value={originId}
-              onChange={setOriginId}
-              placeholder={t.origin}
-              lang={lang}
-              accentClass="bg-primary"
-            />
-            <label className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t.to}
-            </label>
-            <StationCombobox
-              value={destId}
-              onChange={setDestId}
-              placeholder={t.destination}
-              lang={lang}
-              accentClass="bg-foreground"
-            />
+            <button
+              type="button"
+              onClick={locateOrigin}
+              disabled={locating}
+              aria-label="Use my location"
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50"
+            >
+              {locating ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <LocateFixed className="size-4" />
+              )}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={swap}
-            aria-label={t.swap}
-            className="mb-0.5 flex size-9 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent"
-          >
-            <ArrowUpDown className="size-4" />
-          </button>
+          <label className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t.to}
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <StationCombobox
+                value={destId}
+                onChange={setDestId}
+                placeholder={t.destination}
+                lang={lang}
+                accentClass="bg-foreground"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={swap}
+              aria-label={t.swap}
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent"
+            >
+              <ArrowUpDown className="size-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -394,7 +426,7 @@ function RouteView({
           )}
         </div>
 
-        <div className="mt-auto pt-2">
+        <div className="mt-auto hidden pt-2 md:block">
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t.lines}
           </p>
