@@ -64,7 +64,8 @@ export const STRINGS = {
     away: "away",
     navigate: "Get there",
     getThereToStart: "Get to your starting point",
-    orUseGps: "or tap the locate icon to set your nearest station as origin",
+
+    timeNote: "⚠ Travel time is a work in progress and may not be accurate.",
 
     changeLocation: "Change",
     credits: "Credits",
@@ -134,7 +135,8 @@ export const STRINGS = {
     away: "فاصله",
     navigate: "رفتن به آنجا",
     getThereToStart: "رفتن به مبدأ",
-    orUseGps: "یا آیکون موقعیت را لمس کنید تا نزدیک‌ترین ایستگاه مبدأ شود",
+
+    timeNote: "⚠ زمان سفر در حال توسعه است و ممکن است دقیق نباشد.",
 
     changeLocation: "تغییر",
     credits: "اعتبارها",
