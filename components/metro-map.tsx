@@ -33,9 +33,6 @@ export function MetroMap({ mode, lang, route, originId, destId, selectedId, onSe
 
   const [t, setT] = useState<Transform>({ scale: 1, tx: 0, ty: 0 })
   const drag = useRef<{ x: number; y: number; tx: number; ty: number; moved: boolean } | null>(null)
-  // Active pointers (for multi-touch pinch) and the last pinch distance.
-  const pointers = useRef<Map<number, { x: number; y: number }>>(new Map())
-  const pinchDist = useRef<number | null>(null)
 
   const routeEdgeKeys = useMemo(() => {
     const set = new Set<string>()
@@ -84,62 +81,22 @@ export function MetroMap({ mode, lang, route, originId, destId, selectedId, onSe
 
   function onPointerDown(e: React.PointerEvent) {
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-    if (pointers.current.size >= 2) {
-      // A second finger landed: switch from panning to pinch-zoom.
-      drag.current = null
-      pinchDist.current = null
-    } else {
-      drag.current = { x: e.clientX, y: e.clientY, tx: t.tx, ty: t.ty, moved: false }
-    }
+    drag.current = { x: e.clientX, y: e.clientY, tx: t.tx, ty: t.ty, moved: false }
   }
   function onPointerMove(e: React.PointerEvent) {
-    const p = pointers.current.get(e.pointerId)
-    if (p) {
-      p.x = e.clientX
-      p.y = e.clientY
-    }
-
-    // Two fingers → pinch to zoom around the gesture midpoint.
-    if (pointers.current.size >= 2) {
-      const [a, b] = [...pointers.current.values()]
-      const dist = Math.hypot(a.x - b.x, a.y - b.y)
-      if (pinchDist.current && pinchDist.current > 0 && dist > 0) {
-        const mid = clientToView((a.x + b.x) / 2, (a.y + b.y) / 2)
-        zoomAt(mid, dist / pinchDist.current)
-      }
-      pinchDist.current = dist
-      return
-    }
-
-    // One finger → pan.
-    const d = drag.current
-    const svg = svgRef.current
-    if (!d || !svg) return
-    const ctm = svg.getScreenCTM()
-    if (!ctm || !ctm.a || !ctm.d) return
-    const dx = e.clientX - d.x
-    const dy = e.clientY - d.y
-    if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true
+    if (!drag.current) return
+    const dx = e.clientX - drag.current.x
+    const dy = e.clientY - drag.current.y
+    if (Math.abs(dx) + Math.abs(dy) > 4) drag.current.moved = true
+    const svg = svgRef.current!
+    const ctm = svg.getScreenCTM()!
+    // convert client delta to view units using scale of the CTM
     const vx = dx / ctm.a
     const vy = dy / ctm.d
-    setT((prev) => ({ ...prev, tx: d.tx + vx, ty: d.ty + vy }))
+    setT((prev) => ({ ...prev, tx: drag.current!.tx + vx, ty: drag.current!.ty + vy }))
   }
-  function onPointerUp(e?: React.PointerEvent) {
-    if (e) {
-      ;(e.target as Element).releasePointerCapture?.(e.pointerId)
-      pointers.current.delete(e.pointerId)
-    } else {
-      pointers.current.clear()
-    }
-    if (pointers.current.size < 2) pinchDist.current = null
-    if (pointers.current.size === 0) {
-      drag.current = null
-    } else if (pointers.current.size === 1) {
-      // Resume panning with the remaining finger.
-      const [only] = [...pointers.current.values()]
-      drag.current = { x: only.x, y: only.y, tx: t.tx, ty: t.ty, moved: true }
-    }
+  function onPointerUp() {
+    drag.current = null
   }
 
   function reset() {
@@ -173,11 +130,6 @@ export function MetroMap({ mode, lang, route, originId, destId, selectedId, onSe
   const isFa = lang === "fa"
   const baseStroke = mode === "schematic" ? 6 : 4.5
   const lineWidth = baseStroke / Math.sqrt(t.scale)
-  // Labels are sized in view units so that, after the transform's scale is
-  // applied, they stay a constant ~13px on screen at any zoom — much easier to
-  // read than letting them shrink/grow with the map.
-  const labelFont = 13 / t.scale
-  const labelHalo = 3.5 / t.scale
 
   function showLabel(id: string): boolean {
     if (routeStations.has(id)) return true
@@ -266,17 +218,16 @@ export function MetroMap({ mode, lang, route, originId, destId, selectedId, onSe
                 )}
                 {showLabel(s.id) && (
                   <text
-                    x={p.x + r + labelFont * 0.5}
-                    y={p.y - r - labelFont * 0.3}
-                    fontSize={labelFont}
+                    x={p.x + (r + 3 / Math.sqrt(t.scale))}
+                    y={p.y - (r + 1 / Math.sqrt(t.scale))}
+                    fontSize={11 / Math.sqrt(t.scale)}
                     className="pointer-events-none"
                     fill="var(--foreground)"
                     style={{
                       paintOrder: "stroke",
-                      stroke: "var(--background)",
-                      strokeWidth: labelHalo,
-                      strokeLinejoin: "round",
-                      fontWeight: onRoute || isEndpoint ? 800 : 600,
+                      stroke: "var(--card)",
+                      strokeWidth: 3 / Math.sqrt(t.scale),
+                      fontWeight: onRoute || isEndpoint ? 700 : 500,
                     }}
                   >
                     {isFa ? s.fa : s.name}
