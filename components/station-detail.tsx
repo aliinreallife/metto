@@ -1,9 +1,10 @@
-"use client"
+"use client";
 
-import { X, Navigation, Flag, Check, MapPin, Car } from "lucide-react"
-import { LINE_COLORS, type Station } from "@/lib/metro-data"
-import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n"
-import { directionsUrl, snappUrl, tapsiUrl } from "@/lib/geo"
+import { X, Navigation, Flag, MapPin } from "lucide-react";
+import { LINE_COLORS, type Station } from "@/lib/metro-data";
+import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
+import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { geoUrl } from "@/lib/geo";
 
 export function StationDetail({
   station,
@@ -13,23 +14,29 @@ export function StationDetail({
   onSetOrigin,
   onSetDest,
 }: {
-  station: Station
-  lang: Lang
-  userLoc?: { lat: number; lng: number } | null
-  onClose: () => void
-  onSetOrigin: () => void
-  onSetDest: () => void
+  station: Station;
+  lang: Lang;
+  userLoc?: { lat: number; lng: number } | null;
+  onClose: () => void;
+  onSetOrigin: () => void;
+  onSetDest: () => void;
 }) {
-  const t = STRINGS[lang]
-  const isFa = lang === "fa"
-  const activeAmenities = Object.entries(station.amenities).filter(([, v]) => v)
+  const t = STRINGS[lang];
+  const isFa = lang === "fa";
+  const activeAmenities = Object.entries(station.amenities).filter(
+    ([, v]) => v,
+  );
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-bold">{isFa ? station.fa : station.name}</h3>
-          <p className="truncate text-sm text-muted-foreground">{isFa ? station.name : station.fa}</p>
+          <h3 className="truncate text-base font-bold">
+            {isFa ? station.fa : station.name}
+          </h3>
+          <p className="truncate text-sm text-muted-foreground">
+            {isFa ? station.name : station.fa}
+          </p>
         </div>
         <button
           type="button"
@@ -78,51 +85,45 @@ export function StationDetail({
       </div>
 
       <div>
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.getThere}</p>
-        <div className="flex flex-wrap gap-1.5">
-          <a
-            href={directionsUrl({ lat: station.lat, lng: station.lng }, userLoc)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-          >
-            <MapPin className="size-3.5 text-primary" />
-            {t.navigate}
-          </a>
-          <a
-            href={snappUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-          >
-            <Car className="size-3.5 text-primary" />
-            {t.snapp}
-          </a>
-          <a
-            href={tapsiUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-          >
-            <Car className="size-3.5 text-primary" />
-            {t.tapsi}
-          </a>
-        </div>
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t.getThere}
+        </p>
+        <a
+          href={geoUrl(
+            { lat: station.lat, lng: station.lng },
+            isFa ? station.fa : station.name,
+          )}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent w-fit"
+        >
+          <MapPin className="size-3.5 text-primary" />
+          {t.navigate}
+        </a>
       </div>
 
       {activeAmenities.length > 0 && (
         <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.amenities}</p>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t.amenities}
+          </p>
           <ul className="grid grid-cols-2 gap-1.5">
             {activeAmenities.map(([key]) => (
               <li key={key} className="flex items-center gap-1.5 text-sm">
-                <Check className="size-3.5 shrink-0 text-primary" />
-                <span className="truncate">{AMENITY_LABELS[key]?.[lang] ?? key}</span>
+                {(() => {
+                  const Icon = AMENITY_ICON_MAP[key];
+                  return Icon ? (
+                    <Icon className="size-3.5 shrink-0 text-primary" />
+                  ) : null;
+                })()}
+                <span className="truncate">
+                  {AMENITY_LABELS[key]?.[lang] ?? key}
+                </span>
               </li>
             ))}
           </ul>
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,36 +1,40 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { Search, Check, ChevronRight } from "lucide-react"
-import { LINE_COLORS, STATIONS, type Station } from "@/lib/metro-data"
-import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n"
-import { cn } from "@/lib/utils"
+import { useMemo, useState } from "react";
+import { Search, ChevronRight, MapPin, Navigation, Flag } from "lucide-react";
+import { LINE_COLORS, STATIONS, type Station } from "@/lib/metro-data";
+import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
+import { geoUrl } from "@/lib/geo";
+import { cn } from "@/lib/utils";
 
 const LINE_NUMBERS = Object.keys(LINE_COLORS)
   .map(Number)
-  .sort((a, b) => a - b)
+  .sort((a, b) => a - b);
 
 type Props = {
-  lang: Lang
-  onSetOrigin: (id: string) => void
-  onSetDest: (id: string) => void
-}
+  lang: Lang;
+  onSetOrigin: (id: string) => void;
+  onSetDest: (id: string) => void;
+};
 
 export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
-  const t = STRINGS[lang]
-  const isFa = lang === "fa"
-  const [query, setQuery] = useState("")
-  const [lineFilter, setLineFilter] = useState<number | null>(null)
-  const [openId, setOpenId] = useState<string | null>(null)
+  const t = STRINGS[lang];
+  const isFa = lang === "fa";
+  const [query, setQuery] = useState("");
+  const [lineFilter, setLineFilter] = useState<number | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = query.trim().toLowerCase();
     return STATIONS.filter((s) => {
-      if (lineFilter !== null && !s.lines.includes(lineFilter)) return false
-      if (!q) return true
-      return s.name.toLowerCase().includes(q) || s.fa.includes(query.trim())
-    }).sort((a, b) => (isFa ? a.fa.localeCompare(b.fa, "fa") : a.name.localeCompare(b.name)))
-  }, [query, lineFilter, isFa])
+      if (lineFilter !== null && !s.lines.includes(lineFilter)) return false;
+      if (!q) return true;
+      return s.name.toLowerCase().includes(q) || s.fa.includes(query.trim());
+    }).sort((a, b) =>
+      isFa ? a.fa.localeCompare(b.fa, "fa") : a.name.localeCompare(b.name),
+    );
+  }, [query, lineFilter, isFa]);
 
   return (
     <div className="mx-auto flex h-full w-full max-w-2xl flex-col gap-3 p-4">
@@ -45,7 +49,10 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        <FilterChip active={lineFilter === null} onClick={() => setLineFilter(null)}>
+        <FilterChip
+          active={lineFilter === null}
+          onClick={() => setLineFilter(null)}
+        >
           {t.all}
         </FilterChip>
         {LINE_NUMBERS.map((l) => (
@@ -83,7 +90,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
         ))}
       </ul>
     </div>
-  )
+  );
 }
 
 function StationRow({
@@ -94,16 +101,18 @@ function StationRow({
   onSetOrigin,
   onSetDest,
 }: {
-  station: Station
-  lang: Lang
-  open: boolean
-  onToggle: () => void
-  onSetOrigin: () => void
-  onSetDest: () => void
+  station: Station;
+  lang: Lang;
+  open: boolean;
+  onToggle: () => void;
+  onSetOrigin: () => void;
+  onSetDest: () => void;
 }) {
-  const t = STRINGS[lang]
-  const isFa = lang === "fa"
-  const activeAmenities = Object.entries(station.amenities).filter(([, v]) => v)
+  const t = STRINGS[lang];
+  const isFa = lang === "fa";
+  const activeAmenities = Object.entries(station.amenities).filter(
+    ([, v]) => v,
+  );
 
   return (
     <li className="shrink-0 overflow-hidden rounded-xl border border-border bg-card">
@@ -115,14 +124,27 @@ function StationRow({
       >
         <span className="flex shrink-0 gap-1">
           {station.lines.map((l) => (
-            <span key={l} className="size-2.5 rounded-full" style={{ backgroundColor: LINE_COLORS[l] }} />
+            <span
+              key={l}
+              className="size-2.5 rounded-full"
+              style={{ backgroundColor: LINE_COLORS[l] }}
+            />
           ))}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold">{isFa ? station.fa : station.name}</span>
-          <span className="block truncate text-xs text-muted-foreground">{isFa ? station.name : station.fa}</span>
+          <span className="block truncate text-sm font-semibold">
+            {isFa ? station.fa : station.name}
+          </span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {isFa ? station.name : station.fa}
+          </span>
         </span>
-        <ChevronRight className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} />
+        <ChevronRight
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-90",
+          )}
+        />
       </button>
 
       {open && (
@@ -145,13 +167,22 @@ function StationRow({
           </div>
 
           <div>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.amenities}</p>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t.amenities}
+            </p>
             {activeAmenities.length > 0 ? (
               <ul className="grid grid-cols-2 gap-1.5">
                 {activeAmenities.map(([key]) => (
                   <li key={key} className="flex items-center gap-1.5 text-sm">
-                    <Check className="size-3.5 shrink-0 text-primary" />
-                    <span className="truncate">{AMENITY_LABELS[key]?.[lang] ?? key}</span>
+                    {(() => {
+                      const Icon = AMENITY_ICON_MAP[key];
+                      return Icon ? (
+                        <Icon className="size-3.5 shrink-0 text-primary" />
+                      ) : null;
+                    })()}
+                    <span className="truncate">
+                      {AMENITY_LABELS[key]?.[lang] ?? key}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -160,26 +191,46 @@ function StationRow({
             )}
           </div>
 
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t.getThere}
+            </p>
+            <a
+              href={geoUrl(
+                { lat: station.lat, lng: station.lng },
+                isFa ? station.fa : station.name,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-fit items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+            >
+              <MapPin className="size-3.5 text-primary" />
+              {t.navigate}
+            </a>
+          </div>
+
           <div className="flex gap-2">
             <button
               type="button"
               onClick={onSetOrigin}
-              className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
             >
+              <Navigation className="size-3.5" />
               {t.from}
             </button>
             <button
               type="button"
               onClick={onSetDest}
-              className="flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
             >
+              <Flag className="size-3.5" />
               {t.to}
             </button>
           </div>
         </div>
       )}
     </li>
-  )
+  );
 }
 
 function FilterChip({
@@ -188,10 +239,10 @@ function FilterChip({
   dot,
   children,
 }: {
-  active: boolean
-  onClick: () => void
-  dot?: string
-  children: React.ReactNode
+  active: boolean;
+  onClick: () => void;
+  dot?: string;
+  children: React.ReactNode;
 }) {
   return (
     <button
@@ -199,11 +250,18 @@ function FilterChip({
       onClick={onClick}
       className={cn(
         "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-        active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-accent",
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-card hover:bg-accent",
       )}
     >
-      {dot && <span className="size-2 rounded-full" style={{ backgroundColor: dot }} />}
+      {dot && (
+        <span
+          className="size-2 rounded-full"
+          style={{ backgroundColor: dot }}
+        />
+      )}
       {children}
     </button>
-  )
+  );
 }
