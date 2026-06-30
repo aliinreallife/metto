@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import dynamic from "next/dynamic"
+import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   ArrowUpDown,
   TrainFront,
@@ -10,70 +10,81 @@ import {
   ListTree,
   Route as RouteIcon,
   LocateFixed,
-  Github,
+  ExternalLink,
   Database,
   Loader2,
-} from "lucide-react"
-import { MetroMap } from "@/components/metro-map"
-import { StationCombobox } from "@/components/station-combobox"
-import { RoutePanel } from "@/components/route-panel"
-import { StationDetail } from "@/components/station-detail"
-import { StationsTab } from "@/components/stations-tab"
-import { NearbyTab } from "@/components/nearby-tab"
-import { InstallButton } from "@/components/pwa"
-import { LINE_COLORS, STATIONS } from "@/lib/metro-data"
-import { STATION_MAP, findRoute } from "@/lib/route"
-import { STRINGS, persianDigits, type Lang } from "@/lib/i18n"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { MetroMap } from "@/components/metro-map";
+import { StationCombobox } from "@/components/station-combobox";
+import { RoutePanel } from "@/components/route-panel";
+import { StationDetail } from "@/components/station-detail";
+import { StationsTab } from "@/components/stations-tab";
+import { NearbyTab } from "@/components/nearby-tab";
+import { InstallButton } from "@/components/pwa";
+import { LINE_COLORS, STATIONS } from "@/lib/metro-data";
+import { STATION_MAP, findRoute } from "@/lib/route";
+import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
-const RealMap = dynamic(() => import("@/components/real-map").then((m) => m.RealMap), {
-  ssr: false,
-  loading: () => (
-    <div className="flex size-full items-center justify-center text-muted-foreground">
-      <Loader2 className="size-6 animate-spin" />
-    </div>
-  ),
-})
+const RealMap = dynamic(
+  () => import("@/components/real-map").then((m) => m.RealMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex size-full items-center justify-center text-muted-foreground">
+        <Loader2 className="size-6 animate-spin" />
+      </div>
+    ),
+  },
+);
 
-type Tab = "route" | "stations" | "nearby" | "map"
+type Tab = "route" | "stations" | "nearby" | "map";
 
 const LINE_NUMBERS = Object.keys(LINE_COLORS)
   .map(Number)
-  .sort((a, b) => a - b)
+  .sort((a, b) => a - b);
 
 export default function Page() {
-  const [lang, setLang] = useState<Lang>("en")
-  const [tab, setTab] = useState<Tab>("route")
-  const [originId, setOriginId] = useState<string | null>(null)
-  const [destId, setDestId] = useState<string | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [lang, setLang] = useState<Lang>("en");
+  const [tab, setTab] = useState<Tab>("route");
+  const [originId, setOriginId] = useState<string | null>(null);
+  const [destId, setDestId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const t = STRINGS[lang]
-  const isFa = lang === "fa"
+  const t = STRINGS[lang];
+  const isFa = lang === "fa";
 
   const route = useMemo(() => {
-    if (!originId || !destId || originId === destId) return null
-    return findRoute(originId, destId)
-  }, [originId, destId])
+    if (!originId || !destId || originId === destId) return null;
+    return findRoute(originId, destId);
+  }, [originId, destId]);
 
   useEffect(() => {
-    document.documentElement.lang = isFa ? "fa" : "en"
-    document.documentElement.dir = isFa ? "rtl" : "ltr"
-  }, [isFa])
+    document.documentElement.lang = isFa ? "fa" : "en";
+    document.documentElement.dir = isFa ? "rtl" : "ltr";
+  }, [isFa]);
 
   function swap() {
-    setOriginId(destId)
-    setDestId(originId)
+    setOriginId(destId);
+    setDestId(originId);
   }
 
-  const selected = selectedId ? STATION_MAP.get(selectedId) : null
+  const selected = selectedId ? STATION_MAP.get(selectedId) : null;
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "route", label: t.tabRoute, icon: <RouteIcon className="size-5" /> },
-    { id: "stations", label: t.tabStations, icon: <ListTree className="size-5" /> },
-    { id: "nearby", label: t.tabNearby, icon: <LocateFixed className="size-5" /> },
+    {
+      id: "stations",
+      label: t.tabStations,
+      icon: <ListTree className="size-5" />,
+    },
+    {
+      id: "nearby",
+      label: t.tabNearby,
+      icon: <LocateFixed className="size-5" />,
+    },
     { id: "map", label: t.tabMap, icon: <MapIcon className="size-5" /> },
-  ]
+  ];
 
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground">
@@ -91,7 +102,12 @@ export default function Page() {
         {/* desktop tabs */}
         <nav className="hidden items-center gap-1 md:flex">
           {tabs.map((tb) => (
-            <TabButton key={tb.id} active={tab === tb.id} onClick={() => setTab(tb.id)} icon={tb.icon}>
+            <TabButton
+              key={tb.id}
+              active={tab === tb.id}
+              onClick={() => setTab(tb.id)}
+              icon={tb.icon}
+            >
               {tb.label}
             </TabButton>
           ))}
@@ -130,12 +146,12 @@ export default function Page() {
           <StationsTab
             lang={lang}
             onSetOrigin={(id) => {
-              setOriginId(id)
-              setTab("route")
+              setOriginId(id);
+              setTab("route");
             }}
             onSetDest={(id) => {
-              setDestId(id)
-              setTab("route")
+              setDestId(id);
+              setTab("route");
             }}
           />
         )}
@@ -144,12 +160,12 @@ export default function Page() {
           <NearbyTab
             lang={lang}
             onSetOrigin={(id) => {
-              setOriginId(id)
-              setTab("route")
+              setOriginId(id);
+              setTab("route");
             }}
             onSetDest={(id) => {
-              setDestId(id)
-              setTab("route")
+              setDestId(id);
+              setTab("route");
             }}
           />
         )}
@@ -171,14 +187,14 @@ export default function Page() {
                   lang={lang}
                   onClose={() => setSelectedId(null)}
                   onSetOrigin={() => {
-                    setOriginId(selected.id)
-                    setSelectedId(null)
-                    setTab("route")
+                    setOriginId(selected.id);
+                    setSelectedId(null);
+                    setTab("route");
                   }}
                   onSetDest={() => {
-                    setDestId(selected.id)
-                    setSelectedId(null)
-                    setTab("route")
+                    setDestId(selected.id);
+                    setSelectedId(null);
+                    setTab("route");
                   }}
                 />
               </div>
@@ -206,7 +222,7 @@ export default function Page() {
         ))}
       </nav>
     </div>
-  )
+  );
 }
 
 function RouteView({
@@ -220,29 +236,45 @@ function RouteView({
   setSelectedId,
   swap,
 }: {
-  lang: Lang
-  originId: string | null
-  destId: string | null
-  selectedId: string | null
-  route: ReturnType<typeof findRoute>
-  setOriginId: (id: string | null) => void
-  setDestId: (id: string | null) => void
-  setSelectedId: (id: string | null) => void
-  swap: () => void
+  lang: Lang;
+  originId: string | null;
+  destId: string | null;
+  selectedId: string | null;
+  route: ReturnType<typeof findRoute>;
+  setOriginId: (id: string | null) => void;
+  setDestId: (id: string | null) => void;
+  setSelectedId: (id: string | null) => void;
+  swap: () => void;
 }) {
-  const t = STRINGS[lang]
-  const isFa = lang === "fa"
-  const selected = selectedId ? STATION_MAP.get(selectedId) : null
+  const t = STRINGS[lang];
+  const isFa = lang === "fa";
+  const selected = selectedId ? STATION_MAP.get(selectedId) : null;
 
   return (
     <div className="flex size-full min-h-0 flex-col md:flex-row">
       <aside className="flex max-h-[45dvh] shrink-0 flex-col gap-3 overflow-y-auto border-b border-border bg-background p-4 md:max-h-none md:w-[380px] md:border-b-0 md:border-e">
         <div className="flex items-end gap-2">
           <div className="flex flex-1 flex-col gap-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.from}</label>
-            <StationCombobox value={originId} onChange={setOriginId} placeholder={t.origin} lang={lang} accentClass="bg-primary" />
-            <label className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.to}</label>
-            <StationCombobox value={destId} onChange={setDestId} placeholder={t.destination} lang={lang} accentClass="bg-foreground" />
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t.from}
+            </label>
+            <StationCombobox
+              value={originId}
+              onChange={setOriginId}
+              placeholder={t.origin}
+              lang={lang}
+              accentClass="bg-primary"
+            />
+            <label className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t.to}
+            </label>
+            <StationCombobox
+              value={destId}
+              onChange={setDestId}
+              placeholder={t.destination}
+              lang={lang}
+              accentClass="bg-foreground"
+            />
           </div>
           <button
             type="button"
@@ -261,12 +293,12 @@ function RouteView({
               lang={lang}
               onClose={() => setSelectedId(null)}
               onSetOrigin={() => {
-                setOriginId(selected.id)
-                setSelectedId(null)
+                setOriginId(selected.id);
+                setSelectedId(null);
               }}
               onSetDest={() => {
-                setDestId(selected.id)
-                setSelectedId(null)
+                setDestId(selected.id);
+                setSelectedId(null);
               }}
             />
           ) : null}
@@ -275,7 +307,9 @@ function RouteView({
             <RoutePanel route={route} lang={lang} />
           ) : !selected ? (
             <p className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
-              {originId && destId && originId === destId ? t.sameStation : t.pickBoth}
+              {originId && destId && originId === destId
+                ? t.sameStation
+                : t.pickBoth}
             </p>
           ) : null}
 
@@ -287,17 +321,26 @@ function RouteView({
         </div>
 
         <div className="mt-auto pt-2">
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.lines}</p>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t.lines}
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {LINE_NUMBERS.map((l) => (
-              <span key={l} className="flex items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-xs">
-                <span className="size-2.5 rounded-full" style={{ backgroundColor: LINE_COLORS[l] }} />
+              <span
+                key={l}
+                className="flex items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-xs"
+              >
+                <span
+                  className="size-2.5 rounded-full"
+                  style={{ backgroundColor: LINE_COLORS[l] }}
+                />
                 {t.line} {persianDigits(l, lang)}
               </span>
             ))}
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            {persianDigits(STATIONS.length, lang)} {isFa ? "ایستگاه" : "stations"}
+            {persianDigits(STATIONS.length, lang)}{" "}
+            {isFa ? "ایستگاه" : "stations"}
           </p>
 
           <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-[11px] text-muted-foreground">
@@ -307,9 +350,12 @@ function RouteView({
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 transition-colors hover:text-foreground"
             >
-              <Github className="size-3.5" />
+              <ExternalLink className="size-3.5" />
               <span>
-                {t.builtBy} <span className="font-medium text-foreground">aliinreallife</span>
+                {t.builtBy}{" "}
+                <span className="font-medium text-foreground">
+                  aliinreallife
+                </span>
               </span>
             </a>
             <a
@@ -320,7 +366,10 @@ function RouteView({
             >
               <Database className="size-3.5" />
               <span>
-                {t.dataBy} <span className="font-medium text-foreground">tehran-metro-data</span>
+                {t.dataBy}{" "}
+                <span className="font-medium text-foreground">
+                  tehran-metro-data
+                </span>
               </span>
             </a>
           </div>
@@ -339,7 +388,7 @@ function RouteView({
         />
       </main>
     </div>
-  )
+  );
 }
 
 function TabButton({
@@ -348,10 +397,10 @@ function TabButton({
   icon,
   children,
 }: {
-  active: boolean
-  onClick: () => void
-  icon: React.ReactNode
-  children: React.ReactNode
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
     <button
@@ -359,11 +408,13 @@ function TabButton({
       onClick={onClick}
       className={cn(
         "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+        active
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >
       {icon}
       {children}
     </button>
-  )
+  );
 }
