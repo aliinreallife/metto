@@ -12,6 +12,7 @@
     "@base-ui/react": "^1.5.0",
     "@types/leaflet": "^1.9.21",
     "@vercel/analytics": "1.6.1",
+    "@vercel/speed-insights": "^2.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
