@@ -321,7 +321,7 @@ function RouteView({
               onClick={locateOrigin}
               disabled={locating}
               aria-label="Use my location"
-              className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50"
+              className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50"
             >
               {locating ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -347,7 +347,7 @@ function RouteView({
               type="button"
               onClick={swap}
               aria-label={t.swap}
-              className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent"
+              className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent"
             >
               <ArrowUpDown className="size-4" />
             </button>
@@ -408,9 +408,12 @@ function RouteView({
                   : t.pickBoth}
               </p>
               {!originId && (
-                <p className="mt-2 flex items-center justify-center gap-1.5 text-xs">
-                  <LocateFixed className="size-3.5 shrink-0" />
-                  {t.orUseGps}
+                <p className="mt-2 flex flex-wrap items-center justify-center gap-1 text-xs">
+                  {isFa ? "یا روی" : "or tap"}
+                  <LocateFixed className="inline size-3.5 shrink-0" />
+                  {isFa
+                    ? "ضربه بزنید تا نزدیک‌ترین ایستگاه مبدأ شود"
+                    : "to set your nearest station as origin"}
                 </p>
               )}
             </div>

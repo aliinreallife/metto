@@ -49,6 +49,8 @@ export function RoutePanel({
         />
       </div>
 
+      <p className="text-[11px] text-muted-foreground">{t.timeNote}</p>
+
       <ol className="flex flex-col gap-2">
         {route.segments.map((seg, i) => (
           <li key={i} className="flex flex-col gap-2">
