@@ -25,6 +25,13 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
   const [query, setQuery] = useState("");
   const [lineFilter, setLineFilter] = useState<number | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [branchIndex, setBranchIndex] = useState(0);
+
+  const lineOrder = useMemo(
+    () => (lineFilter !== null ? orderLineStations(lineFilter) : null),
+    [lineFilter],
+  );
+  const isForked = (lineOrder?.chains.length ?? 0) > 1;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -40,8 +47,9 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
       );
     }
 
-    // Order by line position.
-    const chain = orderLineStations(lineFilter);
+    const chain = isForked
+      ? (lineOrder?.chains[branchIndex] ?? [])
+      : (lineOrder?.chains[0] ?? []);
     const orderMap = new Map<string, number>();
     chain.forEach((id, idx) => orderMap.set(id, idx));
     return filtered.sort((a, b) => {
@@ -52,7 +60,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
       if (ob !== undefined) return 1;
       return isFa ? a.fa.localeCompare(b.fa, "fa") : a.name.localeCompare(b.name);
     });
-  }, [query, lineFilter, isFa]);
+  }, [query, lineFilter, isFa, branchIndex, isForked, lineOrder]);
 
   return (
     <div className="mx-auto flex h-full w-full max-w-2xl flex-col gap-3 p-4">
@@ -69,7 +77,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
       <div className="flex flex-wrap gap-1.5">
         <FilterChip
           active={lineFilter === null}
-          onClick={() => setLineFilter(null)}
+          onClick={() => { setLineFilter(null); setBranchIndex(0); }}
         >
           {t.all}
         </FilterChip>
@@ -77,13 +85,31 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
           <FilterChip
             key={l}
             active={lineFilter === l}
-            onClick={() => setLineFilter(l)}
+            onClick={() => { setLineFilter(l); setBranchIndex(0); }}
             dot={LINE_COLORS[l]}
           >
             {t.line} {persianDigits(l, lang)}
           </FilterChip>
         ))}
       </div>
+
+      {isForked && lineOrder && (
+        <div className="flex gap-1.5">
+          {lineOrder.terminals.map((termId, i) => {
+            const s = STATIONS.find((st) => st.id === termId);
+            const label = s ? (isFa ? s.fa : s.name) : termId;
+            return (
+              <FilterChip
+                key={i}
+                active={branchIndex === i}
+                onClick={() => setBranchIndex(i)}
+              >
+                {isFa ? "تا " : "To "}{label}
+              </FilterChip>
+            );
+          })}
+        </div>
+      )}
 
       <p className="text-xs text-muted-foreground">
         {persianDigits(results.length, lang)} {isFa ? "ایستگاه" : "stations"}
