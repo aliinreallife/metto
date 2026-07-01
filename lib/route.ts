@@ -218,6 +218,46 @@ export function normalize(input: string): string {
     .trim();
 }
 
+/**
+ * Walk a line's adjacency to produce an ordered list of station IDs
+ * from one terminal to the other.
+ */
+export function orderLineStations(line: number): string[] {
+  const onLine = STATIONS.filter((s) => s.lines.includes(line));
+  if (onLine.length === 0) return [];
+
+  // Build same-line adjacency (undirected).
+  const adj = new Map<string, string[]>();
+  for (const s of onLine) adj.set(s.id, []);
+  for (const s of onLine) {
+    for (const n of s.relations) {
+      if (!adj.has(n)) continue;
+      if (!adj.get(s.id)!.includes(n)) adj.get(s.id)!.push(n);
+      if (!adj.get(n)!.includes(s.id)) adj.get(n)!.push(s.id);
+    }
+  }
+
+  // Find a terminal (1 same-line neighbor).
+  let start = onLine[0].id;
+  for (const [id, neighbors] of adj) {
+    if (neighbors.length === 1) { start = id; break; }
+  }
+
+  // Walk from terminal to the other end.
+  const chain: string[] = [];
+  const visited = new Set<string>();
+  let prev = "";
+  let cur = start;
+  while (cur && !visited.has(cur)) {
+    visited.add(cur);
+    chain.push(cur);
+    const neighbors = (adj.get(cur) ?? []).filter((n) => n !== prev);
+    prev = cur;
+    cur = neighbors[0] ?? "";
+  }
+  return chain;
+}
+
 export function searchStations(query: string, limit = 30): Station[] {
   const q = normalize(query);
   if (!q)
