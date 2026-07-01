@@ -160,9 +160,23 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
         </section>
 
         {!coords ? (
-          <p className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
-            {t.setLocation}
-          </p>
+          <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
+            <p>{t.setLocation}</p>
+            <p className="mt-2 text-[11px]">
+              {t.nearbyHintBefore}{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAmenities(["wc"]);
+                  useGps();
+                }}
+                className="cursor-pointer font-semibold text-primary hover:underline"
+              >
+                {t.nearbyHintExample}
+              </button>{" "}
+              {t.nearbyHintAfter}
+            </p>
+          </div>
         ) : (
           <>
             {/* Amenity filter */}
