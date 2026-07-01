@@ -21,6 +21,7 @@ type Props = {
   initialCenter?: [number, number]
   initialZoom?: number
   onViewChange?: (center: [number, number], zoom: number) => void
+  placeMarker?: { lat: number; lng: number; label: string } | null
 }
 
 const TEHRAN_CENTER: [number, number] = [35.7, 51.38]
@@ -29,13 +30,14 @@ const SATELLITE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Worl
 const SATELLITE_ATTR = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 const LABELS_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
 
-export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, initialCenter, initialZoom, onViewChange }: Props) {
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, initialCenter, initialZoom, onViewChange, placeMarker }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
   const tileLayerRef = useRef<L.TileLayer | null>(null)
   const labelsLayerRef = useRef<L.TileLayer | null>(null)
   const gpsMarkerRef = useRef<L.CircleMarker | null>(null)
+  const placeMarkerRef = useRef<L.CircleMarker | null>(null)
   const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: typeof STATIONS[0] }>>(new Map())
   const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null })
   const [hasGps, setHasGps] = useState(false)
@@ -241,6 +243,34 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 14 })
   }, [route])
 
+  // Render place marker when placeMarker prop changes.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    // Remove old place marker
+    if (placeMarkerRef.current) {
+      placeMarkerRef.current.remove()
+      placeMarkerRef.current = null
+    }
+
+    if (!placeMarker) return
+
+    const marker = L.circleMarker([placeMarker.lat, placeMarker.lng], {
+      radius: 10,
+      color: "#f59e0b",
+      weight: 3,
+      fillColor: "#fbbf24",
+      fillOpacity: 0.9,
+      opacity: 1,
+    }).addTo(map)
+    marker.bindTooltip(placeMarker.label, { direction: "top", className: "station-label" })
+    placeMarkerRef.current = marker
+
+    // Pan to show the place
+    map.setView([placeMarker.lat, placeMarker.lng], 14)
+  }, [placeMarker])
+
   function locateMe() {
     if (!mapRef.current || !navigator.geolocation) return
     navigator.geolocation.getCurrentPosition(
@@ -253,7 +283,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         // Remove old GPS marker
         if (gpsMarkerRef.current) {
           gpsMarkerRef.current.remove()
-          gpsMarkerRef.current = null
+      gpsMarkerRef.current = null
+      placeMarkerRef.current = null
         }
 
         // Create pulsing GPS marker

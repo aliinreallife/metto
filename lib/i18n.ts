@@ -64,6 +64,12 @@ export const STRINGS = {
     away: "away",
     navigate: "Get there",
     getThereToStart: "Get to your starting point",
+    places: "Places",
+    nearestStation: "Nearest station",
+    walkDistance: "walk",
+    noPlacesFound: "No places found",
+    searchingPlaces: "Searching places…",
+    stationDetermined: "Nearest station found",
 
     timeNote: "⚠ Travel time is a work in progress and may not be accurate.",
 
@@ -137,6 +143,12 @@ export const STRINGS = {
     away: "فاصله",
     navigate: "رفتن به آنجا",
     getThereToStart: "رفتن به مبدأ",
+    places: "مکان‌ها",
+    nearestStation: "نزدیک‌ترین ایستگاه",
+    walkDistance: "پیاده",
+    noPlacesFound: "مکانی یافت نشد",
+    searchingPlaces: "در حال جستجوی مکان‌ها…",
+    stationDetermined: "نزدیک‌ترین ایستگاه یافت شد",
 
     timeNote: "⚠ زمان سفر در حال توسعه است و ممکن است دقیق نباشد.",
 

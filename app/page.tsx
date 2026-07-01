@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   ArrowUpDown,
+  Building2,
   TrainFront,
   Globe,
   Map as MapIcon,
@@ -16,6 +17,7 @@ import {
   MapPin,
   Layers,
   Satellite,
+  X,
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
 import { RoutePanel } from "@/components/route-panel";
@@ -24,7 +26,7 @@ import { StationsTab } from "@/components/stations-tab";
 import { NearbyTab } from "@/components/nearby-tab";
 import { InstallButton } from "@/components/pwa";
 import { STATION_MAP, findRoute } from "@/lib/route";
-import { geoUrl, nearestStations } from "@/lib/geo";
+import { geoUrl, nearestStations, formatDistance, haversineKm } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +51,7 @@ export default function Page() {
   const [destId, setDestId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapMode, setMapMode] = useState<"satellite" | "schematic">("satellite");
+  const [placeMarker, setPlaceMarker] = useState<{ lat: number; lng: number; label: string } | null>(null);
 
   // View state for map sync
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
@@ -72,6 +75,7 @@ export default function Page() {
   function swap() {
     setOriginId(destId);
     setDestId(originId);
+    setPlaceMarker(null);
   }
 
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
@@ -143,6 +147,7 @@ export default function Page() {
             setOriginId={setOriginId}
             setDestId={setDestId}
             setSelectedId={setSelectedId}
+            setPlaceMarker={setPlaceMarker}
             swap={swap}
           />
         )}
@@ -188,6 +193,7 @@ export default function Page() {
               initialCenter={mapView.center}
               initialZoom={mapView.zoom}
               onViewChange={(center, zoom) => setMapView({ center, zoom })}
+              placeMarker={placeMarker}
             />
 
             {/* Map mode toggle */}
@@ -302,6 +308,7 @@ function RouteView({
   setOriginId,
   setDestId,
   setSelectedId,
+  setPlaceMarker,
   swap,
 }: {
   lang: Lang;
@@ -312,12 +319,44 @@ function RouteView({
   setOriginId: (id: string | null) => void;
   setDestId: (id: string | null) => void;
   setSelectedId: (id: string | null) => void;
+  setPlaceMarker: (marker: { lat: number; lng: number; label: string } | null) => void;
   swap: () => void;
 }) {
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
   const [locating, setLocating] = useState(false);
+  const [placeInfo, setPlaceInfo] = useState<{
+    placeName: string;
+    stationName: string;
+    distanceKm: number;
+  } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  function handlePlaceSelect(place: { lat: number; lng: number; name: string }, asOrigin: boolean) {
+    const nearest = nearestStations(place.lat, place.lng, { limit: 1 });
+    if (nearest.length === 0) return;
+
+    const station = nearest[0].station;
+    const km = haversineKm(place.lat, place.lng, station.lat, station.lng);
+
+    if (asOrigin) {
+      setOriginId(station.id);
+    } else {
+      setDestId(station.id);
+    }
+
+    setPlaceInfo({
+      placeName: place.name,
+      stationName: isFa ? station.fa : station.name,
+      distanceKm: km,
+    });
+
+    setPlaceMarker({ lat: place.lat, lng: place.lng, label: place.name });
+
+    setToast(`${t.stationDetermined}: ${isFa ? station.fa : station.name}`);
+    setTimeout(() => setToast(null), 3000);
+  }
 
   function locateOrigin() {
     if (!navigator.geolocation) return;
@@ -348,7 +387,12 @@ function RouteView({
             <div className="flex-1">
               <StationCombobox
                 value={originId}
-                onChange={setOriginId}
+                onChange={(id) => {
+                  setOriginId(id);
+                  setPlaceInfo(null);
+                  setPlaceMarker(null);
+                }}
+                onPlaceSelect={(p) => handlePlaceSelect(p, true)}
                 placeholder={t.origin}
                 lang={lang}
                 accentClass="bg-primary"
@@ -375,7 +419,12 @@ function RouteView({
             <div className="flex-1">
               <StationCombobox
                 value={destId}
-                onChange={setDestId}
+                onChange={(id) => {
+                  setDestId(id);
+                  setPlaceInfo(null);
+                  setPlaceMarker(null);
+                }}
+                onPlaceSelect={(p) => handlePlaceSelect(p, false)}
                 placeholder={t.destination}
                 lang={lang}
                 accentClass="bg-foreground"
@@ -383,7 +432,10 @@ function RouteView({
             </div>
             <button
               type="button"
-              onClick={swap}
+              onClick={() => {
+                setPlaceInfo(null);
+                swap();
+              }}
               aria-label={t.swap}
               className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent"
             >
@@ -391,6 +443,30 @@ function RouteView({
             </button>
           </div>
         </div>
+
+        {placeInfo && (
+          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <Building2 className="size-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1 truncate">
+              <span className="font-medium">{placeInfo.placeName}</span>
+              <span className="mx-1.5 text-muted-foreground">→</span>
+              <span>{t.nearestStation}: <span className="font-medium">{placeInfo.stationName}</span></span>
+              <span className="ml-1.5 text-muted-foreground">
+                ({formatDistance(placeInfo.distanceKm, lang)} {t.walkDistance})
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setPlaceInfo(null);
+                setPlaceMarker(null);
+              }}
+              className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        )}
 
         {selected ? (
           <StationDetail
@@ -462,6 +538,12 @@ function RouteView({
           </p>
         )}
       </div>
+
+      {toast && (
+        <div className="pointer-events-none fixed bottom-20 left-1/2 z-[600] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-medium text-background shadow-lg">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
