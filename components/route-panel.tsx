@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ChevronDown,
   Clock,
+  Compass,
   Repeat,
   TrainFront,
   Footprints,
@@ -30,8 +31,8 @@ export function RoutePanel({
   const mins = Math.round(route.estimatedSeconds / 60);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-3 gap-2">
+    <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-3 gap-1.5">
         <Stat
           icon={<TrainFront className="size-4" />}
           value={persianDigits(route.numStops, lang)}
@@ -51,12 +52,12 @@ export function RoutePanel({
 
       <p className="text-[11px] text-muted-foreground">{t.timeNote}</p>
 
-      <ol className="flex flex-col gap-2">
+      <ol className="flex flex-col gap-1.5">
         {route.segments.map((seg, i) => (
-          <li key={i} className="flex flex-col gap-2">
+          <li key={i} className="flex flex-col gap-1">
             {i > 0 && (
-              <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground">
-                <Footprints className="size-3.5" />
+              <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-medium text-muted-foreground">
+                <Footprints className="size-3 shrink-0" />
                 <span>
                   {t.transferTo} {persianDigits(seg.line, lang)} {t.via}{" "}
                   {name(seg.stations[0])}
@@ -66,6 +67,7 @@ export function RoutePanel({
             <SegmentCard
               line={seg.line}
               stations={seg.stations}
+              terminal={seg.terminal}
               name={name}
               lang={lang}
             />
@@ -86,7 +88,7 @@ function Stat({
   label: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-0.5 rounded-lg border border-border bg-card px-2 py-2.5">
+    <div className="flex flex-col items-center gap-0.5 rounded-lg border border-border bg-card px-2 py-2">
       <span className="text-muted-foreground">{icon}</span>
       <span className="text-lg font-bold leading-none">{value}</span>
       <span className="text-[11px] text-muted-foreground">{label}</span>
@@ -97,11 +99,13 @@ function Stat({
 function SegmentCard({
   line,
   stations,
+  terminal,
   name,
   lang,
 }: {
   line: number;
   stations: string[];
+  terminal: string;
   name: (id: string) => string;
   lang: Lang;
 }) {
@@ -115,7 +119,7 @@ function SegmentCard({
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-stretch gap-3 p-3">
+      <div className="flex gap-3 p-3">
         <div className="flex flex-col items-center pt-0.5">
           <span
             className="size-3 rounded-full ring-2 ring-offset-1 ring-offset-card"
@@ -130,8 +134,8 @@ function SegmentCard({
             style={{ backgroundColor: color }}
           />
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-center gap-2">
+        <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <span
               className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold text-white"
               style={{ backgroundColor: color }}
@@ -142,36 +146,87 @@ function SegmentCard({
               {persianDigits(hops, lang)} {t.stops}
             </span>
           </div>
-          <div className="truncate text-sm font-semibold">{name(board)}</div>
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            className="my-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
-            disabled={intermediates.length === 0}
+          <div
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold"
+            style={{ backgroundColor: `${color}22`, color }}
           >
-            <ChevronDown
-              className={cn(
-                "size-3.5 transition-transform",
-                open && "rotate-180",
-              )}
-            />
-            {intermediates.length > 0
-              ? `${persianDigits(intermediates.length, lang)} ${t.stops}`
-              : "—"}
-          </button>
-          {open && intermediates.length > 0 && (
-            <ul className="mb-1.5 ml-1 flex flex-col gap-1 border-l border-dashed border-border pl-3 text-xs text-muted-foreground">
-              {intermediates.map((id) => (
-                <li key={id} className="truncate">
-                  {name(id)}
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="flex items-center gap-1.5 truncate text-sm font-semibold">
-            <ArrowRight className="size-3.5 shrink-0 text-muted-foreground rtl:rotate-180" />
-            {name(alight)}
+            <Compass className="size-3.5 shrink-0" />
+            <span>{t.towards}</span>
+            <span className="font-bold">{name(terminal)}</span>
           </div>
+
+          {/* route spine: board -- (intermediate ticks) -- alight, stretches to
+              fill the row instead of leaving the far edge of the card empty */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-semibold truncate shrink-0 max-w-[38%]">
+              {name(board)}
+            </span>
+            <div className="relative h-1.5 flex-1">
+              <div
+                className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2"
+                style={{ backgroundColor: `${color}55` }}
+              />
+              {intermediates.length === 0 ? null : intermediates.length <=
+                6 ? (
+                <div className="absolute inset-0 flex items-center justify-between px-0.5">
+                  {intermediates.map((id) => (
+                    <span
+                      key={id}
+                      className="size-1.5 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-card"
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <span
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white"
+                  style={{ backgroundColor: color }}
+                >
+                  {persianDigits(intermediates.length, lang)}
+                </span>
+              )}
+            </div>
+            <ArrowRight
+              className="size-3.5 shrink-0 rtl:rotate-180"
+              style={{ color }}
+            />
+            <span className="font-semibold truncate shrink-0 max-w-[38%]">
+              {name(alight)}
+            </span>
+          </div>
+
+          {intermediates.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => setOpen((o) => !o)}
+                className="flex w-full items-center justify-between text-xs text-muted-foreground hover:text-foreground"
+              >
+                <span className="flex items-center gap-1">
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform",
+                      open && "rotate-180",
+                    )}
+                  />
+                  {persianDigits(intermediates.length, lang)} {t.stops}
+                </span>
+                <span
+                  className="h-px flex-1 mx-2 opacity-40"
+                  style={{ backgroundColor: color }}
+                />
+              </button>
+              {open && (
+                <ul className="ml-1 flex flex-col gap-0.5 border-l border-dashed border-border pl-3 text-xs text-muted-foreground">
+                  {intermediates.map((id) => (
+                    <li key={id} className="truncate">
+                      {name(id)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

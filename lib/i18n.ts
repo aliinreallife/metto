@@ -67,6 +67,8 @@ export const STRINGS = {
 
     timeNote: "⚠ Travel time is a work in progress and may not be accurate.",
 
+    towards: "Towards",
+
     changeLocation: "Change",
     credits: "Credits",
     builtBy: "Built by",
@@ -137,6 +139,8 @@ export const STRINGS = {
     getThereToStart: "رفتن به مبدأ",
 
     timeNote: "⚠ زمان سفر در حال توسعه است و ممکن است دقیق نباشد.",
+
+    towards: "به سمت",
 
     changeLocation: "تغییر",
     credits: "اعتبارها",
