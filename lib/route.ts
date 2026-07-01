@@ -218,44 +218,111 @@ export function normalize(input: string): string {
     .trim();
 }
 
-/**
- * Walk a line's adjacency to produce an ordered list of station IDs
- * from one terminal to the other.
- */
-export function orderLineStations(line: number): string[] {
-  const onLine = STATIONS.filter((s) => s.lines.includes(line));
-  if (onLine.length === 0) return [];
+export type LineOrder = {
+  chains: string[][]; // one chain per branch (most lines have 1)
+  terminals: string[]; // terminal station ID per chain
+};
 
-  // Build same-line adjacency (undirected).
+/**
+ * Walk a line's adjacency to produce ordered chains of station IDs.
+ * Simple lines return one chain from terminal to terminal.
+ * Lines with a fork (station with ≥3 same-line neighbors) return multiple
+ * chains: the trunk (shared section) + one chain per branch beyond the fork.
+ */
+export function orderLineStations(line: number): LineOrder {
+  const onLine = STATIONS.filter((s) => s.lines.includes(line));
+  if (onLine.length === 0) return { chains: [], terminals: [] };
+
+  // Build same-line adjacency (undirected), skipping self-loops.
   const adj = new Map<string, string[]>();
   for (const s of onLine) adj.set(s.id, []);
   for (const s of onLine) {
     for (const n of s.relations) {
-      if (!adj.has(n)) continue;
+      if (n === s.id || !adj.has(n)) continue;
       if (!adj.get(s.id)!.includes(n)) adj.get(s.id)!.push(n);
       if (!adj.get(n)!.includes(s.id)) adj.get(n)!.push(s.id);
     }
   }
 
-  // Find a terminal (1 same-line neighbor).
-  let start = onLine[0].id;
+  // Find terminals (1 neighbor) and fork points (≥3 neighbors).
+  const terminals: string[] = [];
+  const forkPoints = new Set<string>();
   for (const [id, neighbors] of adj) {
-    if (neighbors.length === 1) { start = id; break; }
+    if (neighbors.length === 1) terminals.push(id);
+    if (neighbors.length >= 3) forkPoints.add(id);
   }
 
-  // Walk from terminal to the other end.
-  const chain: string[] = [];
-  const visited = new Set<string>();
-  let prev = "";
-  let cur = start;
-  while (cur && !visited.has(cur)) {
-    visited.add(cur);
-    chain.push(cur);
-    const neighbors = (adj.get(cur) ?? []).filter((n) => n !== prev);
-    prev = cur;
-    cur = neighbors[0] ?? "";
+  // Simple line: walk from one terminal to the other.
+  if (forkPoints.size === 0 || terminals.length < 3) {
+    const start = terminals[0] ?? onLine[0].id;
+    const chain: string[] = [];
+    const visited = new Set<string>();
+    let prev = "";
+    let cur = start;
+    while (cur && !visited.has(cur)) {
+      visited.add(cur);
+      chain.push(cur);
+      const neighbors = (adj.get(cur) ?? []).filter((n) => n !== prev);
+      prev = cur;
+      cur = neighbors[0] ?? "";
+    }
+    return { chains: [chain], terminals: [chain[chain.length - 1]] };
   }
-  return chain;
+
+  // Forked line: walk from each terminal. At fork points, pick the first
+  // unvisited branch for the trunk; other branches are separate chains.
+  const visited = new Set<string>();
+  const trunk: string[] = [];
+  let trunkTerminal = "";
+  {
+    let prev = "";
+    let cur = terminals[0];
+    while (cur) {
+      trunk.push(cur);
+      visited.add(cur);
+      // If this is a fork, check if we've reached another terminal
+      if (forkPoints.has(cur) && trunk.length > 1) {
+        // Check remaining unvisited neighbors for terminals
+        const unvisited = (adj.get(cur) ?? []).filter(
+          (n) => n !== prev && !visited.has(n),
+        );
+        for (const u of unvisited) {
+          if (terminals.includes(u)) {
+            trunkTerminal = u;
+          }
+        }
+        if (trunkTerminal) break;
+      }
+      const neighbors = (adj.get(cur) ?? []).filter(
+        (n) => n !== prev && !visited.has(n),
+      );
+      prev = cur;
+      if (neighbors.length === 0) break;
+      cur = neighbors[0];
+    }
+  }
+
+  const chains: string[][] = [trunk];
+  const termIds: string[] = [trunkTerminal || trunk[trunk.length - 1]];
+
+  // Walk from remaining terminals, stop when hitting visited station.
+  for (const start of terminals) {
+    if (visited.has(start)) continue;
+    const path: string[] = [];
+    let prev = "";
+    let cur = start;
+    while (cur && !visited.has(cur)) {
+      path.push(cur);
+      visited.add(cur);
+      const neighbors = (adj.get(cur) ?? []).filter((n) => n !== prev);
+      prev = cur;
+      cur = neighbors[0] ?? "";
+    }
+    if (path.length > 0) chains.push(path);
+    termIds.push(path[path.length - 1]);
+  }
+
+  return { chains, terminals: termIds };
 }
 
 export function searchStations(query: string, limit = 30): Station[] {
