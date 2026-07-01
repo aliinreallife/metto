@@ -21,7 +21,7 @@ type Props = {
   initialCenter?: [number, number]
   initialZoom?: number
   onViewChange?: (center: [number, number], zoom: number) => void
-  placeMarker?: { lat: number; lng: number; label: string } | null
+  placeMarkers?: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest" }>
 }
 
 const TEHRAN_CENTER: [number, number] = [35.7, 51.38]
@@ -30,14 +30,14 @@ const SATELLITE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Worl
 const SATELLITE_ATTR = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 const LABELS_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
 
-export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, initialCenter, initialZoom, onViewChange, placeMarker }: Props) {
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, initialCenter, initialZoom, onViewChange, placeMarkers }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
   const tileLayerRef = useRef<L.TileLayer | null>(null)
   const labelsLayerRef = useRef<L.TileLayer | null>(null)
   const gpsMarkerRef = useRef<L.CircleMarker | null>(null)
-  const placeMarkerRef = useRef<L.CircleMarker | null>(null)
+  const placeLayerRef = useRef<L.LayerGroup | null>(null)
   const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: typeof STATIONS[0] }>>(new Map())
   const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null })
   const [hasGps, setHasGps] = useState(false)
@@ -78,6 +78,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     labelsLayerRef.current = labelsLayer
 
     overlayRef.current = L.layerGroup().addTo(map)
+    placeLayerRef.current = L.layerGroup().addTo(map)
     mapRef.current = map
 
     // Zoom-based label visibility
@@ -88,7 +89,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       for (const [id, { marker, station }] of markersRef.current) {
         const isInterchange = station.lines.length > 1
         const isOnRoute = currentRoute.has(id)
-        const isEndpoint = id === currentOrigin || id === currentDest
+        const isEndpoint = currentOrigin && currentDest && currentOrigin !== currentDest && (id === currentOrigin || id === currentDest)
         const isSelected = id === currentSelected
 
         // Always show: route stations, endpoints, selected
@@ -132,6 +133,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       tileLayerRef.current = null
       labelsLayerRef.current = null
       gpsMarkerRef.current = null
+      placeLayerRef.current = null
       markersRef.current.clear()
     }
   }, [])
@@ -185,7 +187,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     for (const s of STATIONS) {
       const interchange = s.lines.length > 1
       const onRoute = routeStations.has(s.id)
-      const isEndpoint = s.id === originId || s.id === destId
+      const isEndpoint = originId && destId && originId !== destId && (s.id === originId || s.id === destId)
       const dim = hasRoute && !onRoute
       const marker = L.circleMarker([s.lat, s.lng], {
         radius: isEndpoint ? 8 : interchange ? 6 : 4,
@@ -212,7 +214,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       for (const [id, { marker, station }] of markersRef.current) {
         const isInterchange = station.lines.length > 1
         const isOnRoute = routeStations.has(id)
-        const isEndpoint = id === originId || id === destId
+        const isEndpoint = originId && destId && originId !== destId && (id === originId || id === destId)
         const isSelected = id === selectedId
         if (isOnRoute || isEndpoint || isSelected) {
           marker.openTooltip()
@@ -243,33 +245,50 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 14 })
   }, [route])
 
-  // Render place marker when placeMarker prop changes.
+  // Render place markers when placeMarkers prop changes.
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    const layer = placeLayerRef.current
+    if (!map || !layer) return
 
-    // Remove old place marker
-    if (placeMarkerRef.current) {
-      placeMarkerRef.current.remove()
-      placeMarkerRef.current = null
+    layer.clearLayers()
+
+    if (!placeMarkers || placeMarkers.length === 0) return
+
+    const PLACE_STYLE = {
+      origin: {
+        bg: "#22c55e",
+        shadow: "#16a34a",
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><defs><filter id="os" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter></defs><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#22c55e" filter="url(#os)"/><circle cx="14" cy="13" r="6" fill="white"/></svg>`,
+      },
+      dest: {
+        bg: "#ef4444",
+        shadow: "#dc2626",
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><defs><filter id="ds" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter></defs><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#ef4444" filter="url(#ds)"/><circle cx="14" cy="13" r="6" fill="white"/></svg>`,
+      },
+    } as const
+
+    const pts: [number, number][] = []
+    for (const pm of placeMarkers) {
+      const s = PLACE_STYLE[pm.role]
+      const icon = L.divIcon({
+        html: s.svg,
+        className: "",
+        iconSize: [28, 40],
+        iconAnchor: [14, 40],
+        tooltipAnchor: [0, -40],
+      })
+      const marker = L.marker([pm.lat, pm.lng], { icon }).addTo(layer)
+      marker.bindTooltip(pm.label, { direction: "top", className: "station-label" })
+      pts.push([pm.lat, pm.lng])
     }
 
-    if (!placeMarker) return
-
-    const marker = L.circleMarker([placeMarker.lat, placeMarker.lng], {
-      radius: 10,
-      color: "#f59e0b",
-      weight: 3,
-      fillColor: "#fbbf24",
-      fillOpacity: 0.9,
-      opacity: 1,
-    }).addTo(map)
-    marker.bindTooltip(placeMarker.label, { direction: "top", className: "station-label" })
-    placeMarkerRef.current = marker
-
-    // Pan to show the place
-    map.setView([placeMarker.lat, placeMarker.lng], 14)
-  }, [placeMarker])
+    if (pts.length === 1) {
+      map.setView(pts[0], 14)
+    } else if (pts.length > 1) {
+      map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
+    }
+  }, [placeMarkers])
 
   function locateMe() {
     if (!mapRef.current || !navigator.geolocation) return
@@ -283,8 +302,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         // Remove old GPS marker
         if (gpsMarkerRef.current) {
           gpsMarkerRef.current.remove()
-      gpsMarkerRef.current = null
-      placeMarkerRef.current = null
+          gpsMarkerRef.current = null
         }
 
         // Create pulsing GPS marker
