@@ -36,6 +36,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const tileLayerRef = useRef<L.TileLayer | null>(null)
   const labelsLayerRef = useRef<L.TileLayer | null>(null)
   const gpsMarkerRef = useRef<L.CircleMarker | null>(null)
+  const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: typeof STATIONS[0] }>>(new Map())
+  const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null })
   const [hasGps, setHasGps] = useState(false)
   const isFa = lang === "fa"
 
@@ -46,6 +48,9 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (route) for (const h of route.hops) set.add([h.from, h.to].sort().join("|") + "|" + h.line)
     return set
   }, [route])
+
+  // Keep label state ref in sync
+  labelStateRef.current = { routeStations, originId, destId, selectedId }
 
   // Initialize the map once.
   useEffect(() => {
@@ -73,6 +78,43 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     overlayRef.current = L.layerGroup().addTo(map)
     mapRef.current = map
 
+    // Zoom-based label visibility
+    function updateLabels() {
+      const zoom = map.getZoom()
+      const { routeStations: currentRoute, originId: currentOrigin, destId: currentDest, selectedId: currentSelected } = labelStateRef.current
+      const hasRoute = currentRoute.size > 0
+      for (const [id, { marker, station }] of markersRef.current) {
+        const isInterchange = station.lines.length > 1
+        const isOnRoute = currentRoute.has(id)
+        const isEndpoint = id === currentOrigin || id === currentDest
+        const isSelected = id === currentSelected
+
+        // Always show: route stations, endpoints, selected
+        if (isOnRoute || isEndpoint || isSelected) {
+          marker.openTooltip()
+          continue
+        }
+        // Show all stations at zoom >= 14 (including interchanges even with route)
+        if (zoom >= 14) {
+          marker.openTooltip()
+          continue
+        }
+        // When route is active, hide non-route interchange labels below zoom 14
+        if (hasRoute && isInterchange) {
+          marker.closeTooltip()
+          continue
+        }
+        // Show interchanges at zoom >= 12 (no route active)
+        if (isInterchange && zoom >= 12) {
+          marker.openTooltip()
+          continue
+        }
+        // Otherwise hide
+        marker.closeTooltip()
+      }
+    }
+    map.on("zoomend", updateLabels)
+
     // Report view changes to parent.
     const onViewChangeRef = { current: onViewChange }
     map.on("moveend", () => {
@@ -88,6 +130,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       tileLayerRef.current = null
       labelsLayerRef.current = null
       gpsMarkerRef.current = null
+      markersRef.current.clear()
     }
   }, [])
 
@@ -136,6 +179,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     }
 
     // Stations
+    markersRef.current.clear()
     for (const s of STATIONS) {
       const interchange = s.lines.length > 1
       const onRoute = routeStations.has(s.id)
@@ -149,10 +193,37 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         fillOpacity: dim ? 0.3 : 1,
         opacity: dim ? 0.4 : 1,
       })
-      marker.bindTooltip(isFa ? s.fa : s.name, { direction: "top" })
+      marker.bindTooltip(isFa ? s.fa : s.name, {
+        direction: "top",
+        className: "station-label",
+      })
       marker.on("click", () => onSelect(s.id))
-      if (s.id === selectedId) marker.addTo(layer).openTooltip()
-      else marker.addTo(layer)
+      markersRef.current.set(s.id, { marker, station: s })
+      marker.addTo(layer)
+    }
+
+    // Update label visibility based on current zoom
+    const map = mapRef.current
+    if (map) {
+      const zoom = map.getZoom()
+      const hasRoute = routeStations.size > 0
+      for (const [id, { marker, station }] of markersRef.current) {
+        const isInterchange = station.lines.length > 1
+        const isOnRoute = routeStations.has(id)
+        const isEndpoint = id === originId || id === destId
+        const isSelected = id === selectedId
+        if (isOnRoute || isEndpoint || isSelected) {
+          marker.openTooltip()
+        } else if (zoom >= 14) {
+          marker.openTooltip()
+        } else if (hasRoute && isInterchange) {
+          marker.closeTooltip()
+        } else if (isInterchange && zoom >= 12) {
+          marker.openTooltip()
+        } else {
+          marker.closeTooltip()
+        }
+      }
     }
 
     // Re-add GPS marker on top if it exists
