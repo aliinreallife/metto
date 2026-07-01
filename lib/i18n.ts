@@ -81,6 +81,9 @@ export const STRINGS = {
     searchHintBefore: "you could also search places like",
     searchHintExample: "Iran Mall",
     searchHintAfter: "or any place in Tehran",
+    nearbyHintBefore: "you could also find nearest station with",
+    nearbyHintExample: "restroom",
+    nearbyHintAfter: "or any amenity",
   },
   fa: {
     appTitle: "مترو تهران",
@@ -162,6 +165,9 @@ export const STRINGS = {
     searchHintBefore: "می‌توانید مکان‌هایی مثل",
     searchHintExample: "ایران مال",
     searchHintAfter: "یا هر مکانی در تهران را جستجو کنید",
+    nearbyHintBefore: "می‌توانید نزدیک‌ترین ایستگاه با",
+    nearbyHintExample: "سرویس بهداشتی",
+    nearbyHintAfter: "یا هر امکان دیگری پیدا کنید",
   },
 } as const;
 

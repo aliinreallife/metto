@@ -56,7 +56,13 @@ export default function Page() {
   const [originId, setOriginId] = useState<string | null>(null);
   const [destId, setDestId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [mapMode, setMapMode] = useState<"satellite" | "schematic">("satellite");
+  const [mapMode, setMapMode] = useState<"satellite" | "schematic">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("mapMode");
+      if (saved === "satellite" || saved === "schematic") return saved;
+    }
+    return "satellite";
+  });
   const [placeMarkers, setPlaceMarkers] = useState<Array<{ lat: number; lng: number; label: string; role: "origin" | "dest" }>>([]);
   const [originPlaceInfo, setOriginPlaceInfo] = useState<{
     placeName: string;
@@ -91,6 +97,10 @@ export default function Page() {
   useEffect(() => {
     localStorage.setItem("lang", lang);
   }, [lang]);
+
+  useEffect(() => {
+    localStorage.setItem("mapMode", mapMode);
+  }, [mapMode]);
 
   function swap() {
     setOriginId(destId);
