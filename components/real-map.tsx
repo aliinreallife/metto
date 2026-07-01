@@ -1,28 +1,42 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
+import { Plus, Minus, Locate } from "lucide-react"
 import { LINE_COLORS, STATIONS } from "@/lib/metro-data"
 import { buildLineEdges } from "@/lib/graph"
 import { STATION_MAP, type RouteResult } from "@/lib/route"
 import { type Lang } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 
 type Props = {
   lang: Lang
+  mapMode: "satellite" | "schematic"
   route: RouteResult | null
   originId: string | null
   destId: string | null
   selectedId: string | null
   onSelect: (id: string | null) => void
+  initialCenter?: [number, number]
+  initialZoom?: number
+  onViewChange?: (center: [number, number], zoom: number) => void
 }
 
 const TEHRAN_CENTER: [number, number] = [35.7, 51.38]
 
-export function RealMap({ lang, route, originId, destId, selectedId, onSelect }: Props) {
+const SATELLITE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+const SATELLITE_ATTR = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+const LABELS_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
+
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, initialCenter, initialZoom, onViewChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
+  const tileLayerRef = useRef<L.TileLayer | null>(null)
+  const labelsLayerRef = useRef<L.TileLayer | null>(null)
+  const gpsMarkerRef = useRef<L.CircleMarker | null>(null)
+  const [hasGps, setHasGps] = useState(false)
   const isFa = lang === "fa"
 
   const edges = useMemo(() => buildLineEdges(), [])
@@ -37,25 +51,63 @@ export function RealMap({ lang, route, originId, destId, selectedId, onSelect }:
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return
     const map = L.map(containerRef.current, {
-      center: TEHRAN_CENTER,
-      zoom: 11,
-      zoomControl: true,
+      center: initialCenter ?? TEHRAN_CENTER,
+      zoom: initialZoom ?? 11,
+      zoomControl: false,
       attributionControl: true,
     })
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
+
+    // Start in satellite mode
+    const tileLayer = L.tileLayer(SATELLITE_URL, {
+      maxZoom: 18,
+      attribution: SATELLITE_ATTR,
     }).addTo(map)
+    tileLayerRef.current = tileLayer
+
+    const labelsLayer = L.tileLayer(LABELS_URL, {
+      maxZoom: 18,
+      opacity: 0.7,
+    }).addTo(map)
+    labelsLayerRef.current = labelsLayer
+
     overlayRef.current = L.layerGroup().addTo(map)
     mapRef.current = map
+
+    // Report view changes to parent.
+    const onViewChangeRef = { current: onViewChange }
+    map.on("moveend", () => {
+      onViewChangeRef.current?.([map.getCenter().lat, map.getCenter().lng], map.getZoom())
+    })
+
     // Leaflet needs a size invalidation after layout settles.
     setTimeout(() => map.invalidateSize(), 100)
     return () => {
       map.remove()
       mapRef.current = null
       overlayRef.current = null
+      tileLayerRef.current = null
+      labelsLayerRef.current = null
+      gpsMarkerRef.current = null
     }
   }, [])
+
+  // Toggle tile layers when mapMode changes.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const container = map.getContainer()
+
+    if (mapMode === "satellite") {
+      if (tileLayerRef.current && !map.hasLayer(tileLayerRef.current)) tileLayerRef.current.addTo(map)
+      if (labelsLayerRef.current && !map.hasLayer(labelsLayerRef.current)) labelsLayerRef.current.addTo(map)
+      container.style.backgroundColor = ""
+    } else {
+      if (tileLayerRef.current && map.hasLayer(tileLayerRef.current)) map.removeLayer(tileLayerRef.current)
+      if (labelsLayerRef.current && map.hasLayer(labelsLayerRef.current)) map.removeLayer(labelsLayerRef.current)
+      const bg = getComputedStyle(document.documentElement).getPropertyValue("--background").trim()
+      container.style.backgroundColor = bg || "#fff"
+    }
+  }, [mapMode])
 
   // Redraw overlay whenever the route/selection changes.
   useEffect(() => {
@@ -102,6 +154,9 @@ export function RealMap({ lang, route, originId, destId, selectedId, onSelect }:
       if (s.id === selectedId) marker.addTo(layer).openTooltip()
       else marker.addTo(layer)
     }
+
+    // Re-add GPS marker on top if it exists
+    if (gpsMarkerRef.current) gpsMarkerRef.current.addTo(layer)
   }, [edges, route, routeStations, routeEdgeKeys, originId, destId, selectedId, isFa, onSelect])
 
   // Fit to the route bounds when it changes.
@@ -115,5 +170,79 @@ export function RealMap({ lang, route, originId, destId, selectedId, onSelect }:
     if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 14 })
   }, [route])
 
-  return <div ref={containerRef} className="size-full" aria-label="Tehran metro on real map" />
+  function locateMe() {
+    if (!mapRef.current || !navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const map = mapRef.current
+        if (!map) return
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+
+        // Remove old GPS marker
+        if (gpsMarkerRef.current) {
+          gpsMarkerRef.current.remove()
+          gpsMarkerRef.current = null
+        }
+
+        // Create pulsing GPS marker
+        const marker = L.circleMarker([lat, lng], {
+          radius: 8,
+          color: "#3b82f6",
+          weight: 3,
+          fillColor: "#60a5fa",
+          fillOpacity: 0.9,
+          opacity: 1,
+        }).addTo(map)
+        marker.bindTooltip(isFa ? "شما اینجا هید" : "You are here", { direction: "top" })
+        gpsMarkerRef.current = marker
+        setHasGps(true)
+
+        // Pan to location
+        map.setView([lat, lng], 14)
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000 },
+    )
+  }
+
+  return (
+    <div className="relative size-full">
+      <div ref={containerRef} className="size-full" aria-label="Tehran metro on real map" />
+      <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-1.5">
+        <MapBtn label="Zoom in" onClick={() => mapRef.current?.zoomIn()}>
+          <Plus className="size-4" />
+        </MapBtn>
+        <MapBtn label="Zoom out" onClick={() => mapRef.current?.zoomOut()}>
+          <Minus className="size-4" />
+        </MapBtn>
+        <MapBtn label="Locate me" onClick={locateMe}>
+          <Locate className="size-4" />
+        </MapBtn>
+      </div>
+    </div>
+  )
+}
+
+function MapBtn({
+  children,
+  label,
+  onClick,
+}: {
+  children: React.ReactNode
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={cn(
+        "flex size-9 items-center justify-center rounded-lg border border-border bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent",
+      )}
+    >
+      {children}
+    </button>
+  )
 }

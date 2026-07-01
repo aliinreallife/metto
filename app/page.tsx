@@ -14,18 +14,18 @@ import {
   Database,
   Loader2,
   MapPin,
+  Layers,
+  Satellite,
 } from "lucide-react";
-import { MetroMap } from "@/components/metro-map";
 import { StationCombobox } from "@/components/station-combobox";
 import { RoutePanel } from "@/components/route-panel";
 import { StationDetail } from "@/components/station-detail";
 import { StationsTab } from "@/components/stations-tab";
 import { NearbyTab } from "@/components/nearby-tab";
 import { InstallButton } from "@/components/pwa";
-import { LINE_COLORS, STATIONS } from "@/lib/metro-data";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { geoUrl, nearestStations } from "@/lib/geo";
-import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { STRINGS, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const RealMap = dynamic(
@@ -42,16 +42,19 @@ const RealMap = dynamic(
 
 type Tab = "route" | "stations" | "nearby" | "map";
 
-const LINE_NUMBERS = Object.keys(LINE_COLORS)
-  .map(Number)
-  .sort((a, b) => a - b);
-
 export default function Page() {
   const [lang, setLang] = useState<Lang>("fa");
   const [tab, setTab] = useState<Tab>("route");
   const [originId, setOriginId] = useState<string | null>(null);
   const [destId, setDestId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mapMode, setMapMode] = useState<"satellite" | "schematic">("satellite");
+
+  // View state for map sync
+  const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
+    center: [35.7, 51.38],
+    zoom: 11,
+  });
 
   const t = STRINGS[lang];
   const isFa = lang === "fa";
@@ -176,12 +179,47 @@ export default function Page() {
           <div className="relative size-full">
             <RealMap
               lang={lang}
+              mapMode={mapMode}
               route={route}
               originId={originId}
               destId={destId}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              initialCenter={mapView.center}
+              initialZoom={mapView.zoom}
+              onViewChange={(center, zoom) => setMapView({ center, zoom })}
             />
+
+            {/* Map mode toggle */}
+            <div className="absolute top-3 left-3 z-[500] flex overflow-hidden rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur">
+              <button
+                type="button"
+                onClick={() => setMapMode("satellite")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors",
+                  mapMode === "satellite"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent",
+                )}
+              >
+                <Satellite className="size-3.5" />
+                {t.geographic}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapMode("schematic")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors",
+                  mapMode === "schematic"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent",
+                )}
+              >
+                <Layers className="size-3.5" />
+                {t.schematic}
+              </button>
+            </div>
+
             {selected && (
               <div className="absolute inset-x-3 bottom-3 z-[500] mx-auto max-w-md">
                 <StationDetail
@@ -300,8 +338,8 @@ function RouteView({
   }
 
   return (
-    <div className="flex size-full flex-col overflow-y-auto md:min-h-0 md:flex-row md:overflow-hidden">
-      <aside className="flex shrink-0 flex-col gap-3 border-b border-border bg-background p-4 md:w-[380px] md:overflow-y-auto md:border-b-0 md:border-e">
+    <div className="flex size-full flex-col overflow-y-auto p-4 md:items-center md:p-6">
+      <div className="flex w-full max-w-lg flex-col gap-3">
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t.from}
@@ -354,145 +392,76 @@ function RouteView({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
-          {selected ? (
-            <StationDetail
-              station={selected}
-              lang={lang}
-              onClose={() => setSelectedId(null)}
-              onSetOrigin={() => {
-                setOriginId(selected.id);
-                setSelectedId(null);
-              }}
-              onSetDest={() => {
-                setDestId(selected.id);
-                setSelectedId(null);
-              }}
-            />
-          ) : null}
+        {selected ? (
+          <StationDetail
+            station={selected}
+            lang={lang}
+            onClose={() => setSelectedId(null)}
+            onSetOrigin={() => {
+              setOriginId(selected.id);
+              setSelectedId(null);
+            }}
+            onSetDest={() => {
+              setDestId(selected.id);
+              setSelectedId(null);
+            }}
+          />
+        ) : null}
 
-          {route &&
-            originId &&
-            (() => {
-              const origin = STATION_MAP.get(originId);
-              if (!origin) return null;
-              return (
-                <a
-                  href={geoUrl(
-                    { lat: origin.lat, lng: origin.lng },
-                    isFa ? origin.fa : origin.name,
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
-                >
-                  <MapPin className="size-4 shrink-0 text-primary" />
-                  <span>
-                    {t.getThereToStart}
-                    {" · "}
-                    <span className="font-semibold">
-                      {isFa ? origin.fa : origin.name}
-                    </span>
-                  </span>
-                </a>
-              );
-            })()}
-
-          {route ? (
-            <RoutePanel route={route} lang={lang} />
-          ) : !selected ? (
-            <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
-              <p>
-                {originId && destId && originId === destId
-                  ? t.sameStation
-                  : t.pickBoth}
-              </p>
-              {!originId && (
-                <p className="mt-2 flex flex-wrap items-center justify-center gap-1 text-xs">
-                  {isFa ? "یا روی" : "or tap"}
-                  <LocateFixed className="inline size-3.5 shrink-0" />
-                  {isFa
-                    ? "ضربه بزنید تا نزدیک‌ترین ایستگاه مبدأ شود"
-                    : "to set your nearest station as origin"}
-                </p>
-              )}
-            </div>
-          ) : null}
-
-          {originId && destId && originId !== destId && !route && (
-            <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
-              {t.noRoute}
-            </p>
-          )}
-        </div>
-
-        <div className="mt-auto hidden pt-2 md:block">
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t.lines}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {LINE_NUMBERS.map((l) => (
-              <span
-                key={l}
-                className="flex items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-xs"
+        {route &&
+          originId &&
+          (() => {
+            const origin = STATION_MAP.get(originId);
+            if (!origin) return null;
+            return (
+              <a
+                href={geoUrl(
+                  { lat: origin.lat, lng: origin.lng },
+                  isFa ? origin.fa : origin.name,
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
               >
-                <span
-                  className="size-2.5 rounded-full"
-                  style={{ backgroundColor: LINE_COLORS[l] }}
-                />
-                {t.line} {persianDigits(l, lang)}
-              </span>
-            ))}
+                <MapPin className="size-4 shrink-0 text-primary" />
+                <span>
+                  {t.getThereToStart}
+                  {" · "}
+                  <span className="font-semibold">
+                    {isFa ? origin.fa : origin.name}
+                  </span>
+                </span>
+              </a>
+            );
+          })()}
+
+        {route ? (
+          <RoutePanel route={route} lang={lang} />
+        ) : !selected ? (
+          <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
+            <p>
+              {originId && destId && originId === destId
+                ? t.sameStation
+                : t.pickBoth}
+            </p>
+            {!originId && (
+              <p className="mt-2 flex flex-wrap items-center justify-center gap-1 text-xs">
+                {isFa ? "یا روی" : "or tap"}
+                <LocateFixed className="inline size-3.5 shrink-0" />
+                {isFa
+                  ? "ضربه بزنید تا نزدیک‌ترین ایستگاه مبدأ شود"
+                  : "to set your nearest station as origin"}
+              </p>
+            )}
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            {persianDigits(STATIONS.length, lang)}{" "}
-            {isFa ? "ایستگاه" : "stations"}
+        ) : null}
+
+        {originId && destId && originId !== destId && !route && (
+          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
+            {t.noRoute}
           </p>
-
-          <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-[11px] text-muted-foreground">
-            <a
-              href="https://github.com/aliinreallife"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 transition-colors hover:text-foreground"
-            >
-              <ExternalLink className="size-3.5" />
-              <span>
-                {t.builtBy}{" "}
-                <span className="font-medium text-foreground">
-                  aliinreallife
-                </span>
-              </span>
-            </a>
-            <a
-              href="https://github.com/mostafa-kheibary/tehran-metro-data"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 transition-colors hover:text-foreground"
-            >
-              <Database className="size-3.5" />
-              <span>
-                {t.dataBy}{" "}
-                <span className="font-medium text-foreground">
-                  mostafa-kheibary/tehran-metro-data
-                </span>
-              </span>
-            </a>
-          </div>
-        </div>
-      </aside>
-
-      <main className="h-72 shrink-0 p-3 md:relative md:h-auto md:min-h-0 md:flex-1">
-        <MetroMap
-          mode="schematic"
-          lang={lang}
-          route={route}
-          originId={originId}
-          destId={destId}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-        />
-      </main>
+        )}
+      </div>
     </div>
   );
 }
