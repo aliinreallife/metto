@@ -162,7 +162,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
         {!coords ? (
           <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
             <p>{t.setLocation}</p>
-            <p className="mt-2 text-[11px]">
+            <p className="mt-2 text-[11px] text-balance">
               {t.nearbyHintBefore}{" "}
               <button
                 type="button"
@@ -173,8 +173,8 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
                 className="cursor-pointer font-semibold text-primary hover:underline"
               >
                 {t.nearbyHintExample}
-              </button>{" "}
-              {t.nearbyHintAfter}
+              </button>
+              {t.nearbyHintAfter ? ` ${t.nearbyHintAfter}` : ""}
             </p>
           </div>
         ) : (

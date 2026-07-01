@@ -83,7 +83,7 @@ export const STRINGS = {
     searchHintAfter: "or any place in Tehran",
     nearbyHintBefore: "you could also find nearest station with",
     nearbyHintExample: "restroom",
-    nearbyHintAfter: "or any amenity",
+    nearbyHintAfter: "or any feature",
   },
   fa: {
     appTitle: "مترو تهران",
