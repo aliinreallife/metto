@@ -1,28 +1,70 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ChevronDown, MapPin, X } from "lucide-react"
+import { Building2, ChevronDown, Loader2, MapPin, X } from "lucide-react"
 import { STATION_MAP, searchStations } from "@/lib/route"
 import { LINE_COLORS } from "@/lib/metro-data"
-import { type Lang } from "@/lib/i18n"
+import { searchPlaces, type PlaceResult } from "@/lib/geocoding"
+import { STRINGS, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 type Props = {
   value: string | null
   onChange: (id: string | null) => void
+  onPlaceSelect?: (place: { lat: number; lng: number; name: string }) => void
   placeholder: string
   lang: Lang
-  accentClass: string // tailwind class for the dot color
+  accentClass: string
 }
 
-export function StationCombobox({ value, onChange, placeholder, lang, accentClass }: Props) {
+export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, lang, accentClass }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
+  const [places, setPlaces] = useState<PlaceResult[]>([])
+  const [placesLoading, setPlacesLoading] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const selected = value ? STATION_MAP.get(value) : null
   const results = useMemo(() => searchStations(query, 40), [query])
+
+  // Debounced place search
+  useEffect(() => {
+    if (query.length < 3) {
+      setPlaces([])
+      setPlacesLoading(false)
+      return
+    }
+
+    setPlacesLoading(true)
+    const timer = setTimeout(() => {
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+
+      searchPlaces(query, lang, 5).then((res) => {
+        if (!controller.signal.aborted) {
+          setPlaces(res)
+          setPlacesLoading(false)
+        }
+      })
+    }, 500)
+
+    return () => {
+      clearTimeout(timer)
+      abortRef.current?.abort()
+    }
+  }, [query, lang])
+
+  // Clear places when dropdown closes
+  useEffect(() => {
+    if (!open) {
+      setPlaces([])
+      setPlacesLoading(false)
+      setQuery("")
+    }
+  }, [open])
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -37,6 +79,11 @@ export function StationCombobox({ value, onChange, placeholder, lang, accentClas
   }, [open])
 
   const isFa = lang === "fa"
+  const t = STRINGS[lang]
+  const hasStationResults = results.length > 0
+  const hasPlaceResults = places.length > 0
+  const hasAnyResults = hasStationResults || hasPlaceResults || placesLoading
+  const showNoResults = query.length >= 2 && !hasAnyResults && !placesLoading
 
   return (
     <div ref={rootRef} className="relative">
@@ -87,11 +134,7 @@ export function StationCombobox({ value, onChange, placeholder, lang, accentClas
             />
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">
-            {results.length === 0 && (
-              <li className="px-3 py-6 text-center text-sm text-muted-foreground">
-                {STRINGS_NO_RESULTS[lang]}
-              </li>
-            )}
+            {/* Station results */}
             {results.map((s) => (
               <li key={s.id}>
                 <button
@@ -99,7 +142,6 @@ export function StationCombobox({ value, onChange, placeholder, lang, accentClas
                   onClick={() => {
                     onChange(s.id)
                     setOpen(false)
-                    setQuery("")
                   }}
                   className={cn(
                     "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-accent",
@@ -124,14 +166,51 @@ export function StationCombobox({ value, onChange, placeholder, lang, accentClas
                 </button>
               </li>
             ))}
+
+            {/* Divider + place results */}
+            {query.length >= 3 && (hasPlaceResults || placesLoading) && (
+              <>
+                {hasStationResults && (
+                  <li className="mx-3 my-1 border-t border-border" />
+                )}
+                <li className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t.places}
+                </li>
+                {placesLoading && places.length === 0 && (
+                  <li className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    {t.searchingPlaces}
+                  </li>
+                )}
+                {places.map((p, i) => (
+                  <li key={`${p.lat}-${p.lng}-${i}`}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
+                        setOpen(false)
+                      }}
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-accent"
+                    >
+                      <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{p.displayName}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </>
+            )}
+
+            {/* No results */}
+            {showNoResults && (
+              <li className="px-3 py-6 text-center text-sm text-muted-foreground">
+                {t.noResults}
+              </li>
+            )}
           </ul>
         </div>
       )}
     </div>
   )
-}
-
-const STRINGS_NO_RESULTS: Record<Lang, string> = {
-  en: "No stations found",
-  fa: "ایستگاهی یافت نشد",
 }
