@@ -43,6 +43,7 @@ type Hop = { from: string; to: string; line: number };
 export type RouteSegment = {
   line: number;
   stations: string[]; // ordered station ids, inclusive of board & alight
+  terminal: string; // last station in the direction of travel on this line
 };
 
 export type RouteResult = {
@@ -58,6 +59,27 @@ type StateKey = string; // `${stationId}|${line}`
 
 function key(station: string, line: number): StateKey {
   return `${station}|${line}`;
+}
+
+// Find the terminal station of a line in the direction from startId towards nextId.
+// Walks the line's adjacency until reaching a station with only one same-line neighbor.
+function getTerminalStation(
+  startId: string,
+  nextId: string,
+  line: number,
+): string {
+  let prev = startId;
+  let cur = nextId;
+  for (let i = 0; i < 200; i++) {
+    const edges = ADJ.get(cur) ?? [];
+    const sameLine = edges.filter(
+      (e) => e.lines.includes(line) && e.to !== prev,
+    );
+    if (sameLine.length === 0) return cur;
+    prev = cur;
+    cur = sameLine[0].to;
+  }
+  return cur;
 }
 
 // Dijkstra over (station, current line) states so we can charge transfer cost.
@@ -164,7 +186,8 @@ export function findRoute(
     if (last && last.line === h.line) {
       last.stations.push(h.to);
     } else {
-      segments.push({ line: h.line, stations: [h.from, h.to] });
+      const terminal = getTerminalStation(h.from, h.to, h.line);
+      segments.push({ line: h.line, stations: [h.from, h.to], terminal });
     }
   }
 
