@@ -135,7 +135,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">
             {query.length === 0 && onPlaceSelect && (
-              <li className="px-3 py-1.5 text-center text-[11px] text-balance text-muted-foreground">
+              <li className="whitespace-nowrap px-3 py-1.5 text-center text-[11px] text-muted-foreground">
                 {STRINGS[lang].searchHintBefore}{" "}
                 <button
                   type="button"
@@ -152,8 +152,8 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                   className="cursor-pointer font-semibold text-primary hover:underline"
                 >
                   {STRINGS[lang].searchHintExample}
-                </button>{" "}
-                {STRINGS[lang].searchHintAfter}
+                </button>
+                {STRINGS[lang].searchHintAfter ? ` ${STRINGS[lang].searchHintAfter}` : ""}
               </li>
             )}
             {/* Station results */}
