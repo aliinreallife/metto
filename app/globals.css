@@ -167,3 +167,18 @@
     @apply font-sans;
   }
 }
+
+.station-label {
+  background: var(--background) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 4px !important;
+  padding: 1px 4px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  white-space: nowrap !important;
+}
+.station-label::before {
+  border-top-color: var(--background) !important;
+}
