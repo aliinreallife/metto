@@ -6,8 +6,8 @@ export const STRINGS = {
     appSubtitle: "Route planner & map",
     from: "From",
     to: "To",
-    origin: "Origin station",
-    destination: "Destination station",
+    origin: "Station or place name…",
+    destination: "Station or place name…",
     findRoute: "Find route",
     clear: "Clear",
     swap: "Swap",
@@ -69,7 +69,6 @@ export const STRINGS = {
     walkDistance: "walk",
     noPlacesFound: "No places found",
     searchingPlaces: "Searching places…",
-    stationDetermined: "Nearest station found",
 
     timeNote: "⚠ Travel time is a work in progress and may not be accurate.",
 
@@ -79,14 +78,17 @@ export const STRINGS = {
     credits: "Credits",
     builtBy: "Built by",
     dataBy: "Metro data by",
+    searchHintBefore: "you could also search places like",
+    searchHintExample: "Iran Mall",
+    searchHintAfter: "or any place in Tehran",
   },
   fa: {
     appTitle: "مترو تهران",
     appSubtitle: "مسیریاب و نقشه",
     from: "مبدأ",
     to: "مقصد",
-    origin: "ایستگاه مبدأ",
-    destination: "ایستگاه مقصد",
+    origin: "ایستگاه یا نام مکان…",
+    destination: "ایستگاه یا نام مکان…",
     findRoute: "یافتن مسیر",
     clear: "پاک کردن",
     swap: "جابجایی",
@@ -148,7 +150,6 @@ export const STRINGS = {
     walkDistance: "پیاده",
     noPlacesFound: "مکانی یافت نشد",
     searchingPlaces: "در حال جستجوی مکان‌ها…",
-    stationDetermined: "نزدیک‌ترین ایستگاه یافت شد",
 
     timeNote: "⚠ زمان سفر در حال توسعه است و ممکن است دقیق نباشد.",
 
@@ -158,6 +159,9 @@ export const STRINGS = {
     credits: "اعتبارها",
     builtBy: "ساخته‌شده توسط",
     dataBy: "داده‌های مترو از",
+    searchHintBefore: "می‌توانید مکان‌هایی مثل",
+    searchHintExample: "ایران مال",
+    searchHintAfter: "یا هر مکانی در تهران را جستجو کنید",
   },
 } as const;
 

@@ -134,6 +134,28 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
             />
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">
+            {query.length === 0 && onPlaceSelect && (
+              <li className="px-3 py-1.5 text-center text-[11px] text-muted-foreground">
+                {STRINGS[lang].searchHintBefore}{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const example = STRINGS[lang].searchHintExample
+                    setQuery(example)
+                    searchPlaces(example, lang, 1).then((res) => {
+                      if (res.length > 0) {
+                        onPlaceSelect({ lat: res[0].lat, lng: res[0].lng, name: res[0].displayName })
+                        setOpen(false)
+                      }
+                    })
+                  }}
+                  className="cursor-pointer font-semibold text-primary hover:underline"
+                >
+                  {STRINGS[lang].searchHintExample}
+                </button>{" "}
+                {STRINGS[lang].searchHintAfter}
+              </li>
+            )}
             {/* Station results */}
             {results.map((s) => (
               <li key={s.id}>
