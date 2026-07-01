@@ -57,7 +57,7 @@ export const STRINGS = {
     gpsDenied: "Location access denied. Pick a station instead.",
     gpsUnavailable: "Couldn't get your location. Pick a station instead.",
     setLocation:
-      "Set your location to find the nearest stations and amenities.",
+      "Set your location to find nearby stations",
     nearestStations: "Nearest stations",
     findAmenity: "Find nearest…",
     nearestWith: "Nearest with",
@@ -83,7 +83,7 @@ export const STRINGS = {
     searchHintAfter: "or any place in Tehran",
     nearbyHintBefore: "you could also find nearest station with",
     nearbyHintExample: "restroom",
-    nearbyHintAfter: "or any feature",
+    nearbyHintAfter: "or any other feature you may need",
   },
   fa: {
     appTitle: "مترو تهران",
@@ -141,7 +141,7 @@ export const STRINGS = {
     gpsDenied: "دسترسی به موقعیت رد شد. یک ایستگاه انتخاب کنید.",
     gpsUnavailable: "موقعیت شما به‌دست نیامد. یک ایستگاه انتخاب کنید.",
     setLocation:
-      "برای یافتن نزدیک‌ترین ایستگاه‌ها و امکانات، موقعیت خود را تعیین کنید.",
+      "موقعیت خود را تعیین کنید",
     nearestStations: "نزدیک‌ترین ایستگاه‌ها",
     findAmenity: "یافتن نزدیک‌ترین…",
     nearestWith: "نزدیک‌ترین با",
@@ -167,7 +167,7 @@ export const STRINGS = {
     searchHintAfter: "یا هر مکانی در تهران را جستجو کنید",
     nearbyHintBefore: "می‌توانید نزدیک‌ترین ایستگاه با",
     nearbyHintExample: "سرویس بهداشتی",
-    nearbyHintAfter: "یا هر امکان دیگری پیدا کنید",
+    nearbyHintAfter: "یا هر امکان دیگری که نیاز دارید",
   },
 } as const;
 

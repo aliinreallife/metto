@@ -74,7 +74,11 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
         />
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div>
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t.filterLine}
+        </p>
+        <div className="flex flex-wrap gap-1.5">
         <FilterChip
           active={lineFilter === null}
           onClick={() => { setLineFilter(null); setBranchIndex(0); }}
@@ -91,10 +95,15 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
             {t.line} {persianDigits(l, lang)}
           </FilterChip>
         ))}
+        </div>
       </div>
 
       {isForked && lineOrder && (
-        <div className="flex gap-1.5">
+        <div>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t.towards}
+          </p>
+          <div className="flex gap-1.5">
           {lineOrder.terminals.map((termId, i) => {
             const s = STATIONS.find((st) => st.id === termId);
             const label = s ? (isFa ? s.fa : s.name) : termId;
@@ -108,6 +117,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
               </FilterChip>
             );
           })}
+          </div>
         </div>
       )}
 
