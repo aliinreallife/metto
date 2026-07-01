@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search, ChevronRight, MapPin, Navigation, Flag } from "lucide-react";
 import { LINE_COLORS, STATIONS, type Station } from "@/lib/metro-data";
+import { orderLineStations } from "@/lib/route";
 import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { geoUrl } from "@/lib/geo";
@@ -27,13 +28,30 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return STATIONS.filter((s) => {
+    const filtered = STATIONS.filter((s) => {
       if (lineFilter !== null && !s.lines.includes(lineFilter)) return false;
       if (!q) return true;
       return s.name.toLowerCase().includes(q) || s.fa.includes(query.trim());
-    }).sort((a, b) =>
-      isFa ? a.fa.localeCompare(b.fa, "fa") : a.name.localeCompare(b.name),
-    );
+    });
+
+    if (lineFilter === null) {
+      return filtered.sort((a, b) =>
+        isFa ? a.fa.localeCompare(b.fa, "fa") : a.name.localeCompare(b.name),
+      );
+    }
+
+    // Order by line position.
+    const chain = orderLineStations(lineFilter);
+    const orderMap = new Map<string, number>();
+    chain.forEach((id, idx) => orderMap.set(id, idx));
+    return filtered.sort((a, b) => {
+      const oa = orderMap.get(a.id);
+      const ob = orderMap.get(b.id);
+      if (oa !== undefined && ob !== undefined) return oa - ob;
+      if (oa !== undefined) return -1;
+      if (ob !== undefined) return 1;
+      return isFa ? a.fa.localeCompare(b.fa, "fa") : a.name.localeCompare(b.name);
+    });
   }, [query, lineFilter, isFa]);
 
   return (
