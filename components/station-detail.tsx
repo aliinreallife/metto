@@ -66,6 +66,20 @@ export function StationDetail({
       </div>
 
       <div className="flex gap-2">
+        <a
+          href={geoUrl(
+            { lat: station.lat, lng: station.lng },
+            isFa ? station.fa : station.name,
+          )}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t.navigate}
+          title={t.navigate}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <MapPin className="size-4" />
+          {t.navigate}
+        </a>
         <button
           type="button"
           onClick={onSetOrigin}
@@ -84,39 +98,20 @@ export function StationDetail({
         </button>
       </div>
 
-      <a
-        href={geoUrl(
-          { lat: station.lat, lng: station.lng },
-          isFa ? station.fa : station.name,
-        )}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex w-fit items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-      >
-        <MapPin className="size-3.5 text-primary" />
-        {t.navigate}
-      </a>
-
       {activeAmenities.length > 0 && (
-        <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t.amenities}
-          </p>
-          <ul className="grid grid-cols-2 gap-1.5">
-            {activeAmenities.map(([key]) => (
-              <li key={key} className="flex items-center gap-1.5 text-sm">
-                {(() => {
-                  const Icon = AMENITY_ICON_MAP[key];
-                  return Icon ? (
-                    <Icon className="size-3.5 shrink-0 text-primary" />
-                  ) : null;
-                })()}
-                <span className="truncate">
-                  {AMENITY_LABELS[key]?.[lang] ?? key}
-                </span>
-              </li>
-            ))}
-          </ul>
+        <div className="flex flex-wrap gap-1.5">
+          {activeAmenities.map(([key]) => {
+            const Icon = AMENITY_ICON_MAP[key];
+            return (
+              <span
+                key={key}
+                className="flex items-center gap-1 rounded-md bg-muted px-1.5 py-1 text-xs text-foreground"
+              >
+                {Icon && <Icon className="size-3.5 shrink-0 text-primary" />}
+                {AMENITY_LABELS[key]?.[lang] ?? key}
+              </span>
+            );
+          })}
         </div>
       )}
     </div>

@@ -4,23 +4,18 @@ import { useMemo, useState } from "react";
 import {
   LocateFixed,
   Loader2,
-  MapPin,
-  Navigation,
-  Flag,
   Train,
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
-import { LINE_COLORS } from "@/lib/metro-data";
 import {
   nearestStations,
-  formatDistance,
-  geoUrl,
   type AmenityKey,
 } from "@/lib/geo";
 import { STATION_MAP } from "@/lib/route";
 import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { cn } from "@/lib/utils";
+import { StationCard } from "@/components/station-card";
 
 type Props = {
   lang: Lang;
@@ -106,7 +101,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
 
   return (
     <div className="flex size-full min-h-0 flex-col overflow-y-auto bg-background">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-4">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
         {/* Location setter */}
         <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2">
@@ -123,7 +118,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
             type="button"
             onClick={useGps}
             disabled={loc.kind === "locating"}
-            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {loc.kind === "locating" ? (
               <>
@@ -160,7 +155,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
         </section>
 
         {!coords ? (
-          <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-12 text-center text-sm text-muted-foreground">
             <p className="mt-2 text-[11px] text-muted-foreground">
               {t.nearbyHintBefore}{" "}
               <button
@@ -183,7 +178,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {t.findAmenity}
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 <FilterChip
                   active={selectedAmenities.length === 0}
                   onClick={() => setSelectedAmenities([])}
@@ -208,79 +203,21 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
             </section>
 
             {/* Results */}
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-3">
               {results.length === 0 && (
-                <li className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                <li className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
                   {t.noResults}
                 </li>
               )}
               {results.map(({ station, km }, i) => (
-                <li
-                  key={station.id}
-                  className="rounded-xl border border-border bg-card p-3"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                      {persianDigits(i + 1, lang)}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">
-                        {isFa ? station.fa : station.name}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {isFa ? station.name : station.fa}
-                      </p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        {station.lines.map((l) => (
-                          <span
-                            key={l}
-                            className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white"
-                            style={{ backgroundColor: LINE_COLORS[l] }}
-                          >
-                            {t.line} {persianDigits(l, lang)}
-                          </span>
-                        ))}
-                        <span className="text-xs font-medium text-foreground">
-                          {formatDistance(km, lang)} {t.away}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-2.5 flex flex-wrap gap-1.5">
-                    <a
-                      href={geoUrl(
-                        { lat: station.lat, lng: station.lng },
-                        isFa ? station.fa : station.name,
-                      )}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-                    >
-                      <MapPin className="size-3.5 text-primary" />
-                      {t.navigate}
-                    </a>
-                    <span className="ms-auto flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => onSetOrigin(station.id)}
-                        aria-label={t.from}
-                        className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-                      >
-                        <Navigation className="size-3.5" />
-                        {t.from}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onSetDest(station.id)}
-                        aria-label={t.to}
-                        className="flex items-center gap-1 rounded-lg bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                      >
-                        <Flag className="size-3.5" />
-                        {t.to}
-                      </button>
-                    </span>
-                  </div>
+                <li key={station.id}>
+                  <StationCard
+                    station={station}
+                    lang={lang}
+                    distance={km}
+                    onSetOrigin={() => onSetOrigin(station.id)}
+                    onSetDest={() => onSetDest(station.id)}
+                  />
                 </li>
               ))}
             </ul>
