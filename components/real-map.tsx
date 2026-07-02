@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
-import { Plus, Minus, Locate } from "lucide-react"
+import { Plus, Minus, LocateFixed, Loader2 } from "lucide-react"
 import { LINE_COLORS, STATIONS } from "@/lib/metro-data"
 import { buildLineEdges } from "@/lib/graph"
 import { STATION_MAP, type RouteResult } from "@/lib/route"
@@ -41,6 +41,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: typeof STATIONS[0] }>>(new Map())
   const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null })
   const [hasGps, setHasGps] = useState(false)
+  const [locating, setLocating] = useState(false)
   const isFa = lang === "fa"
 
   const edges = useMemo(() => buildLineEdges(), [])
@@ -292,6 +293,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
   function locateMe() {
     if (!mapRef.current || !navigator.geolocation) return
+    setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const map = mapRef.current
@@ -320,8 +322,9 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
         // Pan to location
         map.setView([lat, lng], 14)
+        setLocating(false)
       },
-      () => {},
+      () => { setLocating(false) },
       { enableHighAccuracy: true, timeout: 10000 },
     )
   }
@@ -336,8 +339,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         <MapBtn label="Zoom out" onClick={() => mapRef.current?.zoomOut()}>
           <Minus className="size-4" />
         </MapBtn>
-        <MapBtn label="Locate me" onClick={locateMe}>
-          <Locate className="size-4" />
+        <MapBtn label="Locate me" onClick={locateMe} disabled={locating}>
+          {locating ? <Loader2 className="size-4 animate-spin" /> : <LocateFixed className="size-4" />}
         </MapBtn>
       </div>
     </div>
@@ -348,18 +351,21 @@ function MapBtn({
   children,
   label,
   onClick,
+  disabled,
 }: {
   children: React.ReactNode
   label: string
   onClick: () => void
+  disabled?: boolean
 }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "flex size-9 items-center justify-center rounded-lg border border-border bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent",
+        "flex size-9 items-center justify-center rounded-lg border border-border bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent disabled:opacity-50",
       )}
     >
       {children}

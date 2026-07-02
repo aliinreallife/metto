@@ -161,7 +161,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
 
         {!coords ? (
           <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
-            <p className="mt-2 text-[11px] text-center text-muted-foreground">
+            <p className="mt-2 text-[11px] text-muted-foreground">
               {t.nearbyHintBefore}{" "}
               <button
                 type="button"
