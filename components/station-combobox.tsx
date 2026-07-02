@@ -90,7 +90,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm transition-colors hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring rtl:text-right"
+        className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-start transition-colors hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring"
       >
         <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden />
         <span className="min-w-0 flex-1 truncate">
@@ -135,7 +135,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">
             {query.length === 0 && onPlaceSelect && (
-              <li className="whitespace-nowrap px-3 py-1.5 text-center text-[11px] text-muted-foreground">
+              <li className="px-3 py-1.5 text-center text-[11px] text-muted-foreground">
                 {STRINGS[lang].searchHintBefore}{" "}
                 <button
                   type="button"
@@ -166,15 +166,10 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                     setOpen(false)
                   }}
                   className={cn(
-                    "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-accent",
+                    "flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent",
                     value === s.id && "bg-accent",
                   )}
                 >
-                  <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{isFa ? s.fa : s.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{isFa ? s.name : s.fa}</span>
-                  </span>
                   <span className="flex shrink-0 gap-1">
                     {s.lines.map((l) => (
                       <span
@@ -185,6 +180,12 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                       />
                     ))}
                   </span>
+                  <span className="min-w-0 truncate">
+                    <span className="block font-medium">{isFa ? s.fa : s.name}</span>
+                    <span className="block text-xs text-muted-foreground">{isFa ? s.name : s.fa}</span>
+                  </span>
+                  <span className="flex-1" />
+                  <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
                 </button>
               </li>
             ))}
@@ -212,12 +213,12 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                         onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
                         setOpen(false)
                       }}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-accent"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent"
                     >
-                      <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{p.displayName}</span>
                       </span>
+                      <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
                     </button>
                   </li>
                 ))}

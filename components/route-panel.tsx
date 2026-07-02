@@ -35,7 +35,7 @@ export function RoutePanel({
       <div className="grid grid-cols-3 gap-1.5">
         <Stat
           icon={<TrainFront className="size-4" />}
-          value={persianDigits(route.numStops, lang)}
+          value={persianDigits(route.numStops + 1, lang)}
           label={t.stops}
         />
         <Stat
@@ -166,10 +166,9 @@ function SegmentCard({
                 className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2"
                 style={{ backgroundColor: `${color}55` }}
               />
-              {intermediates.length === 0 ? null : intermediates.length <=
-                6 ? (
+              {stations.length <= 1 ? null : stations.length <= 8 ? (
                 <div className="absolute inset-0 flex items-center justify-between px-0.5">
-                  {intermediates.map((id) => (
+                  {stations.map((id) => (
                     <span
                       key={id}
                       className="size-1.5 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-card"
@@ -182,7 +181,7 @@ function SegmentCard({
                   className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white"
                   style={{ backgroundColor: color }}
                 >
-                  {persianDigits(intermediates.length, lang)}
+                  {persianDigits(stations.length, lang)}
                 </span>
               )}
             </div>
@@ -209,7 +208,7 @@ function SegmentCard({
                       open && "rotate-180",
                     )}
                   />
-                  {persianDigits(intermediates.length, lang)} {t.stops}
+                  {persianDigits(stations.length, lang)} {t.stops}
                 </span>
                 <span
                   className="h-px flex-1 mx-2 opacity-40"
