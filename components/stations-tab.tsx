@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { LINE_COLORS, STATIONS } from "@/lib/metro-data";
+import { LINE_COLORS, STATIONS, type Station } from "@/lib/metro-data";
 import { orderLineStations } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { StationCard } from "@/components/station-card";
+import { StationTimesheet } from "@/components/station-timesheet";
 
 const LINE_NUMBERS = Object.keys(LINE_COLORS)
   .map(Number)
@@ -24,6 +25,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
   const [query, setQuery] = useState("");
   const [lineFilter, setLineFilter] = useState<number | null>(null);
   const [branchIndex, setBranchIndex] = useState(0);
+  const [timetableStation, setTimetableStation] = useState<Station | null>(null);
 
   const lineOrder = useMemo(
     () => (lineFilter !== null ? orderLineStations(lineFilter) : null),
@@ -135,10 +137,23 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
               station={s}
               lang={lang}
               onSetDest={() => onSetDest(s.id)}
+              onShowTimetable={() => setTimetableStation(s)}
             />
           </li>
         ))}
       </ul>
+
+      {timetableStation && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 md:items-center">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-hidden">
+            <StationTimesheet
+              station={timetableStation}
+              lang={lang}
+              onClose={() => setTimetableStation(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
