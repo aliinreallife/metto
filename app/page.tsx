@@ -61,7 +61,7 @@ export default function Page() {
       const saved = localStorage.getItem("mapMode");
       if (saved === "satellite" || saved === "schematic") return saved;
     }
-    return "satellite";
+    return "schematic";
   });
   const [placeMarkers, setPlaceMarkers] = useState<Array<{ lat: number; lng: number; label: string; role: "origin" | "dest" }>>([]);
   const [originPlaceInfo, setOriginPlaceInfo] = useState<{
