@@ -1,5 +1,6 @@
 import { STATIONS, type Station } from "./metro-data";
 import { ROUTE_ADJ as ADJ, STATION_BY_ID } from "./graph";
+import { getScheduleTravelTime, getCurrentDayType } from "./schedule-utils";
 
 export const STATION_MAP: Map<string, Station> = STATION_BY_ID;
 
@@ -194,15 +195,22 @@ export function findRoute(
   const numStops = hops.length;
   const numTransfers = Math.max(0, segments.length - 1);
 
-  // Sum distance-based travel time across each hop.
+  // Sum travel time across each hop, using schedule data when available.
+  const dayType = getCurrentDayType();
   let rideSeconds = 0;
   for (const h of hops) {
-    const km = hopKm(
-      h.from,
-      h.to,
-      STATION_MAP as Map<string, { lat: number; lng: number }>,
-    );
-    rideSeconds += (km / AVG_SPEED_KMH) * 3600 + DWELL_S;
+    const scheduleTime = getScheduleTravelTime(h.from, h.to, h.line, dayType);
+    if (scheduleTime !== null) {
+      rideSeconds += scheduleTime;
+    } else {
+      // Fallback to distance-based estimation
+      const km = hopKm(
+        h.from,
+        h.to,
+        STATION_MAP as Map<string, { lat: number; lng: number }>,
+      );
+      rideSeconds += (km / AVG_SPEED_KMH) * 3600 + DWELL_S;
+    }
   }
   const estimatedSeconds = Math.round(rideSeconds) + numTransfers * TRANSFER_S;
 

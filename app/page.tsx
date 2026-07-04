@@ -113,6 +113,11 @@ export default function Page() {
     localStorage.setItem("mapMode", mapMode);
   }, [mapMode]);
 
+  function switchTab(newTab: Tab) {
+    if (newTab !== "map") setSelectedId(null);
+    setTab(newTab);
+  }
+
   function swap() {
     setOriginId(destId);
     setDestId(originId);
@@ -195,7 +200,7 @@ export default function Page() {
             <TabButton
               key={tb.id}
               active={tab === tb.id}
-              onClick={() => setTab(tb.id)}
+              onClick={() => switchTab(tb.id)}
               icon={tb.icon}
             >
               {tb.label}
@@ -317,11 +322,6 @@ export default function Page() {
                   station={selected}
                   lang={lang}
                   onClose={() => setSelectedId(null)}
-                  onSetDest={() => {
-                    setDestId(selected.id);
-                    setSelectedId(null);
-                    setTab("route");
-                  }}
                 />
               </div>
             )}
@@ -363,7 +363,7 @@ export default function Page() {
           <button
             key={tb.id}
             type="button"
-            onClick={() => setTab(tb.id)}
+            onClick={() => switchTab(tb.id)}
             className={cn(
               "flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors",
               tab === tb.id ? "text-primary" : "text-muted-foreground",
@@ -541,10 +541,6 @@ function RouteView({
             station={selected}
             lang={lang}
             onClose={() => setSelectedId(null)}
-            onSetDest={() => {
-              setDestId(selected.id);
-              setSelectedId(null);
-            }}
           />
         ) : null}
 
