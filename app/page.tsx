@@ -95,6 +95,17 @@ export default function Page() {
   }, [isFa]);
 
   useEffect(() => {
+    const tabTitles: Record<Tab, { fa: string; en: string }> = {
+      route: { fa: "مسیریاب مترو تهران", en: "Tehran Metro Route Planner" },
+      stations: { fa: "ایستگاه‌های مترو تهران", en: "Tehran Metro Stations" },
+      nearby: { fa: "نزدیک‌ترین ایستگاه مترو", en: "Nearby Metro Stations" },
+      map: { fa: "نقشه مترو تهران", en: "Tehran Metro Map" },
+    };
+    const suffix = isFa ? " | مترو تهران" : " | Tehran Metro";
+    document.title = tabTitles[tab][lang] + suffix;
+  }, [tab, lang, isFa]);
+
+  useEffect(() => {
     localStorage.setItem("lang", lang);
   }, [lang]);
 
@@ -306,11 +317,6 @@ export default function Page() {
                   station={selected}
                   lang={lang}
                   onClose={() => setSelectedId(null)}
-                  onSetOrigin={() => {
-                    setOriginId(selected.id);
-                    setSelectedId(null);
-                    setTab("route");
-                  }}
                   onSetDest={() => {
                     setDestId(selected.id);
                     setSelectedId(null);
@@ -535,10 +541,6 @@ function RouteView({
             station={selected}
             lang={lang}
             onClose={() => setSelectedId(null)}
-            onSetOrigin={() => {
-              setOriginId(selected.id);
-              setSelectedId(null);
-            }}
             onSetDest={() => {
               setDestId(selected.id);
               setSelectedId(null);

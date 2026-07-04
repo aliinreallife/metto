@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, ChevronRight } from "lucide-react";
+import { Search } from "lucide-react";
 import { LINE_COLORS, STATIONS } from "@/lib/metro-data";
 import { orderLineStations } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
@@ -23,7 +23,6 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
   const isFa = lang === "fa";
   const [query, setQuery] = useState("");
   const [lineFilter, setLineFilter] = useState<number | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
   const [branchIndex, setBranchIndex] = useState(0);
 
   const lineOrder = useMemo(
@@ -132,49 +131,11 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
         )}
         {results.map((s) => (
           <li key={s.id}>
-            <button
-              type="button"
-              onClick={() => setOpenId((prev) => (prev === s.id ? null : s.id))}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-start transition-colors hover:bg-accent",
-                openId === s.id && "border-primary/50 bg-primary/5",
-              )}
-              aria-expanded={openId === s.id}
-            >
-              <span className="flex shrink-0 gap-1">
-                {s.lines.map((l) => (
-                  <span
-                    key={l}
-                    className="size-3 rounded-full"
-                    style={{ backgroundColor: LINE_COLORS[l] }}
-                  />
-                ))}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">
-                  {isFa ? s.fa : s.name}
-                </span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {isFa ? s.name : s.fa}
-                </span>
-              </span>
-              <ChevronRight
-                className={cn(
-                  "size-4 shrink-0 text-muted-foreground transition-transform",
-                  openId === s.id && "rotate-90",
-                )}
-              />
-            </button>
-            {openId === s.id && (
-              <div className="mt-2">
-                <StationCard
-                  station={s}
-                  lang={lang}
-                  onSetOrigin={() => onSetOrigin(s.id)}
-                  onSetDest={() => onSetDest(s.id)}
-                />
-              </div>
-            )}
+            <StationCard
+              station={s}
+              lang={lang}
+              onSetDest={() => onSetDest(s.id)}
+            />
           </li>
         ))}
       </ul>
