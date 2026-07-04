@@ -12,7 +12,7 @@ import {
   type AmenityKey,
 } from "@/lib/geo";
 import { STATION_MAP } from "@/lib/route";
-import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { AMENITY_LABELS, STRINGS, type Lang } from "@/lib/i18n";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { cn } from "@/lib/utils";
 import { StationCard } from "@/components/station-card";
@@ -209,13 +209,12 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
                   {t.noResults}
                 </li>
               )}
-              {results.map(({ station, km }, i) => (
+              {results.map(({ station, km }) => (
                 <li key={station.id}>
                   <StationCard
                     station={station}
                     lang={lang}
                     distance={km}
-                    onSetOrigin={() => onSetOrigin(station.id)}
                     onSetDest={() => onSetDest(station.id)}
                   />
                 </li>
