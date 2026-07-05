@@ -195,21 +195,18 @@ export function RoutePanel({
           value={
             firstWait > 0 ? (
               <>
-                <span className="underline decoration-dotted decoration-muted-foreground/40 underline-offset-4" title={isFa ? "انتظار قطار اول" : "wait for first train"}>
-                  {persianDigits(firstWait, lang)}
-                </span>
-                {" + "}
-                {persianDigits(restMins, lang)}
+                <span className="text-lg font-semibold text-muted-foreground/70">{persianDigits(firstWait, lang)}</span>
+                <span className="text-muted-foreground/40"> + </span>
+                <span>{persianDigits(restMins, lang)}</span>
               </>
             ) : (
               persianDigits(mins, lang)
             )
           }
-          label={isFa ? "دقیقه سفر" : "travel time"}
-          tooltip={
+          label={
             firstWait > 0
-              ? (isFa ? "انتظار قطار اول = " + persianDigits(firstWait, lang) + " دقیقه" : "wait for first train = " + firstWait + " min")
-              : undefined
+              ? (isFa ? "انتظار + سفر" : "wait + travel")
+              : (isFa ? "دقیقه سفر" : "travel time")
           }
         />
         <Stat
