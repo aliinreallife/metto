@@ -169,6 +169,9 @@ export function StationTimesheet({
             : lineData.directions;
           const totalCount = filteredDirs.reduce((sum, d) => sum + d.times.length, 0);
 
+          // Skip lines with 0 trains in the selected direction
+          if (totalCount === 0) return null;
+
           return (
           <div key={lineData.line} className="mb-4 last:mb-0">
             {/* Line header */}

@@ -112,7 +112,10 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
                   {g.departures[0]?.time}
                 </span>
                 {g.departures[0]?.isExpress && (
-                  <Zap className="size-3 text-amber-500" />
+                  <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                    <Zap className="size-3" />
+                    <span className="text-[9px] font-bold">{isFa ? "سریع السیر" : "express"}</span>
+                  </span>
                 )}
                 {g.departures.length > 1 && (
                   <span className="text-muted-foreground text-[10px]">

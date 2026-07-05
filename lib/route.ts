@@ -1,6 +1,6 @@
 import { STATIONS, type Station } from "./metro-data";
 import { ROUTE_ADJ as ADJ, STATION_BY_ID } from "./graph";
-import { getScheduleTravelTime, getCurrentDayType } from "./schedule-utils";
+import { findBestTrip, getCurrentDayType, type TripResult } from "./schedule-utils";
 
 export const STATION_MAP: Map<string, Station> = STATION_BY_ID;
 
@@ -9,6 +9,11 @@ export const STATION_MAP: Map<string, Station> = STATION_BY_ID;
 // Each line change costs TRANSFER_PENALTY (≈ several stops of inconvenience).
 const RIDE_COST = 1;
 const TRANSFER_PENALTY = 5;
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
 
 // Time model: derive travel time from real inter-station distances.
 // Tehran Metro cruising speed (incl. acceleration/deceleration): ~35 km/h.
@@ -50,10 +55,13 @@ export type RouteSegment = {
 export type RouteResult = {
   hops: Hop[];
   segments: RouteSegment[];
-  path: string[]; // ordered station ids
+  path: string[];
   numStops: number;
   numTransfers: number;
   estimatedSeconds: number;
+  travelTimeOnly: number; // travel + walk time, no wait
+  estimatedArrival: string;
+  trips: TripResult[];
 };
 
 type StateKey = string; // `${stationId}|${line}`
@@ -195,26 +203,53 @@ export function findRoute(
   const numStops = hops.length;
   const numTransfers = Math.max(0, segments.length - 1);
 
-  // Sum travel time across each hop, using schedule data when available.
+  // Time-aware travel calculation: find actual trains for each segment
   const dayType = getCurrentDayType();
-  let rideSeconds = 0;
-  for (const h of hops) {
-    const scheduleTime = getScheduleTravelTime(h.from, h.to, h.line, dayType);
-    if (scheduleTime !== null) {
-      rideSeconds += scheduleTime;
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const trips: TripResult[] = [];
+  let currentTime = nowMinutes;
+  let totalMinutes = 0;
+  let lastArrival = "";
+
+  for (const seg of segments) {
+    const segOrigin = seg.stations[0];
+    const segDest = seg.stations[seg.stations.length - 1];
+
+    const trip = findBestTrip(segOrigin, segDest, seg.line, currentTime, dayType);
+    if (trip) {
+      trips.push(trip);
+      // Account for wait time at the station
+      const waitTime = timeToMinutes(trip.departTime) - currentTime;
+      if (waitTime > 0) totalMinutes += waitTime;
+      totalMinutes += trip.travelMinutes;
+      currentTime = timeToMinutes(trip.arriveTime);
+      lastArrival = trip.arriveTime;
+      // Add transfer walk time for next segment
+      if (segments.indexOf(seg) < segments.length - 1) {
+        currentTime += 4; // 4 min walk
+        totalMinutes += 4;
+      }
     } else {
-      // Fallback to distance-based estimation
-      const km = hopKm(
-        h.from,
-        h.to,
-        STATION_MAP as Map<string, { lat: number; lng: number }>,
-      );
-      rideSeconds += (km / AVG_SPEED_KMH) * 3600 + DWELL_S;
+      // Fallback: distance-based
+      let segDist = 0;
+      for (let i = 0; i < seg.stations.length - 1; i++) {
+        const km = hopKm(
+          seg.stations[i],
+          seg.stations[i + 1],
+          STATION_MAP as Map<string, { lat: number; lng: number }>,
+        );
+        segDist += (km / AVG_SPEED_KMH) * 3600 + DWELL_S;
+      }
+      totalMinutes += Math.round(segDist / 60);
     }
   }
-  const estimatedSeconds = Math.round(rideSeconds) + numTransfers * TRANSFER_S;
 
-  return { hops, segments, path, numStops, numTransfers, estimatedSeconds };
+  const estimatedSeconds = totalMinutes * 60;
+  // Travel time only: sum of all trip travel minutes + walk times
+  const travelTimeOnly = trips.reduce((sum, t) => sum + t.travelMinutes, 0) + numTransfers * 4;
+
+  return { hops, segments, path, numStops, numTransfers, estimatedSeconds, travelTimeOnly, estimatedArrival: lastArrival, trips };
 }
 
 export function normalize(input: string): string {

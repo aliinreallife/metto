@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Clock,
   Compass,
+  Flag,
   Repeat,
   TrainFront,
   Footprints,
@@ -20,6 +21,7 @@ import {
   getNextDepartures,
   getCurrentDayType,
   getArrivalFromOrigin,
+  type TripResult,
 } from "@/lib/schedule-utils";
 
 // Inline time helper
@@ -42,6 +44,10 @@ export function RoutePanel({
     return s ? (isFa ? s.fa : s.name) : id;
   };
   const mins = Math.round(route.estimatedSeconds / 60);
+  const firstWait = route.trips.length > 0
+    ? Math.max(0, timeToMinutes(route.trips[0].departTime) - (new Date().getHours() * 60 + new Date().getMinutes()))
+    : 0;
+  const restMins = mins - firstWait;
 
   // Check next train at origin
   const origin = route.segments[0]?.stations[0];
@@ -126,78 +132,98 @@ export function RoutePanel({
     return warnings;
   }, [route, originDeps]);
 
+  // Pick the single most important warning (priority: no train > no connection > long wait)
+  const topWarning = useMemo(() => {
+    // 1. No train at origin (highest priority)
+    if (noTrainWarning) {
+      return {
+        severity: "red" as const,
+        message: isFa ? "حرکتی در ساعت آینده یافت نشد" : "No trains in the next hour",
+      };
+    }
+
+    // 2. No connection at any transfer
+    const noConn = connectionWarnings.find((w) => w.nextDepMin === null);
+    if (noConn) {
+      return {
+        severity: "red" as const,
+        message: isFa
+          ? `خط ${persianDigits(noConn.line, lang)} در ${name(noConn.station)} حرکتی ندارد`
+          : `No service on L${noConn.line} at ${name(noConn.station)}`,
+      };
+    }
+
+    // 3. Long wait at transfer
+    const longTransfer = connectionWarnings.find((w) => {
+      if (w.nextDepMin === null) return false;
+      const wait = w.nextDepMin - (w.arriveMin + 4);
+      return wait > 15;
+    });
+    if (longTransfer) {
+      const wait = longTransfer.nextDepMin! - (longTransfer.arriveMin + 4);
+      return {
+        severity: "amber" as const,
+        message: isFa
+          ? `انتظار ${persianDigits(wait, lang)} دقیقه در ${name(longTransfer.station)}`
+          : `${wait} min wait at ${name(longTransfer.station)}`,
+      };
+    }
+
+    // 4. Long wait at origin
+    if (longWait) {
+      return {
+        severity: "amber" as const,
+        message: isFa
+          ? `اولین حرکت بعد از ${persianDigits(originDeps[0].minutesUntil, lang)} دقیقه`
+          : `First train in ${originDeps[0].minutesUntil} min`,
+      };
+    }
+
+    return null;
+  }, [noTrainWarning, longWait, connectionWarnings, originDeps, isFa, lang, name]);
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <div className="grid grid-cols-3 gap-3">
         <Stat
           icon={<TrainFront className="size-5" />}
           value={persianDigits(route.numStops + 1, lang)}
-          label={t.stops}
-        />
-        <Stat
-          icon={<Repeat className="size-5" />}
-          value={persianDigits(route.numTransfers, lang)}
-          label={route.numTransfers === 1 ? t.transfer : t.transfers}
+          label={isFa ? "ایستگاه" : "stops"}
         />
         <Stat
           icon={<Clock className="size-5" />}
-          value={"~" + persianDigits(mins, lang)}
-          label={t.minEst}
+          value={
+            firstWait > 0 ? (
+              <>
+                <span className="underline decoration-dotted decoration-muted-foreground/40 underline-offset-4" title={isFa ? "انتظار قطار اول" : "wait for first train"}>
+                  {persianDigits(firstWait, lang)}
+                </span>
+                {" + "}
+                {persianDigits(restMins, lang)}
+              </>
+            ) : (
+              persianDigits(mins, lang)
+            )
+          }
+          label={isFa ? "دقیقه سفر" : "travel time"}
+          tooltip={
+            firstWait > 0
+              ? (isFa ? "انتظار قطار اول = " + persianDigits(firstWait, lang) + " دقیقه" : "wait for first train = " + firstWait + " min")
+              : undefined
+          }
+        />
+        <Stat
+          icon={<Flag className="size-5" />}
+          value={persianDigits(route.estimatedArrival, lang)}
+          label={isFa ? "رسیدن" : "arrival"}
         />
       </div>
-
-      {/* Warnings */}
-      {noTrainWarning && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-l-4 border-l-red-500 border-red-200/50 bg-red-50 px-3.5 py-3 dark:border-red-800/30 dark:border-l-red-500 dark:bg-red-950/60">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
-            <AlertTriangle className="size-4 text-red-600 dark:text-red-400" />
-          </div>
-          <span className="text-xs font-medium text-red-700 dark:text-red-300">
-            {isFa
-              ? "حرکتی در ساعت آینده یافت نشد"
-              : "No trains in the next hour"}
-          </span>
+      {route.numTransfers > 0 && (
+        <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
+          <Repeat className="size-3.5" />
+          <span>{persianDigits(route.numTransfers, lang)} {isFa ? "تعویض خط" : "transfers"}</span>
         </div>
       )}
-      {longWait && !noTrainWarning && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-l-4 border-l-amber-500 border-amber-200/50 bg-amber-50 px-3.5 py-3 dark:border-amber-800/30 dark:border-l-amber-500 dark:bg-amber-950/60">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-            <Clock className="size-4 text-amber-600 dark:text-amber-400" />
-          </div>
-          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-            {isFa
-              ? `اولین حرکت بعد از ${persianDigits(originDeps[0].minutesUntil, lang)} دقیقه`
-              : `First train in ${originDeps[0].minutesUntil} min`}
-          </span>
-        </div>
-      )}
-
-      {connectionWarnings.map((w, i) => {
-        const waitMin = w.nextDepMin !== null
-          ? w.nextDepMin - (w.arriveMin + 4) // 4 = transfer walk minutes
-          : null;
-        return (
-          <div
-            key={i}
-            className="flex items-center gap-2.5 rounded-xl border border-l-4 border-l-amber-500 border-amber-200/50 bg-amber-50 px-3.5 py-3 dark:border-amber-800/30 dark:border-l-amber-500 dark:bg-amber-950/60"
-          >
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-              <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
-            </div>
-            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-              {w.nextDepMin === null
-                ? isFa
-                  ? `خط ${persianDigits(w.line, lang)} در ${name(w.station)} حرکتی ندارد`
-                  : `No service on L${w.line} at ${name(w.station)}`
-                : waitMin !== null && waitMin > 15
-                  ? isFa
-                    ? `انتظار ${persianDigits(waitMin, lang)} دقیقه در ${name(w.station)}`
-                    : `${waitMin} min wait at ${name(w.station)}`
-                  : null}
-            </span>
-          </div>
-        );
-      })}
 
       <p className="text-xs text-muted-foreground">{t.timeNote}</p>
 
@@ -220,6 +246,7 @@ export function RoutePanel({
               name={name}
               lang={lang}
               showNextTrain={i === 0}
+              trip={route.trips[i]}
             />
           </li>
         ))}
@@ -232,16 +259,18 @@ function Stat({
   icon,
   value,
   label,
+  tooltip,
 }: {
   icon: React.ReactNode;
-  value: string;
+  value: React.ReactNode;
   label: string;
+  tooltip?: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-3 py-3">
       <span className="text-muted-foreground">{icon}</span>
-      <span className="text-xl font-bold leading-none">{value}</span>
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-2xl font-bold leading-none" title={tooltip}>{value}</span>
+      <span className="text-sm text-muted-foreground">{label}</span>
     </div>
   );
 }
@@ -253,6 +282,7 @@ function SegmentCard({
   name,
   lang,
   showNextTrain = false,
+  trip,
 }: {
   line: number;
   stations: string[];
@@ -260,6 +290,7 @@ function SegmentCard({
   name: (id: string) => string;
   lang: Lang;
   showNextTrain?: boolean;
+  trip?: TripResult;
 }) {
   const [open, setOpen] = useState(false);
   const t = STRINGS[lang];
@@ -276,37 +307,10 @@ function SegmentCard({
 
   const next = nextDep[0] ?? null;
 
-  // Fast train suggestion: if current is local, check if an express gets there faster
-  const fastSuggestion = useMemo(() => {
-    if (!next || next.isExpress || line !== 5) return null;
-    if (nextDep.length < 2) return null;
-
-    // Find next express train
-    const express = nextDep.find((d) => d.isExpress);
-    if (!express) return null;
-
-    // Compare: local arrival vs express arrival at the destination
-    // Use the schedule to find actual arrival times
-    const dayType = getCurrentDayType();
-    const localArrival = getArrivalFromOrigin(board, alight, line, timeToMinutes(next.time), dayType);
-    const expressArrival = getArrivalFromOrigin(board, alight, line, timeToMinutes(express.time), dayType);
-
-    if (localArrival === null || expressArrival === null) return null;
-
-    const diffMin = localArrival - expressArrival;
-    if (diffMin <= 0) return null; // Express is not faster
-
-    return {
-      time: express.time,
-      savedMinutes: diffMin,
-      waitExtra: express.minutesUntil - next.minutesUntil,
-    };
-  }, [next, nextDep, board, alight, line]);
-
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       {/* Prominent next train callout - only for first segment */}
-      {showNextTrain && next && (
+      {showNextTrain && (
         <div
           className="flex items-center gap-3 px-4 py-3"
           style={{ backgroundColor: `${color}11` }}
@@ -317,45 +321,46 @@ function SegmentCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold font-mono leading-none" style={{ color }}>
-                {next.time}
+                {trip ? trip.departTime : next?.time ?? "—"}
               </span>
-              {next.isExpress && (
+              {(trip?.train.isExpress || next?.isExpress) && (
                 <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                   <Zap className="size-3" />
-                  {isFa ? "سریع" : "Express"}
+                  {isFa ? "سریع السیر" : "Express"}
                 </span>
               )}
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {isFa ? "به سمت" : "→"} {name(terminal)}
-              {next.minutesUntil <= 2 ? (
-                <span className="me-2 font-bold text-green-600 dark:text-green-400">
-                  {isFa ? "الان" : "Now"}
+              {trip ? (
+                <>
+                  <span className="mx-1.5">·</span>
+                  {isFa ? "رسیدن" : "arrive"} <span className="font-mono font-semibold">{persianDigits(trip.arriveTime, lang)}</span>
+                  <span className="mx-1.5">·</span>
+                  {persianDigits(trip.travelMinutes, lang)}{isFa ? " دقیقه" : " min"}
+                </>
+              ) : next ? (
+                <span className="mx-1.5 text-amber-600 dark:text-amber-400">
+                  {isFa ? "حرکتی موجود نیست" : "no service today"}
                 </span>
-              ) : (
-                <span className="me-2">
-                  {isFa ? " در " : " in "}{persianDigits(next.minutesUntil, lang)}{isFa ? " دقیقه" : " min"}
-                </span>
-              )}
+              ) : null}
             </p>
-            {nextDep.length > 1 && (
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                {isFa ? "بعدی:" : "Then:"}{" "}
-                {nextDep.slice(1, 3).map((d) => d.time).join(", ")}
-              </p>
-            )}
-            {fastSuggestion && (
-              <button
-                type="button"
-                onClick={() => {}}
-                className="mt-1.5 flex items-center gap-1.5 rounded-lg bg-amber-50 border border-amber-200/50 px-2.5 py-1.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/60 dark:border-amber-800/30 dark:text-amber-300"
-              >
-                <Zap className="size-3 shrink-0" />
-                {isFa
-                  ? `سریع ${fastSuggestion.time} — ${persianDigits(fastSuggestion.savedMinutes, lang)} دقیقه زودتر`
-                  : `Express ${fastSuggestion.time} — ${fastSuggestion.savedMinutes} min faster`}
-              </button>
-            )}
+            {(() => {
+              // Find next departure with a different time than the main one
+              const nextDifferent = next ? nextDep.find((d) => d.time !== next.time) : null;
+              if (!nextDifferent) return null;
+              return (
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {isFa ? "بعدی:" : "Then:"}{" "}
+                  <span className="font-mono font-semibold">{persianDigits(nextDifferent.time, lang)}</span>
+                  {nextDifferent.isExpress && (
+                    <span className="ms-1 text-amber-600 dark:text-amber-400">
+                      ({isFa ? "سریع السیر" : "express"})
+                    </span>
+                  )}
+                </p>
+              );
+            })()}
           </div>
         </div>
       )}
