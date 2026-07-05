@@ -177,7 +177,7 @@ export function getScheduleTravelTime(
 
       // Both stations must be in this train's route, and in the correct order
       if (fromIdx === -1 || toIdx === -1) continue;
-      if (toIdx !== fromIdx + 1) continue;
+      if (toIdx <= fromIdx) continue;
 
       const fromMinutes = timeToMinutes(train.stops[fromIdx].time);
       const toMinutes = timeToMinutes(train.stops[toIdx].time);
@@ -186,6 +186,109 @@ export function getScheduleTravelTime(
   }
 
   return null;
+}
+
+/**
+ * Find the shortest travel time between two stations on a line.
+ * Searches all trains and returns the minimum travel time found.
+ * Handles express trains that skip intermediate stations.
+ * Returns seconds, or null if no matching train found.
+ */
+export function getBestSegmentTime(
+  fromId: string,
+  toId: string,
+  line: number,
+  dayType?: DayType,
+): number | null {
+  const dt = dayType ?? getCurrentDayType();
+  let best: number | null = null;
+
+  for (const ls of LINE_SCHEDULES) {
+    if (ls.line !== line) continue;
+
+    for (const train of ls.trains) {
+      if (train.dayType !== dt) continue;
+
+      const fromIdx = train.stops.findIndex((s) => s.stationId === fromId);
+      const toIdx = train.stops.findIndex((s) => s.stationId === toId);
+
+      if (fromIdx === -1 || toIdx === -1) continue;
+      if (toIdx <= fromIdx) continue;
+
+      const fromMin = timeToMinutes(train.stops[fromIdx].time);
+      const toMin = timeToMinutes(train.stops[toIdx].time);
+      const diff = (toMin - fromMin) * 60; // seconds
+
+      if (diff > 0 && (best === null || diff < best)) {
+        best = diff;
+      }
+    }
+  }
+
+  return best;
+}
+
+export type TripResult = {
+  train: TrainSchedule;
+  departTime: string;
+  arriveTime: string;
+  travelMinutes: number;
+};
+
+/**
+ * Find the best trip from origin to destination on a line.
+ * Filters trains by day type, finds trains departing AFTER afterMinutes,
+ * and returns the one with the EARLIEST arrival at destination.
+ * This accounts for: day type, departure time, express vs local.
+ */
+export function findBestTrip(
+  fromId: string,
+  toId: string,
+  line: number,
+  afterMinutes: number,
+  dayType?: DayType,
+  options?: { expressOnly?: boolean; localOnly?: boolean },
+): TripResult | null {
+  const dt = dayType ?? getCurrentDayType();
+  let bestArrival = Infinity;
+  let bestResult: TripResult | null = null;
+
+  for (const ls of LINE_SCHEDULES) {
+    if (ls.line !== line) continue;
+
+    for (const train of ls.trains) {
+      if (train.dayType !== dt) continue;
+
+      const fromIdx = train.stops.findIndex((s) => s.stationId === fromId);
+      const toIdx = train.stops.findIndex((s) => s.stationId === toId);
+
+      if (fromIdx === -1 || toIdx === -1) continue;
+      if (toIdx <= fromIdx) continue;
+
+      // Filter by express if requested
+      if (options?.expressOnly && !train.isExpress) continue;
+      if (options?.localOnly && train.isExpress) continue;
+
+      const departMin = timeToMinutes(train.stops[fromIdx].time);
+      const arriveMin = timeToMinutes(train.stops[toIdx].time);
+
+      // Must depart after the specified time
+      if (departMin < afterMinutes) continue;
+
+      // Pick the train with earliest arrival
+      if (arriveMin < bestArrival) {
+        bestArrival = arriveMin;
+        bestResult = {
+          train,
+          departTime: train.stops[fromIdx].time,
+          arriveTime: train.stops[toIdx].time,
+          travelMinutes: arriveMin - departMin,
+        };
+      }
+    }
+  }
+
+  return bestResult;
 }
 
 /**
