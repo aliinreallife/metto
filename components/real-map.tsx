@@ -193,9 +193,9 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const marker = L.circleMarker([s.lat, s.lng], {
         radius: isEndpoint ? 8 : interchange ? 6 : 4,
         color: isEndpoint ? "#cc0e2d" : interchange ? "#111" : LINE_COLORS[s.lines[0]],
-        weight: isEndpoint ? 3 : interchange ? 2 : 1.5,
-        fillColor: interchange ? "#fff" : LINE_COLORS[s.lines[0]],
-        fillOpacity: dim ? 0.3 : 1,
+        weight: s.disabled ? 1.5 : isEndpoint ? 3 : interchange ? 2 : 1.5,
+        fillColor: s.disabled ? "transparent" : interchange ? "#fff" : LINE_COLORS[s.lines[0]],
+        fillOpacity: s.disabled ? 0 : dim ? 0.3 : 1,
         opacity: dim ? 0.4 : 1,
       })
       marker.bindTooltip(isFa ? s.fa : s.name, {

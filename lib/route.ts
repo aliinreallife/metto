@@ -370,12 +370,14 @@ export function orderLineStations(line: number): LineOrder {
 
 export function searchStations(query: string, limit = 30): Station[] {
   const q = normalize(query);
+  const available = STATIONS.filter((s) => !s.disabled);
   if (!q)
-    return STATIONS.slice()
+    return available
+      .slice()
       .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, limit);
   const scored: { s: Station; score: number }[] = [];
-  for (const s of STATIONS) {
+  for (const s of available) {
     const en = normalize(s.name);
     const fa = normalize(s.fa);
     let score = -1;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { MapPin, Flag, Clock, Zap, Calendar } from "lucide-react";
+import { MapPin, Flag, Clock, Zap, Calendar, Ban } from "lucide-react";
 import { LINE_COLORS, type Station } from "@/lib/metro-data";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
@@ -59,6 +59,12 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {station.disabled && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+              <Ban className="size-3" />
+              {t.underConstruction}
+            </span>
+          )}
           {station.lines.length > 1 && (
             <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               {t.interchange}
@@ -157,7 +163,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
         <button
           type="button"
           onClick={onSetDest}
-          className="flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+          disabled={station.disabled}
+          className="flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Flag className="size-3.5" />
           {t.setDestination}

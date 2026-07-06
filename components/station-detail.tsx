@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { X, Clock, Zap } from "lucide-react";
+import { X, Clock, Zap, Ban } from "lucide-react";
 import { LINE_COLORS, type Station } from "@/lib/metro-data";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
@@ -68,6 +68,13 @@ export function StationDetail({
       {station.lines.length > 1 && (
         <span className="inline-flex items-center gap-1 self-start rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
           {t.interchange}
+        </span>
+      )}
+
+      {station.disabled && (
+        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
+          <Ban className="size-3.5" />
+          {t.underConstruction}
         </span>
       )}
 
