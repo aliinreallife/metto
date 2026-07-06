@@ -27,6 +27,7 @@ const ADJACENCY: Map<string, Set<string>> = (() => {
   const link = (a: string, b: string) => {
     if (a === b) return // drop self-loops
     if (!STATION_BY_ID.has(a) || !STATION_BY_ID.has(b)) return
+    if (STATION_BY_ID.get(a)?.disabled || STATION_BY_ID.get(b)?.disabled) return
     adj.get(a)!.add(b)
     adj.get(b)!.add(a) // enforce symmetry
   }
@@ -41,7 +42,7 @@ const ADJACENCY: Map<string, Set<string>> = (() => {
   //    same line until the line is a single connected component.
   const allLines = [...new Set(STATIONS.flatMap((s) => s.lines))]
   for (const line of allLines) {
-    const onLine = STATIONS.filter((s) => s.lines.includes(line))
+    const onLine = STATIONS.filter((s) => s.lines.includes(line) && !s.disabled)
     if (onLine.length < 2) continue
 
     // Components within this line using only same-line edges.
