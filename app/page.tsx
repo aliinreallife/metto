@@ -18,6 +18,8 @@ import {
   Layers,
   Satellite,
   X,
+  Share2,
+  Check,
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
 import { RoutePanel } from "@/components/route-panel";
@@ -52,10 +54,34 @@ export default function Page() {
     }
     return "fa";
   });
-  const [tab, setTab] = useState<Tab>("route");
-  const [originId, setOriginId] = useState<string | null>(null);
-  const [destId, setDestId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Read initial state from URL params
+  const initialParams = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const p = new URLSearchParams(window.location.search);
+    const from = p.get("from");
+    const to = p.get("to");
+    const station = p.get("station");
+    const mapParam = p.get("map");
+    let center: [number, number] = [35.7, 51.38];
+    let zoom = 11;
+    if (mapParam) {
+      const parts = mapParam.split(",").map(Number);
+      if (parts.length === 3 && parts.every(Number.isFinite)) {
+        center = [parts[0], parts[1]];
+        zoom = parts[2];
+      }
+    }
+    return { from, to, station, center, zoom };
+  }, []);
+
+  const [tab, setTab] = useState<Tab>(() => {
+    if (initialParams?.station) return "map";
+    return "route";
+  });
+  const [originId, setOriginId] = useState<string | null>(initialParams?.from ?? null);
+  const [destId, setDestId] = useState<string | null>(initialParams?.to ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialParams?.station ?? null);
   const [mapMode, setMapMode] = useState<"satellite" | "schematic">(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("mapMode");
@@ -77,8 +103,8 @@ export default function Page() {
 
   // View state for map sync
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
-    center: [35.7, 51.38],
-    zoom: 11,
+    center: initialParams?.center ?? [35.7, 51.38],
+    zoom: initialParams?.zoom ?? 11,
   });
 
   const t = STRINGS[lang];
@@ -112,6 +138,17 @@ export default function Page() {
   useEffect(() => {
     localStorage.setItem("mapMode", mapMode);
   }, [mapMode]);
+
+  // Sync route/station state to URL params (without reload)
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (originId) params.set("from", originId);
+    if (destId) params.set("to", destId);
+    if (selectedId && tab === "map") params.set("station", selectedId);
+    const qs = params.toString();
+    const url = qs ? `?${qs}` : window.location.pathname;
+    window.history.replaceState(null, "", url);
+  }, [originId, destId, selectedId, tab]);
 
   function switchTab(newTab: Tab) {
     if (newTab !== "map") setSelectedId(null);
@@ -414,6 +451,7 @@ function RouteView({
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
   const [locating, setLocating] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   function locateOrigin() {
     if (!navigator.geolocation) return;
@@ -572,7 +610,35 @@ function RouteView({
           })()}
 
         {route ? (
-          <RoutePanel route={route} lang={lang} />
+          <>
+            <RoutePanel route={route} lang={lang} />
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(window.location.href);
+                } catch {
+                  if (navigator.share) await navigator.share({ url: window.location.href });
+                  return;
+                }
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2500);
+              }}
+              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              {copied ? (
+                <>
+                  <Check className="size-4 text-green-500" />
+                  <span className="text-green-600">{t.copied}</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="size-4" />
+                  <span>{t.shareRoute}</span>
+                </>
+              )}
+            </button>
+          </>
         ) : !selected ? (
           <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
             <p>
