@@ -24,6 +24,9 @@ export const metadata: Metadata = {
   },
   description:
     "متو — نقشه مترو تهران با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها. سریع‌ترین مسیر را بین ایستگاه‌های مترو پیدا کنید.",
+  verification: {
+    google: "yT7M8VQ3-f2WbNtL_hwI6hVnVSgTkp1xGp2NMg7QL-E",
+  },
   metadataBase: new URL(siteUrl),
   alternates: {
     canonical: "/",
