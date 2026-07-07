@@ -96,12 +96,12 @@ export default function Page() {
 
   useEffect(() => {
     const tabTitles: Record<Tab, { fa: string; en: string }> = {
-      route: { fa: "مسیریاب مترو تهران", en: "Tehran Metro Route Planner" },
+      route: { fa: "مسیریابی مترو تهران", en: "Tehran Metro Route Planner" },
       stations: { fa: "ایستگاه‌های مترو تهران", en: "Tehran Metro Stations" },
       nearby: { fa: "نزدیک‌ترین ایستگاه مترو", en: "Nearby Metro Stations" },
       map: { fa: "نقشه مترو تهران", en: "Tehran Metro Map" },
     };
-    const suffix = isFa ? " | مترو تهران" : " | Tehran Metro";
+    const suffix = isFa ? " | متو" : " | Metto";
     document.title = tabTitles[tab][lang] + suffix;
   }, [tab, lang, isFa]);
 

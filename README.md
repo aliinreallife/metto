@@ -1,4 +1,4 @@
-# tehran-metro-app
+# metto — مترو تهران
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
 

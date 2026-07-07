@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
-    sitemap: "https://metro.tehran-app.ir/sitemap.xml",
+    sitemap: "https://metto.ir/sitemap.xml",
   };
 }

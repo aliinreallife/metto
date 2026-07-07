@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "مترو تهران — نقشه مترو و مسیریاب",
-    short_name: "مترو تهران",
+    name: "متو — نقشه مترو تهران، مسیریابی و زمانبندی",
+    short_name: "متو",
     description:
-      "نقشه مترو تهران با امکان مسیریابی هوشمند، مشاهده تمام ایستگاه‌ها و خطوط متروی تهران.",
+      "متو | نقشه مترو تهران با امکان مسیریابی هوشمند، مشاهده زمانبندی و تمام ایستگاه‌ها و خطوط متروی تهران.",
     start_url: "/",
     display: "standalone",
     background_color: "#0a0a0a",
