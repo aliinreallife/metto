@@ -2,8 +2,8 @@ export type Lang = "en" | "fa";
 
 export const STRINGS = {
   en: {
-    appTitle: "Tehran Metro",
-    appSubtitle: "Route planner & map",
+    appTitle: "Metto",
+    appSubtitle: "Tehran Metro route planner & map",
     from: "From",
     to: "To",
     origin: "Station or place name…",
@@ -88,8 +88,8 @@ export const STRINGS = {
     nearbyHintAfter: "or any other feature you may need",
   },
   fa: {
-    appTitle: "مترو تهران",
-    appSubtitle: "مسیریاب و نقشه",
+    appTitle: "متو",
+    appSubtitle: "نقشه و مسیریابی مترو تهران",
     from: "مبدأ",
     to: "مقصد",
     origin: "ایستگاه یا نام مکان…",

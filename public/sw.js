@@ -1,4 +1,4 @@
-const CACHE = "tehran-metro-v1"
+const CACHE = "metto-v1"
 const APP_SHELL = ["/"]
 
 self.addEventListener("install", (event) => {

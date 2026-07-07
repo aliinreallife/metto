@@ -15,15 +15,15 @@ const vazirmatn = Vazirmatn({
   weight: ["400", "700", "800"],
 });
 
-const siteUrl = "https://metro.tehran-app.ir";
+const siteUrl = "https://metto.ir";
 
 export const metadata: Metadata = {
   title: {
-    default: "مترو تهران — نقشه مترو و مسیریاب",
-    template: "%s | مترو تهران",
+    default: "متو | نقشه و مسیریابی مترو تهران",
+    template: "%s | متو",
   },
   description:
-    "نقشه مترو تهران با امکان مسیریابی هوشمند، مشاهده تمام ایستگاه‌ها و خطوط متروی تهران. سریع‌ترین مسیر را بین ایستگاه‌ها پیدا کنید.",
+    "متو — نقشه مترو تهران با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها. سریع‌ترین مسیر را بین ایستگاه‌های مترو پیدا کنید.",
   metadataBase: new URL(siteUrl),
   alternates: {
     canonical: "/",
@@ -33,49 +33,53 @@ export const metadata: Metadata = {
     },
   },
   keywords: [
-    "مترو تهران",
     "نقشه مترو",
+    "مترو تهران",
     "نقشه مترو تهران",
+    "زمان‌بندی مترو",
+    "زمان‌بندی مترو تهران",
+    "مسیریابی مترو",
     "مسیریاب مترو",
     "ایستگاه مترو تهران",
     "خط مترو تهران",
-    "metro tehran",
-    "tehran metro map",
-    "tehran subway",
     "مسیر مترو",
     "قیمت بلیت مترو",
     "ساعت مترو تهران",
+    "metro tehran",
+    "tehran metro map",
+    "tehran subway",
+    "متو",
+    "metto",
   ],
   authors: [{ name: "aliinreallife" }],
   creator: "aliinreallife",
   publisher: "aliinreallife",
-  applicationName: "مترو تهران",
-  generator: "v0.app",
+  applicationName: "متو — Metto",
   referrer: "origin-when-cross-origin",
   openGraph: {
     type: "website",
     locale: "fa_IR",
     alternateLocale: "en_US",
     url: siteUrl,
-    siteName: "مترو تهران — نقشه مترو و مسیریاب",
-    title: "مترو تهران — نقشه مترو و مسیریاب",
+    siteName: "متو — نقشه مترو تهران و مسیریابی",
+    title: "متو | نقشه و مسیریابی مترو تهران",
     description:
-      "نقشه مترو تهران با امکان مسیریابی هوشمند، مشاهده تمام ایستگاه‌ها و خطوط متروی تهران. سریع‌ترین مسیر را بین ایستگاه‌ها پیدا کنید.",
+      "متو — نقشه مترو تهران با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها.",
     images: [
       {
         url: "/icon-512.png",
         width: 512,
         height: 512,
-        alt: "نقشه مترو تهران — مسیریاب هوشمند",
+        alt: "متو — نقشه و مسیریابی مترو تهران",
         type: "image/png",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "مترو تهران — نقشه مترو و مسیریاب",
+    title: "متو | نقشه و مسیریابی مترو تهران",
     description:
-      "نقشه مترو تهران با امکان مسیریابی هوشمند، مشاهده تمام ایستگاه‌ها و خطوط متروی تهران.",
+      "متو — نقشه مترو تهران با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها.",
     images: ["/icon-512.png"],
     creator: "@aliinreallife",
   },
@@ -93,7 +97,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "مترو تهران",
+    title: "متو | Metto",
   },
   manifest: "/manifest.webmanifest",
   icons: {
@@ -130,11 +134,11 @@ export const viewport: Viewport = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "مترو تهران",
-  alternateName: ["Tehran Metro", "نقشه مترو تهران", "نقشه مترو"],
+  name: "متو",
+  alternateName: ["Metto", "مترو تهران", "نقشه مترو تهران", "نقشه مترو"],
   url: siteUrl,
   description:
-    "نقشه مترو تهران با امکان مسیریابی هوشمند، مشاهده تمام ایستگاه‌ها و خطوط متروی تهران.",
+    "متو — نقشه مترو تهران با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها.",
   applicationCategory: "TravelApplication",
   operatingSystem: "Any",
   offers: {
@@ -145,6 +149,7 @@ const jsonLd = {
   featureList: [
     "مسیریابی هوشمند مترو",
     "نقشه تعاملی مترو تهران",
+    "زمان‌بندی مترو تهران",
     "لیست تمام ایستگاه‌های مترو",
     "پیدا کردن نزدیک‌ترین ایستگاه",
     "اطلاعات خطوط مترو",
