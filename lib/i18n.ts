@@ -86,6 +86,10 @@ export const STRINGS = {
     nearbyHintBefore: "you could also find nearest station with",
     nearbyHintExample: "restroom",
     nearbyHintAfter: "or any other feature you may need",
+    share: "Share",
+    shareRoute: "Share route",
+    shareStation: "Share station",
+    copied: "Link copied!",
   },
   fa: {
     appTitle: "متو",
@@ -172,6 +176,10 @@ export const STRINGS = {
     nearbyHintBefore: "می‌توانید نزدیک‌ترین ایستگاه با",
     nearbyHintExample: "سرویس بهداشتی",
     nearbyHintAfter: "یا هر امکان دیگری که نیاز دارید",
+    share: "اشتراک‌گذاری",
+    shareRoute: "اشتراک‌گذاری مسیر",
+    shareStation: "اشتراک‌گذاری ایستگاه",
+    copied: "لینک کپی شد!",
   },
 } as const;
 
