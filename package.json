@@ -9,7 +9,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@base-ui/react": "^1.5.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/leaflet": "^1.9.21",
     "@vercel/analytics": "1.6.1",

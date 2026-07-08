@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { Lang } from "@/lib/i18n";
+import { loadScheduleData } from "@/lib/schedule-utils";
 
 type MetroContextValue = {
   lang: Lang;
@@ -28,12 +29,13 @@ export function MetroProvider({ children }: { children: ReactNode }) {
   const [originId, setOriginId] = useState<string | null>(null);
   const [destId, setDestId] = useState<string | null>(null);
 
-  // Hydrate from localStorage on mount
+  // Hydrate from localStorage on mount + preload schedule data
   useEffect(() => {
     const saved = localStorage.getItem("lang");
     if (saved === "en" || saved === "fa") setLangState(saved);
     const savedMode = localStorage.getItem("mapMode");
     if (savedMode === "satellite" || savedMode === "schematic") setMapModeState(savedMode);
+    loadScheduleData();
   }, []);
 
   const setLang = useCallback((l: Lang) => {

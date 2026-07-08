@@ -1,8 +1,9 @@
-# Metto — Tehran Metro Route Planner & Map
+# Metto - Tehran Metro Route Planner & Map
 
 Metto (متو) is a free, fast, and offline-capable web app for navigating the Tehran Metro system.
 
 ## Features
+
 - **Route Planner**: Find the fastest route between any two metro stations with transfer info, travel time, and stop count
 - **Station List**: Browse all 100+ stations across 7 metro lines with schedules, amenities, and maps
 - **Nearby Stations**: Find the nearest metro station using GPS, filter by amenities (WiFi, elevator, parking, etc.)
@@ -10,53 +11,25 @@ Metto (متو) is a free, fast, and offline-capable web app for navigating the T
 
 ## API Endpoints
 
-### Route Planner
-```
-GET /api/route?from={stationId}&to={stationId}
-GET /api/route?from_lat={lat}&from_lng={lng}&to_lat={lat}&to_lng={lng}
-```
-Example: `GET /api/route?from=Tajrish&to=Darvazeh Sharq`
-Example: `GET /api/route?from_lat=35.804&from_lng=51.433&to_lat=35.689&to_lng=51.389`
-
-### Station List
-```
-GET /api/stations
-GET /api/stations?line={lineNumber}
-GET /api/stations?search={query}
-```
-Example: `GET /api/stations?line=1`
-Example: `GET /api/stations?search=taj`
-
-### Station Details
-```
-GET /api/station/{stationId}
-```
-Example: `GET /api/station/Tajrish`
-
-### Nearest Stations
-```
-GET /api/nearby?lat={lat}&lng={lng}&limit={n}&amenities={list}
-```
-Example: `GET /api/nearby?lat=35.804&lng=51.433&limit=5`
-Amenities: wc, elevator, atm, coffeeShop, fastFood, groceryStore, freeWifi, prayerRoom, parking, police
-
-## Station IDs
-English names like: Tajrish, Gheytariyeh, Darvazeh Sharq, Vali-Asr, Mellat, Imam Khomeini
+- [Route Planner](https://metto.ir/api/route?from=Tajrish&to=Darvazeh Sharq) - Plan a route between two stations by name or GPS coordinates
+- [Station List](https://metto.ir/api/stations) - List all stations, filterable by line or search query
+- [Station Details](https://metto.ir/api/station/Tajrish) - Get full details for a single station
+- [Nearby Stations](https://metto.ir/api/nearby?lat=35.804&lng=51.433) - Find nearest stations to GPS coordinates
 
 ## MCP Server
+
 An MCP server is available for AI assistants (Claude, etc).
 
-Tools:
-- `get_route(from, to)` — plan a metro route
-- `list_stations(line?, search?)` — list stations
-- `get_station(id)` — station details
-- `find_nearby(lat, lng, limit?)` — nearest stations
+Tools: get_route, list_stations, get_station, find_nearby
 
-Run: `npx tsx mcp-server.ts`
+## Documentation
 
-## Links
-- Homepage: https://metto.ir
-- Stations: https://metto.ir/stations
-- Map: https://metto.ir/map
-- OpenAPI Spec: https://metto.ir/openapi.json
-- AI Agent Guide: https://metto.ir/llms.txt
+- [OpenAPI Spec](https://metto.ir/openapi.json) - Machine-readable API documentation
+- [AI Agent Guide](https://metto.ir/llms.txt) - This file
+
+## Pages
+
+- [Homepage](https://metto.ir) - Route planner
+- [Stations](https://metto.ir/stations) - Station list with schedules
+- [Map](https://metto.ir/map) - Interactive metro map
+- [Nearby](https://metto.ir/nearby) - Find nearest station
