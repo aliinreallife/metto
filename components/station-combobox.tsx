@@ -90,7 +90,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-start transition-colors hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring"
+        className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-start transition-colors hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring md:px-4 md:py-3 md:text-base"
       >
         <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden />
         <span className="min-w-0 flex-1 truncate">
@@ -130,12 +130,12 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholder}
               dir="auto"
-              className="w-full rounded-md bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
+              className="w-full rounded-md bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground md:px-4 md:py-2.5 md:text-base"
             />
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">
             {query.length === 0 && onPlaceSelect && (
-              <li className="px-3 py-1.5 text-center text-[11px] text-muted-foreground">
+              <li className="px-3 py-2 text-center text-xs text-muted-foreground md:px-4 md:py-2.5 md:text-sm">
                 {STRINGS[lang].searchHintBefore}{" "}
                 <button
                   type="button"
@@ -149,7 +149,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                       }
                     })
                   }}
-                  className="cursor-pointer font-semibold text-primary hover:underline"
+                  className="cursor-pointer font-bold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
                 >
                   {STRINGS[lang].searchHintExample}
                 </button>
@@ -213,7 +213,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                         onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
                         setOpen(false)
                       }}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent md:px-4 md:py-2.5 md:text-base"
                     >
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{p.displayName}</span>
@@ -227,7 +227,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
 
             {/* No results */}
             {showNoResults && (
-              <li className="px-3 py-6 text-center text-sm text-muted-foreground">
+              <li className="px-3 py-6 text-center text-sm text-muted-foreground md:py-8 md:text-base">
                 {t.noResults}
               </li>
             )}
