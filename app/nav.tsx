@@ -20,14 +20,19 @@ const NAV_ITEMS = [
   { href: "/stations", labelKey: "tabStations" as const, icon: ListTree },
   { href: "/nearby", labelKey: "tabNearby" as const, icon: LocateFixed },
   { href: "/map", labelKey: "tabMap" as const, icon: MapIcon },
-];
+] as const;
 
 export function AppNav() {
-  const { lang, setLang } = useMetro();
+  const { lang, setLang, originId, destId } = useMetro();
   const pathname = usePathname();
   const t = STRINGS[lang];
 
   const currentPath = pathname === "/" ? "/" : pathname;
+
+  function getHref(base: string) {
+    if (originId && destId) return `${base}?from=${originId}&to=${destId}`;
+    return base;
+  }
 
   function toggleLang() {
     const next = lang === "en" ? "fa" : "en";
@@ -50,11 +55,12 @@ export function AppNav() {
         {/* desktop tabs */}
         <nav className="hidden items-center gap-1 md:flex">
           {NAV_ITEMS.map((item) => {
+            const href = getHref(item.href);
             const active = currentPath === item.href;
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={href}
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors md:gap-2 md:px-4 md:py-2.5 md:text-base",
                   active
@@ -86,11 +92,12 @@ export function AppNav() {
       {/* mobile bottom tab bar - fixed to viewport bottom */}
       <nav className="fixed bottom-0 inset-x-0 z-20 grid grid-cols-4 border-t border-border bg-card/90 backdrop-blur md:hidden">
         {NAV_ITEMS.map((item) => {
+          const href = getHref(item.href);
           const active = currentPath === item.href;
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={href}
               className={cn(
                 "flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors",
                 active ? "text-primary" : "text-muted-foreground",

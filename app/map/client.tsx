@@ -46,8 +46,15 @@ export function MapPage() {
       }
     }
     const station = searchParams.get("station");
-    return { center, zoom, station };
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    return { center, zoom, station, from, to };
   }, [searchParams]);
+
+  const route = useMemo(() => {
+    if (!initialParams.from || !initialParams.to || initialParams.from === initialParams.to) return null;
+    return findRoute(initialParams.from, initialParams.to);
+  }, [initialParams.from, initialParams.to]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
@@ -66,9 +73,9 @@ export function MapPage() {
       <RealMap
         lang={lang}
         mapMode={mapMode}
-        route={null}
-        originId={null}
-        destId={null}
+        route={route}
+        originId={initialParams.from}
+        destId={initialParams.to}
         selectedId={selectedId}
         onSelect={setSelectedId}
         initialCenter={mapView.center}
