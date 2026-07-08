@@ -156,7 +156,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
 
         {!coords ? (
           <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-12 text-center text-sm text-muted-foreground">
-            <p className="mt-2 text-[11px] text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground md:text-sm">
               {t.nearbyHintBefore}{" "}
               <button
                 type="button"
@@ -164,7 +164,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
                   setSelectedAmenities(["wc"]);
                   useGps();
                 }}
-                className="cursor-pointer font-semibold text-primary hover:underline"
+                className="cursor-pointer font-bold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
               >
                 {t.nearbyHintExample}
               </button>

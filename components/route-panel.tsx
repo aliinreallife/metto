@@ -183,10 +183,10 @@ export function RoutePanel({
   }, [noTrainWarning, longWait, connectionWarnings, originDeps, isFa, lang, name]);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-3 gap-3">
+    <div className="flex flex-col gap-3 md:gap-4">
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
         <Stat
-          icon={<TrainFront className="size-5" />}
+          icon={<TrainFront className="size-5 md:size-6" />}
           value={persianDigits(route.numStops + 1, lang)}
           label={isFa ? "ایستگاه" : "stops"}
         />
@@ -264,10 +264,10 @@ function Stat({
   tooltip?: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-3 py-3">
+    <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-3 py-3 md:px-5 md:py-4">
       <span className="text-muted-foreground">{icon}</span>
-      <span className="text-2xl font-bold leading-none" title={tooltip}>{value}</span>
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-2xl font-bold leading-none md:text-3xl" title={tooltip}>{value}</span>
+      <span className="text-sm text-muted-foreground md:text-base">{label}</span>
     </div>
   );
 }
@@ -309,15 +309,15 @@ function SegmentCard({
       {/* Prominent next train callout - only for first segment */}
       {showNextTrain && (
         <div
-          className="flex items-center gap-3 px-4 py-3"
+          className="flex items-center gap-3 px-4 py-3 md:gap-4 md:px-5 md:py-4"
           style={{ backgroundColor: `${color}11` }}
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white" style={{ backgroundColor: color }}>
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white md:size-12 md:text-base" style={{ backgroundColor: color }}>
             {persianDigits(line, lang)}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold font-mono leading-none" style={{ color }}>
+              <span className="text-2xl font-bold font-mono leading-none md:text-3xl" style={{ color }}>
                 {trip ? trip.departTime : next?.time ?? "—"}
               </span>
               {(trip?.train.isExpress || next?.isExpress) && (
@@ -362,10 +362,10 @@ function SegmentCard({
         </div>
       )}
 
-      <div className="flex gap-3 p-4">
+      <div className="flex gap-3 p-4 md:gap-4 md:p-5">
         <div className="flex flex-col items-center pt-1">
           <span
-            className="size-4 rounded-full ring-2 ring-offset-2 ring-offset-card"
+            className="size-4 rounded-full ring-2 ring-offset-2 ring-offset-card md:size-5"
             style={{ backgroundColor: color, color }}
           />
           <span
@@ -373,20 +373,20 @@ function SegmentCard({
             style={{ backgroundColor: color }}
           />
           <span
-            className="size-4 rounded-full"
+            className="size-4 rounded-full md:size-5"
             style={{ backgroundColor: color }}
           />
         </div>
-        <div className="min-w-0 flex-1 flex flex-col gap-2">
+        <div className="min-w-0 flex-1 flex flex-col gap-2 md:gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold text-white"
+              className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold text-white md:px-3 md:py-1.5 md:text-sm"
               style={{ backgroundColor: color }}
             >
               {t.line} {persianDigits(line, lang)}
             </span>
             <span
-              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold"
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold md:px-3 md:py-2 md:text-sm"
               style={{ backgroundColor: `${color}22`, color }}
             >
               <Compass className="size-4 shrink-0" />
@@ -396,11 +396,11 @@ function SegmentCard({
           </div>
 
           {/* route spine: board -- (intermediate ticks) -- alight */}
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm md:gap-3 md:text-base">
             <span className="font-semibold truncate shrink-0 max-w-[38%]">
               {name(board)}
             </span>
-            <div className="relative h-2 flex-1">
+            <div className="relative h-2 flex-1 md:h-3">
               <div
                 className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2"
                 style={{ backgroundColor: `${color}55` }}
@@ -410,14 +410,14 @@ function SegmentCard({
                   {stations.map((id) => (
                     <span
                       key={id}
-                      className="size-2 shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-card"
+                      className="size-2 shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-card md:size-3"
                       style={{ backgroundColor: color }}
                     />
                   ))}
                 </div>
               ) : (
                 <span
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-bold text-white"
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-bold text-white md:px-3 md:py-1.5 md:text-xs"
                   style={{ backgroundColor: color }}
                 >
                   {persianDigits(stations.length - 2, lang)}

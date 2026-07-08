@@ -220,14 +220,14 @@ export default function Page() {
 
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground">
-      <header className="z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur">
-        <div className="flex items-center gap-2.5">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <TrainFront className="size-5" />
+      <header className="z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-6 md:py-4">
+        <div className="flex items-center gap-2.5 md:gap-3">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground md:size-10">
+            <TrainFront className="size-5 md:size-6" />
           </span>
           <div className="leading-tight">
-            <h1 className="text-base font-bold">{t.appTitle}</h1>
-            <p className="text-xs text-muted-foreground">{t.appSubtitle}</p>
+            <h1 className="text-base font-bold md:text-lg">{t.appTitle}</h1>
+            <p className="text-xs text-muted-foreground md:text-sm">{t.appSubtitle}</p>
           </div>
         </div>
 
@@ -245,15 +245,15 @@ export default function Page() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:gap-3">
           <InstallButton label={t.install} />
           <button
             type="button"
             onClick={() => setLang((l) => (l === "en" ? "fa" : "en"))}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-2 text-sm font-medium transition-colors hover:bg-accent"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-2 text-sm font-medium transition-colors hover:bg-accent md:px-3 md:py-2.5 md:text-base"
             aria-label="Toggle language"
           >
-            <Globe className="size-4" />
+            <Globe className="size-4 md:size-5" />
             {lang === "en" ? "فارسی" : "EN"}
           </button>
         </div>
@@ -472,10 +472,10 @@ function RouteView({
   }
 
   return (
-    <div className="flex size-full flex-col overflow-y-auto p-4 md:items-center md:p-6">
-      <div className="flex w-full max-w-lg flex-col gap-3">
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className="flex size-full flex-col overflow-y-auto p-4 md:items-center md:p-8 lg:p-10">
+      <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
+        <div className="flex flex-col gap-2.5">
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
             {t.from}
           </label>
           <div className="flex gap-2">
@@ -507,8 +507,8 @@ function RouteView({
             </button>
           </div>
           {originPlaceInfo && (
-            <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
-              <Building2 className="size-4 shrink-0 text-primary" />
+            <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
+              <Building2 className="size-4 shrink-0 text-primary md:size-5" />
               <span className="min-w-0 flex-1 truncate">
                 <span className="font-medium">{originPlaceInfo.placeName}</span>
                 <span className="mx-1.5 text-muted-foreground">→</span>
@@ -526,7 +526,7 @@ function RouteView({
               </button>
             </div>
           )}
-          <label className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <label className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
             {t.to}
           </label>
           <div className="flex gap-2">
@@ -553,8 +553,8 @@ function RouteView({
             </button>
           </div>
           {destPlaceInfo && (
-            <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
-              <Building2 className="size-4 shrink-0 text-primary" />
+            <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
+              <Building2 className="size-4 shrink-0 text-primary md:size-5" />
               <span className="min-w-0 flex-1 truncate">
                 <span className="font-medium">{destPlaceInfo.placeName}</span>
                 <span className="mx-1.5 text-muted-foreground">→</span>
@@ -582,65 +582,58 @@ function RouteView({
           />
         ) : null}
 
-        {route &&
-          originId &&
-          (() => {
-            const origin = STATION_MAP.get(originId);
-            if (!origin) return null;
-            return (
-              <a
-                href={geoUrl(
-                  { lat: origin.lat, lng: origin.lng },
-                  isFa ? origin.fa : origin.name,
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
-              >
-                <MapPin className="size-4 shrink-0 text-primary" />
-                <span>
-                  {t.getThereToStart}
-                  {" · "}
-                  <span className="font-semibold">
-                    {isFa ? origin.fa : origin.name}
-                  </span>
-                </span>
-              </a>
-            );
-          })()}
-
         {route ? (
           <>
             <RoutePanel route={route} lang={lang} />
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(window.location.href);
-                } catch {
-                  if (navigator.share) await navigator.share({ url: window.location.href });
-                  return;
-                }
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2500);
-              }}
-              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition-colors hover:bg-accent"
-            >
-              {copied ? (
-                <>
-                  <Check className="size-4 text-green-500" />
-                  <span className="text-green-600">{t.copied}</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="size-4" />
-                  <span>{t.shareRoute}</span>
-                </>
-              )}
-            </button>
+            {originId && (() => {
+              const origin = STATION_MAP.get(originId);
+              if (!origin) return null;
+              return (
+                <div className="grid grid-cols-4 gap-2 md:gap-3">
+                  <a
+                    href={geoUrl(
+                      { lat: origin.lat, lng: origin.lng },
+                      isFa ? origin.fa : origin.name,
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="col-span-1 flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-2 py-3 text-xs font-medium transition-colors hover:bg-accent md:gap-2 md:py-3.5 md:text-sm"
+                  >
+                    <MapPin className="size-3.5 shrink-0 md:size-4" />
+                    <span className="truncate">{isFa ? "بریم به ایستگاه مبدا" : "Go to start"}</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(window.location.href);
+                      } catch {
+                        if (navigator.share) await navigator.share({ url: window.location.href });
+                        return;
+                      }
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2500);
+                    }}
+                    className="col-span-3 flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition-colors hover:bg-accent md:gap-3 md:py-3.5 md:text-base"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="size-4 text-green-500 md:size-5" />
+                        <span className="text-green-600">{t.copied}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="size-4 md:size-5" />
+                        <span>{t.shareRoute}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            })()}
           </>
         ) : !selected ? (
-          <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground md:px-5 md:py-8 md:text-base">
             <p>
               {originId && destId && originId === destId
                 ? t.sameStation
@@ -684,7 +677,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors md:gap-2 md:px-4 md:py-2.5 md:text-base",
         active
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:bg-accent hover:text-foreground",
