@@ -3,7 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { z } from "zod";
 import { findRoute, STATION_MAP } from "@/lib/route";
 import { nearestStations } from "@/lib/geo";
-import { STATIONS } from "@/lib/metro-data";
+import { STATIONS, LINE_COLORS } from "@/lib/metro-data";
 
 function createServer() {
   const server = new McpServer({
@@ -104,6 +104,106 @@ function createServer() {
     const list = results.map(r => `${r.station.fa} (${r.station.name}) — ${r.km.toFixed(2)} km`).join("\n");
     return { content: [{ type: "text" as const, text: `Nearest stations to ${lat}, ${lng}:\n\n${list}` }] };
   });
+
+  // Resources
+
+  server.registerResource("stations", "metro://stations", {
+    description: "Full list of all Tehran Metro stations with names, lines, coordinates, and amenities",
+    mimeType: "application/json",
+  }, async () => ({
+    contents: [{
+      uri: "metro://stations",
+      mimeType: "application/json",
+      text: JSON.stringify(STATIONS.map(s => ({
+        id: s.id, name: s.name, fa: s.fa, lines: s.lines,
+        lat: s.lat, lng: s.lng, amenities: s.amenities,
+      })), null, 2),
+    }],
+  }));
+
+  server.registerResource("lines", "metro://lines", {
+    description: "Tehran Metro line information with colors and station counts",
+    mimeType: "application/json",
+  }, async () => {
+    const lines = Object.keys(LINE_COLORS).map(Number).sort((a, b) => a - b).map(lineNum => {
+      const lineStations = STATIONS.filter(s => s.lines.includes(lineNum));
+      return {
+        line: lineNum,
+        color: LINE_COLORS[lineNum],
+        stationCount: lineStations.length,
+        stations: lineStations.map(s => s.id),
+      };
+    });
+    return {
+      contents: [{
+        uri: "metro://lines",
+        mimeType: "application/json",
+        text: JSON.stringify(lines, null, 2),
+      }],
+    };
+  });
+
+  server.registerResource("station", "metro://station/{id}", {
+    description: "Details for a specific station by ID",
+    mimeType: "application/json",
+  }, async (uri) => {
+    const id = uri.searchParams.get("id") ?? uri.pathname.split("/").pop() ?? "";
+    const station = STATION_MAP.get(id);
+    if (!station) {
+      return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify({ error: "Station not found" }) }] };
+    }
+    return {
+      contents: [{
+        uri: uri.href,
+        mimeType: "application/json",
+        text: JSON.stringify({
+          id: station.id, name: station.name, fa: station.fa,
+          lines: station.lines, lat: station.lat, lng: station.lng,
+          relations: station.relations, amenities: station.amenities,
+        }, null, 2),
+      }],
+    };
+  });
+
+  // Prompts
+
+  server.registerPrompt("plan-route", {
+    description: "Plan a metro route between two stations",
+    arguments: [
+      { name: "origin", description: "Starting station name (English or Farsi)", required: true },
+      { name: "destination", description: "Ending station name (English or Farsi)", required: true },
+    ],
+  }, async ({ origin, destination }) => ({
+    messages: [{
+      role: "user" as const,
+      content: { type: "text" as const, text: `Plan a metro route from ${origin} to ${destination}. Use the get_route tool to find the best path, then summarize the route including number of stops, transfers, and estimated travel time.` },
+    }],
+  }));
+
+  server.registerPrompt("station-info", {
+    description: "Get detailed information about a metro station",
+    arguments: [
+      { name: "station", description: "Station name (English or Farsi)", required: true },
+    ],
+  }, async ({ station }) => ({
+    messages: [{
+      role: "user" as const,
+      content: { type: "text" as const, text: `Tell me about ${station} metro station. Use the get_station tool to get details including lines, amenities, coordinates, and connected stations.` },
+    }],
+  }));
+
+  server.registerPrompt("find-nearest", {
+    description: "Find the nearest metro station to a location",
+    arguments: [
+      { name: "latitude", description: "Latitude coordinate", required: true },
+      { name: "longitude", description: "Longitude coordinate", required: true },
+    ],
+  }, async ({ latitude, longitude }) => ({
+    messages: [{
+      role: "user" as const,
+      content: { type: "text" as const, text: `Find the nearest metro stations to coordinates ${latitude}, ${longitude}. Use the find_nearby tool and list the closest stations with distances.` },
+    }],
+  }));
 
   return server;
 }
