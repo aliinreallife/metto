@@ -187,7 +187,7 @@ export default function RootLayout({
       <body className="flex h-dvh flex-col font-sans antialiased">
         <MetroProvider>
           <AppNav />
-          <div className="relative min-h-0 flex-1 flex flex-col">{children}</div>
+          <div className="relative min-h-0 flex-1 flex flex-col pb-14 md:pb-0">{children}</div>
         </MetroProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
         {process.env.NODE_ENV === "production" && <SpeedInsights />}
