@@ -1,0 +1,267 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Metto — Tehran Metro API",
+    "description": "Free API for Tehran Metro route planning, station data, and nearby station lookup.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "aliinreallife",
+      "url": "https://github.com/aliinreallife"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://metto.ir",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/api/route": {
+      "get": {
+        "summary": "Plan a metro route",
+        "description": "Find the fastest route between two stations. Supports station names or GPS coordinates.",
+        "operationId": "getRoute",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Origin station ID (English name)",
+            "schema": { "type": "string" },
+            "example": "Tajrish"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Destination station ID (English name)",
+            "schema": { "type": "string" },
+            "example": "Darvazeh Sharq"
+          },
+          {
+            "name": "from_lat",
+            "in": "query",
+            "description": "Origin latitude (finds nearest station)",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "from_lng",
+            "in": "query",
+            "description": "Origin longitude",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "to_lat",
+            "in": "query",
+            "description": "Destination latitude",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "to_lng",
+            "in": "query",
+            "description": "Destination longitude",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Route found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "origin": { "$ref": "#/components/schemas/Station" },
+                    "destination": { "$ref": "#/components/schemas/Station" },
+                    "route": { "$ref": "#/components/schemas/RouteResult" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing parameters" },
+          "404": { "description": "Station not found or no route" }
+        }
+      }
+    },
+    "/api/stations": {
+      "get": {
+        "summary": "List all stations",
+        "description": "Get all metro stations, optionally filtered by line or search query.",
+        "operationId": "getStations",
+        "parameters": [
+          {
+            "name": "line",
+            "in": "query",
+            "description": "Filter by line number (1-7)",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search by name (English or Farsi)",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Station list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "lines": { "type": "array", "items": { "type": "integer" } },
+                    "stations": { "type": "array", "items": { "$ref": "#/components/schemas/Station" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/station/{id}": {
+      "get": {
+        "summary": "Get station details",
+        "description": "Get full details for a single station including amenities and connections.",
+        "operationId": "getStation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Station ID (English name)",
+            "schema": { "type": "string" },
+            "example": "Tajrish"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Station details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StationDetail" }
+              }
+            }
+          },
+          "404": { "description": "Station not found" }
+        }
+      }
+    },
+    "/api/nearby": {
+      "get": {
+        "summary": "Find nearest stations",
+        "description": "Find the closest metro stations to a GPS coordinate, with optional amenity filters.",
+        "operationId": "getNearby",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "description": "Latitude",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": true,
+            "description": "Longitude",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max results (default 5, max 20)",
+            "schema": { "type": "integer", "default": 5 }
+          },
+          {
+            "name": "amenities",
+            "in": "query",
+            "description": "Comma-separated amenity filter",
+            "schema": { "type": "string" },
+            "example": "wc,elevator"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nearby stations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": { "type": "object" },
+                    "count": { "type": "integer" },
+                    "stations": { "type": "array", "items": { "$ref": "#/components/schemas/NearbyStation" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing lat/lng" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Station": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string", "description": "English name" },
+          "fa": { "type": "string", "description": "Farsi name" },
+          "lines": { "type": "array", "items": { "type": "integer" } },
+          "lat": { "type": "number" },
+          "lng": { "type": "number" }
+        }
+      },
+      "StationDetail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "fa": { "type": "string" },
+          "lines": { "type": "array", "items": { "type": "integer" } },
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "relations": { "type": "array", "items": { "type": "string" } },
+          "amenities": { "type": "object" }
+        }
+      },
+      "RouteResult": {
+        "type": "object",
+        "properties": {
+          "stops": { "type": "integer" },
+          "transfers": { "type": "integer" },
+          "estimatedMinutes": { "type": "integer" },
+          "estimatedArrival": { "type": "string" },
+          "path": { "type": "array", "items": { "type": "string" } },
+          "hops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": { "type": "string" },
+                "to": { "type": "string" },
+                "line": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "NearbyStation": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "fa": { "type": "string" },
+          "lines": { "type": "array", "items": { "type": "integer" } },
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "distanceKm": { "type": "number" }
+        }
+      }
+    }
+  }
+}
