@@ -5,6 +5,13 @@ import { findRoute, STATION_MAP } from "./lib/route.js";
 import { nearestStations } from "./lib/geo.js";
 import { STATIONS, LINE_COLORS } from "./lib/metro-data.js";
 
+const METRO_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
+
 const server = new McpServer({
   name: "metto-tehran-metro",
   version: "1.0.0",
@@ -13,9 +20,18 @@ const server = new McpServer({
 // Tool: Get route between two stations
 server.registerTool("get_route", {
   description: "Plan a metro route between two stations. Returns stops, transfers, travel time, and path.",
+  annotations: METRO_ANNOTATIONS,
   inputSchema: {
     from: z.string().describe("Origin station ID (English name, e.g. 'Tajrish')"),
     to: z.string().describe("Destination station ID (English name, e.g. 'Darvazeh Sharq')"),
+  },
+  outputSchema: {
+    route: z.string(),
+    stops: z.number(),
+    transfers: z.number(),
+    travelTimeMinutes: z.number(),
+    path: z.array(z.string()),
+    hops: z.array(z.object({ from: z.string(), to: z.string(), line: z.number() })),
   },
 }, async ({ from, to }) => {
   const origin = STATION_MAP.get(from);
@@ -58,15 +74,33 @@ server.registerTool("get_route", {
         hops,
       ].join("\n"),
     }],
+    structuredContent: {
+      route: `${origin.fa} (${origin.name}) → ${dest.fa} (${dest.name})`,
+      stops: result.numStops,
+      transfers: result.numTransfers,
+      travelTimeMinutes: minutes,
+      path: result.path,
+      hops: result.hops,
+    },
   };
 });
 
 // Tool: List all stations
 server.registerTool("list_stations", {
   description: "List all metro stations. Optionally filter by line number or search query.",
+  annotations: METRO_ANNOTATIONS,
   inputSchema: {
     line: z.number().optional().describe("Filter by line number (1-7)"),
     search: z.string().optional().describe("Search by name (English or Farsi)"),
+  },
+  outputSchema: {
+    count: z.number(),
+    stations: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      fa: z.string(),
+      lines: z.array(z.number()),
+    })),
   },
 }, async ({ line, search }) => {
   let results = STATIONS;
@@ -87,14 +121,30 @@ server.registerTool("list_stations", {
       type: "text" as const,
       text: `${results.length} stations found:\n\n${list}`,
     }],
+    structuredContent: {
+      count: results.length,
+      stations: results.map(s => ({
+        id: s.id, name: s.name, fa: s.fa, lines: s.lines,
+      })),
+    },
   };
 });
 
 // Tool: Get station details
 server.registerTool("get_station", {
   description: "Get full details for a single station including amenities, coordinates, and connections.",
+  annotations: METRO_ANNOTATIONS,
   inputSchema: {
     id: z.string().describe("Station ID (English name, e.g. 'Tajrish')"),
+  },
+  outputSchema: {
+    id: z.string(),
+    name: z.string(),
+    fa: z.string(),
+    lines: z.array(z.number()),
+    coordinates: z.object({ lat: z.number(), lng: z.number() }),
+    connectedTo: z.array(z.string()),
+    amenities: z.array(z.string()),
   },
 }, async ({ id }) => {
   const station = STATION_MAP.get(id);
@@ -108,10 +158,9 @@ server.registerTool("get_station", {
     };
   }
 
-  const amenities = Object.entries(station.amenities)
+  const amenityList = Object.entries(station.amenities)
     .filter(([, v]) => v)
-    .map(([k]) => k)
-    .join(", ") || "none";
+    .map(([k]) => k);
 
   return {
     content: [{
@@ -122,19 +171,35 @@ server.registerTool("get_station", {
         `Lines: ${station.lines.join(", ")}`,
         `Coordinates: ${station.lat}, ${station.lng}`,
         `Connected to: ${station.relations.join(", ") || "none"}`,
-        `Amenities: ${amenities}`,
+        `Amenities: ${amenityList.join(", ") || "none"}`,
       ].join("\n"),
     }],
+    structuredContent: {
+      id: station.id,
+      name: station.name,
+      fa: station.fa,
+      lines: station.lines,
+      coordinates: { lat: station.lat, lng: station.lng },
+      connectedTo: station.relations,
+      amenities: amenityList,
+    },
   };
 });
 
 // Tool: Find nearby stations
 server.registerTool("find_nearby", {
   description: "Find the closest metro stations to a GPS coordinate.",
+  annotations: METRO_ANNOTATIONS,
   inputSchema: {
     lat: z.number().describe("Latitude"),
     lng: z.number().describe("Longitude"),
     limit: z.number().optional().describe("Max results (default 5, max 20)"),
+  },
+  outputSchema: {
+    results: z.array(z.object({
+      station: z.object({ id: z.string(), name: z.string(), fa: z.string() }),
+      distanceKm: z.number(),
+    })),
   },
 }, async ({ lat, lng, limit }) => {
   const results = nearestStations(lat, lng, { limit: Math.min(limit ?? 5, 20) });
@@ -145,6 +210,12 @@ server.registerTool("find_nearby", {
       type: "text" as const,
       text: `Nearest stations to ${lat}, ${lng}:\n\n${list}`,
     }],
+    structuredContent: {
+      results: results.map(r => ({
+        station: { id: r.station.id, name: r.station.name, fa: r.station.fa },
+        distanceKm: r.km,
+      })),
+    },
   };
 });
 
