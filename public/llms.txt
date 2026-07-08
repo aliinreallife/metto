@@ -43,6 +43,17 @@ Amenities: wc, elevator, atm, coffeeShop, fastFood, groceryStore, freeWifi, pray
 ## Station IDs
 English names like: Tajrish, Gheytariyeh, Darvazeh Sharq, Vali-Asr, Mellat, Imam Khomeini
 
+## MCP Server
+An MCP server is available for AI assistants (Claude, etc).
+
+Tools:
+- `get_route(from, to)` — plan a metro route
+- `list_stations(line?, search?)` — list stations
+- `get_station(id)` — station details
+- `find_nearby(lat, lng, limit?)` — nearest stations
+
+Run: `npx tsx mcp-server.ts`
+
 ## Links
 - Homepage: https://metto.ir
 - Stations: https://metto.ir/stations
