@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { findRoute, STATION_MAP } from "./lib/route.js";
 import { nearestStations } from "./lib/geo.js";
-import { STATIONS } from "./lib/metro-data.js";
+import { STATIONS, LINE_COLORS } from "./lib/metro-data.js";
 
 const server = new McpServer({
   name: "metto-tehran-metro",
@@ -147,6 +147,60 @@ server.registerTool("find_nearby", {
     }],
   };
 });
+
+// Resources
+
+server.registerResource("stations", "metro://stations", {
+  description: "Full list of all Tehran Metro stations",
+  mimeType: "application/json",
+}, async () => ({
+  contents: [{
+    uri: "metro://stations",
+    mimeType: "application/json",
+    text: JSON.stringify(STATIONS.map(s => ({
+      id: s.id, name: s.name, fa: s.fa, lines: s.lines,
+      lat: s.lat, lng: s.lng, amenities: s.amenities,
+    })), null, 2),
+  }],
+}));
+
+server.registerResource("lines", "metro://lines", {
+  description: "Metro line information with colors and station counts",
+  mimeType: "application/json",
+}, async () => {
+  const lines = Object.keys(LINE_COLORS).map(Number).sort((a, b) => a - b).map(lineNum => {
+    const lineStations = STATIONS.filter(s => s.lines.includes(lineNum));
+    return { line: lineNum, color: LINE_COLORS[lineNum], stationCount: lineStations.length, stations: lineStations.map(s => s.id) };
+  });
+  return { contents: [{ uri: "metro://lines", mimeType: "application/json", text: JSON.stringify(lines, null, 2) }] };
+});
+
+// Prompts
+
+server.registerPrompt("plan-route", {
+  description: "Plan a metro route between two stations",
+  arguments: [
+    { name: "origin", description: "Starting station name", required: true },
+    { name: "destination", description: "Ending station name", required: true },
+  ],
+}, async ({ origin, destination }) => ({
+  messages: [{
+    role: "user" as const,
+    content: { type: "text" as const, text: `Plan a metro route from ${origin} to ${destination}. Use get_route tool.` },
+  }],
+}));
+
+server.registerPrompt("station-info", {
+  description: "Get info about a metro station",
+  arguments: [
+    { name: "station", description: "Station name", required: true },
+  ],
+}, async ({ station }) => ({
+  messages: [{
+    role: "user" as const,
+    content: { type: "text" as const, text: `Tell me about ${station} metro station. Use get_station tool.` },
+  }],
+}));
 
 // Start the server
 async function main() {
