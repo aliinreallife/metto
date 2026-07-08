@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowUpDown,
   Building2,
@@ -22,20 +23,22 @@ import { geoUrl, nearestStations, formatDistance, haversineKm } from "@/lib/geo"
 import { STRINGS, type Lang } from "@/lib/i18n";
 
 export function HomePage() {
-  const { lang } = useMetro();
+  const { lang, setOriginId: setCtxOrigin, setDestId: setCtxDest } = useMetro();
   const isFa = lang === "fa";
   const t = STRINGS[lang];
+  const searchParams = useSearchParams();
 
-  const initialParams = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    const p = new URLSearchParams(window.location.search);
-    const from = p.get("from");
-    const to = p.get("to");
-    return { from, to };
-  }, []);
+  const initialFrom = searchParams.get("from");
+  const initialTo = searchParams.get("to");
 
-  const [originId, setOriginId] = useState<string | null>(initialParams?.from ?? null);
-  const [destId, setDestId] = useState<string | null>(initialParams?.to ?? null);
+  const [originId, setOriginId] = useState<string | null>(initialFrom);
+  const [destId, setDestId] = useState<string | null>(initialTo);
+
+  // Sync route state to MetroContext so nav can build dynamic map link
+  useEffect(() => {
+    setCtxOrigin(originId);
+    setCtxDest(destId);
+  }, [originId, destId, setCtxOrigin, setCtxDest]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placeMarkers, setPlaceMarkers] = useState<Array<{ lat: number; lng: number; label: string; role: "origin" | "dest" }>>([]);
   const [originPlaceInfo, setOriginPlaceInfo] = useState<{
