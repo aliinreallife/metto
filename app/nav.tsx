@@ -1,0 +1,108 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  TrainFront,
+  Globe,
+  Route as RouteIcon,
+  ListTree,
+  LocateFixed,
+  Map as MapIcon,
+} from "lucide-react";
+import { InstallButton } from "@/components/pwa";
+import { useMetro } from "./providers";
+import { STRINGS } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+
+const NAV_ITEMS = [
+  { href: "/", labelKey: "tabRoute" as const, icon: RouteIcon },
+  { href: "/stations", labelKey: "tabStations" as const, icon: ListTree },
+  { href: "/nearby", labelKey: "tabNearby" as const, icon: LocateFixed },
+  { href: "/map", labelKey: "tabMap" as const, icon: MapIcon },
+];
+
+export function AppNav() {
+  const { lang, setLang } = useMetro();
+  const pathname = usePathname();
+  const t = STRINGS[lang];
+
+  const currentPath = pathname === "/" ? "/" : pathname;
+
+  function toggleLang() {
+    const next = lang === "en" ? "fa" : "en";
+    setLang(next);
+  }
+
+  return (
+    <>
+      <header className="z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-6 md:py-4">
+        <Link href="/" className="flex items-center gap-2.5 md:gap-3">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground md:size-10">
+            <TrainFront className="size-5 md:size-6" />
+          </span>
+          <div className="leading-tight">
+            <h1 className="text-base font-bold md:text-lg">{t.appTitle}</h1>
+            <p className="text-xs text-muted-foreground md:text-sm">{t.appSubtitle}</p>
+          </div>
+        </Link>
+
+        {/* desktop tabs */}
+        <nav className="hidden items-center gap-1 md:flex">
+          {NAV_ITEMS.map((item) => {
+            const active = currentPath === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors md:gap-2 md:px-4 md:py-2.5 md:text-base",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+              >
+                <item.icon className="size-5" />
+                {t[item.labelKey]}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="flex items-center gap-2 md:gap-3">
+          <InstallButton label={t.install} />
+          <button
+            type="button"
+            onClick={toggleLang}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-2 text-sm font-medium transition-colors hover:bg-accent md:px-3 md:py-2.5 md:text-base"
+            aria-label="Toggle language"
+          >
+            <Globe className="size-4 md:size-5" />
+            {lang === "en" ? "فارسی" : "EN"}
+          </button>
+        </div>
+      </header>
+
+      {/* mobile bottom tab bar */}
+      <nav className="z-20 grid grid-cols-4 border-t border-border bg-card/90 backdrop-blur md:hidden">
+        {NAV_ITEMS.map((item) => {
+          const active = currentPath === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors",
+                active ? "text-primary" : "text-muted-foreground",
+              )}
+              aria-current={active ? "page" : undefined}
+            >
+              <item.icon className="size-5" />
+              {t[item.labelKey]}
+            </Link>
+          );
+        })}
+      </nav>
+    </>
+  );
+}
