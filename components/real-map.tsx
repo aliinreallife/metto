@@ -330,8 +330,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   }
 
   return (
-    <div className="relative size-full">
-      <div ref={containerRef} className="size-full" aria-label="Tehran metro on real map" />
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" aria-label="Tehran metro on real map" />
       <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-1.5">
         <MapBtn label="Zoom in" onClick={() => mapRef.current?.zoomIn()}>
           <Plus className="size-4" />
