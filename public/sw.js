@@ -1,5 +1,5 @@
-const CACHE = "metto-v1"
-const APP_SHELL = ["/", "/stations", "/nearby", "/map"]
+const CACHE = "metto-v2"
+const APP_SHELL = ["/", "/stations", "/nearby", "/map", "/schedule-data.json"]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

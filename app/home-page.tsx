@@ -19,10 +19,12 @@ import { RoutePanel } from "@/components/route-panel";
 import { StationDetail } from "@/components/station-detail";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
+import { useScheduleData } from "@/lib/use-schedule-data";
 import { geoUrl, nearestStations, formatDistance, haversineKm } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
 
 export function HomePage() {
+  const loaded = useScheduleData();
   const { lang, setOriginId: setCtxOrigin, setDestId: setCtxDest } = useMetro();
   const isFa = lang === "fa";
   const t = STRINGS[lang];
@@ -75,7 +77,7 @@ export function HomePage() {
   const route = useMemo(() => {
     if (!originId || !destId || originId === destId) return null;
     return findRoute(originId, destId);
-  }, [originId, destId]);
+  }, [originId, destId, loaded]);
 
   function swap() {
     setOriginId(destId);
