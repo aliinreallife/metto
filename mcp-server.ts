@@ -1,0 +1,158 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+import { findRoute, STATION_MAP } from "./lib/route.js";
+import { nearestStations } from "./lib/geo.js";
+import { STATIONS } from "./lib/metro-data.js";
+
+const server = new McpServer({
+  name: "metto-tehran-metro",
+  version: "1.0.0",
+});
+
+// Tool: Get route between two stations
+server.registerTool("get_route", {
+  description: "Plan a metro route between two stations. Returns stops, transfers, travel time, and path.",
+  inputSchema: {
+    from: z.string().describe("Origin station ID (English name, e.g. 'Tajrish')"),
+    to: z.string().describe("Destination station ID (English name, e.g. 'Darvazeh Sharq')"),
+  },
+}, async ({ from, to }) => {
+  const origin = STATION_MAP.get(from);
+  const dest = STATION_MAP.get(to);
+
+  if (!origin || !dest) {
+    const available = Array.from(STATION_MAP.keys()).slice(0, 30);
+    return {
+      content: [{
+        type: "text" as const,
+        text: `Station not found. Available stations: ${available.join(", ")}`,
+      }],
+    };
+  }
+
+  const result = findRoute(from, to);
+  if (!result) {
+    return {
+      content: [{
+        type: "text" as const,
+        text: `No route found between ${origin.fa} (${origin.name}) and ${dest.fa} (${dest.name}).`,
+      }],
+    };
+  }
+
+  const minutes = Math.round(result.estimatedSeconds / 60);
+  const hops = result.hops.map(h => `  ${h.from} → ${h.to} (Line ${h.line})`).join("\n");
+
+  return {
+    content: [{
+      type: "text" as const,
+      text: [
+        `Route: ${origin.fa} (${origin.name}) → ${dest.fa} (${dest.name})`,
+        `Stops: ${result.numStops}`,
+        `Transfers: ${result.numTransfers}`,
+        `Travel time: ~${minutes} min`,
+        `Path: ${result.path.join(" → ")}`,
+        "",
+        "Detailed hops:",
+        hops,
+      ].join("\n"),
+    }],
+  };
+});
+
+// Tool: List all stations
+server.registerTool("list_stations", {
+  description: "List all metro stations. Optionally filter by line number or search query.",
+  inputSchema: {
+    line: z.number().optional().describe("Filter by line number (1-7)"),
+    search: z.string().optional().describe("Search by name (English or Farsi)"),
+  },
+}, async ({ line, search }) => {
+  let results = STATIONS;
+
+  if (line !== undefined) {
+    results = results.filter(s => s.lines.includes(line));
+  }
+
+  if (search) {
+    const q = search.toLowerCase();
+    results = results.filter(s => s.name.toLowerCase().includes(q) || s.fa.includes(search));
+  }
+
+  const list = results.map(s => `${s.fa} (${s.name}) — Lines: ${s.lines.join(", ")}`).join("\n");
+
+  return {
+    content: [{
+      type: "text" as const,
+      text: `${results.length} stations found:\n\n${list}`,
+    }],
+  };
+});
+
+// Tool: Get station details
+server.registerTool("get_station", {
+  description: "Get full details for a single station including amenities, coordinates, and connections.",
+  inputSchema: {
+    id: z.string().describe("Station ID (English name, e.g. 'Tajrish')"),
+  },
+}, async ({ id }) => {
+  const station = STATION_MAP.get(id);
+  if (!station) {
+    const available = Array.from(STATION_MAP.keys()).slice(0, 30);
+    return {
+      content: [{
+        type: "text" as const,
+        text: `Station '${id}' not found. Available: ${available.join(", ")}`,
+      }],
+    };
+  }
+
+  const amenities = Object.entries(station.amenities)
+    .filter(([, v]) => v)
+    .map(([k]) => k)
+    .join(", ") || "none";
+
+  return {
+    content: [{
+      type: "text" as const,
+      text: [
+        `${station.fa} (${station.name})`,
+        `ID: ${station.id}`,
+        `Lines: ${station.lines.join(", ")}`,
+        `Coordinates: ${station.lat}, ${station.lng}`,
+        `Connected to: ${station.relations.join(", ") || "none"}`,
+        `Amenities: ${amenities}`,
+      ].join("\n"),
+    }],
+  };
+});
+
+// Tool: Find nearby stations
+server.registerTool("find_nearby", {
+  description: "Find the closest metro stations to a GPS coordinate.",
+  inputSchema: {
+    lat: z.number().describe("Latitude"),
+    lng: z.number().describe("Longitude"),
+    limit: z.number().optional().describe("Max results (default 5, max 20)"),
+  },
+}, async ({ lat, lng, limit }) => {
+  const results = nearestStations(lat, lng, { limit: Math.min(limit ?? 5, 20) });
+  const list = results.map(r => `${r.station.fa} (${r.station.name}) — ${r.km.toFixed(2)} km`).join("\n");
+
+  return {
+    content: [{
+      type: "text" as const,
+      text: `Nearest stations to ${lat}, ${lng}:\n\n${list}`,
+    }],
+  };
+});
+
+// Start the server
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("Metto MCP Server running on stdio");
+}
+
+main().catch(console.error);
