@@ -11,6 +11,7 @@ import {
   type Departure,
   type DayType,
 } from "@/lib/schedule-utils";
+import { useScheduleData } from "@/lib/use-schedule-data";
 import { cn } from "@/lib/utils";
 
 export function StationTimesheet({
@@ -22,6 +23,7 @@ export function StationTimesheet({
   lang: Lang;
   onClose: () => void;
 }) {
+  const loaded = useScheduleData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const [dayType, setDayType] = useState<DayType>(getCurrentDayType());
@@ -67,7 +69,7 @@ export function StationTimesheet({
     }
 
     return result;
-  }, [station.id, station.lines, dayType]);
+  }, [station.id, station.lines, dayType, loaded]);
 
   // Collect all unique directions across all lines
   const allDirections = useMemo(() => {
@@ -156,7 +158,12 @@ export function StationTimesheet({
 
       {/* Timesheet content */}
       <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
-        {timesheet.length === 0 && (
+        {!loaded && (
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
+          </p>
+        )}
+        {loaded && timesheet.length === 0 && (
           <p className="py-4 text-center text-sm text-muted-foreground">
             {isFa ? "حرکتی یافت نشد" : "No departures found"}
           </p>

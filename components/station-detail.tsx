@@ -10,6 +10,7 @@ import {
   getCurrentDayType,
   type Departure,
 } from "@/lib/schedule-utils";
+import { useScheduleData } from "@/lib/use-schedule-data";
 
 export function StationDetail({
   station,
@@ -20,6 +21,7 @@ export function StationDetail({
   lang: Lang;
   onClose: () => void;
 }) {
+  const loaded = useScheduleData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const activeAmenities = Object.entries(station.amenities).filter(
@@ -29,7 +31,7 @@ export function StationDetail({
   const departures = useMemo(() => {
     const grouped = getStationDepartures(station.id, getCurrentDayType(), 3);
     return grouped.flatMap((g) => g.departures);
-  }, [station.id]);
+  }, [station.id, loaded]);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
@@ -95,7 +97,12 @@ export function StationDetail({
         </div>
       )}
 
-      {departures.length > 0 && (
+      {!loaded && (
+        <div className="text-xs text-muted-foreground">
+          {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
+        </div>
+      )}
+      {loaded && departures.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {isFa ? "حرکت‌های بعدی" : "Next departures"}

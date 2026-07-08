@@ -10,6 +10,7 @@ import {
   getNextDepartures,
   getCurrentDayType,
 } from "@/lib/schedule-utils";
+import { useScheduleData } from "@/lib/use-schedule-data";
 
 type Props = {
   station: Station;
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function StationCard({ station, lang, distance, onSetDest, onShowTimetable }: Props) {
+  const loaded = useScheduleData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
 
@@ -33,7 +35,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
       departures: getNextDepartures(station.id, line, getCurrentDayType(), 2),
     }));
     return grouped.filter((g) => g.departures.length > 0);
-  }, [station.id, station.lines]);
+  }, [station.id, station.lines, loaded]);
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -99,7 +101,12 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
       )}
 
       {/* Next departures - compact */}
-      {departures.length > 0 && (
+      {!loaded && (
+        <div className="border-t border-border px-4 py-2 text-[10px] text-muted-foreground">
+          {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
+        </div>
+      )}
+      {loaded && departures.length > 0 && (
         <div className="border-t border-border px-4 py-2.5">
           <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
             <Clock className="size-3" />

@@ -12,6 +12,7 @@ import {
   Footprints,
   Zap,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { LINE_COLORS } from "@/lib/metro-data";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
@@ -23,6 +24,7 @@ import {
   getArrivalFromOrigin,
   type TripResult,
 } from "@/lib/schedule-utils";
+import { useScheduleData } from "@/lib/use-schedule-data";
 
 // Inline time helper
 function timeToMinutes(time: string): number {
@@ -37,8 +39,10 @@ export function RoutePanel({
   route: RouteResult;
   lang: Lang;
 }) {
+  const loaded = useScheduleData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
+  const scheduleLoading = !loaded;
   const name = (id: string) => {
     const s = STATION_MAP.get(id);
     return s ? (isFa ? s.fa : s.name) : id;
@@ -55,7 +59,7 @@ export function RoutePanel({
   const originDeps = useMemo(() => {
     if (!origin || !originLine) return [];
     return getNextDepartures(origin, originLine, getCurrentDayType(), 3);
-  }, [origin, originLine]);
+  }, [origin, originLine, loaded]);
 
   const noTrainWarning = originDeps.length === 0;
   const longWait = originDeps.length > 0 && originDeps[0].minutesUntil > 60;
@@ -184,6 +188,12 @@ export function RoutePanel({
 
   return (
     <div className="flex flex-col gap-3 md:gap-4">
+      {scheduleLoading && (
+        <div className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <Loader2 className="size-3 animate-spin" />
+          {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-3 md:gap-4">
         <Stat
           icon={<TrainFront className="size-5 md:size-6" />}
@@ -290,6 +300,7 @@ function SegmentCard({
   trip?: TripResult;
 }) {
   const [open, setOpen] = useState(false);
+  const loaded = useScheduleData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const color = LINE_COLORS[line];
@@ -300,7 +311,7 @@ function SegmentCard({
   const nextDep = useMemo(() => {
     const deps = getNextDepartures(board, line, getCurrentDayType(), 10);
     return deps;
-  }, [board, line]);
+  }, [board, line, loaded]);
 
   const next = nextDep[0] ?? null;
 
