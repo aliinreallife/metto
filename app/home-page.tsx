@@ -14,6 +14,7 @@ import {
   LocateFixed,
   X,
 } from "lucide-react";
+import { useVisitorData } from "@fingerprint/react";
 import { StationCombobox } from "@/components/station-combobox";
 import { RoutePanel } from "@/components/route-panel";
 import { StationDetail } from "@/components/station-detail";
@@ -25,6 +26,7 @@ import { STRINGS, type Lang } from "@/lib/i18n";
 
 export function HomePage() {
   const loaded = useScheduleData();
+  const { getData } = useVisitorData({ immediate: true });
   const { lang, setOriginId: setCtxOrigin, setDestId: setCtxDest } = useMetro();
   const isFa = lang === "fa";
   const t = STRINGS[lang];
