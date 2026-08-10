@@ -184,11 +184,6 @@ export default function RootLayout({
         <FingerprintProvider
           apiKey="PeMqnfaeFyuBBJjOvNQ5"
           region="us"
-          endpoints={
-            process.env.fp_endpoint
-              ? [process.env.fp_endpoint]
-              : undefined
-          }
         >
           <MetroProvider>
             <AppNav />
