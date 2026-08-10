@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Vazirmatn } from "next/font/google";
+import { FingerprintProvider } from "@fingerprint/react";
 import { MetroProvider } from "./providers";
 import { AppNav } from "./nav";
 import "./globals.css";
@@ -180,10 +181,20 @@ export default function RootLayout({
         />
       </head>
       <body className="flex h-dvh flex-col font-sans antialiased">
-        <MetroProvider>
-          <AppNav />
-          <div className="relative min-h-0 flex-1 flex flex-col pb-14 md:pb-0">{children}</div>
-        </MetroProvider>
+        <FingerprintProvider
+          apiKey="PeMqnfaeFyuBBJjOvNQ5"
+          region="us"
+          endpoints={
+            process.env.fp_endpoint
+              ? [process.env.fp_endpoint]
+              : undefined
+          }
+        >
+          <MetroProvider>
+            <AppNav />
+            <div className="relative min-h-0 flex-1 flex flex-col pb-14 md:pb-0">{children}</div>
+          </MetroProvider>
+        </FingerprintProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
         {process.env.NODE_ENV === "production" && <SpeedInsights />}
       </body>
