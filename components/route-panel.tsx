@@ -22,16 +22,9 @@ import { cn } from "@/lib/utils";
 import {
   getNextDepartures,
   getCurrentDayType,
-  getArrivalFromOrigin,
   type TripResult,
 } from "@/lib/schedule-utils";
 import { useScheduleData } from "@/lib/use-schedule-data";
-
-// Inline time helper
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-}
 
 export function RoutePanel({
   route,
@@ -49,144 +42,61 @@ export function RoutePanel({
     return s ? (isFa ? s.name.fa : s.name.en) : id;
   };
   const mins = Math.round(route.estimatedSeconds / 60);
-  const firstTrip = route.trips[0] ?? null;
-  const firstWait = firstTrip
-    ? Math.max(0, timeToMinutes(firstTrip.departTime) - (new Date().getHours() * 60 + new Date().getMinutes()))
-    : 0;
+  // All connection timing comes from route.ts (source of truth); this panel
+  // renders it and never recomputes the timetable.
+  const firstWait = Math.round(route.initialWaitSeconds / 60);
   const restMins = mins - firstWait;
+  const eta = route.estimatedArrival ?? "—";
 
-  // Check next train at origin
-  const origin = route.segments[0]?.stations[0];
-  const originLine = route.segments[0]?.line;
-  const originDeps = useMemo(() => {
-    if (!origin || !originLine) return [];
-    return getNextDepartures(origin, originLine, getCurrentDayType(), 3);
-  }, [origin, originLine, loaded]);
+  const originNoService = route.legTiming[0] === "no-service";
+  const failedConn = route.connections.find((c) => c.status === "no-service");
+  const longTransfer = route.connections.find(
+    (c) => c.status === "ok" && c.waitSeconds > 15 * 60,
+  );
+  const longWait = !originNoService && !failedConn && firstWait > 60;
 
-  const noTrainWarning = originDeps.length === 0;
-  const longWait = originDeps.length > 0 && originDeps[0].minutesUntil > 60;
-
-  // Compute arrival times at transfer points using actual timetable
-  const connectionWarnings = useMemo(() => {
-    if (route.segments.length <= 1) return [];
-    if (originDeps.length === 0) return []; // No train at origin, skip connection checks
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const dayType = getCurrentDayType();
-    const warnings: { station: string; line: number; arriveMin: number; nextDepMin: number | null }[] = [];
-
-    // Start from the first train's departure time at the origin
-    let currentDepartMin = nowMinutes + (originDeps[0]?.minutesUntil ?? 0);
-
-    for (let i = 0; i < route.segments.length - 1; i++) {
-      const seg = route.segments[i];
-      const board = seg.stations[0];
-      const transferStation = seg.stations[seg.stations.length - 1];
-      const nextSeg = route.segments[i + 1];
-      const nextLine = nextSeg.line;
-
-      // Look up actual arrival time at transfer station from timetable
-      const arrivalMin = getArrivalFromOrigin(
-        board,
-        transferStation,
-        seg.line,
-        currentDepartMin,
-        dayType,
-      );
-
-      if (arrivalMin === null) {
-        // Can't find a train — warn
-        warnings.push({
-          station: transferStation,
-          line: nextLine,
-          arriveMin: currentDepartMin,
-          nextDepMin: null,
-        });
-        break;
-      }
-
-      const transferWalkMin = 4; // 4 min walk between platforms
-      const readyMin = arrivalMin + transferWalkMin;
-
-      // Find next departure on the connecting line after we're ready
-      const allDeps = getNextDepartures(transferStation, nextLine, dayType, 10);
-      const nextAvailable = allDeps.find(d => d.minutesUntil >= (readyMin - nowMinutes));
-
-      if (!nextAvailable) {
-        warnings.push({
-          station: transferStation,
-          line: nextLine,
-          arriveMin: arrivalMin,
-          nextDepMin: null,
-        });
-        break; // Can't continue checking further segments
-      }
-
-      const waitMin = nextAvailable.minutesUntil - (readyMin - nowMinutes);
-      if (waitMin > 15) {
-        warnings.push({
-          station: transferStation,
-          line: nextLine,
-          arriveMin: arrivalMin,
-          nextDepMin: nowMinutes + nextAvailable.minutesUntil,
-        });
-      }
-
-      // For next segment, start from the connecting train's departure
-      currentDepartMin = nowMinutes + nextAvailable.minutesUntil;
-    }
-    return warnings;
-  }, [route, originDeps]);
-
-  // Pick the single most important warning (priority: no train > no connection > long wait)
+  // Pick the single most important warning (priority: no service > long transfer wait > long origin wait)
   const topWarning = useMemo(() => {
-    // 1. No train at origin (highest priority)
-    if (noTrainWarning) {
+    // 1. No service for a leg (highest priority)
+    if (originNoService || failedConn) {
+      if (failedConn) {
+        return {
+          severity: "red" as const,
+          message: isFa
+            ? `خط ${persianDigits(failedConn.toLineId, lang)} در ${name(failedConn.stationId)} حرکتی ندارد`
+            : `No service on L${failedConn.toLineId} at ${name(failedConn.stationId)}`,
+        };
+      }
       return {
         severity: "red" as const,
         message: isFa ? "حرکتی در ساعت آینده یافت نشد" : "No trains in the next hour",
       };
     }
 
-    // 2. No connection at any transfer
-    const noConn = connectionWarnings.find((w) => w.nextDepMin === null);
-    if (noConn) {
-      return {
-        severity: "red" as const,
-        message: isFa
-          ? `خط ${persianDigits(noConn.line, lang)} در ${name(noConn.station)} حرکتی ندارد`
-          : `No service on L${noConn.line} at ${name(noConn.station)}`,
-      };
-    }
-
-    // 3. Long wait at transfer
-    const longTransfer = connectionWarnings.find((w) => {
-      if (w.nextDepMin === null) return false;
-      const wait = w.nextDepMin - (w.arriveMin + 4);
-      return wait > 15;
-    });
+    // 2. Long wait at transfer (from the propagated connection timing)
     if (longTransfer) {
-      const wait = longTransfer.nextDepMin! - (longTransfer.arriveMin + 4);
+      const wait = Math.round(longTransfer.waitSeconds / 60);
       return {
         severity: "amber" as const,
         message: isFa
-          ? `انتظار ${persianDigits(wait, lang)} دقیقه در ${name(longTransfer.station)}`
-          : `${wait} min wait at ${name(longTransfer.station)}`,
+          ? `انتظار ${persianDigits(wait, lang)} دقیقه در ${name(longTransfer.stationId)}`
+          : `${wait} min wait at ${name(longTransfer.stationId)}`,
       };
     }
 
-    // 4. Long wait at origin
+    // 3. Long wait at origin
     if (longWait) {
       return {
         severity: "amber" as const,
         message: isFa
-          ? `اولین حرکت بعد از ${persianDigits(originDeps[0].minutesUntil, lang)} دقیقه`
-          : `First train in ${originDeps[0].minutesUntil} min`,
+          ? `اولین حرکت بعد از ${persianDigits(firstWait, lang)} دقیقه`
+          : `First train in ${firstWait} min`,
       };
     }
 
     return null;
-  }, [noTrainWarning, longWait, connectionWarnings, originDeps, isFa, lang, name]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route, firstWait, isFa, lang]);
 
   return (
     <div className="flex flex-col gap-3 md:gap-4">
@@ -223,10 +133,22 @@ export function RoutePanel({
         />
         <Stat
           icon={<Flag className="size-5" />}
-          value={persianDigits(route.estimatedArrival, lang)}
+          value={persianDigits(eta, lang)}
           label={isFa ? "رسیدن" : "arrival"}
         />
       </div>
+      {topWarning && (
+        <div
+          className={
+            topWarning.severity === "red"
+              ? "flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400"
+              : "flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600 dark:text-amber-400"
+          }
+        >
+          <AlertTriangle className="size-4 shrink-0" />
+          <span>{topWarning.message}</span>
+        </div>
+      )}
       {route.numTransfers > 0 && (
         <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
           <Repeat className="size-3.5" />
@@ -247,12 +169,29 @@ export function RoutePanel({
         {route.segments.map((seg, i) => (
           <li key={i} className="flex flex-col gap-2">
             {i > 0 && seg.changeFromPrevious.type === "line_transfer" && (
-              <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
-                <Footprints className="size-4 shrink-0" />
-                <span>
-                  {t.transferTo} {persianDigits(seg.line, lang)} {t.via}{" "}
-                  {name(seg.stations[0])}
-                </span>
+              <div className="flex flex-col gap-1 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Footprints className="size-4 shrink-0" />
+                  <span>
+                    {t.transferTo} {persianDigits(seg.line, lang)} {t.via}{" "}
+                    {name(seg.stations[0])}
+                  </span>
+                </div>
+                {route.connections[i - 1]?.hasExplicitRule && (
+                  <div className="flex items-center gap-2 ps-6">
+                    <Footprints className="size-3.5 shrink-0" />
+                    <span>
+                      {t.walkToLine} {persianDigits(seg.line, lang)} · {t.about}{" "}
+                      {persianDigits(
+                        Math.round(
+                          (route.connections[i - 1]?.walkSeconds ?? 0) / 60,
+                        ),
+                        lang,
+                      )}{" "}
+                      {t.minEst}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
             {i > 0 && seg.changeFromPrevious.type === "train_change" && (

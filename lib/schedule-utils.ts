@@ -5,6 +5,7 @@ import {
   getStationLines,
   resolveStationId,
 } from "./metro/selectors";
+import { parseServiceTimeToMinutes, tehranParts } from "./tehran-time";
 
 // Lazy-loaded schedule data cache with listener system
 let _scheduleData: LineScheduleData[] | null = null;
@@ -60,6 +61,15 @@ export function isScheduleDataLoaded(): boolean {
   return _scheduleData !== null;
 }
 
+/** Test-only seam: inject schedule rows without fetching. Not for production. */
+export function __setScheduleDataForTests(
+  data: LineScheduleData[] | null,
+): void {
+  _scheduleData = data === null ? null : remapScheduleIds(data);
+  _schedulePromise = null;
+  if (data !== null) notifyListeners();
+}
+
 export function onScheduleDataReady(callback: () => void): () => void {
   if (_scheduleData) {
     callback();
@@ -86,11 +96,8 @@ export type Departure = {
   minutesUntil: number;
 };
 
-export function getCurrentDayType(): DayType {
-  const day = new Date().getDay();
-  if (day === 5) return "friday";
-  if (day === 4) return "thursday";
-  return "saturday_wednesday";
+export function getCurrentDayType(at?: Date): DayType {
+  return tehranParts((at ?? new Date()).getTime()).dayType;
 }
 
 function timeToMinutes(time: string): number {
@@ -291,6 +298,72 @@ export function findBestTrip(
     }
   }
   return bestResult;
+}
+
+export type TripLookupResult =
+  | { status: "found"; trip: TripResult }
+  | { status: "missing_schedule_data" }
+  | { status: "no_service" };
+
+/**
+ * Typed timetable lookup for one ride leg (specific line/from/to/dayType).
+ * - "found": a train departs at/after afterMinutes (service-minute clock,
+ *   24h+ aware so post-midnight times like 24:06 work).
+ * - "missing_schedule_data": no schedule rows exist for this line/dayType
+ *   (data not loaded, or the line has no published service) — geometric
+ *   fallback is allowed.
+ * - "no_service": the timetable covers this line/dayType but offers no
+ *   departure for this lookup — never synthesize a fallback train.
+ * Deliberately separate from findBestTrip (kept for existing callers); no
+ * timetable-architecture changes here.
+ */
+export function findTripDetailed(
+  fromIdInput: string,
+  toIdInput: string,
+  line: number,
+  afterMinutes: number,
+  dayType?: DayType,
+  options?: { expressOnly?: boolean; localOnly?: boolean },
+): TripLookupResult {
+  const fromId = normId(fromIdInput);
+  const toId = normId(toIdInput);
+  const dt = dayType ?? getCurrentDayType();
+  if (_scheduleData === null) return { status: "missing_schedule_data" };
+  const lineRows = getSchedules().filter((ls) => ls.line === line);
+  if (lineRows.length === 0) return { status: "missing_schedule_data" };
+  const dayTrains = lineRows
+    .flatMap((ls) => ls.trains)
+    .filter((t) => t.dayType === dt);
+  if (dayTrains.length === 0) return { status: "missing_schedule_data" };
+
+  let bestArrival = Infinity;
+  let bestResult: TripResult | null = null;
+  for (const train of dayTrains) {
+    const fromIdx = train.stops.findIndex((s) => s.stationId === fromId);
+    const toIdx = train.stops.findIndex((s) => s.stationId === toId);
+    if (fromIdx === -1 || toIdx === -1) continue;
+    if (toIdx <= fromIdx) continue;
+    if (options?.expressOnly && !train.isExpress) continue;
+    if (options?.localOnly && train.isExpress) continue;
+
+    const departMin = parseServiceTimeToMinutes(train.stops[fromIdx].time);
+    let arriveMin = parseServiceTimeToMinutes(train.stops[toIdx].time);
+    // A trip itself may cross midnight (arrive clock earlier than depart).
+    if (arriveMin < departMin) arriveMin += 24 * 60;
+    if (departMin < afterMinutes) continue;
+
+    if (arriveMin < bestArrival) {
+      bestArrival = arriveMin;
+      bestResult = {
+        train,
+        departTime: train.stops[fromIdx].time,
+        arriveTime: train.stops[toIdx].time,
+        travelMinutes: arriveMin - departMin,
+      };
+    }
+  }
+  if (!bestResult) return { status: "no_service" };
+  return { status: "found", trip: bestResult };
 }
 
 export function getTrainArrivalAtStation(

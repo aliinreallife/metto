@@ -36,11 +36,23 @@ endpoints, never transfer points, and never counted in `numStops`.
 Dijkstra over (station, line, route). Same-route continuation is free;
 same-line route change = `train_change` (split segment, penalty, shown as
 "Change trains", does NOT increment `numTransfers`); different line =
-`line_transfer` (+walk). Conservative default: branch changes require a
-train change unless timetable data proves through-running. Terminals come
-from ordered route direction, never adjacency walks. Fallback (no
-timetable) segments advance the same time ledger, so `travelTimeOnly` and
-`estimatedArrival` stay correct.
+`line_transfer` (+ station-specific walk from `metro/transfers`, default 4
+min; Dijkstra penalty scales with the walk, so Eram-e Sabz L4<->L5 at 8 min
+ranks worse than ordinary interchanges). Conservative default: branch changes
+require a train change unless timetable data proves through-running.
+Terminals come from ordered route direction, never adjacency walks.
+
+ETA engine (`lib/route.ts`): one absolute `currentInstant` (epoch ms)
+propagates chronologically — walk is applied BEFORE the connecting departure
+is searched, waits/ride/walk accumulate as integer seconds
+(`initialWait/ride/transferWalk/transferWait/trainChangeWait`), and
+`estimatedArrival` is the final instant rendered in Asia/Tehran (null when
+the timetable reports no service; partial progress kept in
+`reachableUntil*`). Timetable lookups return found / missing_schedule_data /
+no_service per leg; geometric fallback runs only when schedule data is
+missing, never when the timetable says no departure. Fallback (no
+timetable) segments advance the same ledger, so `travelTimeOnly`
+(ride + walk, no waits) and `estimatedArrival` stay correct.
 
 ## Status decisions
 

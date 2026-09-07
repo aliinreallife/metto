@@ -137,4 +137,9 @@ export type JourneyChange =
       stationId: StationId;
       fromLineId: LineId;
       toLineId: LineId;
+      /** Station-specific interchange walking time in seconds. */
+      walkSeconds: number;
+      /** Route context of the alighting / boarding legs (future directional overrides). */
+      fromRouteId?: RouteId;
+      toRouteId?: RouteId;
     };
