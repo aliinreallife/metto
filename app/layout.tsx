@@ -17,17 +17,17 @@ const siteUrl = "https://metto.ir";
 
 export const metadata: Metadata = {
   title: {
-    default: "متو | نقشه و مسیریابی مترو تهران",
+    default: "متو | مسیریاب مترو تهران، زمان قطار بعدی و تخمین رسیدن",
     template: "%s | متو",
   },
   description:
-    "متو — نقشه مترو تهران با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها. سریع‌ترین مسیر را بین ایستگاه‌های مترو پیدا کنید.",
+    "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
   verification: {
     google: "yT7M8VQ3-f2WbNtL_hwI6hVnVSgTkp1xGp2NMg7QL-E",
   },
   metadataBase: new URL(siteUrl),
   alternates: {
-    canonical: "/",
+    canonical: siteUrl,
     languages: {
       en: "/?lang=en",
       fa: "/",
@@ -62,26 +62,26 @@ export const metadata: Metadata = {
     locale: "fa_IR",
     alternateLocale: "en_US",
     url: siteUrl,
-    siteName: "متو — نقشه مترو تهران و مسیریابی",
-    title: "متو | نقشه و مسیریابی مترو تهران",
+    siteName: "متو",
+    title: "متو | مسیریاب مترو تهران، زمان قطار بعدی و تخمین رسیدن",
     description:
-      "متو — نقشه مترو تهران با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها.",
+      "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
     images: [
       {
-        url: "/icon-512.png",
-        width: 512,
-        height: 512,
-        alt: "متو — نقشه و مسیریابی مترو تهران",
+        url: "/socialprev.png",
+        width: 1734,
+        height: 907,
+        alt: "متو - مسیریاب مترو تهران",
         type: "image/png",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "متو | نقشه و مسیریابی مترو تهران",
+    title: "متو | مسیریاب مترو تهران، زمان قطار بعدی و تخمین رسیدن",
     description:
-      "متو — نقشه مترو تهران با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها.",
-    images: ["/icon-512.png"],
+      "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
+    images: ["/socialprev.png"],
     creator: "@aliinreallife",
   },
   robots: {

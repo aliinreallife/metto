@@ -17,6 +17,15 @@ export const metadata: Metadata = {
     description:
       "لیست کامل ایستگاه‌های مترو تهران با اطلاعات خطوط و امکانات.",
     url: "https://metto.ir/stations",
+    images: [
+      {
+        url: "/socialprev.png",
+        width: 1734,
+        height: 907,
+        alt: "متو - مسیریاب مترو تهران",
+        type: "image/png",
+      },
+    ],
   },
 };
 

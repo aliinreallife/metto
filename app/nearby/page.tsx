@@ -17,6 +17,15 @@ export const metadata: Metadata = {
     description:
       "نزدیک‌ترین ایستگاه مترو تهران را با GPS پیدا کنید.",
     url: "https://metto.ir/nearby",
+    images: [
+      {
+        url: "/socialprev.png",
+        width: 1734,
+        height: 907,
+        alt: "متو - مسیریاب مترو تهران",
+        type: "image/png",
+      },
+    ],
   },
 };
 

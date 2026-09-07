@@ -18,6 +18,15 @@ export const metadata: Metadata = {
     description:
       "نقشه تعاملی مترو تهران با نمای ماهواره‌ای و نقشه خطوط.",
     url: "https://metto.ir/map",
+    images: [
+      {
+        url: "/socialprev.png",
+        width: 1734,
+        height: 907,
+        alt: "متو - مسیریاب مترو تهران",
+        type: "image/png",
+      },
+    ],
   },
 };
 
