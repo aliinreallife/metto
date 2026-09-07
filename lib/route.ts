@@ -30,6 +30,11 @@ import {
   tehranMinuteToInstant,
   tehranParts,
 } from "./tehran-time";
+import {
+  getMetroScheduleDayType,
+  scheduleDayToDayType,
+} from "./holidays/schedule-day";
+import type { IsHolidayDate } from "./holidays/types";
 
 // Canonical station lookup that also resolves legacy English-name IDs, so old
 // ?from=/?to= URLs, API params and schedule data keep working.
@@ -187,6 +192,13 @@ export type FindRouteOptions = {
   departAt?: Date;
   /** Injectable timetable lookup (tests). Defaults to findTripDetailed. */
   tripLookup?: (args: TripLookupArgs) => TripLookupResult;
+  /**
+   * Sync holiday resolver over already-loaded cache entries.
+   * The caller pre-loads today + next Tehran date ONCE; the ETA loop
+   * re-evaluates the Tehran date per leg against this local function.
+   * No storage/network calls happen inside routing.
+   */
+  isHolidayDate?: IsHolidayDate;
 };
 
 type StateKey = string; // `${stationId}|${line}|${route}`
@@ -529,14 +541,18 @@ export function findRoute(
     const segOrigin = seg.stations[0];
     const segDest = seg.stations[seg.stations.length - 1];
     // Tehran wall clock + day type re-derived from the propagated instant,
-    // so midnight crossings re-evaluate the timetable day.
+    // so midnight crossings re-evaluate the timetable day. Holiday lookup
+    // uses the pre-loaded sync resolver (local map, no I/O here).
     const parts = tehranParts(currentInstantMs);
+    const holidayDayType = scheduleDayToDayType(
+      getMetroScheduleDayType(currentInstantMs, opts?.isHolidayDate),
+    );
     const lookup = tripLookup({
       fromId: segOrigin,
       toId: segDest,
       line: seg.line,
       afterMinutes: parts.minuteOfDay,
-      dayType: parts.dayType,
+      dayType: holidayDayType,
       fromRouteId: seg.routeId,
       toRouteId: seg.routeId,
     });
