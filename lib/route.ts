@@ -11,8 +11,25 @@ import {
 } from "./metro/selectors";
 import { SEGMENTS } from "./metro/segments";
 import type { JourneyChange, MetroStation } from "./metro/types";
+import {
+  DEFAULT_TRANSFER_WALK_SECONDS,
+  TRAIN_CHANGE_WALK_SECONDS,
+  getTransferWalkSeconds,
+  hasExplicitTransferRule,
+} from "./metro/transfers";
 import { ROUTES } from "./metro/routes";
-import { findBestTrip, getCurrentDayType, type TripResult } from "./schedule-utils";
+import {
+  findTripDetailed,
+  type DayType,
+  type TripLookupResult,
+  type TripResult,
+} from "./schedule-utils";
+import {
+  formatTehranClock,
+  parseServiceTimeToMinutes,
+  tehranMinuteToInstant,
+  tehranParts,
+} from "./tehran-time";
 
 // Canonical station lookup that also resolves legacy English-name IDs, so old
 // ?from=/?to= URLs, API params and schedule data keep working.
@@ -36,22 +53,18 @@ export const STATION_MAP: Map<string, MetroStation> = new StationMap(
 // Each line change costs TRANSFER_PENALTY (≈ several stops of inconvenience).
 const RIDE_COST = 1;
 const TRANSFER_PENALTY = 5;
-// Changing trains on the same line (branch/service change): no platform walk,
-// but waiting for the connecting service. Conservative default — applied
-// unless timetable data proves through-running.
+// Changing trains on the same line (branch/service change): platform walk is
+// tracked separately (TRAIN_CHANGE_WALK_SECONDS, currently 0) and the Dijkstra
+// penalty below is conservative — applied unless timetable data proves
+// through-running.
 const TRAIN_CHANGE_PENALTY = 3;
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-}
 
 // Time model: derive travel time from real inter-station distances.
 // Tehran Metro cruising speed (incl. acceleration/deceleration): ~35 km/h.
-// Dwell time per station: ~25 s. Platform transfer walk: ~4 min.
+// Dwell time per station: ~25 s. Default platform transfer walk lives in
+// metro/transfers (DEFAULT_TRANSFER_WALK_SECONDS).
 const AVG_SPEED_KMH = 35;
 const DWELL_S = 25;
-const TRANSFER_S = 4 * 60;
 
 function hopKm(fromId: string, toId: string): number {
   const a = getStation(fromId);
@@ -95,10 +108,85 @@ export type RouteResult = {
   numStops: number; // boardable passenger stops (pass-through UC stations excluded)
   numTransfers: number; // physical line changes only
   numTrainChanges: number; // same-line service/branch changes
-  estimatedSeconds: number;
-  travelTimeOnly: number; // travel + walk time, no wait
-  estimatedArrival: string;
-  trips: (TripResult | null)[]; // parallel to segments; null = distance fallback
+  estimatedSeconds: number; // == totalSeconds (accumulated served time)
+  travelTimeOnly: number; // legacy minutes: riding + transfer walking, no waits
+  /** Final propagated ETA (Tehran "HH:MM"), or null when service runs out. */
+  estimatedArrival: string | null;
+  /**
+   * Journey-level timetable status: "complete" when fully propagated to the
+   * destination, "no_service" when timetable data exists but no usable
+   * connecting/onward service remains (estimatedArrival is null then).
+   */
+  status: JourneyStatus;
+  trips: (TripResult | null)[]; // parallel to segments; null = estimated/unserved
+  /** Per-segment timing source, parallel to segments. */
+  legTiming: LegTiming[];
+  /** Per-change connection detail; route.ts is the source of truth. */
+  connections: RouteConnection[];
+  // Unit-safe breakdown, all in seconds: totalSeconds == sum of the parts.
+  initialWaitSeconds: number;
+  rideSeconds: number;
+  transferWalkSeconds: number;
+  transferWaitSeconds: number;
+  trainChangeWaitSeconds: number;
+  totalSeconds: number;
+  /** Requested departure instant rendered as Tehran "HH:MM". */
+  departedAt: string;
+  departedAtMs: number;
+  /** Last station with propagated timing (destination when fully served). */
+  reachableUntilStationId: string;
+  reachableUntil: string;
+};
+
+/** How one ride leg's timing was derived. */
+export type LegTiming = "timetable" | "estimated" | "no-service" | "unreached";
+
+/** Journey-level timetable status. */
+export type JourneyStatus = "complete" | "no_service";
+
+export type ConnectionStatus = "ok" | "estimated" | "no-service";
+
+/**
+ * Chronological connection record for one transfer/train-change.
+ * Walking is applied BEFORE the connecting departure is searched, so
+ * nextDepartureAt always satisfies nextDepartureAt >= readyAt.
+ */
+export type RouteConnection = {
+  type: "line_transfer" | "train_change";
+  stationId: string;
+  fromLineId: number;
+  toLineId: number;
+  fromRouteId: string;
+  toRouteId: string;
+  walkSeconds: number;
+  /** True when a station-specific rule (not the default) set the walk. */
+  hasExplicitRule: boolean;
+  arriveAt: string; // Tehran "HH:MM" of the incoming train arrival
+  arriveAtMs: number;
+  readyAt: string; // arriveAt + walkSeconds
+  readyAtMs: number;
+  nextDepartureAt: string | null;
+  nextDepartureAtMs: number | null;
+  waitSeconds: number; // nextDepartureAt - readyAt (0 when estimated/unserved)
+  status: ConnectionStatus;
+};
+
+export type TripLookupArgs = {
+  fromId: string;
+  toId: string;
+  line: number;
+  /** Tehran minute-of-day of the propagated ready/board instant. */
+  afterMinutes: number;
+  dayType: DayType;
+  fromRouteId: string;
+  toRouteId: string;
+};
+
+export type FindRouteOptions = {
+  /** Requested departure; defaults to now. Propagated as absolute time. */
+  departAt?: Date;
+  /** Injectable timetable lookup (tests). Defaults to findTripDetailed. */
+  tripLookup?: (args: TripLookupArgs) => TripLookupResult;
 };
 
 type StateKey = string; // `${stationId}|${line}|${route}`
@@ -144,20 +232,17 @@ function getRouteTerminalForDirection(
   return b > a ? stops[stops.length - 1] : stops[0];
 }
 
-function minutesToClock(totalMinutes: number): string {
-  const m = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
-  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-}
-
 // Dijkstra over (station, line, route) states.
 // - Riding along a route: no transfer, no train change.
 // - Same line, different route: train_change (split segment, penalty, no walk).
-// - Different line: line_transfer (penalty + walk), requires boardable stops.
+// - Different line: line_transfer (walk-scaled penalty + walk), requires
+//   boardable stops.
 // Pass-through of non-boardable stations is free; boarding / alighting /
 // transferring requires canBoard/canTransfer.
 export function findRoute(
   originInput: string,
   destInput: string,
+  opts?: FindRouteOptions,
 ): RouteResult | null {
   const originId = resolveStationId(originInput) ?? originInput;
   const destId = resolveStationId(destInput) ?? destInput;
@@ -260,9 +345,20 @@ export function findRoute(
           push(nextCost, nk);
         }
       } else {
-        // Different line: normal interchange.
+        // Different line: normal interchange. Long station-specific walks
+        // (e.g. Eram-e Sabz) rank worse via walk-scaled penalty.
         if (!canTransferAtStation(stationId, curLine, r2.lineId)) continue;
-        const nextCost = cost + RIDE_COST + TRANSFER_PENALTY;
+        const walkS = getTransferWalkSeconds(
+          stationId,
+          curLine,
+          r2.lineId,
+          routeId,
+          r2.id,
+        );
+        const nextCost =
+          cost +
+          RIDE_COST +
+          TRANSFER_PENALTY * (walkS / DEFAULT_TRANSFER_WALK_SECONDS);
         const nk = key(stationId, r2.lineId, r2.id);
         if (nextCost < (dist.get(nk) ?? Infinity)) {
           dist.set(nk, nextCost);
@@ -318,6 +414,15 @@ export function findRoute(
                 stationId: atStation,
                 fromLineId: last.line,
                 toLineId: h.line,
+                walkSeconds: getTransferWalkSeconds(
+                  atStation,
+                  last.line,
+                  h.line,
+                  last.routeId,
+                  h.route,
+                ),
+                fromRouteId: last.routeId,
+                toRouteId: h.route,
               };
       }
       segments.push({
@@ -344,57 +449,272 @@ export function findRoute(
     (s) => s.changeFromPrevious.type === "train_change",
   ).length;
 
-  // Time-aware travel calculation: find actual trains for each ride segment.
-  // trips[] stays parallel to segments[]; null marks a distance-based
-  // fallback. The unified ledger below keeps estimatedSeconds, travelTimeOnly
-  // and estimatedArrival correct in both cases.
-  const dayType = getCurrentDayType();
-  const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  // Chronological ETA engine: one absolute currentInstant (epoch ms) is
+  // propagated through every leg. Walking is applied BEFORE the connecting
+  // departure is searched, so a train departing before the passenger finishes
+  // walking is always treated as missed. All breakdown fields are integer
+  // seconds; instants are never derived by adding seconds to wall minutes.
+  const departAt = opts?.departAt ?? new Date();
+  const startInstantMs = departAt.getTime();
+  let currentInstantMs = startInstantMs;
   const trips: (TripResult | null)[] = [];
-  let currentTime = nowMinutes;
-  let totalMinutes = 0;
-  let travelOnlyMinutes = 0;
-  let lastArrival = "";
+  const legTiming: LegTiming[] = [];
+  const connections: RouteConnection[] = [];
+  let initialWaitSeconds = 0;
+  let rideSeconds = 0;
+  let transferWalkSeconds = 0;
+  let transferWaitSeconds = 0;
+  let trainChangeWaitSeconds = 0;
+  let unserved = false;
 
-  segments.forEach((seg, segIdx) => {
-    const isLast = segIdx === segments.length - 1;
-    const nextChange = !isLast
-      ? segments[segIdx + 1].changeFromPrevious
-      : { type: "none" as const };
-    // Platform walk applies to line transfers only, not same-line changes.
-    const walkMinutes = nextChange.type === "line_transfer" ? 4 : 0;
+  const tripLookup =
+    opts?.tripLookup ??
+    ((args: TripLookupArgs): TripLookupResult =>
+      findTripDetailed(
+        args.fromId,
+        args.toId,
+        args.line,
+        args.afterMinutes,
+        args.dayType,
+      ));
 
+  // Pending connection opened after leg k arrives; finalized once leg k+1's
+  // lookup resolves (its departure/wait) or fails (no-service).
+  let pending: {
+    type: "line_transfer" | "train_change";
+    stationId: string;
+    fromLineId: number;
+    toLineId: number;
+    fromRouteId: string;
+    toRouteId: string;
+    walkSeconds: number;
+    hasExplicitRule: boolean;
+    arriveAtMs: number;
+    readyAtMs: number;
+    prevEstimated: boolean;
+  } | null = null;
+
+  const finalizePending = (final: {
+    nextDepartureAtMs: number | null;
+    waitSeconds: number;
+    status: ConnectionStatus;
+  }): void => {
+    if (!pending) return;
+    connections.push({
+      type: pending.type,
+      stationId: pending.stationId,
+      fromLineId: pending.fromLineId,
+      toLineId: pending.toLineId,
+      fromRouteId: pending.fromRouteId,
+      toRouteId: pending.toRouteId,
+      walkSeconds: pending.walkSeconds,
+      hasExplicitRule: pending.hasExplicitRule,
+      arriveAt: formatTehranClock(pending.arriveAtMs),
+      arriveAtMs: pending.arriveAtMs,
+      readyAt: formatTehranClock(pending.readyAtMs),
+      readyAtMs: pending.readyAtMs,
+      nextDepartureAt:
+        final.nextDepartureAtMs === null
+          ? null
+          : formatTehranClock(final.nextDepartureAtMs),
+      nextDepartureAtMs: final.nextDepartureAtMs,
+      waitSeconds: final.waitSeconds,
+      status: final.status,
+    });
+    pending = null;
+  };
+
+  for (let segIdx = 0; segIdx < segments.length; segIdx++) {
+    const seg = segments[segIdx];
     const segOrigin = seg.stations[0];
     const segDest = seg.stations[seg.stations.length - 1];
+    // Tehran wall clock + day type re-derived from the propagated instant,
+    // so midnight crossings re-evaluate the timetable day.
+    const parts = tehranParts(currentInstantMs);
+    const lookup = tripLookup({
+      fromId: segOrigin,
+      toId: segDest,
+      line: seg.line,
+      afterMinutes: parts.minuteOfDay,
+      dayType: parts.dayType,
+      fromRouteId: seg.routeId,
+      toRouteId: seg.routeId,
+    });
 
-    const trip = findBestTrip(segOrigin, segDest, seg.line, currentTime, dayType);
-    if (trip) {
-      trips.push(trip);
-      const waitTime = Math.max(0, timeToMinutes(trip.departTime) - currentTime);
-      totalMinutes += waitTime + trip.travelMinutes + walkMinutes;
-      travelOnlyMinutes += trip.travelMinutes + walkMinutes;
-      currentTime = timeToMinutes(trip.arriveTime) + walkMinutes;
-      lastArrival = trip.arriveTime;
-    } else {
-      // Fallback: distance-based estimate still advances the ledger.
+    if (lookup.status === "found") {
+      const depMin = parseServiceTimeToMinutes(lookup.trip.departTime);
+      let arrMin = parseServiceTimeToMinutes(lookup.trip.arriveTime);
+      // A trip itself may cross midnight.
+      if (arrMin < depMin) arrMin += 24 * 60;
+      const departMs = tehranMinuteToInstant(parts.dateStr, depMin);
+      const arriveMs = tehranMinuteToInstant(parts.dateStr, arrMin);
+      const waitS = Math.max(
+        0,
+        Math.round((departMs - currentInstantMs) / 1000),
+      );
+      const change = seg.changeFromPrevious;
+      if (segIdx === 0 || change.type === "none") {
+        initialWaitSeconds += waitS;
+      } else if (change.type === "line_transfer") {
+        transferWaitSeconds += waitS;
+      } else {
+        trainChangeWaitSeconds += waitS;
+      }
+      rideSeconds += Math.max(0, Math.round((arriveMs - departMs) / 1000));
+      trips.push(lookup.trip);
+      legTiming.push("timetable");
+      finalizePending({
+        nextDepartureAtMs: departMs,
+        waitSeconds: waitS,
+        status: pending?.prevEstimated ? "estimated" : "ok",
+      });
+      currentInstantMs = arriveMs;
+    } else if (lookup.status === "missing_schedule_data") {
+      // Fallback estimate advances the SAME ledger so later timetable legs
+      // search from this leg's calculated arrival. Allowed only when schedule
+      // data is missing — never when the timetable reports no service.
       let segSeconds = 0;
       for (let i = 0; i < seg.stations.length - 1; i++) {
         const km = hopKm(seg.stations[i], seg.stations[i + 1]);
         segSeconds += (km / AVG_SPEED_KMH) * 3600 + DWELL_S;
       }
-      const segMinutes = Math.round(segSeconds / 60);
+      segSeconds = Math.round(segSeconds);
+      rideSeconds += segSeconds;
       trips.push(null);
-      totalMinutes += segMinutes + walkMinutes;
-      travelOnlyMinutes += segMinutes + walkMinutes;
-      currentTime += segMinutes + walkMinutes;
-      lastArrival = minutesToClock(currentTime - walkMinutes);
+      legTiming.push("estimated");
+      finalizePending({
+        nextDepartureAtMs: null,
+        waitSeconds: 0,
+        status: "estimated",
+      });
+      currentInstantMs += segSeconds * 1000;
+    } else {
+      // Timetable covers this lookup but offers no departure: stop
+      // propagation. No fallback train is invented; ETA stays null.
+      trips.push(null);
+      legTiming.push("no-service");
+      for (let k = segIdx + 1; k < segments.length; k++) {
+        trips.push(null);
+        legTiming.push("unreached");
+      }
+      finalizePending({
+        nextDepartureAtMs: null,
+        waitSeconds: 0,
+        status: "no-service",
+      });
+      unserved = true;
+      break;
     }
-  });
 
-  const estimatedSeconds = totalMinutes * 60;
+    // Open the connection to the next segment: walk first, then the next
+    // iteration searches from the ready instant.
+    if (!unserved && segIdx < segments.length - 1) {
+      const nextChange = segments[segIdx + 1].changeFromPrevious;
+      if (
+        nextChange.type === "line_transfer" ||
+        nextChange.type === "train_change"
+      ) {
+        const walkS =
+          nextChange.type === "line_transfer"
+            ? nextChange.walkSeconds
+            : TRAIN_CHANGE_WALK_SECONDS;
+        if (nextChange.type === "line_transfer") {
+          transferWalkSeconds += walkS;
+          pending = {
+            type: "line_transfer",
+            stationId: nextChange.stationId,
+            fromLineId: nextChange.fromLineId,
+            toLineId: nextChange.toLineId,
+            fromRouteId: nextChange.fromRouteId ?? segments[segIdx].routeId,
+            toRouteId: nextChange.toRouteId ?? segments[segIdx + 1].routeId,
+            walkSeconds: walkS,
+            hasExplicitRule: hasExplicitTransferRule(
+              nextChange.stationId,
+              nextChange.fromLineId,
+              nextChange.toLineId,
+              nextChange.fromRouteId,
+              nextChange.toRouteId,
+            ),
+            arriveAtMs: currentInstantMs,
+            readyAtMs: currentInstantMs + walkS * 1000,
+            prevEstimated: legTiming[segIdx] === "estimated",
+          };
+        } else {
+          pending = {
+            type: "train_change",
+            stationId: nextChange.stationId,
+            fromLineId: nextChange.lineId,
+            toLineId: nextChange.lineId,
+            fromRouteId: nextChange.fromRouteId,
+            toRouteId: nextChange.toRouteId,
+            walkSeconds: walkS,
+            hasExplicitRule: false,
+            arriveAtMs: currentInstantMs,
+            readyAtMs: currentInstantMs + walkS * 1000,
+            prevEstimated: legTiming[segIdx] === "estimated",
+          };
+        }
+        currentInstantMs = pending.readyAtMs;
+      }
+    }
+  }
 
-  return { hops, segments, path, numStops, numTransfers, numTrainChanges, estimatedSeconds, travelTimeOnly: travelOnlyMinutes, estimatedArrival: lastArrival, trips };
+  const totalSeconds =
+    initialWaitSeconds +
+    rideSeconds +
+    transferWalkSeconds +
+    transferWaitSeconds +
+    trainChangeWaitSeconds;
+
+  let estimatedArrival: string | null;
+  let reachableUntilStationId: string;
+  let reachableUntil: string;
+  let status: JourneyStatus;
+  if (unserved) {
+    status = "no_service";
+    estimatedArrival = null;
+    const failedIdx = legTiming.findIndex(
+      (t) => t === "no-service" || t === "unreached",
+    );
+    reachableUntilStationId =
+      failedIdx > 0
+        ? segments[failedIdx - 1].stations[
+            segments[failedIdx - 1].stations.length - 1
+          ]
+        : originId;
+    reachableUntil = formatTehranClock(currentInstantMs);
+  } else {
+    status = "complete";
+    estimatedArrival = formatTehranClock(currentInstantMs);
+    reachableUntilStationId = destId;
+    reachableUntil = estimatedArrival;
+  }
+
+  return {
+    hops,
+    segments,
+    path,
+    numStops,
+    numTransfers,
+    numTrainChanges,
+    estimatedSeconds: totalSeconds,
+    travelTimeOnly: Math.round((rideSeconds + transferWalkSeconds) / 60),
+    estimatedArrival,
+    status,
+    trips,
+    legTiming,
+    connections,
+    initialWaitSeconds,
+    rideSeconds,
+    transferWalkSeconds,
+    transferWaitSeconds,
+    trainChangeWaitSeconds,
+    totalSeconds,
+    departedAt: formatTehranClock(startInstantMs),
+    departedAtMs: startInstantMs,
+    reachableUntilStationId,
+    reachableUntil,
+  };
 }
 
 export { normalize } from "./metro/selectors";

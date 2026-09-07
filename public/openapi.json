@@ -248,8 +248,27 @@
         "properties": {
           "stops": { "type": "integer" },
           "transfers": { "type": "integer" },
-          "estimatedMinutes": { "type": "integer" },
-          "estimatedArrival": { "type": "string" },
+          "estimatedMinutes": {
+            "type": "integer",
+            "description": "Backward compatible total in minutes. When status is no_service it represents elapsed/estimated time only up to reachableUntil, NOT a final destination ETA."
+          },
+          "estimatedArrival": {
+            "type": ["string", "null"],
+            "description": "Tehran HH:MM arrival at the destination, or null when status is no_service."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["complete", "no_service"],
+            "description": "complete when the journey is fully propagated to the destination; no_service when timetable data exists but no usable connecting/onward service remains."
+          },
+          "reachableUntilStationId": {
+            "type": "string",
+            "description": "Last station with propagated timing (the destination when status is complete)."
+          },
+          "reachableUntil": {
+            "type": "string",
+            "description": "Tehran HH:MM wall clock of the last propagated instant."
+          },
           "path": { "type": "array", "items": { "type": "string" } },
           "hops": {
             "type": "array",

@@ -2,6 +2,7 @@ import { STATIONS } from "./stations";
 import { ROUTES } from "./routes";
 import { SEGMENTS, SEGMENT_STATUS_OVERRIDES } from "./segments";
 import { getStationLines, isInterchange } from "./selectors";
+import { validateTransferRules } from "./transfers";
 import type { StopStatus } from "./types";
 
 export type ValidationError = string;
@@ -143,6 +144,9 @@ export function validateMetro(): ValidationError[] {
       errors.push(`station ${s.id} interchange derivation inconsistent`);
     }
   }
+
+  // Station-specific interchange walking-time rules.
+  errors.push(...validateTransferRules());
 
   return errors;
 }

@@ -85,7 +85,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const result = findRoute(originId, destId);
+  let departAt: Date | undefined;
+  const departAtParam = searchParams.get("departAt");
+  if (departAtParam) {
+    const parsed = new Date(departAtParam);
+    if (Number.isNaN(parsed.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid departAt (expected an ISO-8601 datetime)" },
+        { status: 400 },
+      );
+    }
+    departAt = parsed;
+  }
+
+  const result = findRoute(originId, destId, departAt ? { departAt } : undefined);
 
   if (!result) {
     return NextResponse.json(
@@ -100,8 +113,24 @@ export async function GET(request: NextRequest) {
     route: {
       stops: result.numStops,
       transfers: result.numTransfers,
+      // Backward compatible. When status === "no_service" this covers elapsed
+      // time only up to reachableUntil, NOT a final destination ETA.
       estimatedMinutes: Math.round(result.estimatedSeconds / 60),
       estimatedArrival: result.estimatedArrival,
+      status: result.status,
+      reachableUntilStationId: result.reachableUntilStationId,
+      reachableUntil: result.reachableUntil,
+      departedAt: result.departedAt,
+      breakdownSeconds: {
+        initialWait: result.initialWaitSeconds,
+        ride: result.rideSeconds,
+        transferWalk: result.transferWalkSeconds,
+        transferWait: result.transferWaitSeconds,
+        trainChangeWait: result.trainChangeWaitSeconds,
+        total: result.totalSeconds,
+      },
+      connections: result.connections,
+      legTiming: result.legTiming,
       path: result.path,
       hops: result.hops.map((h) => ({
         from: h.from,
