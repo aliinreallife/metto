@@ -1,33 +1,124 @@
-# metto — مترو تهران
+# Metto — متو | Tehran Metro Route Planner
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+Metto (متو) is a free, fast, bilingual (فارسی / English) web app for navigating the Tehran Metro — live at **[metto.ir](https://metto.ir)**.
 
-## Built with v0
+Find the fastest route between any two stations with timetable-aware ETAs, browse all stations across 7 lines, find the nearest station by GPS or amenity, and share routes via link.
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+Built by [aliinreallife](https://github.com/aliinreallife) · Metro data by [mostafa-kheibary/tehran-metro-data](https://github.com/mostafa-kheibary/tehran-metro-data)
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_HWgj1vUA1ywm9P39BtDxCc3Dqp80)
+## Features
 
-## Getting Started
+- **Route planner** (`/`) — origin/destination search by station *or place name* (e.g. "Iran Mall" resolves to its nearest station), swap, geolocation origin, shareable URLs (`?from=tajrish&to=tehran-sadeghiyeh`)
+- **Timetable-aware ETA engine** — real departure/arrival propagation per leg (initial wait, ride, transfer walk + wait, train-change wait), station-specific transfer walks, Line 5 express trains, midnight-crossing + holiday-aware day types (شنبه تا چهارشنبه / پنجشنبه / جمعه / تعطیل)
+- **Stations** (`/stations`) — filterable list of 151 stations with lines, amenities, departures and full-day timesheets
+- **Real map** (`/map`) — interactive Leaflet map with minimalist + satellite styles, line toggles, station details
+- **Nearby** (`/nearby`) — GPS-based nearest stations, amenity filter (restroom, elevator, ATM, Wi-Fi…), directions links
+- **Bilingual + RTL** — full FA/EN UI with Persian digits, Jalali-aware scheduling
+- **PWA** — installable, offline-capable shell, SEO/sitemap/robots + OpenGraph
 
-First, run the development server:
+## Tech stack
+
+- **Next.js 16** (App Router) · **React 19** · **Tailwind CSS 4** · **shadcn/ui**
+- **Leaflet / react-leaflet** for maps · **jalaali-js** for Jalali dates
+- **Upstash Redis** (holiday cache) · **timestamp.ir** (holiday source) · **Vercel Cron** (daily sync)
+- **vitest** for tests · **MCP SDK** for AI integration
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+pnpm install
+pnpm dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+pnpm build && pnpm start
+pnpm test     # vitest run
+pnpm lint
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-## Learn More
+Copy `.env.example` to `.env.local`. Only needed for holiday-aware timetables (without them the app falls back to weekday/weekend logic):
 
-To learn more, take a look at the following resources:
+| Variable | Purpose |
+|---|---|
+| `TIMESTAMP_IR_API_KEY` | Server-side key for timestamp.ir (sent as `X-API-Key`, never to browser) |
+| `CRON_SECRET` | Protects `GET /api/cron/sync-holidays` (`Authorization: Bearer <secret>`) |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Holiday cache (or `KV_REST_API_URL` / `KV_REST_API_TOKEN` from the Vercel Marketplace integration) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+Set them in Vercel Project Settings → Environment Variables for production.
+
+## How it works
+
+### Routing (`lib/route.ts`)
+
+Dijkstra over `(station, line, route)` states:
+
+- Same-route continuation is free; same-line route change = **train change** (penalty, shown as "Change trains", not counted as a transfer); different line = **line transfer** (+ station-specific walk, default 4 min)
+- One absolute instant propagates chronologically — walk is applied *before* the connecting departure is searched, so missed connections are never shown as caught
+- Timetable lookups return `found` / `missing_schedule_data` / `no_service`. Geometric fallback runs only when schedule data is missing, never when the timetable says no departure
+
+See `lib/metro/NOTES.md` for topology decisions (Line 4 west continuity, Line 5 extensions, branch/transfer model).
+
+### Schedules (`public/schedule-data.json`, ~5 MB)
+
+Generated from upstream metro data:
+
+```bash
+pnpm dlx tsx scripts/fetch-schedules.ts
+```
+
+Loaded lazily client-side (`lib/use-schedule-data.ts`, `lib/schedule-utils.ts`); route ETAs consume it via `findTripDetailed`.
+
+### Holidays (`lib/holidays/`)
+
+`timestamp.ir → Upstash Redis → timetable day-type selection`, synced daily by `GET /api/cron/sync-holidays` (see `vercel.json`). Tests: `holidays.test.ts`.
+
+### Tests
+
+```bash
+pnpm test   # metro.test.ts · transfer-walk.test.ts · holidays.test.ts
+```
+
+## API
+
+Machine-readable docs: [`/openapi.json`](https://metto.ir/openapi.json) · AI guide: [`/llms.txt`](https://metto.ir/llms.txt)
+
+| Endpoint | Example |
+|---|---|
+| `GET /api/route?from=&to=` (also `from_lat/from_lng/to_lat/to_lng`) | [/api/route?from=tajrish&to=tehran-sadeghiyeh](https://metto.ir/api/route?from=tajrish&to=tehran-sadeghiyeh) |
+| `GET /api/stations?line=&search=` | [/api/stations](https://metto.ir/api/stations) |
+| `GET /api/station/[id]` | [/api/station/tajrish](https://metto.ir/api/station/tajrish) |
+| `GET /api/nearby?lat=&lng=&limit=` | [/api/nearby?lat=35.804&lng=51.433](https://metto.ir/api/nearby?lat=35.804&lng=51.433) |
+
+## MCP (AI assistants)
+
+Metto exposes a Model Context Protocol server for Claude/AI agents:
+
+- **HTTP**: `POST /api/mcp` (streamable) — see `app/api/mcp/route.ts`
+- **stdio**: `mcp-server.ts` (`get_route`, `list_stations`, `get_station`, `find_nearby` tools + `metro://stations` / `metro://lines` resources + `plan-route` / `station-info` prompts)
+
+## Project structure
+
+```
+app/            # routes: / (planner), /stations, /map, /nearby + /api/*
+components/     # route-panel, station-detail, station-timesheet, real-map, …
+lib/
+  metro/        # stations, lines, routes, segments, transfers, selectors, validation
+  route.ts      # Dijkstra router + ETA engine
+  schedule-utils.ts / schedule-data.ts / tehran-time.ts
+  holidays/     # jalali, schedule-day, store (Redis), sync, timestamp.ir client
+  geo.ts / geocoding.ts / i18n.ts
+public/
+  schedule-data.json  # generated timetables
+  openapi.json / llms.txt
+scripts/fetch-schedules.ts
+```
+
+## Contributing
+
+PRs welcome — especially timetable corrections, station coordinates/amenities, and translations. Please run `pnpm test` and `pnpm lint` before submitting.
+
+## License
+
+No license file yet — all rights reserved by default. Data courtesy of [tehran-metro-data](https://github.com/mostafa-kheibary/tehran-metro-data).
