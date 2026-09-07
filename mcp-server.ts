@@ -3,7 +3,12 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { findRoute, STATION_MAP } from "./lib/route.js";
 import { nearestStations } from "./lib/geo.js";
-import { STATIONS, LINE_COLORS } from "./lib/metro-data.js";
+import {
+  getAllStations,
+  getStationLines,
+  getStationNeighbors,
+} from "./lib/metro/selectors.js";
+import { LINES, LINE_COLORS } from "./lib/metro/lines.js";
 
 const METRO_ANNOTATIONS = {
   readOnlyHint: true,
@@ -22,8 +27,8 @@ server.registerTool("get_route", {
   description: "Plan a metro route between two stations. Returns stops, transfers, travel time, and path.",
   annotations: METRO_ANNOTATIONS,
   inputSchema: {
-    from: z.string().describe("Origin station ID (English name, e.g. 'Tajrish')"),
-    to: z.string().describe("Destination station ID (English name, e.g. 'Darvazeh Sharq')"),
+    from: z.string().describe("Origin station ID (stable slug, e.g. 'tajrish'; legacy English names accepted)"),
+    to: z.string().describe("Destination station ID (stable slug, e.g. 'tehran-sadeghiyeh'; legacy English names accepted)"),
   },
   outputSchema: {
     route: z.string(),
@@ -52,7 +57,7 @@ server.registerTool("get_route", {
     return {
       content: [{
         type: "text" as const,
-        text: `No route found between ${origin.fa} (${origin.name}) and ${dest.fa} (${dest.name}).`,
+        text: `No route found between ${origin.name.fa} (${origin.name.en}) and ${dest.name.fa} (${dest.name.en}).`,
       }],
     };
   }
@@ -64,7 +69,7 @@ server.registerTool("get_route", {
     content: [{
       type: "text" as const,
       text: [
-        `Route: ${origin.fa} (${origin.name}) → ${dest.fa} (${dest.name})`,
+        `Route: ${origin.name.fa} (${origin.name.en}) → ${dest.name.fa} (${dest.name.en})`,
         `Stops: ${result.numStops}`,
         `Transfers: ${result.numTransfers}`,
         `Travel time: ~${minutes} min`,
@@ -75,12 +80,12 @@ server.registerTool("get_route", {
       ].join("\n"),
     }],
     structuredContent: {
-      route: `${origin.fa} (${origin.name}) → ${dest.fa} (${dest.name})`,
+      route: `${origin.name.fa} (${origin.name.en}) → ${dest.name.fa} (${dest.name.en})`,
       stops: result.numStops,
       transfers: result.numTransfers,
       travelTimeMinutes: minutes,
       path: result.path,
-      hops: result.hops,
+      hops: result.hops.map((h) => ({ from: h.from, to: h.to, line: h.line })),
     },
   };
 });
@@ -103,18 +108,18 @@ server.registerTool("list_stations", {
     })),
   },
 }, async ({ line, search }) => {
-  let results = STATIONS;
+  let results = getAllStations();
 
   if (line !== undefined) {
-    results = results.filter(s => s.lines.includes(line));
+    results = results.filter(s => getStationLines(s.id).includes(line));
   }
 
   if (search) {
     const q = search.toLowerCase();
-    results = results.filter(s => s.name.toLowerCase().includes(q) || s.fa.includes(search));
+    results = results.filter(s => s.name.en.toLowerCase().includes(q) || s.name.fa.includes(search));
   }
 
-  const list = results.map(s => `${s.fa} (${s.name}) — Lines: ${s.lines.join(", ")}`).join("\n");
+  const list = results.map(s => `${s.name.fa} (${s.name.en}) — Lines: ${getStationLines(s.id).join(", ")}`).join("\n");
 
   return {
     content: [{
@@ -124,7 +129,7 @@ server.registerTool("list_stations", {
     structuredContent: {
       count: results.length,
       stations: results.map(s => ({
-        id: s.id, name: s.name, fa: s.fa, lines: s.lines,
+        id: s.id, name: s.name.en, fa: s.name.fa, lines: getStationLines(s.id),
       })),
     },
   };
@@ -135,7 +140,7 @@ server.registerTool("get_station", {
   description: "Get full details for a single station including amenities, coordinates, and connections.",
   annotations: METRO_ANNOTATIONS,
   inputSchema: {
-    id: z.string().describe("Station ID (English name, e.g. 'Tajrish')"),
+    id: z.string().describe("Station ID (stable slug, e.g. 'tajrish'; legacy English names accepted)"),
   },
   outputSchema: {
     id: z.string(),
@@ -166,21 +171,21 @@ server.registerTool("get_station", {
     content: [{
       type: "text" as const,
       text: [
-        `${station.fa} (${station.name})`,
+        `${station.name.fa} (${station.name.en})`,
         `ID: ${station.id}`,
-        `Lines: ${station.lines.join(", ")}`,
-        `Coordinates: ${station.lat}, ${station.lng}`,
-        `Connected to: ${station.relations.join(", ") || "none"}`,
+        `Lines: ${getStationLines(station.id).join(", ")}`,
+        `Coordinates: ${station.location.lat}, ${station.location.lng}`,
+        `Connected to: ${getStationNeighbors(station.id).map(n => n.stationId).join(", ") || "none"}`,
         `Amenities: ${amenityList.join(", ") || "none"}`,
       ].join("\n"),
     }],
     structuredContent: {
       id: station.id,
-      name: station.name,
-      fa: station.fa,
-      lines: station.lines,
-      coordinates: { lat: station.lat, lng: station.lng },
-      connectedTo: station.relations,
+      name: station.name.en,
+      fa: station.name.fa,
+      lines: getStationLines(station.id),
+      coordinates: { lat: station.location.lat, lng: station.location.lng },
+      connectedTo: getStationNeighbors(station.id).map(n => n.stationId),
       amenities: amenityList,
     },
   };
@@ -203,7 +208,7 @@ server.registerTool("find_nearby", {
   },
 }, async ({ lat, lng, limit }) => {
   const results = nearestStations(lat, lng, { limit: Math.min(limit ?? 5, 20) });
-  const list = results.map(r => `${r.station.fa} (${r.station.name}) — ${r.km.toFixed(2)} km`).join("\n");
+  const list = results.map(r => `${r.station.name.fa} (${r.station.name.en}) — ${r.km.toFixed(2)} km`).join("\n");
 
   return {
     content: [{
@@ -212,7 +217,7 @@ server.registerTool("find_nearby", {
     }],
     structuredContent: {
       results: results.map(r => ({
-        station: { id: r.station.id, name: r.station.name, fa: r.station.fa },
+        station: { id: r.station.id, name: r.station.name.en, fa: r.station.name.fa },
         distanceKm: r.km,
       })),
     },
@@ -228,9 +233,9 @@ server.registerResource("stations", "metro://stations", {
   contents: [{
     uri: "metro://stations",
     mimeType: "application/json",
-    text: JSON.stringify(STATIONS.map(s => ({
-      id: s.id, name: s.name, fa: s.fa, lines: s.lines,
-      lat: s.lat, lng: s.lng, amenities: s.amenities,
+    text: JSON.stringify(getAllStations().map(s => ({
+      id: s.id, name: s.name.en, fa: s.name.fa, lines: getStationLines(s.id),
+      lat: s.location.lat, lng: s.location.lng, status: s.status, amenities: s.amenities,
     })), null, 2),
   }],
 }));
@@ -239,9 +244,9 @@ server.registerResource("lines", "metro://lines", {
   description: "Metro line information with colors and station counts",
   mimeType: "application/json",
 }, async () => {
-  const lines = Object.keys(LINE_COLORS).map(Number).sort((a, b) => a - b).map(lineNum => {
-    const lineStations = STATIONS.filter(s => s.lines.includes(lineNum));
-    return { line: lineNum, color: LINE_COLORS[lineNum], stationCount: lineStations.length, stations: lineStations.map(s => s.id) };
+  const lines = LINES.map(l => {
+    const lineStations = getAllStations().filter(s => getStationLines(s.id).includes(l.id));
+    return { line: l.id, color: l.color, stationCount: lineStations.length, stations: lineStations.map(s => s.id) };
   });
   return { contents: [{ uri: "metro://lines", mimeType: "application/json", text: JSON.stringify(lines, null, 2) }] };
 });

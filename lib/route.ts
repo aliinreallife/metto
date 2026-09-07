@@ -1,14 +1,45 @@
-import { STATIONS, type Station } from "./metro-data";
-import { ROUTE_ADJ as ADJ, STATION_BY_ID } from "./graph";
+import {
+  canBoardAtStation,
+  canTransferAtStation,
+  getAllStations,
+  getRouteStations,
+  getRouteTerminals,
+  getStation,
+  getRoutesForStation,
+  resolveStationId,
+  searchStations as searchMetroStations,
+} from "./metro/selectors";
+import { SEGMENTS } from "./metro/segments";
+import type { JourneyChange, MetroStation } from "./metro/types";
+import { ROUTES } from "./metro/routes";
 import { findBestTrip, getCurrentDayType, type TripResult } from "./schedule-utils";
 
-export const STATION_MAP: Map<string, Station> = STATION_BY_ID;
+// Canonical station lookup that also resolves legacy English-name IDs, so old
+// ?from=/?to= URLs, API params and schedule data keep working.
+class StationMap extends Map<string, MetroStation> {
+  override get(key: string): MetroStation | undefined {
+    return super.get(key) ?? super.get(resolveStationId(key) ?? "");
+  }
+  override has(key: string): boolean {
+    if (super.has(key)) return true;
+    const resolved = resolveStationId(key);
+    return resolved !== undefined && super.has(resolved);
+  }
+}
+
+export const STATION_MAP: Map<string, MetroStation> = new StationMap(
+  getAllStations().map((s) => [s.id, s]),
+);
 
 // Cost model for "fewest stops + fewest transfers".
 // Each hop between adjacent stations costs RIDE_COST.
 // Each line change costs TRANSFER_PENALTY (≈ several stops of inconvenience).
 const RIDE_COST = 1;
 const TRANSFER_PENALTY = 5;
+// Changing trains on the same line (branch/service change): no platform walk,
+// but waiting for the connecting service. Conservative default — applied
+// unless timetable data proves through-running.
+const TRAIN_CHANGE_PENALTY = 3;
 
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
@@ -22,87 +53,123 @@ const AVG_SPEED_KMH = 35;
 const DWELL_S = 25;
 const TRANSFER_S = 4 * 60;
 
-function hopKm(
-  fromId: string,
-  toId: string,
-  map: Map<string, { lat: number; lng: number }>,
-): number {
-  const a = map.get(fromId);
-  const b = map.get(toId);
+function hopKm(fromId: string, toId: string): number {
+  const a = getStation(fromId);
+  const b = getStation(toId);
   if (!a || !b) return 1;
   const R = 6371;
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const dLat = ((b.location.lat - a.location.lat) * Math.PI) / 180;
+  const dLng = ((b.location.lng - a.location.lng) * Math.PI) / 180;
   const sinDLat = Math.sin(dLat / 2);
   const sinDLng = Math.sin(dLng / 2);
   const h =
     sinDLat * sinDLat +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
+    Math.cos((a.location.lat * Math.PI) / 180) *
+      Math.cos((b.location.lat * Math.PI) / 180) *
       sinDLng *
       sinDLng;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-type Hop = { from: string; to: string; line: number };
+type Hop = {
+  from: string;
+  to: string;
+  line: number;
+  route: string;
+  branch?: string;
+};
 
 export type RouteSegment = {
   line: number;
+  routeId: string;
+  branchId?: string;
   stations: string[]; // ordered station ids, inclusive of board & alight
-  terminal: string; // last station in the direction of travel on this line
+  terminal: string; // route terminal in the direction of travel
+  changeFromPrevious: JourneyChange;
 };
 
 export type RouteResult = {
   hops: Hop[];
   segments: RouteSegment[];
   path: string[];
-  numStops: number;
-  numTransfers: number;
+  numStops: number; // boardable passenger stops (pass-through UC stations excluded)
+  numTransfers: number; // physical line changes only
+  numTrainChanges: number; // same-line service/branch changes
   estimatedSeconds: number;
   travelTimeOnly: number; // travel + walk time, no wait
   estimatedArrival: string;
-  trips: TripResult[];
+  trips: (TripResult | null)[]; // parallel to segments; null = distance fallback
 };
 
-type StateKey = string; // `${stationId}|${line}`
+type StateKey = string; // `${stationId}|${line}|${route}`
 
-function key(station: string, line: number): StateKey {
-  return `${station}|${line}`;
+function key(station: string, line: number, route: string): StateKey {
+  return `${station}|${line}|${route}`;
 }
 
-// Find the terminal station of a line in the direction from startId towards nextId.
-// Walks the line's adjacency until reaching a station with only one same-line neighbor.
-function getTerminalStation(
-  startId: string,
-  nextId: string,
-  line: number,
-): string {
-  let prev = startId;
-  let cur = nextId;
-  for (let i = 0; i < 200; i++) {
-    const edges = ADJ.get(cur) ?? [];
-    const sameLine = edges.filter(
-      (e) => e.lines.includes(line) && e.to !== prev,
-    );
-    if (sameLine.length === 0) return cur;
-    prev = cur;
-    cur = sameLine[0].to;
+// Route-aware adjacency: for route r, the stations adjacent to s in r's
+// ordered stops where the connecting segment is operational. Boarding status
+// is NOT checked here — pass-through of non-boardable stations is allowed.
+const SEGMENT_BY_ROUTE_PAIR = new Map<string, (typeof SEGMENTS)[number]>();
+for (const s of SEGMENTS) {
+  SEGMENT_BY_ROUTE_PAIR.set(`${s.routeId}|${s.from}|${s.to}`, s);
+  SEGMENT_BY_ROUTE_PAIR.set(`${s.routeId}|${s.to}|${s.from}`, s);
+}
+
+function routeNeighbors(stationId: string, routeId: string): string[] {
+  const stops = getRouteStations(routeId);
+  const i = stops.indexOf(stationId);
+  if (i === -1) return [];
+  const out: string[] = [];
+  for (const j of [i - 1, i + 1]) {
+    if (j < 0 || j >= stops.length) continue;
+    const seg = SEGMENT_BY_ROUTE_PAIR.get(`${routeId}|${stationId}|${stops[j]}`);
+    if (seg && seg.status === "operational") out.push(stops[j]);
   }
-  return cur;
+  return out;
 }
 
-// Dijkstra over (station, current line) states so we can charge transfer cost.
+// Terminal from the ordered route being ridden: given the first two stations
+// of a ride group, the terminal is the route end in the direction of travel.
+// Deterministic — no adjacency walking.
+function getRouteTerminalForDirection(
+  routeId: string,
+  firstId: string,
+  secondId: string,
+): string {
+  const stops = getRouteStations(routeId);
+  const a = stops.indexOf(firstId);
+  const b = stops.indexOf(secondId);
+  if (a === -1 || b === -1) return secondId;
+  return b > a ? stops[stops.length - 1] : stops[0];
+}
+
+function minutesToClock(totalMinutes: number): string {
+  const m = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+}
+
+// Dijkstra over (station, line, route) states.
+// - Riding along a route: no transfer, no train change.
+// - Same line, different route: train_change (split segment, penalty, no walk).
+// - Different line: line_transfer (penalty + walk), requires boardable stops.
+// Pass-through of non-boardable stations is free; boarding / alighting /
+// transferring requires canBoard/canTransfer.
 export function findRoute(
-  originId: string,
-  destId: string,
+  originInput: string,
+  destInput: string,
 ): RouteResult | null {
+  const originId = resolveStationId(originInput) ?? originInput;
+  const destId = resolveStationId(destInput) ?? destInput;
   if (originId === destId) return null;
   if (!STATION_MAP.has(originId) || !STATION_MAP.has(destId)) return null;
+  // Trips can only start/end where passengers board.
+  if (!canBoardAtStation(originId) || !canBoardAtStation(destId)) return null;
 
   const dist = new Map<StateKey, number>();
-  const prev = new Map<StateKey, { state: StateKey; hop: Hop } | null>();
+  const prev = new Map<StateKey, { state: StateKey; hop: Hop | null } | null>();
 
-  // Simple binary-heap-free priority via array; graph is small (150 nodes).
+  // Simple binary-heap-free priority via array; graph is small (~150 nodes).
   const pq: { cost: number; state: StateKey }[] = [];
   const push = (cost: number, state: StateKey) => {
     pq.push({ cost, state });
@@ -134,9 +201,9 @@ export function findRoute(
     return top;
   };
 
-  const origin = STATION_MAP.get(originId)!;
-  for (const line of origin.lines) {
-    const k = key(originId, line);
+  for (const r of getRoutesForStation(originId)) {
+    if (!canBoardAtStation(originId, r.lineId)) continue;
+    const k = key(originId, r.lineId, r.id);
     dist.set(k, 0);
     prev.set(k, null);
     push(0, k);
@@ -147,23 +214,59 @@ export function findRoute(
   while (pq.length) {
     const { cost, state } = pop();
     if (cost > (dist.get(state) ?? Infinity)) continue;
-    const [stationId, lineStr] = state.split("|");
+    const [stationId, lineStr, ...routeParts] = state.split("|");
+    const routeId = routeParts.join("|");
     const curLine = Number(lineStr);
 
     if (stationId === destId) {
+      // Only alight where the arriving service actually stops.
+      if (!canBoardAtStation(stationId, curLine)) continue;
       if (!best || cost < best.cost) best = { cost, state };
       continue;
     }
 
-    for (const edge of ADJ.get(stationId) ?? []) {
-      for (const line of edge.lines) {
-        const transferred = line !== curLine;
-        const nextCost =
-          cost + RIDE_COST + (transferred ? TRANSFER_PENALTY : 0);
-        const nk = key(edge.to, line);
+    // 1) Ride along the current route (pass-through needs track only).
+    const route = ROUTES.find((r) => r.id === routeId);
+    for (const next of routeNeighbors(stationId, routeId)) {
+      const nextCost = cost + RIDE_COST;
+      const nk = key(next, curLine, routeId);
+      if (nextCost < (dist.get(nk) ?? Infinity)) {
+        dist.set(nk, nextCost);
+        prev.set(nk, {
+          state,
+          hop: {
+            from: stationId,
+            to: next,
+            line: curLine,
+            route: routeId,
+            ...(route?.branchId ? { branch: route.branchId } : {}),
+          },
+        });
+        push(nextCost, nk);
+      }
+    }
+
+    // 2) Change service at this station (requires boarding the new service).
+    for (const r2 of getRoutesForStation(stationId)) {
+      if (r2.id === routeId) continue;
+      if (r2.lineId === curLine) {
+        // Same line, different route: train change, not a line transfer.
+        if (!canBoardAtStation(stationId, r2.lineId)) continue;
+        const nextCost = cost + TRAIN_CHANGE_PENALTY;
+        const nk = key(stationId, r2.lineId, r2.id);
         if (nextCost < (dist.get(nk) ?? Infinity)) {
           dist.set(nk, nextCost);
-          prev.set(nk, { state, hop: { from: stationId, to: edge.to, line } });
+          prev.set(nk, { state, hop: null });
+          push(nextCost, nk);
+        }
+      } else {
+        // Different line: normal interchange.
+        if (!canTransferAtStation(stationId, curLine, r2.lineId)) continue;
+        const nextCost = cost + RIDE_COST + TRANSFER_PENALTY;
+        const nk = key(stationId, r2.lineId, r2.id);
+        if (nextCost < (dist.get(nk) ?? Infinity)) {
+          dist.set(nk, nextCost);
+          prev.set(nk, { state, hop: null });
           push(nextCost, nk);
         }
       }
@@ -172,13 +275,13 @@ export function findRoute(
 
   if (!best) return null;
 
-  // Reconstruct hops.
+  // Reconstruct hops (service-change steps carry no hop).
   const hops: Hop[] = [];
   let cur: StateKey | null = best.state;
   while (cur) {
     const entry = prev.get(cur);
     if (!entry) break;
-    hops.unshift(entry.hop);
+    if (entry.hop) hops.unshift(entry.hop);
     cur = entry.state;
   }
 
@@ -188,203 +291,140 @@ export function findRoute(
   const path: string[] = [hops[0].from];
   for (const h of hops) path.push(h.to);
 
-  // Group hops into segments by line.
+  // Group hops into ride segments by route (not just line). A route change on
+  // the same line is a train change; a line change is a normal transfer.
   const segments: RouteSegment[] = [];
   for (const h of hops) {
     const last = segments[segments.length - 1];
-    if (last && last.line === h.line) {
+    if (last && last.routeId === h.route) {
       last.stations.push(h.to);
     } else {
-      const terminal = getTerminalStation(h.from, h.to, h.line);
-      segments.push({ line: h.line, stations: [h.from, h.to], terminal });
+      const route = ROUTES.find((r) => r.id === h.route);
+      const terminal = getRouteTerminalForDirection(h.route, h.from, h.to);
+      let changeFromPrevious: JourneyChange = { type: "none" };
+      if (last) {
+        const atStation = h.from;
+        changeFromPrevious =
+          last.line === h.line
+            ? {
+                type: "train_change",
+                stationId: atStation,
+                lineId: h.line,
+                fromRouteId: last.routeId,
+                toRouteId: h.route,
+              }
+            : {
+                type: "line_transfer",
+                stationId: atStation,
+                fromLineId: last.line,
+                toLineId: h.line,
+              };
+      }
+      segments.push({
+        line: h.line,
+        routeId: h.route,
+        ...(h.branch ? { branchId: h.branch } : {}),
+        ...(route?.branchId ? { branchId: route.branchId } : {}),
+        stations: [h.from, h.to],
+        terminal,
+        changeFromPrevious,
+      });
     }
   }
 
-  const numStops = hops.length;
-  const numTransfers = Math.max(0, segments.length - 1);
+  // Passenger stops: boardable stations excluding the origin. Non-boardable
+  // pass-through stations (e.g. Vavan) are traversed but never counted.
+  const numStops = path
+    .slice(1)
+    .filter((sid) => canBoardAtStation(sid)).length;
+  const numTransfers = segments.filter(
+    (s) => s.changeFromPrevious.type === "line_transfer",
+  ).length;
+  const numTrainChanges = segments.filter(
+    (s) => s.changeFromPrevious.type === "train_change",
+  ).length;
 
-  // Time-aware travel calculation: find actual trains for each segment
+  // Time-aware travel calculation: find actual trains for each ride segment.
+  // trips[] stays parallel to segments[]; null marks a distance-based
+  // fallback. The unified ledger below keeps estimatedSeconds, travelTimeOnly
+  // and estimatedArrival correct in both cases.
   const dayType = getCurrentDayType();
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const trips: TripResult[] = [];
+  const trips: (TripResult | null)[] = [];
   let currentTime = nowMinutes;
   let totalMinutes = 0;
+  let travelOnlyMinutes = 0;
   let lastArrival = "";
 
-  for (const seg of segments) {
+  segments.forEach((seg, segIdx) => {
+    const isLast = segIdx === segments.length - 1;
+    const nextChange = !isLast
+      ? segments[segIdx + 1].changeFromPrevious
+      : { type: "none" as const };
+    // Platform walk applies to line transfers only, not same-line changes.
+    const walkMinutes = nextChange.type === "line_transfer" ? 4 : 0;
+
     const segOrigin = seg.stations[0];
     const segDest = seg.stations[seg.stations.length - 1];
 
     const trip = findBestTrip(segOrigin, segDest, seg.line, currentTime, dayType);
     if (trip) {
       trips.push(trip);
-      // Account for wait time at the station
-      const waitTime = timeToMinutes(trip.departTime) - currentTime;
-      if (waitTime > 0) totalMinutes += waitTime;
-      totalMinutes += trip.travelMinutes;
-      currentTime = timeToMinutes(trip.arriveTime);
+      const waitTime = Math.max(0, timeToMinutes(trip.departTime) - currentTime);
+      totalMinutes += waitTime + trip.travelMinutes + walkMinutes;
+      travelOnlyMinutes += trip.travelMinutes + walkMinutes;
+      currentTime = timeToMinutes(trip.arriveTime) + walkMinutes;
       lastArrival = trip.arriveTime;
-      // Add transfer walk time for next segment
-      if (segments.indexOf(seg) < segments.length - 1) {
-        currentTime += 4; // 4 min walk
-        totalMinutes += 4;
-      }
     } else {
-      // Fallback: distance-based
-      let segDist = 0;
+      // Fallback: distance-based estimate still advances the ledger.
+      let segSeconds = 0;
       for (let i = 0; i < seg.stations.length - 1; i++) {
-        const km = hopKm(
-          seg.stations[i],
-          seg.stations[i + 1],
-          STATION_MAP as Map<string, { lat: number; lng: number }>,
-        );
-        segDist += (km / AVG_SPEED_KMH) * 3600 + DWELL_S;
+        const km = hopKm(seg.stations[i], seg.stations[i + 1]);
+        segSeconds += (km / AVG_SPEED_KMH) * 3600 + DWELL_S;
       }
-      totalMinutes += Math.round(segDist / 60);
+      const segMinutes = Math.round(segSeconds / 60);
+      trips.push(null);
+      totalMinutes += segMinutes + walkMinutes;
+      travelOnlyMinutes += segMinutes + walkMinutes;
+      currentTime += segMinutes + walkMinutes;
+      lastArrival = minutesToClock(currentTime - walkMinutes);
     }
-  }
+  });
 
   const estimatedSeconds = totalMinutes * 60;
-  // Travel time only: sum of all trip travel minutes + walk times
-  const travelTimeOnly = trips.reduce((sum, t) => sum + t.travelMinutes, 0) + numTransfers * 4;
 
-  return { hops, segments, path, numStops, numTransfers, estimatedSeconds, travelTimeOnly, estimatedArrival: lastArrival, trips };
+  return { hops, segments, path, numStops, numTransfers, numTrainChanges, estimatedSeconds, travelTimeOnly: travelOnlyMinutes, estimatedArrival: lastArrival, trips };
 }
 
-export function normalize(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/\u200c/g, " ")
-    .replace(/[ك]/g, "ک")
-    .replace(/[ي]/g, "ی")
-    .trim();
-}
+export { normalize } from "./metro/selectors";
 
 export type LineOrder = {
-  chains: string[][]; // one chain per branch (most lines have 1)
-  terminals: string[]; // terminal station ID per chain
+  chains: string[][]; // one chain per route (most lines have 1)
+  terminals: string[]; // far terminal station ID per chain
 };
 
 /**
- * Walk a line's adjacency to produce ordered chains of station IDs.
- * Simple lines return one chain from terminal to terminal.
- * Lines with a fork (station with ≥3 same-line neighbors) return multiple
- * chains: the trunk (shared section) + one chain per branch beyond the fork.
+ * Ordered station chains for a line, derived from routes.
+ * Forked lines (1, 4) return one chain per route; the UI shows branch chips.
  */
 export function orderLineStations(line: number): LineOrder {
-  const onLine = STATIONS.filter((s) => s.lines.includes(line));
-  if (onLine.length === 0) return { chains: [], terminals: [] };
-
-  // Build same-line adjacency (undirected), skipping self-loops.
-  const adj = new Map<string, string[]>();
-  for (const s of onLine) adj.set(s.id, []);
-  for (const s of onLine) {
-    for (const n of s.relations) {
-      if (n === s.id || !adj.has(n)) continue;
-      if (!adj.get(s.id)!.includes(n)) adj.get(s.id)!.push(n);
-      if (!adj.get(n)!.includes(s.id)) adj.get(n)!.push(s.id);
-    }
-  }
-
-  // Find terminals (1 neighbor) and fork points (≥3 neighbors).
-  const terminals: string[] = [];
-  const forkPoints = new Set<string>();
-  for (const [id, neighbors] of adj) {
-    if (neighbors.length === 1) terminals.push(id);
-    if (neighbors.length >= 3) forkPoints.add(id);
-  }
-
-  // Simple line: walk from one terminal to the other.
-  if (forkPoints.size === 0 || terminals.length < 3) {
-    const start = terminals[0] ?? onLine[0].id;
-    const chain: string[] = [];
-    const visited = new Set<string>();
-    let prev = "";
-    let cur = start;
-    while (cur && !visited.has(cur)) {
-      visited.add(cur);
-      chain.push(cur);
-      const neighbors = (adj.get(cur) ?? []).filter((n) => n !== prev);
-      prev = cur;
-      cur = neighbors[0] ?? "";
-    }
-    return { chains: [chain], terminals: [chain[chain.length - 1]] };
-  }
-
-  // Forked line: walk from each terminal. At fork points, pick the first
-  // unvisited branch for the trunk; other branches are separate chains.
-  const visited = new Set<string>();
-  const trunk: string[] = [];
-  let trunkTerminal = "";
-  {
-    let prev = "";
-    let cur = terminals[0];
-    while (cur) {
-      trunk.push(cur);
-      visited.add(cur);
-      // If this is a fork, check if we've reached another terminal
-      if (forkPoints.has(cur) && trunk.length > 1) {
-        // Check remaining unvisited neighbors for terminals
-        const unvisited = (adj.get(cur) ?? []).filter(
-          (n) => n !== prev && !visited.has(n),
-        );
-        for (const u of unvisited) {
-          if (terminals.includes(u)) {
-            trunkTerminal = u;
-          }
-        }
-        if (trunkTerminal) break;
-      }
-      const neighbors = (adj.get(cur) ?? []).filter(
-        (n) => n !== prev && !visited.has(n),
-      );
-      prev = cur;
-      if (neighbors.length === 0) break;
-      cur = neighbors[0];
-    }
-  }
-
-  const chains: string[][] = [trunk];
-  const termIds: string[] = [trunkTerminal || trunk[trunk.length - 1]];
-
-  // Walk from remaining terminals, stop when hitting visited station.
-  for (const start of terminals) {
-    if (visited.has(start)) continue;
-    const path: string[] = [];
-    let prev = "";
-    let cur = start;
-    while (cur && !visited.has(cur)) {
-      path.push(cur);
-      visited.add(cur);
-      const neighbors = (adj.get(cur) ?? []).filter((n) => n !== prev);
-      prev = cur;
-      cur = neighbors[0] ?? "";
-    }
-    if (path.length > 0) chains.push(path);
-    termIds.push(path[path.length - 1]);
-  }
-
-  return { chains, terminals: termIds };
+  const routes = ROUTES.filter((r) => r.lineId === line);
+  if (routes.length === 0) return { chains: [], terminals: [] };
+  const chains = routes.map((r) => getRouteStations(r.id));
+  const terminals = routes.map((r) => {
+    const t = getRouteTerminals(r.id);
+    return t[t.length - 1];
+  });
+  return { chains, terminals };
 }
 
-export function searchStations(query: string, limit = 30): Station[] {
-  const q = normalize(query);
-  const available = STATIONS.filter((s) => !s.disabled);
-  if (!q)
-    return available
-      .slice()
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .slice(0, limit);
-  const scored: { s: Station; score: number }[] = [];
-  for (const s of available) {
-    const en = normalize(s.name);
-    const fa = normalize(s.fa);
-    let score = -1;
-    if (en.startsWith(q) || fa.startsWith(q)) score = 0;
-    else if (en.includes(q) || fa.includes(q)) score = 1;
-    if (score >= 0) scored.push({ s, score });
-  }
-  scored.sort((a, b) => a.score - b.score || a.s.name.localeCompare(b.s.name));
-  return scored.slice(0, limit).map((x) => x.s);
+export function searchStations(
+  query: string,
+  limit = 30,
+): MetroStation[] {
+  return searchMetroStations(query, limit);
 }
+
+// Re-export for call sites that only need the type without importing metro/.
+export type { MetroStation };

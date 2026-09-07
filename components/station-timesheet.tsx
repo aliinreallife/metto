@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { X, Clock, Zap, ChevronDown } from "lucide-react";
-import { LINE_COLORS, type Station } from "@/lib/metro-data";
-import { STATION_BY_ID } from "@/lib/graph";
+import { LINE_COLORS } from "@/lib/metro/lines";
+import type { MetroStation } from "@/lib/metro/types";
+import { getStation, getStationLines } from "@/lib/metro/selectors";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import {
   getAllDepartures,
@@ -19,7 +20,7 @@ export function StationTimesheet({
   lang,
   onClose,
 }: {
-  station: Station;
+  station: MetroStation;
   lang: Lang;
   onClose: () => void;
 }) {
@@ -39,8 +40,8 @@ export function StationTimesheet({
 
   // Helper to get station name by ID in the correct language
   const stationName = (id: string) => {
-    const s = STATION_BY_ID.get(id);
-    return s ? (isFa ? s.fa : s.name) : id;
+    const s = getStation(id);
+    return s ? (isFa ? s.name.fa : s.name.en) : id;
   };
 
   // Group departures by line, then by direction
@@ -50,7 +51,7 @@ export function StationTimesheet({
       directions: { direction: string; directionName: string; times: { time: string; isExpress: boolean }[] }[];
     }[] = [];
 
-    for (const line of station.lines) {
+    for (const line of getStationLines(station.id)) {
       const allDeps = getAllDepartures(station.id, line, dayType);
 
       // Group by direction
@@ -69,7 +70,7 @@ export function StationTimesheet({
     }
 
     return result;
-  }, [station.id, station.lines, dayType, loaded]);
+  }, [station.id, dayType, loaded]);
 
   // Collect all unique directions across all lines
   const allDirections = useMemo(() => {
@@ -91,7 +92,7 @@ export function StationTimesheet({
             {isFa ? "برنامه حرکت" : "Timetable"}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {isFa ? station.fa : station.name}
+            {isFa ? station.name.fa : station.name.en}
           </p>
         </div>
         <button

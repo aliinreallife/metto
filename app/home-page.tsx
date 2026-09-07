@@ -96,10 +96,10 @@ export function HomePage() {
     if (nearest.length === 0) return;
 
     const station = nearest[0].station;
-    const km = haversineKm(place.lat, place.lng, station.lat, station.lng);
+    const km = haversineKm(place.lat, place.lng, station.location.lat, station.location.lng);
     const info = {
       placeName: place.name,
-      stationName: isFa ? station.fa : station.name,
+      stationName: isFa ? station.name.fa : station.name.en,
       distanceKm: km,
     };
 
@@ -352,8 +352,8 @@ function RouteView({
                 <div className="grid grid-cols-4 gap-2 md:gap-3">
                   <a
                     href={geoUrl(
-                      { lat: origin.lat, lng: origin.lng },
-                      isFa ? origin.fa : origin.name,
+                      { lat: origin.location.lat, lng: origin.location.lng },
+                      isFa ? origin.name.fa : origin.name.en,
                     )}
                     target="_blank"
                     rel="noopener noreferrer"

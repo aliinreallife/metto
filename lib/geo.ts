@@ -1,7 +1,8 @@
-import { STATIONS, type Station } from "./metro-data";
+import { getAllStations } from "./metro/selectors";
+import type { MetroStation, StationAmenities } from "./metro/types";
 import { type Lang, persianDigits } from "./i18n";
 
-export type AmenityKey = keyof Station["amenities"];
+export type AmenityKey = keyof StationAmenities;
 
 // Great-circle distance in kilometers.
 export function haversineKm(
@@ -21,22 +22,26 @@ export function haversineKm(
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-export type NearbyResult = { station: Station; km: number };
+export type NearbyResult = { station: MetroStation; km: number };
 
 // Nearest stations to a coordinate, optionally requiring all listed amenities.
 export function nearestStations(
   lat: number,
   lng: number,
   opts?: { amenities?: AmenityKey[]; limit?: number },
-): NearbyResult[] {
+) {
   const limit = opts?.limit ?? 12;
   const required = opts?.amenities ?? [];
+  const all = getAllStations();
   const list =
     required.length > 0
-      ? STATIONS.filter((s) => required.every((k) => s.amenities[k]))
-      : STATIONS;
+      ? all.filter((s) => required.every((k) => s.amenities[k]))
+      : all;
   return list
-    .map((s) => ({ station: s, km: haversineKm(lat, lng, s.lat, s.lng) }))
+    .map((s) => ({
+      station: s,
+      km: haversineKm(lat, lng, s.location.lat, s.location.lng),
+    }))
     .sort((a, b) => a.km - b.km)
     .slice(0, limit);
 }

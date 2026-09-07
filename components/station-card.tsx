@@ -2,7 +2,9 @@
 
 import { useMemo } from "react";
 import { MapPin, Flag, Clock, Zap, Calendar, Ban } from "lucide-react";
-import { LINE_COLORS, type Station } from "@/lib/metro-data";
+import { LINE_COLORS } from "@/lib/metro/lines";
+import type { MetroStation } from "@/lib/metro/types";
+import { getStationLines } from "@/lib/metro/selectors";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { geoUrl, formatDistance } from "@/lib/geo";
@@ -13,7 +15,7 @@ import {
 import { useScheduleData } from "@/lib/use-schedule-data";
 
 type Props = {
-  station: Station;
+  station: MetroStation;
   lang: Lang;
   distance?: number;
   onSetDest: () => void;
@@ -24,25 +26,27 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
   const loaded = useScheduleData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
+  const lines = getStationLines(station.id);
+  const underConstruction = station.status !== "operational";
 
   const activeAmenities = Object.entries(station.amenities).filter(
     ([, v]) => v,
   );
 
   const departures = useMemo(() => {
-    const grouped = station.lines.map((line) => ({
+    const grouped = lines.map((line) => ({
       line,
       departures: getNextDepartures(station.id, line, getCurrentDayType(), 2),
     }));
     return grouped.filter((g) => g.departures.length > 0);
-  }, [station.id, station.lines, loaded]);
+  }, [station.id, lines.join(","), loaded]);
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header with colored line accent */}
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex shrink-0 gap-1">
-          {station.lines.map((l) => (
+          {lines.map((l) => (
             <span
               key={l}
               className="flex size-8 items-center justify-center rounded-lg text-sm font-bold text-white"
@@ -54,20 +58,20 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-bold leading-tight truncate">
-            {isFa ? station.fa : station.name}
+            {isFa ? station.name.fa : station.name.en}
           </h3>
           <p className="text-xs text-muted-foreground truncate">
-            {isFa ? station.name : station.fa}
+            {isFa ? station.name.en : station.name.fa}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {station.disabled && (
+          {underConstruction && (
             <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
               <Ban className="size-3" />
               {t.underConstruction}
             </span>
           )}
-          {station.lines.length > 1 && (
+          {lines.length > 1 && (
             <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               {t.interchange}
             </span>
@@ -155,8 +159,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
         )}
         <a
           href={geoUrl(
-            { lat: station.lat, lng: station.lng },
-            isFa ? station.fa : station.name,
+            { lat: station.location.lat, lng: station.location.lng },
+            isFa ? station.name.fa : station.name.en,
           )}
           target="_blank"
           rel="noopener noreferrer"
@@ -170,7 +174,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
         <button
           type="button"
           onClick={onSetDest}
-          disabled={station.disabled}
+          disabled={underConstruction}
           className="flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Flag className="size-3.5" />

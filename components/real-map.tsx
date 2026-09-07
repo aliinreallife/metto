@@ -4,8 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { Plus, Minus, LocateFixed, Loader2 } from "lucide-react"
-import { LINE_COLORS, STATIONS } from "@/lib/metro-data"
-import { buildLineEdges } from "@/lib/graph"
+import { LINE_COLORS } from "@/lib/metro/lines";
+import {
+  buildMapEdges,
+  getAllStations,
+  getStationLines,
+  isInterchange,
+} from "@/lib/metro/selectors";
+import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
 import { type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
@@ -38,13 +44,13 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const labelsLayerRef = useRef<L.TileLayer | null>(null)
   const gpsMarkerRef = useRef<L.CircleMarker | null>(null)
   const placeLayerRef = useRef<L.LayerGroup | null>(null)
-  const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: typeof STATIONS[0] }>>(new Map())
+  const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: MetroStation }>>(new Map())
   const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null })
   const [hasGps, setHasGps] = useState(false)
   const [locating, setLocating] = useState(false)
   const isFa = lang === "fa"
 
-  const edges = useMemo(() => buildLineEdges(), [])
+  const edges = useMemo(() => buildMapEdges(), [])
   const routeStations = useMemo(() => new Set(route?.path ?? []), [route])
   const routeEdgeKeys = useMemo(() => {
     const set = new Set<string>()
@@ -87,8 +93,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const zoom = map.getZoom()
       const { routeStations: currentRoute, originId: currentOrigin, destId: currentDest, selectedId: currentSelected } = labelStateRef.current
       const hasRoute = currentRoute.size > 0
-      for (const [id, { marker, station }] of markersRef.current) {
-        const isInterchange = station.lines.length > 1
+      for (const [id, { marker }] of markersRef.current) {
+        const isInterchangeStation = isInterchange(id)
         const isOnRoute = currentRoute.has(id)
         const isEndpoint = currentOrigin && currentDest && currentOrigin !== currentDest && (id === currentOrigin || id === currentDest)
         const isSelected = id === currentSelected
@@ -104,12 +110,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           continue
         }
         // When route is active, hide non-route interchange labels below zoom 14
-        if (hasRoute && isInterchange) {
+        if (hasRoute && isInterchangeStation) {
           marker.closeTooltip()
           continue
         }
         // Show interchanges at zoom >= 12 (no route active)
-        if (isInterchange && zoom >= 12) {
+        if (isInterchangeStation && zoom >= 12) {
           marker.openTooltip()
           continue
         }
@@ -164,41 +170,49 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     layer.clearLayers()
     const hasRoute = !!route
 
-    // Lines
+    // Lines. Under-construction segments render dotted so track construction
+    // is visually distinct from station construction.
     for (const e of edges) {
       const a = STATION_MAP.get(e.a)
       const b = STATION_MAP.get(e.b)
       if (!a || !b) continue
       const inRoute = routeEdgeKeys.has([e.a, e.b].sort().join("|") + "|" + e.line)
+      const underConstruction = e.status !== "operational"
       L.polyline(
         [
-          [a.lat, a.lng],
-          [b.lat, b.lng],
+          [a.location.lat, a.location.lng],
+          [b.location.lat, b.location.lng],
         ],
         {
           color: LINE_COLORS[e.line],
           weight: inRoute ? 6 : 4,
-          opacity: hasRoute ? (inRoute ? 1 : 0.25) : 0.85,
+          opacity: hasRoute ? (inRoute ? 1 : 0.25) : underConstruction ? 0.55 : 0.85,
+          dashArray: underConstruction ? "2 6" : undefined,
         },
       ).addTo(layer)
     }
 
-    // Stations
+    // Stations. Under-construction stations render with a dotted border and
+    // transparent fill, independently of segment styling.
     markersRef.current.clear()
-    for (const s of STATIONS) {
-      const interchange = s.lines.length > 1
+    for (const s of getAllStations()) {
+      const lines = getStationLines(s.id)
+      const firstLine = lines[0]
+      const interchange = isInterchange(s.id)
       const onRoute = routeStations.has(s.id)
       const isEndpoint = originId && destId && originId !== destId && (s.id === originId || s.id === destId)
       const dim = hasRoute && !onRoute
-      const marker = L.circleMarker([s.lat, s.lng], {
+      const underConstruction = s.status !== "operational"
+      const marker = L.circleMarker([s.location.lat, s.location.lng], {
         radius: isEndpoint ? 8 : interchange ? 6 : 4,
-        color: isEndpoint ? "#cc0e2d" : interchange ? "#111" : LINE_COLORS[s.lines[0]],
-        weight: s.disabled ? 1.5 : isEndpoint ? 3 : interchange ? 2 : 1.5,
-        fillColor: s.disabled ? "transparent" : interchange ? "#fff" : LINE_COLORS[s.lines[0]],
-        fillOpacity: s.disabled ? 0 : dim ? 0.3 : 1,
+        color: isEndpoint ? "#cc0e2d" : interchange ? "#111" : LINE_COLORS[firstLine],
+        weight: underConstruction ? 1.5 : isEndpoint ? 3 : interchange ? 2 : 1.5,
+        dashArray: underConstruction ? "3 3" : undefined,
+        fillColor: underConstruction ? "transparent" : interchange ? "#fff" : LINE_COLORS[firstLine],
+        fillOpacity: underConstruction ? 0 : dim ? 0.3 : 1,
         opacity: dim ? 0.4 : 1,
       })
-      marker.bindTooltip(isFa ? s.fa : s.name, {
+      marker.bindTooltip(isFa ? s.name.fa : s.name.en, {
         direction: "top",
         className: "station-label",
       })
@@ -212,8 +226,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (map) {
       const zoom = map.getZoom()
       const hasRoute = routeStations.size > 0
-      for (const [id, { marker, station }] of markersRef.current) {
-        const isInterchange = station.lines.length > 1
+      for (const [id, { marker }] of markersRef.current) {
+        const isInterchangeStation = isInterchange(id)
         const isOnRoute = routeStations.has(id)
         const isEndpoint = originId && destId && originId !== destId && (id === originId || id === destId)
         const isSelected = id === selectedId
@@ -221,9 +235,9 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           marker.openTooltip()
         } else if (zoom >= 14) {
           marker.openTooltip()
-        } else if (hasRoute && isInterchange) {
+        } else if (hasRoute && isInterchangeStation) {
           marker.closeTooltip()
-        } else if (isInterchange && zoom >= 12) {
+        } else if (isInterchangeStation && zoom >= 12) {
           marker.openTooltip()
         } else {
           marker.closeTooltip()
@@ -242,7 +256,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     const pts = route.path
       .map((id) => STATION_MAP.get(id))
       .filter(Boolean)
-      .map((s) => [s!.lat, s!.lng] as [number, number])
+      .map((s) => [s!.location.lat, s!.location.lng] as [number, number])
     if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 14 })
   }, [route])
 

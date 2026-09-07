@@ -1,6 +1,10 @@
 import type { TrainSchedule, DayType, LineScheduleData } from "./schedule-data";
 export type { DayType } from "./schedule-data";
-import { STATION_BY_ID } from "./graph";
+import {
+  getStation,
+  getStationLines,
+  resolveStationId,
+} from "./metro/selectors";
 
 // Lazy-loaded schedule data cache with listener system
 let _scheduleData: LineScheduleData[] | null = null;
@@ -19,9 +23,9 @@ async function getScheduleData(): Promise<LineScheduleData[]> {
   _schedulePromise = fetch("/schedule-data.json")
     .then((r) => r.json())
     .then((data) => {
-      _scheduleData = data;
+      _scheduleData = remapScheduleIds(data);
       notifyListeners();
-      return data;
+      return _scheduleData;
     })
     .catch((err) => {
       _schedulePromise = null;
@@ -29,6 +33,27 @@ async function getScheduleData(): Promise<LineScheduleData[]> {
     });
 
   return _schedulePromise;
+}
+
+// schedule-data.json may still use legacy English-name IDs; normalize every
+// id to the stable slug once at load so the rest of the code only sees slugs.
+function remapScheduleIds(data: LineScheduleData[]): LineScheduleData[] {
+  const mapId = (id: string) => resolveStationId(id) ?? id;
+  for (const ls of data) {
+    ls.terminalA = mapId(ls.terminalA);
+    ls.terminalB = mapId(ls.terminalB);
+    for (const train of ls.trains) {
+      train.direction = mapId(train.direction);
+      for (const stop of train.stops) stop.stationId = mapId(stop.stationId);
+    }
+  }
+  return data;
+}
+
+// Normalize legacy English-name IDs at the entry of every public helper so
+// callers can pass either form regardless of schedule-data.json vintage.
+function normId(id: string): string {
+  return resolveStationId(id) ?? id;
 }
 
 export function isScheduleDataLoaded(): boolean {
@@ -74,11 +99,12 @@ function timeToMinutes(time: string): number {
 }
 
 export function getNextDepartures(
-  stationId: string,
+  stationIdInput: string,
   line: number,
   dayType?: DayType,
   maxResults: number = 5,
 ): Departure[] {
+  const stationId = normId(stationIdInput);
   const dt = dayType ?? getCurrentDayType();
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -98,12 +124,12 @@ export function getNextDepartures(
       if (stopMinutes < nowMinutes) continue;
 
       const directionId = lastStop.stationId;
-      const directionStation = STATION_BY_ID.get(directionId);
+      const directionStation = getStation(directionId);
 
       results.push({
         time: stopTime,
         direction: directionId,
-        directionName: directionStation ? directionStation.fa : directionId,
+        directionName: directionStation ? directionStation.name.fa : directionId,
         isExpress: train.isExpress,
         line: train.line,
         minutesUntil: stopMinutes - nowMinutes,
@@ -116,23 +142,25 @@ export function getNextDepartures(
 }
 
 export function getStationDepartures(
-  stationId: string,
+  stationIdInput: string,
   dayType?: DayType,
   maxPerLine: number = 3,
 ): { line: number; departures: Departure[] }[] {
-  const station = STATION_BY_ID.get(stationId);
+  const stationId = normId(stationIdInput);
+  const station = getStation(stationId);
   if (!station) return [];
-  return station.lines.map((line) => ({
+  return getStationLines(stationId).map((line) => ({
     line,
     departures: getNextDepartures(stationId, line, dayType, maxPerLine),
   }));
 }
 
 export function getAllDepartures(
-  stationId: string,
+  stationIdInput: string,
   line: number,
   dayType?: DayType,
 ): Departure[] {
+  const stationId = normId(stationIdInput);
   const dt = dayType ?? getCurrentDayType();
   const results: Departure[] = [];
 
@@ -148,12 +176,12 @@ export function getAllDepartures(
       const stopTime = train.stops[stopIdx].time;
       const stopMinutes = timeToMinutes(stopTime);
       const directionId = lastStop.stationId;
-      const directionStation = STATION_BY_ID.get(directionId);
+      const directionStation = getStation(directionId);
 
       results.push({
         time: stopTime,
         direction: directionId,
-        directionName: directionStation ? directionStation.fa : directionId,
+        directionName: directionStation ? directionStation.name.fa : directionId,
         isExpress: train.isExpress,
         line: train.line,
         minutesUntil: stopMinutes,
@@ -166,11 +194,13 @@ export function getAllDepartures(
 }
 
 export function getScheduleTravelTime(
-  fromId: string,
-  toId: string,
+  fromIdInput: string,
+  toIdInput: string,
   line: number,
   dayType?: DayType,
 ): number | null {
+  const fromId = normId(fromIdInput);
+  const toId = normId(toIdInput);
   const dt = dayType ?? getCurrentDayType();
 
   for (const ls of getSchedules()) {
@@ -188,11 +218,13 @@ export function getScheduleTravelTime(
 }
 
 export function getBestSegmentTime(
-  fromId: string,
-  toId: string,
+  fromIdInput: string,
+  toIdInput: string,
   line: number,
   dayType?: DayType,
 ): number | null {
+  const fromId = normId(fromIdInput);
+  const toId = normId(toIdInput);
   const dt = dayType ?? getCurrentDayType();
   let best: number | null = null;
 
@@ -219,13 +251,15 @@ export type TripResult = {
 };
 
 export function findBestTrip(
-  fromId: string,
-  toId: string,
+  fromIdInput: string,
+  toIdInput: string,
   line: number,
   afterMinutes: number,
   dayType?: DayType,
   options?: { expressOnly?: boolean; localOnly?: boolean },
 ): TripResult | null {
+  const fromId = normId(fromIdInput);
+  const toId = normId(toIdInput);
   const dt = dayType ?? getCurrentDayType();
   let bestArrival = Infinity;
   let bestResult: TripResult | null = null;
@@ -260,10 +294,11 @@ export function findBestTrip(
 }
 
 export function getTrainArrivalAtStation(
-  stationId: string,
+  stationIdInput: string,
   line: number,
   dayType?: DayType,
 ): number | null {
+  const stationId = normId(stationIdInput);
   const dt = dayType ?? getCurrentDayType();
 
   for (const ls of getSchedules()) {
@@ -278,12 +313,14 @@ export function getTrainArrivalAtStation(
 }
 
 export function getArrivalFromOrigin(
-  originId: string,
-  destId: string,
+  originIdInput: string,
+  destIdInput: string,
   line: number,
   afterMinutes: number,
   dayType?: DayType,
 ): number | null {
+  const originId = normId(originIdInput);
+  const destId = normId(destIdInput);
   const dt = dayType ?? getCurrentDayType();
 
   for (const ls of getSchedules()) {
@@ -303,11 +340,12 @@ export function getArrivalFromOrigin(
 }
 
 export function checkConnection(
-  transferStationId: string,
+  transferStationIdInput: string,
   nextLine: number,
   arrivalMinutes: number,
   dayType?: DayType,
 ): { available: boolean; nextDeparture: number | null } {
+  const transferStationId = normId(transferStationIdInput);
   const dt = dayType ?? getCurrentDayType();
   let earliest = Infinity;
 

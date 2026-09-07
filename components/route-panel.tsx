@@ -14,7 +14,8 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { LINE_COLORS } from "@/lib/metro-data";
+import { LINE_COLORS } from "@/lib/metro/lines";
+import { canBoardAtStation } from "@/lib/metro/selectors";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -45,11 +46,12 @@ export function RoutePanel({
   const scheduleLoading = !loaded;
   const name = (id: string) => {
     const s = STATION_MAP.get(id);
-    return s ? (isFa ? s.fa : s.name) : id;
+    return s ? (isFa ? s.name.fa : s.name.en) : id;
   };
   const mins = Math.round(route.estimatedSeconds / 60);
-  const firstWait = route.trips.length > 0
-    ? Math.max(0, timeToMinutes(route.trips[0].departTime) - (new Date().getHours() * 60 + new Date().getMinutes()))
+  const firstTrip = route.trips[0] ?? null;
+  const firstWait = firstTrip
+    ? Math.max(0, timeToMinutes(firstTrip.departTime) - (new Date().getHours() * 60 + new Date().getMinutes()))
     : 0;
   const restMins = mins - firstWait;
 
@@ -232,17 +234,33 @@ export function RoutePanel({
         </div>
       )}
 
+      {route.numTrainChanges > 0 && (
+        <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
+          <Repeat className="size-3.5" />
+          <span>{persianDigits(route.numTrainChanges, lang)} {isFa ? "تعویض قطار" : "train changes"}</span>
+        </div>
+      )}
+
       <p className="text-xs text-muted-foreground">{t.timeNote}</p>
 
       <ol className="flex flex-col gap-3">
         {route.segments.map((seg, i) => (
           <li key={i} className="flex flex-col gap-2">
-            {i > 0 && (
+            {i > 0 && seg.changeFromPrevious.type === "line_transfer" && (
               <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
                 <Footprints className="size-4 shrink-0" />
                 <span>
                   {t.transferTo} {persianDigits(seg.line, lang)} {t.via}{" "}
                   {name(seg.stations[0])}
+                </span>
+              </div>
+            )}
+            {i > 0 && seg.changeFromPrevious.type === "train_change" && (
+              <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
+                <TrainFront className="size-4 shrink-0" />
+                <span>
+                  {isFa ? "تعویض قطار" : "Change trains"}{" "}
+                  {t.via} {name(seg.stations[0])}
                 </span>
               </div>
             )}
@@ -253,7 +271,7 @@ export function RoutePanel({
               name={name}
               lang={lang}
               showNextTrain={i === 0}
-              trip={route.trips[i]}
+              trip={route.trips[i] ?? undefined}
             />
           </li>
         ))}
@@ -468,6 +486,11 @@ function SegmentCard({
                   {intermediates.map((id) => (
                     <li key={id} className="truncate py-0.5">
                       {name(id)}
+                      {!canBoardAtStation(id, line) && (
+                        <span className="ms-1.5 text-[10px]">
+                          {isFa ? "(عبور بدون توقف)" : "(passes through)"}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
