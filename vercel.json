@@ -1,5 +1,11 @@
 {
   "buildCommand": "next build",
+  "crons": [
+    {
+      "path": "/api/cron/sync-holidays",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -6,6 +6,11 @@ import {
   resolveStationId,
 } from "./metro/selectors";
 import { parseServiceTimeToMinutes, tehranParts } from "./tehran-time";
+import {
+  getMetroScheduleDayType,
+  scheduleDayToDayType,
+} from "./holidays/schedule-day";
+import type { IsHolidayDate } from "./holidays/types";
 
 // Lazy-loaded schedule data cache with listener system
 let _scheduleData: LineScheduleData[] | null = null;
@@ -96,7 +101,12 @@ export type Departure = {
   minutesUntil: number;
 };
 
-export function getCurrentDayType(at?: Date): DayType {
+export function getCurrentDayType(at?: Date, isHolidayDate?: IsHolidayDate): DayType {
+  if (isHolidayDate) {
+    return scheduleDayToDayType(
+      getMetroScheduleDayType(at ?? new Date(), isHolidayDate),
+    );
+  }
   return tehranParts((at ?? new Date()).getTime()).dayType;
 }
 
