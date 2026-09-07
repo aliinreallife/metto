@@ -9,7 +9,7 @@ import {
   parseTimestampResponse,
   type FetchFn,
 } from "./lib/holidays/timestamp-client";
-import { createMemoryHolidayStore } from "./lib/holidays/store";
+import { createMemoryHolidayStore, resolveRedisConfig } from "./lib/holidays/store";
 import { syncHolidays, type FetchDayFn } from "./lib/holidays/sync";
 import {
   createIsHolidayDate,
@@ -202,6 +202,48 @@ describe("fetchDayEvents transport", () => {
     });
     expect((await fetchDayEvents("1405-04-14", { apiKey: "k", fetchFn: throwing as unknown as FetchFn })).ok).toBe(false);
     expect((await fetchDayEvents("1405-04-14", {})).ok).toBe(false); // missing key
+  });
+});
+
+describe("redis env resolution", () => {
+  const KEYS = [
+    "UPSTASH_REDIS_REST_URL",
+    "UPSTASH_REDIS_REST_TOKEN",
+    "KV_REST_API_URL",
+    "KV_REST_API_TOKEN",
+  ] as const;
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns null when nothing is configured", () => {
+    expect(resolveRedisConfig()).toBeNull();
+  });
+
+  it("accepts the Vercel Marketplace KV_* names", () => {
+    vi.stubEnv("KV_REST_API_URL", "https://kv.example.upstash.io");
+    vi.stubEnv("KV_REST_API_TOKEN", "kv-token");
+    expect(resolveRedisConfig()).toEqual({
+      url: "https://kv.example.upstash.io",
+      token: "kv-token",
+    });
+  });
+
+  it("prefers UPSTASH_* when both pairs are set", () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://upstash.example.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "upstash-token");
+    vi.stubEnv("KV_REST_API_URL", "https://kv.example.upstash.io");
+    vi.stubEnv("KV_REST_API_TOKEN", "kv-token");
+    expect(resolveRedisConfig()).toEqual({
+      url: "https://upstash.example.io",
+      token: "upstash-token",
+    });
+  });
+
+  it("ignores a half-configured pair", () => {
+    vi.stubEnv("KV_REST_API_URL", "https://kv.example.upstash.io");
+    expect(resolveRedisConfig()).toBeNull();
   });
 });
 

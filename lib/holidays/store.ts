@@ -33,8 +33,31 @@ function isValidEntry(v: unknown): v is HolidayCacheEntry {
   );
 }
 
+/** Pure env resolution (exported for tests): UPSTASH_* wins over KV_*. */
+export function resolveRedisConfig(): { url: string; token: string } | null {
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  if (url && token) return { url, token };
+  return null;
+}
+
+/**
+ * Resolve a Redis client from the environment.
+ * Supports both naming schemes so no manual re-mapping is needed:
+ * - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (Upstash default)
+ * - `KV_REST_API_URL` / `KV_REST_API_TOKEN` (Vercel Marketplace integration)
+ */
+export function redisFromEnv(): Redis {
+  const config = resolveRedisConfig();
+  if (config) return new Redis(config);
+  // Falls back to @upstash/redis defaults (throws a clear error if unset).
+  return Redis.fromEnv();
+}
+
 export function createRedisHolidayStore(
-  redis: Redis = Redis.fromEnv(),
+  redis: Redis = redisFromEnv(),
 ): HolidayStore {
   return {
     async get(gregorianDate: string) {
