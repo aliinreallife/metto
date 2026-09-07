@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Building2, ChevronDown, Loader2, MapPin, X } from "lucide-react"
 import { STATION_MAP, searchStations } from "@/lib/route"
-import { LINE_COLORS } from "@/lib/metro-data"
+import { LINE_COLORS } from "@/lib/metro/lines"
+import { getStationLines } from "@/lib/metro/selectors"
 import { searchPlaces, type PlaceResult } from "@/lib/geocoding"
 import { STRINGS, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
@@ -96,8 +97,8 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
         <span className="min-w-0 flex-1 truncate">
           {selected ? (
             <span className="flex items-center gap-2">
-              <span className="truncate font-medium">{isFa ? selected.fa : selected.name}</span>
-              <span className="truncate text-xs text-muted-foreground">{isFa ? selected.name : selected.fa}</span>
+              <span className="truncate font-medium">{isFa ? selected.name.fa : selected.name.en}</span>
+              <span className="truncate text-xs text-muted-foreground">{isFa ? selected.name.en : selected.name.fa}</span>
             </span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
@@ -171,7 +172,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                   )}
                 >
                   <span className="flex shrink-0 gap-1">
-                    {s.lines.map((l) => (
+                    {getStationLines(s.id).map((l) => (
                       <span
                         key={l}
                         className="size-2.5 rounded-full"
@@ -181,8 +182,8 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                     ))}
                   </span>
                   <span className="min-w-0 truncate">
-                    <span className="block font-medium">{isFa ? s.fa : s.name}</span>
-                    <span className="block text-xs text-muted-foreground">{isFa ? s.name : s.fa}</span>
+                    <span className="block font-medium">{isFa ? s.name.fa : s.name.en}</span>
+                    <span className="block text-xs text-muted-foreground">{isFa ? s.name.en : s.name.fa}</span>
                   </span>
                   <span className="flex-1" />
                   <MapPin className="size-3.5 shrink-0 text-muted-foreground" />

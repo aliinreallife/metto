@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findRoute, STATION_MAP } from "@/lib/route";
+import { getStationLines, resolveStationId } from "@/lib/metro/selectors";
 import { nearestStations } from "@/lib/geo";
+
+function stationPayload(s: NonNullable<ReturnType<typeof STATION_MAP.get>>) {
+  return {
+    id: s.id,
+    name: s.name.en,
+    fa: s.name.fa,
+    lines: getStationLines(s.id),
+    lat: s.location.lat,
+    lng: s.location.lng,
+    status: s.status,
+  };
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -14,7 +27,7 @@ export async function GET(request: NextRequest) {
   // Resolve origin
   let originId: string | null = null;
   if (from) {
-    originId = from;
+    originId = resolveStationId(from) ?? from;
   } else if (fromLat && fromLng) {
     const lat = parseFloat(fromLat);
     const lng = parseFloat(fromLng);
@@ -31,7 +44,7 @@ export async function GET(request: NextRequest) {
   // Resolve destination
   let destId: string | null = null;
   if (to) {
-    destId = to;
+    destId = resolveStationId(to) ?? to;
   } else if (toLat && toLng) {
     const lat = parseFloat(toLat);
     const lng = parseFloat(toLng);
@@ -65,7 +78,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Station not found",
-        hint: "Use English station IDs like 'Tajrish', 'Darvazeh Sharq', 'Vali-Asr'",
+        hint: "Use stable station IDs like 'tajrish', 'darvazeh-dolat', 'tehran-sadeghiyeh' (legacy English names still accepted)",
         availableStations: Array.from(STATION_MAP.keys()).slice(0, 20),
       },
       { status: 404 },
@@ -82,8 +95,8 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    origin: { id: origin.id, name: origin.name, fa: origin.fa, lines: origin.lines, lat: origin.lat, lng: origin.lng },
-    destination: { id: destination.id, name: destination.name, fa: destination.fa, lines: destination.lines, lat: destination.lat, lng: destination.lng },
+    origin: stationPayload(origin),
+    destination: stationPayload(destination),
     route: {
       stops: result.numStops,
       transfers: result.numTransfers,
@@ -94,7 +107,18 @@ export async function GET(request: NextRequest) {
         from: h.from,
         to: h.to,
         line: h.line,
+        routeId: h.route,
+        ...(h.branch ? { branchId: h.branch } : {}),
       })),
+      segments: result.segments.map((s) => ({
+        line: s.line,
+        routeId: s.routeId,
+        ...(s.branchId ? { branchId: s.branchId } : {}),
+        stations: s.stations,
+        terminal: s.terminal,
+        changeFromPrevious: s.changeFromPrevious,
+      })),
+      numTrainChanges: result.numTrainChanges,
     },
   });
 }

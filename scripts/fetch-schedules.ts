@@ -6,7 +6,7 @@
  * Usage: npx tsx scripts/fetch-schedules.ts
  */
 
-import { readFileSync, writeFileSync } from "fs";
+import { writeFileSync } from "fs";
 import { join } from "path";
 
 const BASE_URL = "https://metro-yab.ir/data/schedules";
@@ -111,38 +111,33 @@ function normalize(s: string): string {
 // Manual overrides for Persian name mismatches between CSVs and database
 const NAME_OVERRIDES: Record<string, string> = {
   // CSV name → station ID
-  "شهید هفتم تیر": "Shohada-ye Haftom-e Tir",
-  "پایانه جنوب": "Payaneh Jonoub(Jonoub Terminal)",
-  "شهید بخارایی": "Shahid Bokharaei",
-  "شاهد - باقرشهر": "Shahed - BagherShahr",
-  "حرم مطهر امام خمینی": "Holy Shrine of Imam Khomeini",
-  "پایانه ۱ و ۲ فرودگاه مهرآباد": "Mehrabad Airport Terminal 1&2",
-  "پایانه ۴ و ۶ فرودگاه مهرآباد": "Mehrabad Airport Terminal 4&6",
-  "پایانه 1 و 2 فرودگاه مهرآباد": "Mehrabad Airport Terminal 1&2",
-  "پایانه 4 و 6 فرودگاه مهرآباد": "Mehrabad Airport Terminal 4&6",
-  "شهید سپهبد قاسم سلیمانی": "Shahid Sepahbod Qasem Soleimani",
-  "شهید فخری زاده": "Shahid Fakhrizade",
+  "شهید هفتم تیر": "shohada-ye-haftom-e-tir",
+  "پایانه جنوب": "payaneh-jonoub-jonoub-terminal",
+  "شهید بخارایی": "shahid-bokharaei",
+  "شاهد - باقرشهر": "shahed-baghershahr",
+  "حرم مطهر امام خمینی": "holy-shrine-of-imam-khomeini",
+  "پایانه ۱ و ۲ فرودگاه مهرآباد": "mehrabad-airport-terminal-1-2",
+  "پایانه ۴ و ۶ فرودگاه مهرآباد": "mehrabad-airport-terminal-4-6",
+  "پایانه 1 و 2 فرودگاه مهرآباد": "mehrabad-airport-terminal-1-2",
+  "پایانه 4 و 6 فرودگاه مهرآباد": "mehrabad-airport-terminal-4-6",
+  "شهید سپهبد قاسم سلیمانی": "shahid-sepahbod-qasem-soleimani",
+  "شهید فخری زاده": "shahid-fakhrizade",
   // Additional mismatches found during parsing
-  "شهرری": "Shahr-e Rey",
-  "میرزای شیرازی": "Mirza-ye Shirazi",
-  "دکتر حبیب اله": "Doctor Habibollah",
-  "نیرو هوایی": "Nirou Havaei",
-  "پایانه 4و6 فرودگاه مهرآباد": "Mehrabad Airport Terminal 4&6",
-  "پایانه 1و2 فرودگاه مهرآباد": "Mehrabad Airport Terminal 1&2",
-  "محمد شهر": "Mohammadshahr",
-  "شهرزیبا": "Shahr-e Ziba",
+  "شهرری": "shahr-e-rey",
+  "میرزای شیرازی": "mirza-ye-shirazi",
+  "دکتر حبیب اله": "doctor-habibollah",
+  "نیرو هوایی": "nirou-havaei",
+  "پایانه 4و6 فرودگاه مهرآباد": "mehrabad-airport-terminal-4-6",
+  "پایانه 1و2 فرودگاه مهرآباد": "mehrabad-airport-terminal-1-2",
+  "محمد شهر": "mohammadshahr",
+  "شهرزیبا": "shahr-e-ziba",
 };
 
-// Build station fa→id mapping from the existing STATIONS data in metro-data.ts
-function buildStationMap(): Map<string, string> {
+// Build station fa→slug mapping from the normalized metro dataset.
+async function buildStationMap(): Promise<Map<string, string>> {
+  const { STATIONS } = await import("../lib/metro/stations");
   const map = new Map<string, string>();
-  const content = readFileSync(join(__dirname, "../lib/metro-data.ts"), "utf8");
-  const regex = /"id":\s*"([^"]+)",\s*"name":\s*"([^"]+)",\s*"fa":\s*"([^"]+)"/g;
-  let match;
-  while ((match = regex.exec(content)) !== null) {
-    const [, id, , fa] = match;
-    map.set(normalize(fa), id);
-  }
+  for (const s of STATIONS) map.set(normalize(s.name.fa), s.id);
   return map;
 }
 
@@ -234,7 +229,7 @@ function isExpress(
   // Only Line 5 has express trains
   if (line !== 5) return false;
   // Only Golshahr and Tehran (Sadeghiyeh) are L5 terminals
-  if (direction !== 'Tehran (Sadeghiyeh)' && direction !== 'Golshahr') return false;
+  if (direction !== "tehran-sadeghiyeh" && direction !== "golshahr") return false;
 
   if (train.stops.length >= fullRouteStations.length) return false;
   // Check if the train skips any intermediate stations
@@ -356,8 +351,8 @@ export type LineScheduleData = {
 async function main() {
   console.log("Fetching schedule CSVs from metro-yab.ir...\n");
 
-  const stationMap = buildStationMap();
-  console.log(`Loaded ${stationMap.size} station name mappings from metro-data.ts`);
+  const stationMap = await buildStationMap();
+  console.log(`Loaded ${stationMap.size} station name mappings from lib/metro/stations`);
 
   const allParsed: ReturnType<typeof parseCSV>[] = [];
   const allUnmapped = new Set<string>();
@@ -399,7 +394,7 @@ async function main() {
     for (const name of allUnmapped) {
       console.log(`  - "${name}"`);
     }
-    console.log("\nAdd these to NAME_OVERRIDES or STATIONS in metro-data.ts.\n");
+    console.log("\nAdd these to NAME_OVERRIDES or STATIONS in lib/metro/stations.ts.\n");
   }
 
   // Build full routes for express detection

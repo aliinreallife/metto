@@ -86,7 +86,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
       return;
     }
     const s = STATION_MAP.get(id);
-    if (s) setLoc({ kind: "station", lat: s.lat, lng: s.lng, stationId: s.id });
+    if (s) setLoc({ kind: "station", lat: s.location.lat, lng: s.location.lng, stationId: s.id });
   }
 
   const locationLabel =
@@ -95,7 +95,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
       : loc.kind === "station"
         ? (() => {
             const s = STATION_MAP.get(loc.stationId);
-            return s ? (isFa ? s.fa : s.name) : "";
+            return s ? (isFa ? s.name.fa : s.name.en) : "";
           })()
         : "";
 

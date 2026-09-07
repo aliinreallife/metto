@@ -25,16 +25,16 @@
           {
             "name": "from",
             "in": "query",
-            "description": "Origin station ID (English name)",
+            "description": "Origin station ID (stable slug; legacy English name accepted)",
             "schema": { "type": "string" },
-            "example": "Tajrish"
+            "example": "tajrish"
           },
           {
             "name": "to",
             "in": "query",
-            "description": "Destination station ID (English name)",
+            "description": "Destination station ID (stable slug; legacy English name accepted)",
             "schema": { "type": "string" },
-            "example": "Darvazeh Sharq"
+            "example": "tehran-sadeghiyeh"
           },
           {
             "name": "from_lat",
@@ -219,13 +219,27 @@
       "StationDetail": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
+          "id": { "type": "string", "description": "Stable kebab-case ID (legacy English names accepted as input)" },
+          "legacyIds": { "type": "array", "items": { "type": "string" } },
           "name": { "type": "string" },
           "fa": { "type": "string" },
           "lines": { "type": "array", "items": { "type": "integer" } },
           "lat": { "type": "number" },
           "lng": { "type": "number" },
-          "relations": { "type": "array", "items": { "type": "string" } },
+          "status": { "type": "string", "enum": ["operational", "under_construction", "planned", "temporarily_closed", "permanently_closed"] },
+          "neighbors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stationId": { "type": "string" },
+                "lineId": { "type": "integer" },
+                "routeId": { "type": "string" },
+                "branchId": { "type": "string" },
+                "status": { "type": "string" }
+              }
+            }
+          },
           "amenities": { "type": "object" }
         }
       },

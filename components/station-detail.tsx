@@ -2,7 +2,9 @@
 
 import { useMemo } from "react";
 import { X, Clock, Zap, Ban } from "lucide-react";
-import { LINE_COLORS, type Station } from "@/lib/metro-data";
+import { LINE_COLORS } from "@/lib/metro/lines";
+import type { MetroStation } from "@/lib/metro/types";
+import { getStationLines } from "@/lib/metro/selectors";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import {
@@ -17,13 +19,14 @@ export function StationDetail({
   lang,
   onClose,
 }: {
-  station: Station;
+  station: MetroStation;
   lang: Lang;
   onClose: () => void;
 }) {
   const loaded = useScheduleData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
+  const lines = getStationLines(station.id);
   const activeAmenities = Object.entries(station.amenities).filter(
     ([, v]) => v,
   );
@@ -38,15 +41,15 @@ export function StationDetail({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-bold leading-tight">
-            {isFa ? station.fa : station.name}
+            {isFa ? station.name.fa : station.name.en}
           </h3>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {isFa ? station.name : station.fa}
+            {isFa ? station.name.en : station.name.fa}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <div className="flex gap-1.5">
-            {station.lines.map((l) => (
+            {lines.map((l) => (
               <span
                 key={l}
                 className="flex size-7 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -67,13 +70,13 @@ export function StationDetail({
         </div>
       </div>
 
-      {station.lines.length > 1 && (
+      {lines.length > 1 && (
         <span className="inline-flex items-center gap-1 self-start rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
           {t.interchange}
         </span>
       )}
 
-      {station.disabled && (
+      {station.status !== "operational" && (
         <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
           <Ban className="size-3.5" />
           {t.underConstruction}

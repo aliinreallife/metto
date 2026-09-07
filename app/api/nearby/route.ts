@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nearestStations, type AmenityKey } from "@/lib/geo";
+import { getStationLines } from "@/lib/metro/selectors";
 
 const VALID_AMENITIES: AmenityKey[] = ["wc", "elevator", "atm", "coffeeShop", "fastFood", "groceryStore", "freeWifi", "prayerRoom", "parking", "police"];
 
@@ -48,11 +49,12 @@ export async function GET(request: NextRequest) {
     count: results.length,
     stations: results.map(({ station, km }) => ({
       id: station.id,
-      name: station.name,
-      fa: station.fa,
-      lines: station.lines,
-      lat: station.lat,
-      lng: station.lng,
+      name: station.name.en,
+      fa: station.name.fa,
+      lines: getStationLines(station.id),
+      lat: station.location.lat,
+      lng: station.location.lng,
+      status: station.status,
       distanceKm: Math.round(km * 100) / 100,
     })),
   });

@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { LINE_COLORS, STATIONS, type Station } from "@/lib/metro-data";
+import { LINE_COLORS } from "@/lib/metro/lines";
+import { getAllStations } from "@/lib/metro/selectors";
+import { getStation, getStationLines } from "@/lib/metro/selectors";
+import type { MetroStation } from "@/lib/metro/types";
 import { orderLineStations } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -25,7 +28,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
   const [query, setQuery] = useState("");
   const [lineFilter, setLineFilter] = useState<number | null>(null);
   const [branchIndex, setBranchIndex] = useState(0);
-  const [timetableStation, setTimetableStation] = useState<Station | null>(null);
+  const [timetableStation, setTimetableStation] = useState<MetroStation | null>(null);
 
   const lineOrder = useMemo(
     () => (lineFilter !== null ? orderLineStations(lineFilter) : null),
@@ -35,15 +38,15 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = STATIONS.filter((s) => {
-      if (lineFilter !== null && !s.lines.includes(lineFilter)) return false;
+    const filtered = getAllStations().filter((s) => {
+      if (lineFilter !== null && !getStationLines(s.id).includes(lineFilter)) return false;
       if (!q) return true;
-      return s.name.toLowerCase().includes(q) || s.fa.includes(query.trim());
+      return s.name.en.toLowerCase().includes(q) || s.name.fa.includes(query.trim());
     });
 
     if (lineFilter === null) {
       return filtered.sort((a, b) =>
-        isFa ? a.fa.localeCompare(b.fa, "fa") : a.name.localeCompare(b.name),
+        isFa ? a.name.fa.localeCompare(b.name.fa, "fa") : a.name.en.localeCompare(b.name.en),
       );
     }
 
@@ -58,7 +61,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
       if (oa !== undefined && ob !== undefined) return oa - ob;
       if (oa !== undefined) return -1;
       if (ob !== undefined) return 1;
-      return isFa ? a.fa.localeCompare(b.fa, "fa") : a.name.localeCompare(b.name);
+      return isFa ? a.name.fa.localeCompare(b.name.fa, "fa") : a.name.en.localeCompare(b.name.en);
     });
   }, [query, lineFilter, isFa, branchIndex, isForked, lineOrder]);
 
@@ -105,8 +108,8 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
           </p>
           <div className="flex gap-2">
             {lineOrder.terminals.map((termId, i) => {
-              const s = STATIONS.find((st) => st.id === termId);
-              const label = s ? (isFa ? s.fa : s.name) : termId;
+              const s = getStation(termId);
+              const label = s ? (isFa ? s.name.fa : s.name.en) : termId;
               return (
                 <FilterChip
                   key={i}
