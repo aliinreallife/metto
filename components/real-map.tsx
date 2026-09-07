@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils"
 
 type Props = {
   lang: Lang
-  mapMode: "satellite" | "schematic"
+  mapMode: "satellite" | "minimalist"
   route: RouteResult | null
   originId: string | null
   destId: string | null
@@ -35,6 +35,11 @@ const TEHRAN_CENTER: [number, number] = [35.7, 51.38]
 const SATELLITE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
 const SATELLITE_ATTR = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 const LABELS_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
+const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_BASEMAP_KEY
+const MINIMALIST_URL =
+  `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+const MINIMALIST_ATTR =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
 export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, initialCenter, initialZoom, onViewChange, placeMarkers }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -42,9 +47,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const overlayRef = useRef<L.LayerGroup | null>(null)
   const tileLayerRef = useRef<L.TileLayer | null>(null)
   const labelsLayerRef = useRef<L.TileLayer | null>(null)
+  const minimalistLayerRef = useRef<L.TileLayer | null>(null)
   const gpsMarkerRef = useRef<L.CircleMarker | null>(null)
   const placeLayerRef = useRef<L.LayerGroup | null>(null)
   const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: MetroStation }>>(new Map())
+  const initialMapModeRef = useRef(mapMode)
+  initialMapModeRef.current = mapMode
   const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null })
   const [hasGps, setHasGps] = useState(false)
   const [locating, setLocating] = useState(false)
@@ -71,18 +79,39 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       attributionControl: true,
     })
 
-    // Start in satellite mode
+    // Start in the current map mode (no full remount needed when toggling later)
     const tileLayer = L.tileLayer(SATELLITE_URL, {
       maxZoom: 18,
       attribution: SATELLITE_ATTR,
-    }).addTo(map)
+    })
     tileLayerRef.current = tileLayer
 
     const labelsLayer = L.tileLayer(LABELS_URL, {
       maxZoom: 18,
       opacity: 0.7,
-    }).addTo(map)
+    })
     labelsLayerRef.current = labelsLayer
+
+    const minimalistLayer = CARTO_KEY
+      ? L.tileLayer(MINIMALIST_URL, {
+          maxZoom: 20,
+          attribution: MINIMALIST_ATTR,
+          subdomains: "abcd",
+        })
+      : null
+    minimalistLayerRef.current = minimalistLayer
+    if (!CARTO_KEY) {
+      console.warn(
+        "NEXT_PUBLIC_CARTO_BASEMAP_KEY is missing; CARTO Minimalist basemap cannot load.",
+      )
+    }
+
+    if (initialMapModeRef.current === "satellite") {
+      tileLayer.addTo(map)
+      labelsLayer.addTo(map)
+    } else if (minimalistLayer) {
+      minimalistLayer.addTo(map)
+    }
 
     overlayRef.current = L.layerGroup().addTo(map)
     placeLayerRef.current = L.layerGroup().addTo(map)
@@ -139,27 +168,29 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       overlayRef.current = null
       tileLayerRef.current = null
       labelsLayerRef.current = null
+      minimalistLayerRef.current = null
       gpsMarkerRef.current = null
       placeLayerRef.current = null
       markersRef.current.clear()
     }
   }, [])
 
-  // Toggle tile layers when mapMode changes.
+  // Toggle basemap layers when mapMode changes (mutually exclusive).
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
     const container = map.getContainer()
 
     if (mapMode === "satellite") {
+      if (minimalistLayerRef.current && map.hasLayer(minimalistLayerRef.current)) map.removeLayer(minimalistLayerRef.current)
       if (tileLayerRef.current && !map.hasLayer(tileLayerRef.current)) tileLayerRef.current.addTo(map)
       if (labelsLayerRef.current && !map.hasLayer(labelsLayerRef.current)) labelsLayerRef.current.addTo(map)
       container.style.backgroundColor = ""
     } else {
       if (tileLayerRef.current && map.hasLayer(tileLayerRef.current)) map.removeLayer(tileLayerRef.current)
       if (labelsLayerRef.current && map.hasLayer(labelsLayerRef.current)) map.removeLayer(labelsLayerRef.current)
-      const bg = getComputedStyle(document.documentElement).getPropertyValue("--background").trim()
-      container.style.backgroundColor = bg || "#fff"
+      if (minimalistLayerRef.current && !map.hasLayer(minimalistLayerRef.current)) minimalistLayerRef.current.addTo(map)
+      container.style.backgroundColor = ""
     }
   }, [mapMode])
 
