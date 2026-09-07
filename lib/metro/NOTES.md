@@ -57,6 +57,16 @@ Amenities recorded all-false with `amenitiesVerified: false` — false here
 means UNVERIFIED, not confirmed absence. Aliases: Shahid Fakhrizade,
 Mammut (+ fa variants), metro-station forms.
 
+## Shahid Sepahbod Qasem Soleimani coordinates (corrected)
+
+Was `35.8261, 50.8881` (upstream). Now `35.95882966952798,
+50.71920151458703` (supplied pin). The old value created an eastward
+dogleg (Fakhrizadeh at lng 50.7911 sat west of the supposed terminus);
+the corrected chain Golshahr -> Fakhrizadeh (16.4 km) -> Soleimani
+(7.9 km) runs monotonically west-northwest toward Hashtgerd/Mehestan,
+consistent with the ~25.8 km Karaj-Mehestan line. Wikipedia's
+`35.8250, 50.9329` duplicates Golshahr's coordinates and was rejected.
+
 ## Other aliases
 
 Historical: Shahid Nejatollahi -> maryam-e-moghaddas. Transliteration

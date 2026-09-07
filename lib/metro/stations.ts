@@ -737,7 +737,7 @@ export const STATIONS: MetroStation[] = [
   {
     id: "shahid-sepahbod-qasem-soleimani",
     name: { fa: "شهید سپهبد قاسم سلیمانی", en: "Shahid Sepahbod Qasem Soleimani" },
-    location: { lat: 35.8261, lng: 50.8881 },
+    location: { lat: 35.95882966952798, lng: 50.71920151458703 },
     amenities: { wc: false, elevator: false, atm: false, coffeeShop: false, fastFood: false, groceryStore: false, freeWifi: false, prayerRoom: false, parking: false, police: true },
     status: "operational",
   },
