@@ -96,20 +96,20 @@ export function MapPage() {
           )}
         >
           <Satellite className="size-3.5" />
-          {t.geographic}
+          {t.satellite}
         </button>
         <button
           type="button"
-          onClick={() => setMapMode("schematic")}
+          onClick={() => setMapMode("minimalist")}
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors",
-            mapMode === "schematic"
+            mapMode === "minimalist"
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-accent",
           )}
         >
           <Layers className="size-3.5" />
-          {t.schematic}
+          {t.minimalist}
         </button>
       </div>
 

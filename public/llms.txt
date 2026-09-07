@@ -7,7 +7,7 @@ Metto (متو) is a free, fast, and offline-capable web app for navigating the T
 - **Route Planner**: Find the fastest route between any two metro stations with transfer info, travel time, and stop count
 - **Station List**: Browse all 100+ stations across 7 metro lines with schedules, amenities, and maps
 - **Nearby Stations**: Find the nearest metro station using GPS, filter by amenities (WiFi, elevator, parking, etc.)
-- **Interactive Map**: Satellite and schematic views of the full Tehran Metro network
+- **Interactive Map**: Satellite and minimalist views of the full Tehran Metro network
 
 ## API Endpoints
 

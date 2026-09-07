@@ -7,8 +7,8 @@ import { loadScheduleData } from "@/lib/schedule-utils";
 type MetroContextValue = {
   lang: Lang;
   setLang: (l: Lang) => void;
-  mapMode: "satellite" | "schematic";
-  setMapMode: (m: "satellite" | "schematic") => void;
+  mapMode: "satellite" | "minimalist";
+  setMapMode: (m: "satellite" | "minimalist") => void;
   originId: string | null;
   setOriginId: (id: string | null) => void;
   destId: string | null;
@@ -25,7 +25,7 @@ export function useMetro() {
 
 export function MetroProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("fa");
-  const [mapMode, setMapModeState] = useState<"satellite" | "schematic">("schematic");
+  const [mapMode, setMapModeState] = useState<"satellite" | "minimalist">("minimalist");
   const [originId, setOriginId] = useState<string | null>(null);
   const [destId, setDestId] = useState<string | null>(null);
 
@@ -34,7 +34,8 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem("lang");
     if (saved === "en" || saved === "fa") setLangState(saved);
     const savedMode = localStorage.getItem("mapMode");
-    if (savedMode === "satellite" || savedMode === "schematic") setMapModeState(savedMode);
+    if (savedMode === "satellite" || savedMode === "minimalist") setMapModeState(savedMode);
+    else if (savedMode === "schematic") setMapModeState("minimalist");
     loadScheduleData();
   }, []);
 
@@ -43,7 +44,7 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("lang", l);
   }, []);
 
-  const setMapMode = useCallback((m: "satellite" | "schematic") => {
+  const setMapMode = useCallback((m: "satellite" | "minimalist") => {
     setMapModeState(m);
     localStorage.setItem("mapMode", m);
   }, []);

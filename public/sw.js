@@ -1,4 +1,4 @@
-const CACHE = "metto-v2"
+const CACHE = "metto-v3"
 const APP_SHELL = ["/", "/stations", "/nearby", "/map", "/schedule-data.json"]
 
 self.addEventListener("install", (event) => {
