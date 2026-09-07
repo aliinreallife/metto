@@ -20,8 +20,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/socialprev.png",
-        width: 1734,
-        height: 907,
+        width: 1731,
+        height: 909,
         alt: "متو - مسیریاب مترو تهران",
         type: "image/png",
       },
