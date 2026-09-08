@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findRoute, STATION_MAP } from "@/lib/route";
+import { STATION_MAP } from "@/lib/route";
 import { getStationLines, resolveStationId } from "@/lib/metro/selectors";
 import { nearestStations } from "@/lib/geo";
+import {
+  findRouteWithSchedule,
+  parseDepartAtParam,
+} from "@/lib/schedule-server";
 
 function stationPayload(s: NonNullable<ReturnType<typeof STATION_MAP.get>>) {
   return {
@@ -85,27 +89,27 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  let departAt: Date | undefined;
-  const departAtParam = searchParams.get("departAt");
-  if (departAtParam) {
-    const parsed = new Date(departAtParam);
-    if (Number.isNaN(parsed.getTime())) {
+  let departAtParam: string | undefined;
+  const rawDepartAt = searchParams.get("departAt");
+  if (rawDepartAt) {
+    if (!parseDepartAtParam(rawDepartAt)) {
       return NextResponse.json(
-        { error: "Invalid departAt (expected an ISO-8601 datetime)" },
+        { error: "Invalid departAt (expected ISO-8601 datetime with explicit timezone offset or Z)" },
         { status: 400 },
       );
     }
-    departAt = parsed;
+    departAtParam = rawDepartAt;
   }
 
-  const result = findRoute(originId, destId, departAt ? { departAt } : undefined);
-
-  if (!result) {
+  const scheduled = await findRouteWithSchedule(originId, destId, departAtParam);
+  if (!scheduled || !scheduled.ok) {
+    // findRouteWithSchedule validates departAtParam above, so !ok is unreachable here.
     return NextResponse.json(
       { error: "No route found between these stations" },
       { status: 404 },
     );
   }
+  const result = scheduled.route;
 
   return NextResponse.json({
     origin: stationPayload(origin),

@@ -95,8 +95,11 @@ Machine-readable docs: [`/openapi.json`](https://metto.ir/openapi.json) · AI gu
 
 Metto exposes a Model Context Protocol server for Claude/AI agents:
 
-- **HTTP**: `POST /api/mcp` (streamable) — see `app/api/mcp/route.ts`
-- **stdio**: `mcp-server.ts` (`get_route`, `list_stations`, `get_station`, `find_nearby` tools + `metro://stations` / `metro://lines` resources + `plan-route` / `station-info` prompts)
+- **Smithery**: [smithery.ai/servers/aliinreallifee/metto](https://smithery.ai/servers/aliinreallifee/metto) — one-click install for Claude Code, Cursor, Windsurf and other MCP clients
+- **HTTP**: `POST /mcp` (streamable) — live at [metto.ir/mcp](https://metto.ir/mcp), see `app/api/mcp/route.ts`. `POST /api/mcp` ([metto.ir/api/mcp](https://metto.ir/api/mcp)) works identically as a backwards-compatible alias.
+- **stdio**: `mcp-server.ts` (same tools over stdio for local clients)
+
+Tools: `get_route`, `list_stations`, `get_station`, `find_nearby` · Resources: `metro://stations` / `metro://lines` / `metro://station/{id}` · Prompts: `plan-route` / `station-info` / `find-nearest`
 
 ## Project structure
 

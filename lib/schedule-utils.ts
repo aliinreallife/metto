@@ -43,7 +43,8 @@ async function getScheduleData(): Promise<LineScheduleData[]> {
 
 // schedule-data.json may still use legacy English-name IDs; normalize every
 // id to the stable slug once at load so the rest of the code only sees slugs.
-function remapScheduleIds(data: LineScheduleData[]): LineScheduleData[] {
+// Exported for the server-side loader (lib/schedule-server.ts).
+export function remapScheduleIds(data: LineScheduleData[]): LineScheduleData[] {
   const mapId = (id: string) => resolveStationId(id) ?? id;
   for (const ls of data) {
     ls.terminalA = mapId(ls.terminalA);
@@ -70,9 +71,23 @@ export function isScheduleDataLoaded(): boolean {
 export function __setScheduleDataForTests(
   data: LineScheduleData[] | null,
 ): void {
-  _scheduleData = data === null ? null : remapScheduleIds(data);
+  if (data === null) {
+    _scheduleData = null;
+    _schedulePromise = null;
+    return;
+  }
+  setServerScheduleData(data);
+}
+
+/**
+ * Explicit production setter for server-side schedule loading
+ * (see lib/schedule-server.ts). Normalizes IDs exactly like the
+ * client fetch path. Notifies listeners, same as a completed fetch.
+ */
+export function setServerScheduleData(data: LineScheduleData[]): void {
+  _scheduleData = remapScheduleIds(data);
   _schedulePromise = null;
-  if (data !== null) notifyListeners();
+  notifyListeners();
 }
 
 export function onScheduleDataReady(callback: () => void): () => void {
