@@ -1,7 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { findRoute, STATION_MAP } from "./lib/route.js";
+import { STATION_MAP } from "./lib/route.js";
+import { findRouteWithSchedule } from "./lib/schedule-server.js";
 import { nearestStations } from "./lib/geo.js";
 import {
   getAllStations,
@@ -29,6 +30,7 @@ server.registerTool("get_route", {
   inputSchema: {
     from: z.string().describe("Origin station ID (stable slug, e.g. 'tajrish'; legacy English names accepted)"),
     to: z.string().describe("Destination station ID (stable slug, e.g. 'tehran-sadeghiyeh'; legacy English names accepted)"),
+    depart_at: z.string().optional().describe("ISO-8601 departure datetime with explicit timezone offset or Z (e.g. '2026-09-07T14:00:00+03:30'). Defaults to now."),
   },
   outputSchema: {
     route: z.string(),
@@ -38,7 +40,7 @@ server.registerTool("get_route", {
     path: z.array(z.string()),
     hops: z.array(z.object({ from: z.string(), to: z.string(), line: z.number() })),
   },
-}, async ({ from, to }) => {
+}, async ({ from, to, depart_at }) => {
   const origin = STATION_MAP.get(from);
   const dest = STATION_MAP.get(to);
 
@@ -52,8 +54,14 @@ server.registerTool("get_route", {
     };
   }
 
-  const result = findRoute(from, to);
-  if (!result) {
+  const result = await findRouteWithSchedule(from, to, depart_at);
+  if (!result || !result.ok) {
+    if (result && !result.ok) {
+      return {
+        isError: true as const,
+        content: [{ type: "text" as const, text: result.error }],
+      };
+    }
     return {
       content: [{
         type: "text" as const,
@@ -62,18 +70,19 @@ server.registerTool("get_route", {
     };
   }
 
-  const minutes = Math.round(result.estimatedSeconds / 60);
-  const hops = result.hops.map(h => `  ${h.from} → ${h.to} (Line ${h.line})`).join("\n");
+  const minutes = Math.round(result.route.estimatedSeconds / 60);
+  const hops = result.route.hops.map(h => `  ${h.from} → ${h.to} (Line ${h.line})`).join("\n");
 
   return {
     content: [{
       type: "text" as const,
       text: [
         `Route: ${origin.name.fa} (${origin.name.en}) → ${dest.name.fa} (${dest.name.en})`,
-        `Stops: ${result.numStops}`,
-        `Transfers: ${result.numTransfers}`,
+        `Stops: ${result.route.numStops}`,
+        `Transfers: ${result.route.numTransfers}`,
         `Travel time: ~${minutes} min`,
-        `Path: ${result.path.join(" → ")}`,
+        `Path: ${result.route.path.join(" → ")}`,
+        `Departure schedule: ${result.scheduleNote}`,
         "",
         "Detailed hops:",
         hops,
@@ -81,11 +90,11 @@ server.registerTool("get_route", {
     }],
     structuredContent: {
       route: `${origin.name.fa} (${origin.name.en}) → ${dest.name.fa} (${dest.name.en})`,
-      stops: result.numStops,
-      transfers: result.numTransfers,
+      stops: result.route.numStops,
+      transfers: result.route.numTransfers,
       travelTimeMinutes: minutes,
-      path: result.path,
-      hops: result.hops.map((h) => ({ from: h.from, to: h.to, line: h.line })),
+      path: result.route.path,
+      hops: result.route.hops.map((h) => ({ from: h.from, to: h.to, line: h.line })),
     },
   };
 });
