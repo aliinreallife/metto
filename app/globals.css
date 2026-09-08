@@ -175,10 +175,41 @@
   padding: 1px 4px !important;
   font-size: 10px !important;
   font-weight: 600 !important;
+  /* Leaflet sets its own font-family on .leaflet-container; station labels
+     must use the app font (Vazirmatn) so Persian text measures and renders
+     identically in the measure node and on the map. */
+  font-family: var(--font-vazirmatn), system-ui, sans-serif !important;
   color: var(--foreground) !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
   white-space: nowrap !important;
 }
 .station-label::before {
   border-top-color: var(--background) !important;
+}
+
+/* Screen-space station labels (divIcon layer, placed by the label engine). */
+.station-dom-label-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+.station-dom-label {
+  pointer-events: auto !important;
+  display: inline-block;
+  cursor: pointer;
+}
+.station-dom-label::before {
+  content: none !important;
+}
+/* Offscreen node for measuring real rendered Persian label sizes. Must
+   shrink-wrap its content like the absolutely-positioned map labels do;
+   a plain block-level div would report the full container width. */
+.station-measure {
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: none !important;
 }
