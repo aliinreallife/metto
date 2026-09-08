@@ -9,8 +9,15 @@ import {
   buildMapEdges,
   getAllStations,
   getStationLines,
+  getStationTerminalRoutes,
   isInterchange,
 } from "@/lib/metro/selectors";
+import {
+  placeLabels,
+  type Anchor,
+  type DotObstacle,
+  type LabelCandidate,
+} from "@/lib/map/label-placement";
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
 import { type Lang } from "@/lib/i18n"
@@ -41,6 +48,75 @@ const MINIMALIST_URL =
 const MINIMALIST_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
+// ---- Station label layer (screen-space placement, no Leaflet tooltips) ----
+
+// Priority: selected > hovered > origin/destination > route > interchange >
+// terminal/major > normal. Only the forced set must always render.
+const LABEL_PRIORITY: Record<"selected" | "hovered" | "endpoint" | "route" | "interchange" | "terminal" | "normal", number> = {
+  selected: 100,
+  hovered: 90,
+  endpoint: 80,
+  route: 60,
+  interchange: 50,
+  terminal: 40,
+  normal: 10,
+}
+
+// Real-DOM measurement cache: key = `${lang}:${text}`. Invalidated when fonts
+// load and cleared of stale entries on language switch (bounded by station count).
+const measureCache = new Map<string, { w: number; h: number }>()
+let measureEl: HTMLDivElement | null = null
+
+function ensureMeasureEl(container: HTMLElement): HTMLDivElement {
+  if (!measureEl || !container.contains(measureEl)) {
+    measureEl = document.createElement("div")
+    measureEl.className = "station-label station-measure"
+    measureEl.setAttribute("aria-hidden", "true")
+    container.appendChild(measureEl)
+  }
+  return measureEl
+}
+
+function measureStationLabel(
+  container: HTMLElement,
+  text: string,
+  lang: Lang,
+): { w: number; h: number } {
+  const key = `${lang}:${text}`
+  const hit = measureCache.get(key)
+  if (hit) return hit
+  const el = ensureMeasureEl(container)
+  el.setAttribute("dir", lang === "fa" ? "rtl" : "ltr")
+  el.textContent = text
+  const size = { w: Math.ceil(el.offsetWidth), h: Math.ceil(el.offsetHeight) }
+  measureCache.set(key, size)
+  return size
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+}
+
+function buildLabelIcon(
+  text: string,
+  lang: Lang,
+  geom: { x: number; y: number; w: number; h: number; anchor: Anchor },
+  stationPoint: { x: number; y: number },
+): L.DivIcon {
+  return L.divIcon({
+    className: "station-dom-label-wrap",
+    html:
+      `<div class="station-label station-dom-label" dir="${lang === "fa" ? "rtl" : "ltr"}"` +
+      ` data-x="${geom.x.toFixed(1)}" data-y="${geom.y.toFixed(1)}"` +
+      ` data-w="${geom.w}" data-h="${geom.h}" data-anchor="${geom.anchor}">` +
+      `${escapeHtml(text)}</div>`,
+    iconSize: [geom.w, geom.h],
+    // Pin the icon so its top-left lands on the computed rect: the station
+    // point sits at (stationPoint - rectTopLeft) inside the icon.
+    iconAnchor: [stationPoint.x - geom.x, stationPoint.y - geom.y],
+  })
+}
+
 export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, initialCenter, initialZoom, onViewChange, placeMarkers }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -50,10 +126,17 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const minimalistLayerRef = useRef<L.TileLayer | null>(null)
   const gpsMarkerRef = useRef<L.CircleMarker | null>(null)
   const placeLayerRef = useRef<L.LayerGroup | null>(null)
-  const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: MetroStation }>>(new Map())
+  const stationLabelsRef = useRef<L.LayerGroup | null>(null)
+  const labelNodesRef = useRef<Map<string, { marker: L.Marker; key: string }>>(new Map())
+  const prevAnchorRef = useRef<Map<string, Anchor>>(new Map())
+  const hoveredRef = useRef<string | null>(null)
+  const scheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: MetroStation; radius: number }>>(new Map())
   const initialMapModeRef = useRef(mapMode)
   initialMapModeRef.current = mapMode
-  const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null })
+  const onSelectRef = useRef(onSelect)
+  onSelectRef.current = onSelect
+  const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null, hoveredId: null as string | null, lang: lang as Lang })
   const [hasGps, setHasGps] = useState(false)
   const [locating, setLocating] = useState(false)
   const isFa = lang === "fa"
@@ -67,7 +150,132 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   }, [route])
 
   // Keep label state ref in sync
-  labelStateRef.current = { routeStations, originId, destId, selectedId }
+  labelStateRef.current = { routeStations, originId, destId, selectedId, hoveredId: hoveredRef.current, lang }
+
+  function scheduleLabels(immediate = false) {
+    if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current)
+    if (immediate) {
+      scheduleTimerRef.current = null
+      updateStationLabels()
+      return
+    }
+    // Trailing debounce: coalesces zoomend+moveend bursts and hover flutters.
+    scheduleTimerRef.current = setTimeout(() => {
+      scheduleTimerRef.current = null
+      updateStationLabels()
+    }, 50)
+  }
+
+  function updateStationLabels() {
+    const map = mapRef.current
+    const layer = stationLabelsRef.current
+    if (!map || !layer) return
+    const container = map.getContainer()
+    const { routeStations: currentRoute, originId: currentOrigin, destId: currentDest, selectedId: currentSelected, hoveredId: currentHovered, lang: currentLang } = labelStateRef.current
+    const zoom = map.getZoom()
+    const size = map.getSize()
+    const viewport = { width: size.x, height: size.y }
+    const hasEndpoints = !!currentOrigin && !!currentDest && currentOrigin !== currentDest
+
+    const candidates: LabelCandidate[] = []
+    const dots: DotObstacle[] = []
+    for (const [id, { station, radius }] of markersRef.current) {
+      const p = map.latLngToContainerPoint([station.location.lat, station.location.lng])
+      const point = { x: p.x, y: p.y }
+      dots.push({ id, point, radius })
+
+      const isSelected = id === currentSelected
+      const isHovered = id === currentHovered
+      const isEndpoint = hasEndpoints && (id === currentOrigin || id === currentDest)
+      const isOnRoute = currentRoute.has(id)
+      const interchange = isInterchange(id)
+
+      // Zoom pre-filter: becoming a candidate does NOT guarantee rendering;
+      // the collision engine may still hide lower-priority labels.
+      let candidate = isSelected || isHovered || isEndpoint || isOnRoute
+      if (!candidate && zoom >= 14) candidate = true
+      else if (!candidate && zoom >= 12 && interchange) candidate = true
+      if (!candidate) continue
+
+      const text = currentLang === "fa" ? station.name.fa : station.name.en
+      const { w, h } = measureStationLabel(container, text, currentLang)
+      let priority = LABEL_PRIORITY.normal
+      let forced = false
+      if (isSelected) {
+        priority = LABEL_PRIORITY.selected
+        forced = true
+      } else if (isHovered) {
+        priority = LABEL_PRIORITY.hovered
+        forced = true
+      } else if (isEndpoint) {
+        priority = LABEL_PRIORITY.endpoint
+        forced = true
+      } else if (isOnRoute) {
+        priority = LABEL_PRIORITY.route
+      } else if (interchange) {
+        priority = LABEL_PRIORITY.interchange
+      } else if (getStationTerminalRoutes(id).length > 0) {
+        priority = LABEL_PRIORITY.terminal
+      }
+      candidates.push({
+        id,
+        point,
+        width: w,
+        height: h,
+        priority,
+        forced,
+        prevAnchor: prevAnchorRef.current.get(id) ?? null,
+      })
+    }
+
+    const placements = placeLabels(candidates, dots, viewport)
+    const alive = new Set<string>()
+    for (const pl of placements) {
+      if (pl.hidden || !pl.anchor) {
+        prevAnchorRef.current.delete(pl.id)
+        const existing = labelNodesRef.current.get(pl.id)
+        if (existing) {
+          existing.marker.remove()
+          labelNodesRef.current.delete(pl.id)
+        }
+        continue
+      }
+      const entry = markersRef.current.get(pl.id)
+      if (!entry) continue
+      alive.add(pl.id)
+      prevAnchorRef.current.set(pl.id, pl.anchor)
+      const text = currentLang === "fa" ? entry.station.name.fa : entry.station.name.en
+      const c = candidates.find((k) => k.id === pl.id)!
+      const p = map.latLngToContainerPoint([entry.station.location.lat, entry.station.location.lng])
+      const key = `${text}|${c.width}x${c.height}|${pl.anchor}|${pl.x.toFixed(1)},${pl.y.toFixed(1)}`
+      const existing = labelNodesRef.current.get(pl.id)
+      if (existing && existing.key === key) continue
+      const icon = buildLabelIcon(text, currentLang, { x: pl.x, y: pl.y, w: c.width, h: c.height, anchor: pl.anchor }, { x: p.x, y: p.y })
+      if (existing) {
+        existing.marker.setIcon(icon)
+        existing.key = key
+      } else {
+        const marker = L.marker([entry.station.location.lat, entry.station.location.lng], {
+          icon,
+          interactive: true,
+          keyboard: false,
+        })
+        // Labels are tappable like dots: non-draggable Leaflet markers do
+        // not block map panning, and click fires only when no drag happened.
+        marker.on("click", () => onSelectRef.current(pl.id))
+        marker.addTo(layer)
+        labelNodesRef.current.set(pl.id, { marker, key })
+      }
+    }
+    // Drop nodes whose stations are no longer candidates at all.
+    for (const [id, { marker }] of labelNodesRef.current) {
+      if (!alive.has(id)) {
+        marker.remove()
+        labelNodesRef.current.delete(id)
+        prevAnchorRef.current.delete(id)
+      }
+    }
+  }
 
   // Initialize the map once.
   useEffect(() => {
@@ -114,45 +322,29 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     }
 
     overlayRef.current = L.layerGroup().addTo(map)
+    stationLabelsRef.current = L.layerGroup().addTo(map)
     placeLayerRef.current = L.layerGroup().addTo(map)
     mapRef.current = map
 
-    // Zoom-based label visibility
-    function updateLabels() {
-      const zoom = map.getZoom()
-      const { routeStations: currentRoute, originId: currentOrigin, destId: currentDest, selectedId: currentSelected } = labelStateRef.current
-      const hasRoute = currentRoute.size > 0
-      for (const [id, { marker }] of markersRef.current) {
-        const isInterchangeStation = isInterchange(id)
-        const isOnRoute = currentRoute.has(id)
-        const isEndpoint = currentOrigin && currentDest && currentOrigin !== currentDest && (id === currentOrigin || id === currentDest)
-        const isSelected = id === currentSelected
+    // Screen-space label placement: recompute only when the view settles,
+    // never every animation frame.
+    const relayout = () => scheduleLabels()
+    map.on("zoomend", relayout)
+    map.on("moveend", relayout)
+    map.on("resize", relayout)
+    // Initial placement once tiles/layout settle.
+    scheduleLabels()
 
-        // Always show: route stations, endpoints, selected
-        if (isOnRoute || isEndpoint || isSelected) {
-          marker.openTooltip()
-          continue
-        }
-        // Show all stations at zoom >= 14 (including interchanges even with route)
-        if (zoom >= 14) {
-          marker.openTooltip()
-          continue
-        }
-        // When route is active, hide non-route interchange labels below zoom 14
-        if (hasRoute && isInterchangeStation) {
-          marker.closeTooltip()
-          continue
-        }
-        // Show interchanges at zoom >= 12 (no route active)
-        if (isInterchangeStation && zoom >= 12) {
-          marker.openTooltip()
-          continue
-        }
-        // Otherwise hide
-        marker.closeTooltip()
-      }
+    // Re-measure with the real webfont once it arrives (Persian glyph widths
+    // change vs. fallback) and relay out so anchors stay glued to dots.
+    let fontsCancelled = false
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        if (fontsCancelled) return
+        measureCache.clear()
+        scheduleLabels(true)
+      })
     }
-    map.on("zoomend", updateLabels)
 
     // Report view changes to parent.
     const onViewChangeRef = { current: onViewChange }
@@ -163,9 +355,21 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     // Leaflet needs a size invalidation after layout settles.
     setTimeout(() => map.invalidateSize(), 100)
     return () => {
+      fontsCancelled = true
+      map.off("zoomend", relayout)
+      map.off("moveend", relayout)
+      map.off("resize", relayout)
+      if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current)
       map.remove()
       mapRef.current = null
       overlayRef.current = null
+      stationLabelsRef.current = null
+      labelNodesRef.current.clear()
+      prevAnchorRef.current.clear()
+      if (measureEl) {
+        measureEl.remove()
+        measureEl = null
+      }
       tileLayerRef.current = null
       labelsLayerRef.current = null
       minimalistLayerRef.current = null
@@ -225,7 +429,16 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     // Stations. Under-construction stations render with a dotted border and
     // transparent fill, independently of segment styling.
+    // Labels are NOT Leaflet tooltips anymore: dots stay interactive for
+    // click/hover, and names render in the dedicated label layer via the
+    // screen-space placement engine (updateStationLabels).
     markersRef.current.clear()
+    const dotRadius = (s: MetroStation) => {
+      const endpoint = originId && destId && originId !== destId && (s.id === originId || s.id === destId)
+      if (endpoint) return 8
+      if (isInterchange(s.id)) return 6
+      return 4
+    }
     for (const s of getAllStations()) {
       const lines = getStationLines(s.id)
       const firstLine = lines[0]
@@ -234,47 +447,38 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const isEndpoint = originId && destId && originId !== destId && (s.id === originId || s.id === destId)
       const dim = hasRoute && !onRoute
       const underConstruction = s.status !== "operational"
+      const radius = dotRadius(s)
       const marker = L.circleMarker([s.location.lat, s.location.lng], {
-        radius: isEndpoint ? 8 : interchange ? 6 : 4,
+        radius,
         color: isEndpoint ? "#cc0e2d" : interchange ? "#111" : LINE_COLORS[firstLine],
         weight: underConstruction ? 1.5 : isEndpoint ? 3 : interchange ? 2 : 1.5,
         dashArray: underConstruction ? "3 3" : undefined,
         fillColor: underConstruction ? "transparent" : interchange ? "#fff" : LINE_COLORS[firstLine],
         fillOpacity: underConstruction ? 0 : dim ? 0.3 : 1,
         opacity: dim ? 0.4 : 1,
-      })
-      marker.bindTooltip(isFa ? s.name.fa : s.name.en, {
-        direction: "top",
-        className: "station-label",
+        interactive: true,
       })
       marker.on("click", () => onSelect(s.id))
-      markersRef.current.set(s.id, { marker, station: s })
+      marker.on("mouseover", () => {
+        if (hoveredRef.current !== s.id) {
+          hoveredRef.current = s.id
+          labelStateRef.current.hoveredId = s.id
+          scheduleLabels()
+        }
+      })
+      marker.on("mouseout", () => {
+        if (hoveredRef.current === s.id) {
+          hoveredRef.current = null
+          labelStateRef.current.hoveredId = null
+          scheduleLabels()
+        }
+      })
+      markersRef.current.set(s.id, { marker, station: s, radius })
       marker.addTo(layer)
     }
 
-    // Update label visibility based on current zoom
-    const map = mapRef.current
-    if (map) {
-      const zoom = map.getZoom()
-      const hasRoute = routeStations.size > 0
-      for (const [id, { marker }] of markersRef.current) {
-        const isInterchangeStation = isInterchange(id)
-        const isOnRoute = routeStations.has(id)
-        const isEndpoint = originId && destId && originId !== destId && (id === originId || id === destId)
-        const isSelected = id === selectedId
-        if (isOnRoute || isEndpoint || isSelected) {
-          marker.openTooltip()
-        } else if (zoom >= 14) {
-          marker.openTooltip()
-        } else if (hasRoute && isInterchangeStation) {
-          marker.closeTooltip()
-        } else if (isInterchangeStation && zoom >= 12) {
-          marker.openTooltip()
-        } else {
-          marker.closeTooltip()
-        }
-      }
-    }
+    // (Re)run placement for the current zoom/route/selection/language.
+    scheduleLabels()
 
     // Re-add GPS marker on top if it exists
     if (gpsMarkerRef.current) gpsMarkerRef.current.addTo(layer)
