@@ -62,6 +62,8 @@ See `lib/metro/NOTES.md` for topology decisions (Line 4 west continuity, Line 5 
 
 ### Schedules (`public/schedule-data.json`, ~5 MB)
 
+Timetable data used for route ETAs.
+
 Loaded lazily client-side (`lib/use-schedule-data.ts`, `lib/schedule-utils.ts`); route ETAs consume it via `findTripDetailed`.
 
 ### Holidays (`lib/holidays/`)
