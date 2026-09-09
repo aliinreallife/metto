@@ -209,4 +209,15 @@ describe("next.config tracing", () => {
     expect(config).toContain("/api/mcp");
     expect(config).toContain("public/schedule-data.json");
   });
+
+  it("keeps outputFileTracingIncludes top-level (not experimental) and pins the project root", () => {
+    const config = readFileSync(
+      join(process.cwd(), "next.config.mjs"),
+      "utf8",
+    );
+    expect(config).not.toMatch(/experimental\s*:\s*\{[^}]*outputFileTracingIncludes/);
+    expect(config).toContain("outputFileTracingRoot");
+    expect(config).toContain("turbopack");
+    expect(config).toMatch(/root\s*:\s*__dirname/);
+  });
 });
