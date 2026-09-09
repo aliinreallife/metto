@@ -114,8 +114,8 @@ export function MapPage() {
   }, []);
 
   return (
-    <div className="relative mb-14 min-h-0 flex-1 flex flex-col md:mb-0">
-      <div className="min-h-0 flex-1">
+    <div suppressHydrationWarning className="relative min-h-0 min-w-0 flex-none overflow-hidden flex flex-col md:flex-1" style={{ height: "calc(100dvh - 7rem)" }}>
+      <div className="min-h-0 flex-none md:flex-1" style={{ height: "100%" }}>
         <RealMap
           lang={lang}
           mapMode={mapMode}
