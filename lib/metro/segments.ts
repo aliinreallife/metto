@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: ODbL-1.0 — part of Metto's ODbL-1.0 adapted metro database. See DATA_LICENSE.md.
 // Network edges, generated from ROUTES consecutive pairs (see routes.ts).
 // Track status is INDEPENDENT from station status: every segment defaults to
 // operational; under-construction tracks are listed explicitly in

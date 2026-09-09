@@ -124,4 +124,18 @@ PRs welcome — especially timetable corrections, station coordinates/amenities,
 
 ## License
 
-No license file yet — all rights reserved by default. Data courtesy of [tehran-metro-data](https://github.com/mostafa-kheibary/tehran-metro-data).
+This is a multi-license repository, not a single-license one:
+
+* **Metto original code** is licensed under the GNU Affero General
+  Public License version 3 only (`AGPL-3.0-only`) — see `LICENSE`.
+* **Tehran Metro station/network data** derived from
+  [tehran-metro-data](https://github.com/mostafa-kheibary/tehran-metro-data)
+  is licensed separately under the Open Database License v1.0
+  (`ODbL-1.0`) — see `DATA_LICENSE.md`.
+* **Third-party software and assets** (libraries, fonts, icons, map
+  tiles/services, images) remain under their respective licenses/terms.
+  Note `react-leaflet` is Hippocratic-2.1 (non-OSI), which creates a
+  potential AGPL distribution compatibility concern — see `NOTICE.md`.
+  Recommend removing it if unused.
+
+See `NOTICE.md` for the full licensing overview.

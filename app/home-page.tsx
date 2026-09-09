@@ -171,6 +171,24 @@ export function HomePage() {
             mostafa-kheibary
           </span>
         </a>
+        <a
+          href="https://opendatacommons.org/licenses/odbl/1-0/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
+        >
+          <span className="text-muted-foreground">·</span>
+          <span className="font-semibold text-foreground">ODbL 1.0</span>
+        </a>
+        <a
+          href="https://github.com/aliinreallife/metto"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
+        >
+          <ExternalLink className="size-3 text-primary" />
+          <span className="font-semibold text-foreground">{t.sourceCode}</span>
+        </a>
       </div>
     </div>
   );
