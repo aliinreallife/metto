@@ -73,7 +73,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t.searchStations}
-          className="w-full rounded-xl border border-border bg-card py-3 ps-9 pe-3 text-sm outline-none ring-primary/30 focus:ring-2"
+          className="ios-no-zoom-input w-full rounded-xl border border-border bg-card py-3 ps-9 pe-3 text-sm outline-none ring-primary/30 focus:ring-2"
         />
       </div>
 

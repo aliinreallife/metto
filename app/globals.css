@@ -213,3 +213,14 @@
   width: fit-content !important;
   max-width: none !important;
 }
+
+/* Prevent iOS Safari/WebKit auto-zoom on focus (<16px inputs).
+   -webkit-touch-callout = iOS WebKit only (Safari, iOS Chrome, iOS PWA).
+   any-pointer:coarse keeps the fix on iPads with mouse/trackpad attached. */
+@supports (-webkit-touch-callout: none) {
+  @media (any-pointer: coarse) {
+    .ios-no-zoom-input {
+      font-size: 16px;
+    }
+  }
+}
