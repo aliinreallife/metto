@@ -113,6 +113,34 @@ export function buildMapHref(args: {
   return qs ? `/map?${qs}` : "/map";
 }
 
+// Same preserved state (route + place pins) on any tab path, so switching
+// tabs never drops a half-filled selection or a searched landmark.
+export function buildTabHref(
+  base: string,
+  args: {
+    from?: string | null;
+    to?: string | null;
+    originPlace?: PlacePinParam;
+    destPlace?: PlacePinParam;
+  },
+): string {
+  const params = new URLSearchParams();
+  if (args.from) params.set("from", args.from);
+  if (args.to) params.set("to", args.to);
+  if (args.originPlace) {
+    params.set("oPlat", String(args.originPlace.lat));
+    params.set("oPlng", String(args.originPlace.lng));
+    params.set("oPlabel", args.originPlace.label);
+  }
+  if (args.destPlace) {
+    params.set("dPlat", String(args.destPlace.lat));
+    params.set("dPlng", String(args.destPlace.lng));
+    params.set("dPlabel", args.destPlace.label);
+  }
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
 // geo: URI — on Android this pops up the native app-chooser so the user can
 // pick any installed app that handles locations: Google Maps, Waze, Snapp,
 // Tapsi, etc. On iOS it opens Apple Maps. On desktop most browsers ignore it.

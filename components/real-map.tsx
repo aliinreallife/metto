@@ -142,7 +142,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const onSelectRef = useRef(onSelect)
   onSelectRef.current = onSelect
   const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null, hoveredId: null as string | null, lang: lang as Lang })
+  // Landmark labels (searched-place pins, GPS dot) rendered through the same
+  // engine as station labels. Keys are namespaced ("place:origin", "gps")
+  // so they never collide with station ids.
+  const extraLabelStateRef = useRef<Array<{ key: string; lat: number; lng: number; text: string }>>([])
   const [hasGps, setHasGps] = useState(false)
+  const [gpsPos, setGpsPos] = useState<[number, number] | null>(null)
   const [locating, setLocating] = useState(false)
   const isFa = lang === "fa"
 
@@ -156,6 +161,24 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
   // Keep label state ref in sync
   labelStateRef.current = { routeStations, originId, destId, selectedId, hoveredId: hoveredRef.current, lang }
+  // Landmark label inputs for the engine (short pin names + GPS dot).
+  {
+    const extras: Array<{ key: string; lat: number; lng: number; text: string }> = []
+    if (placeMarkers) {
+      for (const pm of placeMarkers) {
+        extras.push({ key: `place:${pm.role}`, lat: pm.lat, lng: pm.lng, text: pm.label })
+      }
+    }
+    if (gpsPos) {
+      extras.push({
+        key: "gps",
+        lat: gpsPos[0],
+        lng: gpsPos[1],
+        text: lang === "fa" ? "شما اینجا هستید" : "You are here",
+      })
+    }
+    extraLabelStateRef.current = extras
+  }
 
   function scheduleLabels(immediate = false) {
     if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current)
@@ -170,6 +193,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       updateStationLabels()
     }, 50)
   }
+
+  // Re-run placement when landmark labels change (pins, GPS, language).
+  useEffect(() => {
+    scheduleLabels()
+  }, [placeMarkers, gpsPos, lang])
 
   function updateStationLabels() {
     const map = mapRef.current
@@ -233,6 +261,27 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       })
     }
 
+    // Landmark labels (searched-place pins, GPS dot) go through the same
+    // engine so they look and collide like station labels — always forced.
+    // The anchor point sits just above the pin art (A/B pins are 30x42 with
+    // the tip at the bottom; the GPS dot is small).
+    const extraByKey = new Map(extraLabelStateRef.current.map((e) => [e.key, e]))
+    for (const extra of extraLabelStateRef.current) {
+      const p = map.latLngToContainerPoint([extra.lat, extra.lng])
+      const point = { x: p.x, y: p.y - (extra.key === "gps" ? 12 : 48) }
+      dots.push({ id: extra.key, point, radius: 4 })
+      const { w, h } = measureStationLabel(container, extra.text, currentLang)
+      candidates.push({
+        id: extra.key,
+        point,
+        width: w,
+        height: h,
+        priority: LABEL_PRIORITY.endpoint,
+        forced: true,
+        prevAnchor: prevAnchorRef.current.get(extra.key) ?? null,
+      })
+    }
+
     const placements = placeLabels(candidates, dots, viewport)
     const alive = new Set<string>()
     for (const pl of placements) {
@@ -246,12 +295,20 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         continue
       }
       const entry = markersRef.current.get(pl.id)
-      if (!entry) continue
+      const extra = entry ? null : extraByKey.get(pl.id)
+      if (!entry && !extra) continue
       alive.add(pl.id)
       prevAnchorRef.current.set(pl.id, pl.anchor)
-      const text = currentLang === "fa" ? entry.station.name.fa : entry.station.name.en
+      const text = entry
+        ? currentLang === "fa"
+          ? entry.station.name.fa
+          : entry.station.name.en
+        : extra!.text
       const c = candidates.find((k) => k.id === pl.id)!
-      const p = map.latLngToContainerPoint([entry.station.location.lat, entry.station.location.lng])
+      const src = entry
+        ? { lat: entry.station.location.lat, lng: entry.station.location.lng }
+        : { lat: extra!.lat, lng: extra!.lng }
+      const p = map.latLngToContainerPoint([src.lat, src.lng])
       const key = `${text}|${c.width}x${c.height}|${pl.anchor}|${pl.x.toFixed(1)},${pl.y.toFixed(1)}`
       const existing = labelNodesRef.current.get(pl.id)
       if (existing && existing.key === key) continue
@@ -260,14 +317,15 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         existing.marker.setIcon(icon)
         existing.key = key
       } else {
-        const marker = L.marker([entry.station.location.lat, entry.station.location.lng], {
+        const marker = L.marker([src.lat, src.lng], {
           icon,
-          interactive: true,
+          interactive: !!entry,
           keyboard: false,
         })
-        // Labels are tappable like dots: non-draggable Leaflet markers do
-        // not block map panning, and click fires only when no drag happened.
-        marker.on("click", () => onSelectRef.current(pl.id))
+        // Station labels are tappable like dots; landmark labels are
+        // display-only (the pin itself keeps its hover tooltip).
+        // Labels are non-draggable Leaflet markers and do not block panning.
+        if (entry) marker.on("click", () => onSelectRef.current(pl.id))
         marker.addTo(layer)
         labelNodesRef.current.set(pl.id, { marker, key })
       }
@@ -509,16 +567,14 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     if (!placeMarkers || placeMarkers.length === 0) return
 
+    // Google-style A/B pins: green A for origin, red B for destination.
+    // White stroke keeps them legible on both satellite and dark basemaps.
     const PLACE_STYLE = {
       origin: {
-        bg: "#22c55e",
-        shadow: "#16a34a",
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><defs><filter id="os" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter></defs><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#22c55e" filter="url(#os)"/><circle cx="14" cy="13" r="6" fill="white"/></svg>`,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42"><path d="M15 1.5C7.6 1.5 1.5 7.6 1.5 15c0 10.6 13.5 25.5 13.5 25.5S28.5 25.6 28.5 15C28.5 7.6 22.4 1.5 15 1.5z" fill="#22c55e" stroke="#ffffff" stroke-width="2"/><text x="15" y="20.5" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff" font-family="system-ui, sans-serif">A</text></svg>`,
       },
       dest: {
-        bg: "#ef4444",
-        shadow: "#dc2626",
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><defs><filter id="ds" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter></defs><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#ef4444" filter="url(#ds)"/><circle cx="14" cy="13" r="6" fill="white"/></svg>`,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42"><path d="M15 1.5C7.6 1.5 1.5 7.6 1.5 15c0 10.6 13.5 25.5 13.5 25.5S28.5 25.6 28.5 15C28.5 7.6 22.4 1.5 15 1.5z" fill="#ef4444" stroke="#ffffff" stroke-width="2"/><text x="15" y="20.5" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff" font-family="system-ui, sans-serif">B</text></svg>`,
       },
     } as const
 
@@ -528,11 +584,13 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const icon = L.divIcon({
         html: s.svg,
         className: "",
-        iconSize: [28, 40],
-        iconAnchor: [14, 40],
-        tooltipAnchor: [0, -40],
+        iconSize: [30, 42],
+        iconAnchor: [15, 42],
+        tooltipAnchor: [0, -42],
       })
       const marker = L.marker([pm.lat, pm.lng], { icon }).addTo(layer)
+      // Hover tooltip keeps the full name; the always-visible short label
+      // renders through the station-label engine (see updateStationLabels).
       marker.bindTooltip(pm.label, { direction: "top", className: "station-label" })
       pts.push([pm.lat, pm.lng])
 
@@ -596,9 +654,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           fillOpacity: 0.9,
           opacity: 1,
         }).addTo(map)
-        marker.bindTooltip(isFa ? "شما اینجا هید" : "You are here", { direction: "top" })
+        // Hover tooltip only; the always-visible label renders through the
+        // station-label engine via gpsPos (see extraLabelStateRef).
+        marker.bindTooltip(isFa ? "شما اینجا هستید" : "You are here", { direction: "top" })
         gpsMarkerRef.current = marker
         setHasGps(true)
+        setGpsPos([lat, lng])
 
         // Pan to location
         map.setView([lat, lng], 14)

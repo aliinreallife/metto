@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowUpDown,
-  AlertTriangle,
   Building2,
   Loader2,
   ExternalLink,
@@ -22,13 +21,13 @@ import { StationDetail } from "@/components/station-detail";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useScheduleData } from "@/lib/use-schedule-data";
+import { reverseGeocode } from "@/lib/geocoding";
 import {
   nearestStations,
   formatDistance,
   haversineKm,
   estimateWalkMinutes,
   formatWalkTime,
-  isTooFarToWalk,
   buildMapHref,
 } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
@@ -67,6 +66,27 @@ function buildPlaceInfo(
   };
 }
 
+function readStoredPlaceInfo(storageKey: string, stationId: string | null): PlaceInfo | null {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw || !stationId) return null;
+    const pin: unknown = JSON.parse(raw);
+    if (
+      typeof pin !== "object" ||
+      pin === null ||
+      !Number.isFinite((pin as { lat: number }).lat) ||
+      !Number.isFinite((pin as { lng: number }).lng) ||
+      typeof (pin as { label: string }).label !== "string" ||
+      (pin as { label: string }).label.length === 0
+    ) {
+      return null;
+    }
+    return buildPlaceInfo(pin as { lat: number; lng: number; label: string }, stationId);
+  } catch {
+    return null;
+  }
+}
+
 export function HomePage() {
   const loaded = useScheduleData();
   const { getData } = useVisitorData({ immediate: true });
@@ -96,6 +116,33 @@ export function HomePage() {
     const pin = parsePlaceParam(searchParams, "dP");
     return pin ? buildPlaceInfo(pin, initialTo) : null;
   });
+
+  // Merge persisted selections (localStorage) for anything the URL didn't
+  // provide — covers reloads and links shared without place params.
+  // (Runs on mount only; URL always wins.)
+  useEffect(() => {
+    try {
+      if (!searchParams.get("from")) {
+        const saved = localStorage.getItem("route.from");
+        if (saved) setOriginId(saved);
+      }
+      if (!searchParams.get("to")) {
+        const saved = localStorage.getItem("route.to");
+        if (saved) setDestId(saved);
+      }
+      if (!parsePlaceParam(searchParams, "oP")) {
+        const info = readStoredPlaceInfo("route.originPlace", searchParams.get("from") ?? localStorage.getItem("route.from"));
+        if (info) setOriginPlaceInfo(info);
+      }
+      if (!parsePlaceParam(searchParams, "dP")) {
+        const info = readStoredPlaceInfo("route.destPlace", searchParams.get("to") ?? localStorage.getItem("route.to"));
+        if (info) setDestPlaceInfo(info);
+      }
+    } catch {
+      // Corrupted storage — ignore and start fresh.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Sync route + place state to MetroContext so nav can build dynamic map link
   useEffect(() => {
@@ -208,6 +255,12 @@ export function HomePage() {
           onPlaceSelect={handlePlaceSelect}
           clearOriginPlace={clearOriginPlace}
           clearDestPlace={clearDestPlace}
+          onGpsOrigin={(info, onlyIfSameCoords) =>
+            setOriginPlaceInfo((prev) => {
+              if (!onlyIfSameCoords) return info;
+              return prev && prev.lat === info.lat && prev.lng === info.lng ? info : prev;
+            })
+          }
           swap={swap}
         />
       </div>
@@ -256,6 +309,7 @@ function RouteView({
   onPlaceSelect,
   clearOriginPlace,
   clearDestPlace,
+  onGpsOrigin,
   swap,
 }: {
   lang: Lang;
@@ -271,26 +325,55 @@ function RouteView({
   onPlaceSelect: (place: { lat: number; lng: number; name: string }, asOrigin: boolean) => void;
   clearOriginPlace: () => void;
   clearDestPlace: () => void;
+  onGpsOrigin: (info: PlaceInfo, onlyIfSameCoords?: boolean) => void;
   swap: () => void;
 }) {
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
   const [locating, setLocating] = useState(false);
+  const gpsLangRef = useRef(lang);
+  gpsLangRef.current = lang;
 
   function locateOrigin() {
     if (!navigator.geolocation) return;
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const nearest = nearestStations(
-          pos.coords.latitude,
-          pos.coords.longitude,
-          { limit: 1 },
-        );
-        if (nearest.length > 0) setOriginId(nearest[0].station.id);
-        clearOriginPlace();
+        const { latitude, longitude } = pos.coords;
+        const nearest = nearestStations(latitude, longitude, { limit: 1 });
+        if (nearest.length === 0) {
+          setLocating(false);
+          return;
+        }
+        const station = nearest[0].station;
+        // GPS origin becomes a place-style card (like Iran Mall) so it
+        // sticks across tabs/reloads via the same place persistence.
+        onGpsOrigin({
+          placeName: t.yourLocation,
+          stationId: station.id,
+          distanceKm: haversineKm(latitude, longitude, station.location.lat, station.location.lng),
+          lat: latitude,
+          lng: longitude,
+        });
+        setOriginId(station.id);
         setLocating(false);
+        // Upgrade the generic label to the neighborhood name when available.
+        // Guarded by coords so a newer selection is never overwritten.
+        const requestLang = gpsLangRef.current;
+        reverseGeocode(latitude, longitude, requestLang).then((name) => {
+          if (!name) return;
+          onGpsOrigin(
+            {
+              placeName: name,
+              stationId: station.id,
+              distanceKm: haversineKm(latitude, longitude, station.location.lat, station.location.lng),
+              lat: latitude,
+              lng: longitude,
+            },
+            true,
+          );
+        });
       },
       () => setLocating(false),
       { enableHighAccuracy: true, timeout: 10000 },
@@ -455,39 +538,29 @@ function PlaceCard({
   const station = STATION_MAP.get(info.stationId);
   const stationName = station ? (isFa ? station.name.fa : station.name.en) : info.stationId;
   const walkMin = estimateWalkMinutes(info.distanceKm);
-  const tooFar = isTooFarToWalk(info.distanceKm);
 
+  // Warnings live on the /map page only — this card stays a single line.
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:px-4 md:py-2.5 md:text-base">
-      <div className="flex items-center gap-2 md:gap-3">
-        <Building2 className="size-4 shrink-0 text-primary md:size-5" />
-        <span className="min-w-0 flex-1 truncate">
-          <span className="font-medium">{info.placeName}</span>
-          <span className="mx-1.5 text-muted-foreground">→</span>
-          <span>
-            {t.nearestStation}: <span className="font-medium">{stationName}</span>
-          </span>
-          <span className="ml-1.5 text-muted-foreground">
-            ({formatDistance(info.distanceKm, lang)} · ~{formatWalkTime(walkMin, lang)} {t.walkTime})
-          </span>
+    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
+      <Building2 className="size-4 shrink-0 text-primary md:size-5" />
+      <span className="min-w-0 flex-1 truncate">
+        <span className="font-medium">{info.placeName}</span>
+        <span className="mx-1.5 text-muted-foreground">→</span>
+        <span>
+          {t.nearestStation}: <span className="font-medium">{stationName}</span>
         </span>
-        <button
-          type="button"
-          onClick={onClear}
-          aria-label={t.clear}
-          className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <X className="size-3.5" />
-        </button>
-      </div>
-      {tooFar && (
-        <div className="flex items-center gap-2 rounded-md bg-amber-500/10 px-2.5 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 md:text-sm">
-          <AlertTriangle className="size-4 shrink-0" />
-          <span>
-            {t.tooFarFromStation} (~{formatWalkTime(walkMin, lang)}). {t.tooFarHint}
-          </span>
-        </div>
-      )}
+        <span className="ml-1.5 text-muted-foreground">
+          ({formatDistance(info.distanceKm, lang)} · ~{formatWalkTime(walkMin, lang)} {t.walkTime})
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label={t.clear}
+        className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <X className="size-3.5" />
+      </button>
     </div>
   );
 }

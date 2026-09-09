@@ -14,6 +14,7 @@ import {
   formatWalkTime,
   isTooFarToWalk,
 } from "@/lib/geo";
+import { shortPlaceLabel } from "@/lib/geocoding";
 import { StationDetail } from "@/components/station-detail";
 import { cn } from "@/lib/utils";
 
@@ -77,10 +78,10 @@ export function MapPage() {
   const placeMarkers = useMemo(() => {
     const markers: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest"; stationId: string | null }> = [];
     if (initialParams.originPin) {
-      markers.push({ ...initialParams.originPin, role: "origin", stationId: initialParams.from });
+      markers.push({ ...initialParams.originPin, label: shortPlaceLabel(initialParams.originPin.label), role: "origin", stationId: initialParams.from });
     }
     if (initialParams.destPlace) {
-      markers.push({ ...initialParams.destPlace, role: "dest", stationId: initialParams.to });
+      markers.push({ ...initialParams.destPlace, label: shortPlaceLabel(initialParams.destPlace.label), role: "dest", stationId: initialParams.to });
     }
     return markers;
   }, [initialParams]);
@@ -156,7 +157,7 @@ export function MapPage() {
                 </p>
                 {p.tooFar && (
                   <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
-                    {t.tooFarFromStation}. {t.tooFarHint}
+                    {t.tooFarFromStation} (~{p.walkText})
                   </p>
                 )}
               </div>

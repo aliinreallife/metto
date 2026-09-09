@@ -13,7 +13,7 @@ import {
 import { InstallButton } from "@/components/pwa";
 import { useMetro } from "./providers";
 import { STRINGS } from "@/lib/i18n";
-import { buildMapHref } from "@/lib/geo";
+import { buildTabHref } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -31,16 +31,14 @@ export function AppNav() {
   const currentPath = pathname === "/" ? "/" : pathname;
 
   function getHref(base: string) {
-    if (base === "/map") {
-      return buildMapHref({
-        from: originId,
-        to: destId,
-        originPlace,
-        destPlace,
-      });
-    }
-    if (originId && destId) return `${base}?from=${originId}&to=${destId}`;
-    return base;
+    // Preserve each side independently plus place pins on every tab, so
+    // tab switches (and reloads) never drop selections or landmarks.
+    return buildTabHref(base, {
+      from: originId,
+      to: destId,
+      originPlace,
+      destPlace,
+    });
   }
 
   function toggleLang() {
