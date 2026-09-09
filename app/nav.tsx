@@ -101,7 +101,7 @@ export function AppNav() {
       </header>
 
       {/* mobile bottom tab bar - fixed to viewport bottom */}
-      <nav className="fixed bottom-0 inset-x-0 z-20 grid grid-cols-4 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-[1000] grid grid-cols-4 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
         {NAV_ITEMS.map((item) => {
           const href = getHref(item.href);
           const active = currentPath === item.href;

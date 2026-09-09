@@ -227,7 +227,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex size-full flex-col bg-background text-foreground">
+    <div className="flex size-full flex-col bg-background pb-14 text-foreground md:pb-0">
       <div className="relative min-h-0 flex-1">
         <RouteView
           lang={lang}
