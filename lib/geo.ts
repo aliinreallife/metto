@@ -55,6 +55,64 @@ export function formatDistance(km: number, lang: Lang): string {
   return lang === "fa" ? `${persianDigits(v, lang)} کیلومتر` : `${v} km`;
 }
 
+// ---- Walking estimates for searched places (e.g. Iran Mall) ----
+
+// Average urban walking speed. 5 km/h ≈ 12 min/km — a common conservative
+// default for "guess the walk time" without routing data.
+export const WALK_KM_PER_H = 5;
+
+// Beyond this straight-line distance we warn that the place is too far to
+// comfortably walk from its nearest station.
+export const TOO_FAR_WALK_KM = 1.5;
+
+export function estimateWalkMinutes(distanceKm: number): number {
+  if (!Number.isFinite(distanceKm) || distanceKm <= 0) return 0;
+  return (distanceKm / WALK_KM_PER_H) * 60;
+}
+
+export function isTooFarToWalk(
+  distanceKm: number,
+  thresholdKm: number = TOO_FAR_WALK_KM,
+): boolean {
+  return Number.isFinite(distanceKm) && distanceKm > thresholdKm;
+}
+
+export function formatWalkTime(minutes: number, lang: Lang): string {
+  const rounded = Math.round(minutes);
+  if (rounded < 1) return lang === "fa" ? "کمتر از ۱ دقیقه" : "<1 min";
+  return lang === "fa"
+    ? `${persianDigits(rounded, lang)} دقیقه`
+    : `${rounded} min`;
+}
+
+export type PlacePinParam = { lat: number; lng: number; label: string } | null;
+
+// Shareable /map URL that preserves the route plus searched-place pins
+// (e.g. Iran Mall). Param names must match parsePlaceParam in home-page
+// and the parser in app/map/client.tsx.
+export function buildMapHref(args: {
+  from?: string | null;
+  to?: string | null;
+  originPlace?: PlacePinParam;
+  destPlace?: PlacePinParam;
+}): string {
+  const params = new URLSearchParams();
+  if (args.from) params.set("from", args.from);
+  if (args.to) params.set("to", args.to);
+  if (args.originPlace) {
+    params.set("oPlat", String(args.originPlace.lat));
+    params.set("oPlng", String(args.originPlace.lng));
+    params.set("oPlabel", args.originPlace.label);
+  }
+  if (args.destPlace) {
+    params.set("dPlat", String(args.destPlace.lat));
+    params.set("dPlng", String(args.destPlace.lng));
+    params.set("dPlabel", args.destPlace.label);
+  }
+  const qs = params.toString();
+  return qs ? `/map?${qs}` : "/map";
+}
+
 // geo: URI — on Android this pops up the native app-chooser so the user can
 // pick any installed app that handles locations: Google Maps, Waze, Snapp,
 // Tapsi, etc. On iOS it opens Apple Maps. On desktop most browsers ignore it.

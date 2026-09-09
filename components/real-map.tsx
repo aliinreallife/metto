@@ -34,7 +34,7 @@ type Props = {
   initialCenter?: [number, number]
   initialZoom?: number
   onViewChange?: (center: [number, number], zoom: number) => void
-  placeMarkers?: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest" }>
+  placeMarkers?: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest"; stationId?: string | null }>
 }
 
 const TEHRAN_CENTER: [number, number] = [35.7, 51.38]
@@ -484,16 +484,17 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (gpsMarkerRef.current) gpsMarkerRef.current.addTo(layer)
   }, [edges, route, routeStations, routeEdgeKeys, originId, destId, selectedId, isFa, onSelect])
 
-  // Fit to the route bounds when it changes.
+  // Fit to the route bounds when it changes (no place pins: keep old behavior).
   useEffect(() => {
     const map = mapRef.current
     if (!map || !route || route.path.length === 0) return
+    if (placeMarkers && placeMarkers.length > 0) return
     const pts = route.path
       .map((id) => STATION_MAP.get(id))
       .filter(Boolean)
       .map((s) => [s!.location.lat, s!.location.lng] as [number, number])
     if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 14 })
-  }, [route])
+  }, [route, placeMarkers])
 
   // Render place markers when placeMarkers prop changes.
   useEffect(() => {
@@ -531,6 +532,33 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const marker = L.marker([pm.lat, pm.lng], { icon }).addTo(layer)
       marker.bindTooltip(pm.label, { direction: "top", className: "station-label" })
       pts.push([pm.lat, pm.lng])
+
+      // Dashed "walk" connector from the searched place to its station.
+      const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
+      if (st) {
+        L.polyline(
+          [
+            [pm.lat, pm.lng],
+            [st.location.lat, st.location.lng],
+          ],
+          {
+            color: pm.role === "origin" ? "#22c55e" : "#ef4444",
+            weight: 3,
+            opacity: 0.9,
+            dashArray: "6 6",
+          },
+        ).addTo(layer)
+        pts.push([st.location.lat, st.location.lng])
+      }
+    }
+
+    // Include the metro route so the place stays in context (e.g. Iran Mall
+    // far from its station still shows the line).
+    if (route && route.path.length > 0) {
+      for (const id of route.path) {
+        const st = STATION_MAP.get(id)
+        if (st) pts.push([st.location.lat, st.location.lng])
+      }
     }
 
     if (pts.length === 1) {
@@ -538,7 +566,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     } else if (pts.length > 1) {
       map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
     }
-  }, [placeMarkers])
+  }, [placeMarkers, route])
 
   function locateMe() {
     if (!mapRef.current || !navigator.geolocation) return

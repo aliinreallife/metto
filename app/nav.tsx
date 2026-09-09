@@ -13,6 +13,7 @@ import {
 import { InstallButton } from "@/components/pwa";
 import { useMetro } from "./providers";
 import { STRINGS } from "@/lib/i18n";
+import { buildMapHref } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -23,13 +24,21 @@ const NAV_ITEMS = [
 ] as const;
 
 export function AppNav() {
-  const { lang, setLang, originId, destId } = useMetro();
+  const { lang, setLang, originId, destId, originPlace, destPlace } = useMetro();
   const pathname = usePathname();
   const t = STRINGS[lang];
 
   const currentPath = pathname === "/" ? "/" : pathname;
 
   function getHref(base: string) {
+    if (base === "/map") {
+      return buildMapHref({
+        from: originId,
+        to: destId,
+        originPlace,
+        destPlace,
+      });
+    }
     if (originId && destId) return `${base}?from=${originId}&to=${destId}`;
     return base;
   }

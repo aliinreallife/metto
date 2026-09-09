@@ -4,6 +4,12 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import type { Lang } from "@/lib/i18n";
 import { loadScheduleData } from "@/lib/schedule-utils";
 
+type PlacePin = {
+  lat: number;
+  lng: number;
+  label: string;
+};
+
 type MetroContextValue = {
   lang: Lang;
   setLang: (l: Lang) => void;
@@ -13,6 +19,10 @@ type MetroContextValue = {
   setOriginId: (id: string | null) => void;
   destId: string | null;
   setDestId: (id: string | null) => void;
+  originPlace: PlacePin | null;
+  setOriginPlace: (p: PlacePin | null) => void;
+  destPlace: PlacePin | null;
+  setDestPlace: (p: PlacePin | null) => void;
 };
 
 const MetroContext = createContext<MetroContextValue | null>(null);
@@ -28,6 +38,8 @@ export function MetroProvider({ children }: { children: ReactNode }) {
   const [mapMode, setMapModeState] = useState<"satellite" | "minimalist">("minimalist");
   const [originId, setOriginId] = useState<string | null>(null);
   const [destId, setDestId] = useState<string | null>(null);
+  const [originPlace, setOriginPlace] = useState<PlacePin | null>(null);
+  const [destPlace, setDestPlace] = useState<PlacePin | null>(null);
 
   // Hydrate from localStorage + preload schedule data
   useEffect(() => {
@@ -50,7 +62,7 @@ export function MetroProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <MetroContext.Provider value={{ lang, setLang, mapMode, setMapMode, originId, setOriginId, destId, setDestId }}>
+    <MetroContext.Provider value={{ lang, setLang, mapMode, setMapMode, originId, setOriginId, destId, setDestId, originPlace, setOriginPlace, destPlace, setDestPlace }}>
       {children}
     </MetroContext.Provider>
   );

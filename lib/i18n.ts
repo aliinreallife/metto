@@ -71,6 +71,10 @@ export const STRINGS = {
     places: "Places",
     nearestStation: "Nearest station",
     walkDistance: "walk",
+    walkTime: "walk",
+    tooFarFromStation: "Too far to walk",
+    tooFarHint: "Consider a taxi (Snapp/Tapsi) for this part",
+    viewOnMap: "View on map",
     noPlacesFound: "No places found",
     searchingPlaces: "Searching places…",
 
@@ -168,6 +172,10 @@ export const STRINGS = {
     places: "مکان‌ها",
     nearestStation: "نزدیک‌ترین ایستگاه",
     walkDistance: "پیاده",
+    walkTime: "پیاده‌روی",
+    tooFarFromStation: "برای پیاده‌روی دور است",
+    tooFarHint: "برای این بخش تاکسی (اسنپ/تپسی) بگیرید",
+    viewOnMap: "نمایش روی نقشه",
     noPlacesFound: "مکانی یافت نشد",
     searchingPlaces: "در حال جستجوی مکان‌ها…",
 
