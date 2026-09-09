@@ -131,7 +131,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholder}
               dir="auto"
-              className="w-full rounded-md bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground md:px-4 md:py-2.5 md:text-base"
+              className="ios-no-zoom-input w-full rounded-md bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground md:px-4 md:py-2.5 md:text-base"
             />
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">
