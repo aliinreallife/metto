@@ -14,3 +14,9 @@ node_modules
 .next/
 .DS_Store
 .vercel
+
+# TypeScript incremental build info (local only)
+tsconfig.tsbuildinfo
+
+# Agent working notes (local only)
+.mimocode/
