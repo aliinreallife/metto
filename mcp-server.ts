@@ -264,10 +264,10 @@ server.registerResource("lines", "metro://lines", {
 
 server.registerPrompt("plan-route", {
   description: "Plan a metro route between two stations",
-  arguments: [
-    { name: "origin", description: "Starting station name", required: true },
-    { name: "destination", description: "Ending station name", required: true },
-  ],
+  argsSchema: {
+    origin: z.string().describe("Starting station name"),
+    destination: z.string().describe("Ending station name"),
+  },
 }, async ({ origin, destination }) => ({
   messages: [{
     role: "user" as const,
@@ -277,9 +277,9 @@ server.registerPrompt("plan-route", {
 
 server.registerPrompt("station-info", {
   description: "Get info about a metro station",
-  arguments: [
-    { name: "station", description: "Station name", required: true },
-  ],
+  argsSchema: {
+    station: z.string().describe("Station name"),
+  },
 }, async ({ station }) => ({
   messages: [{
     role: "user" as const,

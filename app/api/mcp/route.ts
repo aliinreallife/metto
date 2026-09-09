@@ -260,10 +260,10 @@ function createServer() {
 
   server.registerPrompt("plan-route", {
     description: "Plan a metro route between two stations",
-    arguments: [
-      { name: "origin", description: "Starting station name (English or Farsi)", required: true },
-      { name: "destination", description: "Ending station name (English or Farsi)", required: true },
-    ],
+    argsSchema: {
+      origin: z.string().describe("Starting station name (English or Farsi)"),
+      destination: z.string().describe("Ending station name (English or Farsi)"),
+    },
   }, async ({ origin, destination }) => ({
     messages: [{
       role: "user" as const,
@@ -273,9 +273,9 @@ function createServer() {
 
   server.registerPrompt("station-info", {
     description: "Get detailed information about a metro station",
-    arguments: [
-      { name: "station", description: "Station name (English or Farsi)", required: true },
-    ],
+    argsSchema: {
+      station: z.string().describe("Station name (English or Farsi)"),
+    },
   }, async ({ station }) => ({
     messages: [{
       role: "user" as const,
@@ -285,10 +285,10 @@ function createServer() {
 
   server.registerPrompt("find-nearest", {
     description: "Find the nearest metro station to a location",
-    arguments: [
-      { name: "latitude", description: "Latitude coordinate", required: true },
-      { name: "longitude", description: "Longitude coordinate", required: true },
-    ],
+    argsSchema: {
+      latitude: z.string().describe("Latitude coordinate"),
+      longitude: z.string().describe("Longitude coordinate"),
+    },
   }, async ({ latitude, longitude }) => ({
     messages: [{
       role: "user" as const,

@@ -49,9 +49,19 @@ export function ensureServerScheduleData(
   if (scheduleLoadPromise) return scheduleLoadPromise;
   scheduleLoadPromise = (async () => {
     try {
-      const filePath =
-        scheduleFilePath ?? path.join(process.cwd(), "public", "schedule-data.json");
-      const raw = await readFile(filePath, "utf8");
+      let raw: string;
+      if (scheduleFilePath !== undefined) {
+        // Test-only seam (production callers never pass a custom path).
+        // Marked turbopackIgnore so NFT tracing only sees the static
+        // production path below; the file is still bundled via
+        // outputFileTracingIncludes in next.config.mjs.
+        raw = await readFile(/* turbopackIgnore: true */ scheduleFilePath, "utf8");
+      } else {
+        raw = await readFile(
+          path.join(process.cwd(), "public", "schedule-data.json"),
+          "utf8",
+        );
+      }
       const data: unknown = JSON.parse(raw);
       if (!Array.isArray(data)) throw new Error("schedule-data.json is not an array");
       setServerScheduleData(data as LineScheduleData[]);
