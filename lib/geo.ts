@@ -35,7 +35,7 @@ export function nearestStations(
   const all = getAllStations();
   const list =
     required.length > 0
-      ? all.filter((s) => required.every((k) => s.amenities[k]))
+      ? all.filter((s) => required.every((k) => s.amenities[k] === true))
       : all;
   return list
     .map((s) => ({

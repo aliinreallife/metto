@@ -30,7 +30,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
   const underConstruction = station.status !== "operational";
 
   const activeAmenities = Object.entries(station.amenities).filter(
-    ([, v]) => v,
+    ([, v]) => v === true,
   );
 
   const departures = useMemo(() => {

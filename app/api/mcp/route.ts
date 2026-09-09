@@ -144,7 +144,7 @@ function createServer() {
       const available = Array.from(STATION_MAP.keys()).slice(0, 30);
       return { content: [{ type: "text" as const, text: `Station '${id}' not found. Available: ${available.join(", ")}` }] };
     }
-    const amenityList = Object.entries(station.amenities).filter(([, v]) => v).map(([k]) => k);
+    const amenityList = Object.entries(station.amenities).filter(([, v]) => v === true).map(([k]) => k);
     return {
       content: [{
         type: "text" as const,
