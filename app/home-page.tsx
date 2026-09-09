@@ -6,9 +6,6 @@ import {
   ArrowUpDown,
   Building2,
   Loader2,
-  MapPin,
-  Share2,
-  Check,
   ExternalLink,
   Database,
   LocateFixed,
@@ -17,11 +14,12 @@ import {
 import { useVisitorData } from "@fingerprint/react";
 import { StationCombobox } from "@/components/station-combobox";
 import { RoutePanel } from "@/components/route-panel";
+import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useScheduleData } from "@/lib/use-schedule-data";
-import { geoUrl, nearestStations, formatDistance, haversineKm } from "@/lib/geo";
+import { nearestStations, formatDistance, haversineKm } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
 
 export function HomePage() {
@@ -213,7 +211,6 @@ function RouteView({
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
   const [locating, setLocating] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   function locateOrigin() {
     if (!navigator.geolocation) return;
@@ -350,49 +347,7 @@ function RouteView({
             {originId && (() => {
               const origin = STATION_MAP.get(originId);
               if (!origin) return null;
-              return (
-                <div className="grid grid-cols-4 gap-2 md:gap-3">
-                  <a
-                    href={geoUrl(
-                      { lat: origin.location.lat, lng: origin.location.lng },
-                      isFa ? origin.name.fa : origin.name.en,
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="col-span-1 flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-2 py-3 text-xs font-medium transition-colors hover:bg-accent md:gap-2 md:py-3.5 md:text-sm"
-                  >
-                    <MapPin className="size-3.5 shrink-0 md:size-4" />
-                    <span className="truncate">{isFa ? "بریم به ایستگاه مبدا" : "Go to start"}</span>
-                    <span className="sr-only"> ({t.opensInNewTab})</span>
-                  </a>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(window.location.href);
-                      } catch {
-                        if (navigator.share) await navigator.share({ url: window.location.href });
-                        return;
-                      }
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2500);
-                    }}
-                    className="col-span-3 flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition-colors hover:bg-accent md:gap-3 md:py-3.5 md:text-base"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="size-4 text-green-500 md:size-5" />
-                        <span className="text-green-600">{t.copied}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="size-4 md:size-5" />
-                        <span>{t.shareRoute}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              );
+              return <RouteActions origin={origin} lang={lang} />;
             })()}
           </>
         ) : !selected ? (
