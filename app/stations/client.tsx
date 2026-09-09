@@ -18,7 +18,7 @@ export function StationsPage() {
 
   return (
     <div className="flex size-full flex-col bg-background text-foreground">
-      <div className="relative min-h-0 flex-1 overflow-y-auto md:overflow-visible">
+      <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
         <StationsTab
           lang={lang}
           onSetOrigin={(id) => router.push(`/?from=${id}`)}
