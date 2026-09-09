@@ -91,7 +91,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-start transition-colors hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring md:px-4 md:py-3 md:text-base"
+        className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-start transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:px-4 md:py-3 md:text-base"
       >
         <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden />
         <span className="min-w-0 flex-1 truncate">
@@ -108,7 +108,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
           <span
             role="button"
             tabIndex={0}
-            aria-label="Clear"
+            aria-label={t.clear}
             onClick={(e) => {
               e.stopPropagation()
               onChange(null)
@@ -131,7 +131,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholder}
               dir="auto"
-              className="ios-no-zoom-input w-full rounded-md bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground md:px-4 md:py-2.5 md:text-base"
+              className="ios-no-zoom-input w-full rounded-md bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background md:px-4 md:py-2.5 md:text-base"
             />
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">

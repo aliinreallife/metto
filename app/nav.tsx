@@ -80,8 +80,12 @@ export function AppNav() {
           <button
             type="button"
             onClick={toggleLang}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-2 text-sm font-medium transition-colors hover:bg-accent md:px-3 md:py-2.5 md:text-base"
-            aria-label="Toggle language"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-2 text-sm font-medium transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:px-3 md:py-2.5 md:text-base"
+            aria-label={
+              lang === "en"
+                ? "فارسی — Toggle language"
+                : "EN — تغییر زبان"
+            }
           >
             <Globe className="size-4 md:size-5" />
             {lang === "en" ? "فارسی" : "EN"}

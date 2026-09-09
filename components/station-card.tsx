@@ -164,12 +164,13 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
           )}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={t.directions}
+          aria-label={`${t.directions} — ${t.opensInNewTab}`}
           title={t.directions}
           className="flex flex-1 items-center justify-center gap-1.5 border-x border-border px-2 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <MapPin className="size-3.5" />
           {t.directions}
+          <span className="sr-only"> ({t.opensInNewTab})</span>
         </a>
         <button
           type="button"

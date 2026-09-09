@@ -158,6 +158,7 @@ export function HomePage() {
           <ExternalLink className="size-3 text-primary" />
           <span className="text-muted-foreground">{t.builtBy}</span>
           <span className="font-semibold text-foreground">aliinreallife</span>
+          <span className="sr-only"> ({t.opensInNewTab})</span>
         </a>
         <a
           href="https://github.com/mostafa-kheibary/tehran-metro-data"
@@ -170,6 +171,7 @@ export function HomePage() {
           <span className="font-semibold text-foreground">
             mostafa-kheibary
           </span>
+          <span className="sr-only"> ({t.opensInNewTab})</span>
         </a>
       </div>
     </div>
@@ -256,7 +258,7 @@ function RouteView({
               type="button"
               onClick={locateOrigin}
               disabled={locating}
-              aria-label="Use my location"
+              aria-label={t.useMyLocation}
               className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50"
             >
               {locating ? (
@@ -361,6 +363,7 @@ function RouteView({
                   >
                     <MapPin className="size-3.5 shrink-0 md:size-4" />
                     <span className="truncate">{isFa ? "بریم به ایستگاه مبدا" : "Go to start"}</span>
+                    <span className="sr-only"> ({t.opensInNewTab})</span>
                   </a>
                   <button
                     type="button"
