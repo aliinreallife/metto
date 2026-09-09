@@ -41,10 +41,9 @@ the ODbL-1.0 adapted database described above, while the surrounding
 functions are original Metto logic covered by the root `AGPL-3.0-only`
 license. See `NOTICE.md` for the overall structure.
 
-The generator programs themselves (`scripts/generate-stations.ts`,
-`scripts/fetch-schedules.ts`) are original Metto software under
-`AGPL-3.0-only`; only their database output/input is covered by this
-document.
+The generator program itself (`scripts/generate-stations.ts`) is
+original Metto software under `AGPL-3.0-only`; only its database
+output is covered by this document.
 
 ## Upstream license note
 

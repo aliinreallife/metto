@@ -62,12 +62,6 @@ See `lib/metro/NOTES.md` for topology decisions (Line 4 west continuity, Line 5 
 
 ### Schedules (`public/schedule-data.json`, ~5 MB)
 
-Generated from upstream metro data:
-
-```bash
-pnpm dlx tsx scripts/fetch-schedules.ts
-```
-
 Loaded lazily client-side (`lib/use-schedule-data.ts`, `lib/schedule-utils.ts`); route ETAs consume it via `findTripDetailed`.
 
 ### Holidays (`lib/holidays/`)
@@ -113,9 +107,9 @@ lib/
   holidays/     # jalali, schedule-day, store (Redis), sync, timestamp.ir client
   geo.ts / geocoding.ts / i18n.ts
 public/
-  schedule-data.json  # generated timetables
+  schedule-data.json  # timetables
   openapi.json / llms.txt
-scripts/fetch-schedules.ts
+scripts/generate-stations.ts
 ```
 
 ## Contributing
