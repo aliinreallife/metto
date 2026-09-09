@@ -120,8 +120,8 @@ PRs welcome — especially timetable corrections, station coordinates/amenities,
 
 This is a multi-license repository, not a single-license one:
 
-* **Metto original code** is licensed under the GNU Affero General
-  Public License version 3 only (`AGPL-3.0-only`) — see `LICENSE`.
+* **Metto original code and data** is licensed under the GNU Affero
+  General Public License version 3 only (`AGPL-3.0-only`) — see `LICENSE`.
 * **Tehran Metro station/network data** derived from
   [tehran-metro-data](https://github.com/mostafa-kheibary/tehran-metro-data)
   is licensed separately under the Open Database License v1.0

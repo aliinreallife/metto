@@ -3,7 +3,7 @@
 This is a multi-license repository. Different contents are covered by
 different licenses:
 
-* Metto original source code → `AGPL-3.0-only` (see `LICENSE`).
+* Metto original source code and data → `AGPL-3.0-only` (see `LICENSE`).
 * Tehran Metro station/network database derived from
   `mostafa-kheibary/tehran-metro-data` → `ODbL-1.0`
   (see `DATA_LICENSE.md` and `LICENSES/ODbL-1.0.txt`).
@@ -11,10 +11,10 @@ different licenses:
   (see below). The AGPL covering Metto's original code does not
   override those licenses.
 
-## Metto source code
+## Metto source code and data
 
-Original Metto source code is licensed under the GNU Affero General
-Public License version 3 only (`AGPL-3.0-only`).
+Original Metto source code and data is licensed under the GNU Affero
+General Public License version 3 only (`AGPL-3.0-only`).
 
 See `LICENSE`.
 
@@ -64,12 +64,20 @@ respective licenses and terms, including but not limited to:
 
 ## Deployments of modified versions
 
-The footer "Source Code" link in the official deployment points to
-<https://github.com/aliinreallife/metto>. Anyone deploying a modified
-version must update the source link (or equivalent source offer) so it
-points to the Corresponding Source of the modified version they are
-actually running. Linking to the original Metto repository does not
-satisfy the AGPL for a modified fork.
+The deployed UI currently carries no in-UI source-code or database
+license notices (a deliberate choice; see the gap noted below).
+Anyone deploying a modified version must still provide a prominent
+offer of the Corresponding Source of the version they are actually
+running, as the AGPL requires for network interaction — linking to
+the original Metto repository
+(<https://github.com/aliinreallife/metto>) does not satisfy the AGPL
+for a modified fork.
+
+Note: with no prominent in-UI source offer or ODbL produced-work
+notice, the official deployment relies on this repository's docs
+(`LICENSE`, `DATA_LICENSE.md`, this notice) for license visibility.
+An About/credits route is the natural home if in-UI notices are
+wanted in the future.
 
 ## Branding
 

@@ -67,7 +67,9 @@ repository (`data/tehran-metro-stations.json` and
 
 ## Not covered by this document
 
-* Metto's original source code: `AGPL-3.0-only`, see `LICENSE` and
-  `NOTICE.md`.
+* Metto's original source code and data: `AGPL-3.0-only` by default,
+  see `LICENSE` and `NOTICE.md`. (Strict JSON files cannot carry
+  license comments; the root `LICENSE` together with these notices is
+  the marker.)
 * Third-party software, fonts, icons, mapping services, and other
   materials: their respective licenses/terms — see `NOTICE.md`.
