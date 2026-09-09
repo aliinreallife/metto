@@ -92,7 +92,7 @@ export const STRINGS = {
     shareRoute: "Share route",
     shareStation: "Share station",
     copied: "Link copied!",
-    copyLink: "Copy link",
+    copyLink: "Copy route link",
     copiedShort: "Copied!",
     copyFailed: "Copy failed",
     directionsToStart: "Directions to start",
