@@ -64,3 +64,11 @@ export function geoUrl(
 ): string {
   return `geo:${dest.lat},${dest.lng}?q=${dest.lat},${dest.lng}(${encodeURIComponent(label)})`;
 }
+
+// HTTPS Google Maps directions URL — safe desktop/laptop fallback.
+// Opens a normal browser directions page in a new tab.
+export function googleMapsDirectionsUrl(dest: { lat: number; lng: number }): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    `${dest.lat},${dest.lng}`,
+  )}`;
+}

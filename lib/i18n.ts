@@ -92,6 +92,10 @@ export const STRINGS = {
     shareRoute: "Share route",
     shareStation: "Share station",
     copied: "Link copied!",
+    copyLink: "Copy link",
+    copiedShort: "Copied!",
+    copyFailed: "Copy failed",
+    directionsToStart: "Directions to start",
     opensInNewTab: "opens in new tab",
   },
   fa: {
@@ -185,6 +189,10 @@ export const STRINGS = {
     shareRoute: "اشتراک‌گذاری مسیر",
     shareStation: "اشتراک‌گذاری ایستگاه",
     copied: "لینک کپی شد!",
+    copyLink: "کپی لینک",
+    copiedShort: "کپی شد!",
+    copyFailed: "کپی نشد",
+    directionsToStart: "مسیریابی تا مبدأ",
     opensInNewTab: "در برگه جدید باز می‌شود",
   },
 } as const;
