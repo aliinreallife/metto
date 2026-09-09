@@ -261,15 +261,16 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       })
     }
 
-    // Landmark labels (searched-place badges, GPS dot) go through the same
+    // Landmark labels (searched places, GPS dot) go through the same
     // engine so they look and collide like station labels — always forced.
-    // The anchor point sits just above the badge art (30px badges centered
-    // on the coordinate; the GPS dot is small).
+    // Places have no marker art, so their label anchors right at the
+    // coordinate; the GPS label sits just above its dot.
     const extraByKey = new Map(extraLabelStateRef.current.map((e) => [e.key, e]))
     for (const extra of extraLabelStateRef.current) {
       const p = map.latLngToContainerPoint([extra.lat, extra.lng])
-      const point = { x: p.x, y: p.y - (extra.key === "gps" ? 12 : 21) }
-      dots.push({ id: extra.key, point, radius: 4 })
+      const isGps = extra.key === "gps"
+      const point = { x: p.x, y: p.y - (isGps ? 12 : 0) }
+      dots.push({ id: extra.key, point, radius: isGps ? 4 : 2 })
       const { w, h } = measureStationLabel(container, extra.text, currentLang)
       candidates.push({
         id: extra.key,
@@ -567,31 +568,10 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     if (!placeMarkers || placeMarkers.length === 0) return
 
-    // Journey set: green walking-figure badge for origin, red flag badge
-    // for destination. Flat circles with a white ring — no teardrop shape.
-    // White ring keeps them legible on satellite and dark basemaps.
-    // Geometry is 30x30 centered on the coordinate.
-    const PLACE_STYLE = {
-      origin: {
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#22c55e" stroke="#ffffff" stroke-width="2.5"/><circle cx="15.5" cy="10" r="2.2" fill="#ffffff"/><g stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M15.5 13.2V20"/><path d="M15.5 14.7L11 17.7M15.5 14.7L20 18.2"/><path d="M15.5 20L12.5 26M15.5 20l3 4.4 2 2.2"/></g></svg>`,
-      },
-      dest: {
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#ef4444" stroke="#ffffff" stroke-width="2.5"/><path d="M12.5 8.5V23" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/><path d="M12.5 9.5c3.5-1.6 5 1.6 8.5 0v7c-3.5 1.6-5-1.6-8.5 0z" fill="#ffffff"/></svg>`,
-      },
-    } as const
-
+    // No pin markers: places are marked by their engine label plus the
+    // dashed walk connector below. GPS keeps its blue dot.
     const pts: [number, number][] = []
     for (const pm of placeMarkers) {
-      const s = PLACE_STYLE[pm.role]
-      const icon = L.divIcon({
-        html: s.svg,
-        className: "",
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      })
-      L.marker([pm.lat, pm.lng], { icon }).addTo(layer)
-      // No hover tooltip: the always-visible short engine label below is
-      // the single label for the pin.
       pts.push([pm.lat, pm.lng])
 
       // Dashed "walk" connector from the searched place to its station.
