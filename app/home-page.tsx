@@ -538,7 +538,7 @@ function PlaceCard({
           {t.nearestStation}: <span className="font-medium">{stationName}</span>
         </span>
         <span className="ml-1.5 text-muted-foreground">
-          ({formatDistance(info.distanceKm, lang)} · ~{formatWalkTime(walkMin, lang)} {t.walkTime})
+          {" "}({formatDistance(info.distanceKm, lang)} · ~{formatWalkTime(walkMin, lang)} {t.walkTime})
         </span>
       </span>
       <button

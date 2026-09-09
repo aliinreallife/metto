@@ -20,14 +20,7 @@ import {
 } from "@/lib/map/label-placement";
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
-import { STRINGS, type Lang } from "@/lib/i18n"
-import {
-  haversineKm,
-  formatDistance,
-  estimateWalkMinutes,
-  formatWalkTime,
-  nearestStations,
-} from "@/lib/geo"
+import { type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -107,28 +100,6 @@ function measureStationLabel(
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
-}
-
-// Two-line hover card for landmark pins and the GPS dot: line 1 is the
-// short name, line 2 is nearest-station + distance + walk estimate. The
-// always-visible short label itself renders through the station-label
-// engine (see updateStationLabels).
-function placeTooltipHtml(
-  label: string,
-  stationName: string | null,
-  distanceKm: number | null,
-  lang: Lang,
-): string {
-  const t = STRINGS[lang]
-  let html = `<strong>${escapeHtml(label)}</strong>`
-  if (stationName !== null && distanceKm !== null) {
-    html +=
-      `<br><span>${escapeHtml(t.nearestStation)}: ${escapeHtml(stationName)}` +
-      ` · ${escapeHtml(formatDistance(distanceKm, lang))}` +
-      ` · ~${escapeHtml(formatWalkTime(estimateWalkMinutes(distanceKm), lang))}` +
-      ` ${escapeHtml(t.walkTime)}</span>`
-  }
-  return html
 }
 
 function buildLabelIcon(
@@ -290,14 +261,14 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       })
     }
 
-    // Landmark labels (searched-place pins, GPS dot) go through the same
+    // Landmark labels (searched-place badges, GPS dot) go through the same
     // engine so they look and collide like station labels — always forced.
-    // The anchor point sits just above the pin art (A/B pins are 30x42 with
-    // the tip at the bottom; the GPS dot is small).
+    // The anchor point sits just above the badge art (30px badges centered
+    // on the coordinate; the GPS dot is small).
     const extraByKey = new Map(extraLabelStateRef.current.map((e) => [e.key, e]))
     for (const extra of extraLabelStateRef.current) {
       const p = map.latLngToContainerPoint([extra.lat, extra.lng])
-      const point = { x: p.x, y: p.y - (extra.key === "gps" ? 12 : 48) }
+      const point = { x: p.x, y: p.y - (extra.key === "gps" ? 12 : 21) }
       dots.push({ id: extra.key, point, radius: 4 })
       const { w, h } = measureStationLabel(container, extra.text, currentLang)
       candidates.push({
@@ -596,16 +567,16 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     if (!placeMarkers || placeMarkers.length === 0) return
 
-    // Journey set: green walking-figure pin for origin, red flag pin for
-    // destination. White strokes keep them legible on satellite and dark
-    // basemaps. Geometry stays 30x42 with the tip at the bottom so label
-    // offsets and anchors don't move.
+    // Journey set: green walking-figure badge for origin, red flag badge
+    // for destination. Flat circles with a white ring — no teardrop shape.
+    // White ring keeps them legible on satellite and dark basemaps.
+    // Geometry is 30x30 centered on the coordinate.
     const PLACE_STYLE = {
       origin: {
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42"><path d="M15 1.5C7.6 1.5 1.5 7.6 1.5 15c0 10.6 13.5 25.5 13.5 25.5S28.5 25.6 28.5 15C28.5 7.6 22.4 1.5 15 1.5z" fill="#22c55e" stroke="#ffffff" stroke-width="2"/><circle cx="15.5" cy="9" r="2.2" fill="#ffffff"/><g stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M15.5 12.2V19"/><path d="M15.5 13.7L11 16.7M15.5 13.7L20 17.2"/><path d="M15.5 19L12 26M15.5 19l3.5 5 2.5 2.6"/></g></svg>`,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#22c55e" stroke="#ffffff" stroke-width="2.5"/><circle cx="15.5" cy="10" r="2.2" fill="#ffffff"/><g stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M15.5 13.2V20"/><path d="M15.5 14.7L11 17.7M15.5 14.7L20 18.2"/><path d="M15.5 20L12.5 26M15.5 20l3 4.4 2 2.2"/></g></svg>`,
       },
       dest: {
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42"><path d="M15 1.5C7.6 1.5 1.5 7.6 1.5 15c0 10.6 13.5 25.5 13.5 25.5S28.5 25.6 28.5 15C28.5 7.6 22.4 1.5 15 1.5z" fill="#ef4444" stroke="#ffffff" stroke-width="2"/><path d="M12 8.5v18" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/><path d="M12 9c3.5-1.6 5 1.6 8.5 0v7.5c-3.5 1.6-5-1.6-8.5 0z" fill="#ffffff"/></svg>`,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#ef4444" stroke="#ffffff" stroke-width="2.5"/><path d="M12.5 8.5V23" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/><path d="M12.5 9.5c3.5-1.6 5 1.6 8.5 0v7c-3.5 1.6-5-1.6-8.5 0z" fill="#ffffff"/></svg>`,
       },
     } as const
 
@@ -615,19 +586,16 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const icon = L.divIcon({
         html: s.svg,
         className: "",
-        iconSize: [30, 42],
-        iconAnchor: [15, 42],
-        tooltipAnchor: [0, -42],
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
       })
-      const marker = L.marker([pm.lat, pm.lng], { icon }).addTo(layer)
-      // Dashed "walk" connector from the searched place to its station.
-      const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
-      const km = st ? haversineKm(pm.lat, pm.lng, st.location.lat, st.location.lng) : null
-      const stName = st ? (isFa ? st.name.fa : st.name.en) : null
-      // Hover card: full detail on top of the always-visible short label.
-      marker.bindTooltip(placeTooltipHtml(pm.label, stName, km, lang), { direction: "top", className: "station-label" })
+      L.marker([pm.lat, pm.lng], { icon }).addTo(layer)
+      // No hover tooltip: the always-visible short engine label below is
+      // the single label for the pin.
       pts.push([pm.lat, pm.lng])
 
+      // Dashed "walk" connector from the searched place to its station.
+      const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
       if (st) {
         L.polyline(
           [
@@ -686,18 +654,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           fillOpacity: 0.9,
           opacity: 1,
         }).addTo(map)
-        // Hover card with nearest-station detail; the always-visible label
-        // renders through the station-label engine via gpsPos.
-        const gpsNearest = nearestStations(lat, lng, { limit: 1 })[0] ?? null
-        marker.bindTooltip(
-          placeTooltipHtml(
-            isFa ? "شما اینجا هستید" : "You are here",
-            gpsNearest ? (isFa ? gpsNearest.station.name.fa : gpsNearest.station.name.en) : null,
-            gpsNearest ? gpsNearest.km : null,
-            lang,
-          ),
-          { direction: "top" },
-        )
+        // No hover tooltip: the always-visible engine label (via gpsPos)
+        // is the single label for the dot.
         gpsMarkerRef.current = marker
         setHasGps(true)
         setGpsPos([lat, lng])
