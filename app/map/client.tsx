@@ -13,6 +13,7 @@ import {
   estimateWalkMinutes,
   formatWalkTime,
   isTooFarToWalk,
+  parsePlaceParam,
 } from "@/lib/geo";
 import { shortPlaceLabel } from "@/lib/geocoding";
 import { StationDetail } from "@/components/station-detail";
@@ -56,16 +57,10 @@ export function MapPage() {
     const station = searchParams.get("station");
     const from = searchParams.get("from");
     const to = searchParams.get("to");
-    function readPin(prefix: "oP" | "dP") {
-      const lat = Number(searchParams.get(`${prefix}lat`));
-      const lng = Number(searchParams.get(`${prefix}lng`));
-      const label = searchParams.get(`${prefix}label`);
-      if (label && Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng, label };
-      return null;
-    }
-    // Prefer shareable URL params; fall back to in-session context (SPA nav).
-    const originPin = readPin("oP") ?? ctxOriginPlace;
-    const destPin = readPin("dP") ?? ctxDestPlace;
+    // Prefer shareable URL params (compact op/dp, legacy oPlat… fallback);
+    // fall back to in-session context (SPA nav).
+    const originPin = parsePlaceParam(searchParams, "oP") ?? ctxOriginPlace;
+    const destPin = parsePlaceParam(searchParams, "dP") ?? ctxDestPlace;
     return { center, zoom, station, from, to, originPin, destPlace: destPin };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);

@@ -21,7 +21,7 @@ import { StationDetail } from "@/components/station-detail";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useScheduleData } from "@/lib/use-schedule-data";
-import { reverseGeocode } from "@/lib/geocoding";
+import { reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
 import {
   nearestStations,
   formatDistance,
@@ -29,6 +29,8 @@ import {
   estimateWalkMinutes,
   formatWalkTime,
   buildMapHref,
+  encodePlacePin,
+  parsePlaceParam,
 } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
 
@@ -39,17 +41,6 @@ export type PlaceInfo = {
   lat: number;
   lng: number;
 };
-
-function parsePlaceParam(
-  searchParams: URLSearchParams,
-  prefix: "oP" | "dP",
-): { lat: number; lng: number; label: string } | null {
-  const lat = Number(searchParams.get(`${prefix}lat`));
-  const lng = Number(searchParams.get(`${prefix}lng`));
-  const label = searchParams.get(`${prefix}label`);
-  if (!label || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  return { lat, lng, label };
-}
 
 function buildPlaceInfo(
   pin: { lat: number; lng: number; label: string },
@@ -181,14 +172,10 @@ export function HomePage() {
     if (originId) params.set("from", originId);
     if (destId) params.set("to", destId);
     if (originPlaceInfo) {
-      params.set("oPlat", String(originPlaceInfo.lat));
-      params.set("oPlng", String(originPlaceInfo.lng));
-      params.set("oPlabel", originPlaceInfo.placeName);
+      params.set("op", encodePlacePin({ lat: originPlaceInfo.lat, lng: originPlaceInfo.lng, label: originPlaceInfo.placeName }));
     }
     if (destPlaceInfo) {
-      params.set("dPlat", String(destPlaceInfo.lat));
-      params.set("dPlng", String(destPlaceInfo.lng));
-      params.set("dPlabel", destPlaceInfo.placeName);
+      params.set("dp", encodePlacePin({ lat: destPlaceInfo.lat, lng: destPlaceInfo.lng, label: destPlaceInfo.placeName }));
     }
     const qs = params.toString();
     const url = qs ? `?${qs}` : window.location.pathname;
@@ -213,8 +200,9 @@ export function HomePage() {
 
     const station = nearest[0].station;
     const km = haversineKm(place.lat, place.lng, station.location.lat, station.location.lng);
+    // Short names keep shared links small; the map shortens them anyway.
     const info: PlaceInfo = {
-      placeName: place.name,
+      placeName: shortPlaceLabel(place.name),
       stationId: station.id,
       distanceKm: km,
       lat: place.lat,

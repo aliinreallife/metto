@@ -20,7 +20,14 @@ import {
 } from "@/lib/map/label-placement";
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
-import { type Lang } from "@/lib/i18n"
+import { STRINGS, type Lang } from "@/lib/i18n"
+import {
+  haversineKm,
+  formatDistance,
+  estimateWalkMinutes,
+  formatWalkTime,
+  nearestStations,
+} from "@/lib/geo"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -100,6 +107,28 @@ function measureStationLabel(
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+}
+
+// Two-line hover card for landmark pins and the GPS dot: line 1 is the
+// short name, line 2 is nearest-station + distance + walk estimate. The
+// always-visible short label itself renders through the station-label
+// engine (see updateStationLabels).
+function placeTooltipHtml(
+  label: string,
+  stationName: string | null,
+  distanceKm: number | null,
+  lang: Lang,
+): string {
+  const t = STRINGS[lang]
+  let html = `<strong>${escapeHtml(label)}</strong>`
+  if (stationName !== null && distanceKm !== null) {
+    html +=
+      `<br><span>${escapeHtml(t.nearestStation)}: ${escapeHtml(stationName)}` +
+      ` · ${escapeHtml(formatDistance(distanceKm, lang))}` +
+      ` · ~${escapeHtml(formatWalkTime(estimateWalkMinutes(distanceKm), lang))}` +
+      ` ${escapeHtml(t.walkTime)}</span>`
+  }
+  return html
 }
 
 function buildLabelIcon(
@@ -567,14 +596,16 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     if (!placeMarkers || placeMarkers.length === 0) return
 
-    // Google-style A/B pins: green A for origin, red B for destination.
-    // White stroke keeps them legible on both satellite and dark basemaps.
+    // Journey set: green walking-figure pin for origin, red flag pin for
+    // destination. White strokes keep them legible on satellite and dark
+    // basemaps. Geometry stays 30x42 with the tip at the bottom so label
+    // offsets and anchors don't move.
     const PLACE_STYLE = {
       origin: {
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42"><path d="M15 1.5C7.6 1.5 1.5 7.6 1.5 15c0 10.6 13.5 25.5 13.5 25.5S28.5 25.6 28.5 15C28.5 7.6 22.4 1.5 15 1.5z" fill="#22c55e" stroke="#ffffff" stroke-width="2"/><text x="15" y="20.5" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff" font-family="system-ui, sans-serif">A</text></svg>`,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42"><path d="M15 1.5C7.6 1.5 1.5 7.6 1.5 15c0 10.6 13.5 25.5 13.5 25.5S28.5 25.6 28.5 15C28.5 7.6 22.4 1.5 15 1.5z" fill="#22c55e" stroke="#ffffff" stroke-width="2"/><circle cx="15.5" cy="9" r="2.2" fill="#ffffff"/><g stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M15.5 12.2V19"/><path d="M15.5 13.7L11 16.7M15.5 13.7L20 17.2"/><path d="M15.5 19L12 26M15.5 19l3.5 5 2.5 2.6"/></g></svg>`,
       },
       dest: {
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42"><path d="M15 1.5C7.6 1.5 1.5 7.6 1.5 15c0 10.6 13.5 25.5 13.5 25.5S28.5 25.6 28.5 15C28.5 7.6 22.4 1.5 15 1.5z" fill="#ef4444" stroke="#ffffff" stroke-width="2"/><text x="15" y="20.5" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff" font-family="system-ui, sans-serif">B</text></svg>`,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42"><path d="M15 1.5C7.6 1.5 1.5 7.6 1.5 15c0 10.6 13.5 25.5 13.5 25.5S28.5 25.6 28.5 15C28.5 7.6 22.4 1.5 15 1.5z" fill="#ef4444" stroke="#ffffff" stroke-width="2"/><path d="M12 8.5v18" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/><path d="M12 9c3.5-1.6 5 1.6 8.5 0v7.5c-3.5 1.6-5-1.6-8.5 0z" fill="#ffffff"/></svg>`,
       },
     } as const
 
@@ -589,13 +620,14 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         tooltipAnchor: [0, -42],
       })
       const marker = L.marker([pm.lat, pm.lng], { icon }).addTo(layer)
-      // Hover tooltip keeps the full name; the always-visible short label
-      // renders through the station-label engine (see updateStationLabels).
-      marker.bindTooltip(pm.label, { direction: "top", className: "station-label" })
-      pts.push([pm.lat, pm.lng])
-
       // Dashed "walk" connector from the searched place to its station.
       const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
+      const km = st ? haversineKm(pm.lat, pm.lng, st.location.lat, st.location.lng) : null
+      const stName = st ? (isFa ? st.name.fa : st.name.en) : null
+      // Hover card: full detail on top of the always-visible short label.
+      marker.bindTooltip(placeTooltipHtml(pm.label, stName, km, lang), { direction: "top", className: "station-label" })
+      pts.push([pm.lat, pm.lng])
+
       if (st) {
         L.polyline(
           [
@@ -654,9 +686,18 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           fillOpacity: 0.9,
           opacity: 1,
         }).addTo(map)
-        // Hover tooltip only; the always-visible label renders through the
-        // station-label engine via gpsPos (see extraLabelStateRef).
-        marker.bindTooltip(isFa ? "شما اینجا هستید" : "You are here", { direction: "top" })
+        // Hover card with nearest-station detail; the always-visible label
+        // renders through the station-label engine via gpsPos.
+        const gpsNearest = nearestStations(lat, lng, { limit: 1 })[0] ?? null
+        marker.bindTooltip(
+          placeTooltipHtml(
+            isFa ? "شما اینجا هستید" : "You are here",
+            gpsNearest ? (isFa ? gpsNearest.station.name.fa : gpsNearest.station.name.en) : null,
+            gpsNearest ? gpsNearest.km : null,
+            lang,
+          ),
+          { direction: "top" },
+        )
         gpsMarkerRef.current = marker
         setHasGps(true)
         setGpsPos([lat, lng])
