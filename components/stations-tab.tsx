@@ -66,7 +66,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
   }, [query, lineFilter, isFa, branchIndex, isForked, lineOrder]);
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-xl flex-col gap-4 p-4">
+    <div className="mx-auto flex h-full w-full max-w-xl flex-col gap-4 overflow-x-hidden p-4">
       <div className="relative">
         <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
@@ -106,7 +106,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t.towards}
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {lineOrder.terminals.map((termId, i) => {
               const s = getStation(termId);
               const label = s ? (isFa ? s.name.fa : s.name.en) : termId;
@@ -128,7 +128,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
         {persianDigits(results.length, lang)} {isFa ? "ایستگاه" : "stations"}
       </p>
 
-      <ul className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
+      <ul className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden overscroll-contain pb-2">
         {results.length === 0 && (
           <li className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
             {t.noResults}

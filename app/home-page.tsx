@@ -146,7 +146,7 @@ export function HomePage() {
         />
       </div>
 
-      <div className="z-20 flex items-center justify-start gap-4 border-t border-border bg-card/90 px-4 py-2 backdrop-blur">
+      <div className="z-20 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 border-t border-border bg-card/90 px-4 py-2 backdrop-blur">
         <a
           href="https://github.com/aliinreallife"
           target="_blank"
@@ -231,7 +231,7 @@ function RouteView({
   }
 
   return (
-    <div className="flex size-full flex-col overflow-y-auto p-4 md:items-center md:p-8 lg:p-10">
+    <div className="flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10">
       <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
         <div className="flex flex-col gap-2.5">
           <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
