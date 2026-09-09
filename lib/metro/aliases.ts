@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: ODbL-1.0 — part of Metto's ODbL-1.0 adapted metro database. See DATA_LICENSE.md.
 // Backward-compatibility: legacy English-name IDs -> stable slugs.
 // Generated. Keep so old URLs (?from/?to), APIs and schedule-data keep resolving.
 import type { StationId } from "./types";
