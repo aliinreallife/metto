@@ -253,7 +253,7 @@ export function HomePage() {
         />
       </div>
 
-      <div className="z-20 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 border-t border-border bg-card/90 px-4 py-2 backdrop-blur">
+      <div className="z-20 hidden flex-wrap items-center justify-start gap-x-4 gap-y-1 border-t border-border bg-card/90 px-4 py-2 backdrop-blur md:flex">
         <a
           href="https://github.com/aliinreallife"
           target="_blank"
@@ -507,6 +507,9 @@ function RouteView({
             {t.noRoute}
           </p>
         )}
+
+        {/* clearance so scrolled-to-bottom content isn't hidden behind the fixed mobile credits */}
+        <div aria-hidden className="h-7 shrink-0 md:hidden" />
       </div>
     </div>
   );

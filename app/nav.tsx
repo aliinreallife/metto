@@ -9,6 +9,8 @@ import {
   ListTree,
   LocateFixed,
   Map as MapIcon,
+  ExternalLink,
+  Database,
 } from "lucide-react";
 import { InstallButton } from "@/components/pwa";
 import { useMetro } from "./providers";
@@ -29,6 +31,7 @@ export function AppNav() {
   const t = STRINGS[lang];
 
   const currentPath = pathname === "/" ? "/" : pathname;
+  const isMainTab = currentPath === "/";
 
   function getHref(base: string) {
     // Preserve each side independently plus place pins on every tab, so
@@ -100,27 +103,58 @@ export function AppNav() {
         </div>
       </header>
 
-      {/* mobile bottom tab bar - fixed to viewport bottom */}
-      <nav className="fixed bottom-0 inset-x-0 z-20 grid grid-cols-4 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
-        {NAV_ITEMS.map((item) => {
-          const href = getHref(item.href);
-          const active = currentPath === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={href}
-              className={cn(
-                "flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors",
-                active ? "text-primary" : "text-muted-foreground",
-              )}
-              aria-current={active ? "page" : undefined}
-            >
-              <item.icon className="size-5" />
-              {t[item.labelKey]}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* mobile bottom tab bar - fixed to viewport bottom; credits sit
+          directly on top with zero gap, main tab only */}
+      <div className="fixed bottom-0 inset-x-0 z-20 flex flex-col border-t border-border bg-card md:hidden">
+        {isMainTab && (
+        <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-0.5 px-4 py-1.5">
+          <a
+            href="https://github.com/aliinreallife"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
+          >
+            <ExternalLink className="size-3 text-primary" />
+            <span className="text-muted-foreground">{t.builtBy}</span>
+            <span className="font-semibold text-foreground">aliinreallife</span>
+            <span className="sr-only"> ({t.opensInNewTab})</span>
+          </a>
+          <a
+            href="https://github.com/mostafa-kheibary/tehran-metro-data"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
+          >
+            <Database className="size-3 text-primary" />
+            <span className="text-muted-foreground">{t.dataBy}</span>
+            <span className="font-semibold text-foreground">
+              mostafa-kheibary
+            </span>
+            <span className="sr-only"> ({t.opensInNewTab})</span>
+          </a>
+        </div>
+        )}
+        <nav className={cn("grid grid-cols-4 pb-[env(safe-area-inset-bottom)]", isMainTab && "border-t border-border")}>
+          {NAV_ITEMS.map((item) => {
+            const href = getHref(item.href);
+            const active = currentPath === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={href}
+                className={cn(
+                  "flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors",
+                  active ? "text-primary" : "text-muted-foreground",
+                )}
+                aria-current={active ? "page" : undefined}
+              >
+                <item.icon className="size-5" />
+                {t[item.labelKey]}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </>
   );
 }
