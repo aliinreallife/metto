@@ -201,8 +201,8 @@ export function StationTimesheet({
               <span className="text-sm font-semibold">
                 {t.line} {persianDigits(lineData.line, lang)}
               </span>
-              <span className="ml-auto text-xs text-muted-foreground">
-                {totalCount}{" "}
+              <span className="tnum ml-auto text-xs text-muted-foreground">
+                {persianDigits(totalCount, lang)}{" "}
                 {isFa ? "حرکت" : "trains"}
               </span>
               <ChevronDown
@@ -226,14 +226,14 @@ export function StationTimesheet({
                         <span
                           key={i}
                           className={cn(
-                            "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-mono",
+                            "tnum inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs",
                             tt.isExpress
                               ? "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
                               : "bg-muted text-foreground",
                           )}
                         >
                           {tt.isExpress && <Zap className="size-2.5" />}
-                          {tt.time}
+                          {persianDigits(tt.time, lang)}
                         </span>
                       ))}
                     </div>

@@ -10,7 +10,7 @@ import "./globals.css";
 const vazirmatn = Vazirmatn({
   variable: "--font-vazirmatn",
   subsets: ["arabic", "latin"],
-  weight: ["400", "700"],
+  weight: "variable",
 });
 
 const siteUrl = "https://metto.ir";

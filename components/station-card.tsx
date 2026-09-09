@@ -125,8 +125,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
                 >
                   {persianDigits(g.line, lang)}
                 </span>
-                <span className="font-mono font-semibold">
-                  {g.departures[0]?.time}
+                <span className="tnum font-semibold">
+                  {g.departures[0]?.time ? persianDigits(g.departures[0].time, lang) : null}
                 </span>
                 {g.departures[0]?.isExpress && (
                   <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
@@ -135,8 +135,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
                   </span>
                 )}
                 {g.departures.length > 1 && (
-                  <span className="text-muted-foreground text-[10px]">
-                    {isFa ? "بعدی:" : "+"} {g.departures[1]?.time}
+                  <span className="tnum text-muted-foreground text-[10px]">
+                    {isFa ? "بعدی:" : "+"} {g.departures[1]?.time ? persianDigits(g.departures[1].time, lang) : null}
                   </span>
                 )}
               </div>

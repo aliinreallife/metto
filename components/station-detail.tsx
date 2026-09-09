@@ -134,7 +134,7 @@ function DepartureRow({ dep, lang }: { dep: Departure; lang: Lang }) {
         {persianDigits(dep.line, lang)}
       </span>
       <Clock className="size-3 shrink-0 text-muted-foreground" />
-      <span className="font-mono font-semibold">{dep.time}</span>
+      <span className="tnum font-semibold">{persianDigits(dep.time, lang)}</span>
       {dep.isExpress && (
         <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
           <Zap className="size-2.5" />
