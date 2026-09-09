@@ -305,6 +305,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           maxZoom: 20,
           attribution: MINIMALIST_ATTR,
           subdomains: "abcd",
+          className: "metto-dark-basemap",
         })
       : null
     minimalistLayerRef.current = minimalistLayer

@@ -236,3 +236,10 @@
     }
   }
 }
+
+/* Scoped brightening for the CARTO dark_nolabels raster basemap only.
+   Leaflet puts TileLayer `className` on that layer's own container, so metro
+   lines/markers/labels/controls in other panes are untouched. */
+.metto-dark-basemap {
+  filter: brightness(1.15) contrast(1.25);
+}
