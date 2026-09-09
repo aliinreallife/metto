@@ -28,7 +28,7 @@ export function StationDetail({
   const isFa = lang === "fa";
   const lines = getStationLines(station.id);
   const activeAmenities = Object.entries(station.amenities).filter(
-    ([, v]) => v,
+    ([, v]) => v === true,
   );
 
   const departures = useMemo(() => {
