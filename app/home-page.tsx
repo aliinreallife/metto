@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowUpDown,
@@ -9,6 +10,7 @@ import {
   ExternalLink,
   Database,
   LocateFixed,
+  Map as MapIcon,
   X,
 } from "lucide-react";
 import { useVisitorData } from "@fingerprint/react";
@@ -19,13 +21,73 @@ import { StationDetail } from "@/components/station-detail";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useScheduleData } from "@/lib/use-schedule-data";
-import { nearestStations, formatDistance, haversineKm } from "@/lib/geo";
+import { reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
+import {
+  nearestStations,
+  formatDistance,
+  haversineKm,
+  estimateWalkMinutes,
+  formatWalkTime,
+  buildMapHref,
+  encodePlacePin,
+  parsePlaceParam,
+} from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
+
+export type PlaceInfo = {
+  placeName: string;
+  stationId: string;
+  distanceKm: number;
+  lat: number;
+  lng: number;
+};
+
+function buildPlaceInfo(
+  pin: { lat: number; lng: number; label: string },
+  stationId: string | null,
+): PlaceInfo | null {
+  const station = stationId ? STATION_MAP.get(stationId) : null;
+  if (!station) return null;
+  return {
+    placeName: pin.label,
+    stationId: station.id,
+    distanceKm: haversineKm(pin.lat, pin.lng, station.location.lat, station.location.lng),
+    lat: pin.lat,
+    lng: pin.lng,
+  };
+}
+
+function readStoredPlaceInfo(storageKey: string, stationId: string | null): PlaceInfo | null {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw || !stationId) return null;
+    const pin: unknown = JSON.parse(raw);
+    if (
+      typeof pin !== "object" ||
+      pin === null ||
+      !Number.isFinite((pin as { lat: number }).lat) ||
+      !Number.isFinite((pin as { lng: number }).lng) ||
+      typeof (pin as { label: string }).label !== "string" ||
+      (pin as { label: string }).label.length === 0
+    ) {
+      return null;
+    }
+    return buildPlaceInfo(pin as { lat: number; lng: number; label: string }, stationId);
+  } catch {
+    return null;
+  }
+}
 
 export function HomePage() {
   const loaded = useScheduleData();
   const { getData } = useVisitorData({ immediate: true });
-  const { lang, setOriginId: setCtxOrigin, setDestId: setCtxDest } = useMetro();
+  const {
+    lang,
+    setOriginId: setCtxOrigin,
+    setDestId: setCtxDest,
+    setOriginPlace: setCtxOriginPlace,
+    setDestPlace: setCtxDestPlace,
+  } = useMetro();
   const isFa = lang === "fa";
   const t = STRINGS[lang];
   const searchParams = useSearchParams();
@@ -36,23 +98,63 @@ export function HomePage() {
   const [originId, setOriginId] = useState<string | null>(initialFrom);
   const [destId, setDestId] = useState<string | null>(initialTo);
 
-  // Sync route state to MetroContext so nav can build dynamic map link
+  // Restore place pins from shareable URL params (?oPlat/oPlng/oPlabel…).
+  const [originPlaceInfo, setOriginPlaceInfo] = useState<PlaceInfo | null>(() => {
+    const pin = parsePlaceParam(searchParams, "oP");
+    return pin ? buildPlaceInfo(pin, initialFrom) : null;
+  });
+  const [destPlaceInfo, setDestPlaceInfo] = useState<PlaceInfo | null>(() => {
+    const pin = parsePlaceParam(searchParams, "dP");
+    return pin ? buildPlaceInfo(pin, initialTo) : null;
+  });
+
+  // Merge persisted selections (localStorage) for anything the URL didn't
+  // provide — covers reloads and links shared without place params.
+  // (Runs on mount only; URL always wins.)
+  useEffect(() => {
+    try {
+      if (!searchParams.get("from")) {
+        const saved = localStorage.getItem("route.from");
+        if (saved) setOriginId(saved);
+      }
+      if (!searchParams.get("to")) {
+        const saved = localStorage.getItem("route.to");
+        if (saved) setDestId(saved);
+      }
+      if (!parsePlaceParam(searchParams, "oP")) {
+        const info = readStoredPlaceInfo("route.originPlace", searchParams.get("from") ?? localStorage.getItem("route.from"));
+        if (info) setOriginPlaceInfo(info);
+      }
+      if (!parsePlaceParam(searchParams, "dP")) {
+        const info = readStoredPlaceInfo("route.destPlace", searchParams.get("to") ?? localStorage.getItem("route.to"));
+        if (info) setDestPlaceInfo(info);
+      }
+    } catch {
+      // Corrupted storage — ignore and start fresh.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync route + place state to MetroContext so nav can build dynamic map link
   useEffect(() => {
     setCtxOrigin(originId);
     setCtxDest(destId);
   }, [originId, destId, setCtxOrigin, setCtxDest]);
+  useEffect(() => {
+    setCtxOriginPlace(
+      originPlaceInfo
+        ? { lat: originPlaceInfo.lat, lng: originPlaceInfo.lng, label: originPlaceInfo.placeName }
+        : null,
+    );
+  }, [originPlaceInfo, setCtxOriginPlace]);
+  useEffect(() => {
+    setCtxDestPlace(
+      destPlaceInfo
+        ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng, label: destPlaceInfo.placeName }
+        : null,
+    );
+  }, [destPlaceInfo, setCtxDestPlace]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [placeMarkers, setPlaceMarkers] = useState<Array<{ lat: number; lng: number; label: string; role: "origin" | "dest" }>>([]);
-  const [originPlaceInfo, setOriginPlaceInfo] = useState<{
-    placeName: string;
-    stationName: string;
-    distanceKm: number;
-  } | null>(null);
-  const [destPlaceInfo, setDestPlaceInfo] = useState<{
-    placeName: string;
-    stationName: string;
-    distanceKm: number;
-  } | null>(null);
 
   useEffect(() => {
     document.documentElement.lang = isFa ? "fa" : "en";
@@ -69,10 +171,16 @@ export function HomePage() {
     const params = new URLSearchParams();
     if (originId) params.set("from", originId);
     if (destId) params.set("to", destId);
+    if (originPlaceInfo) {
+      params.set("op", encodePlacePin({ lat: originPlaceInfo.lat, lng: originPlaceInfo.lng, label: originPlaceInfo.placeName }));
+    }
+    if (destPlaceInfo) {
+      params.set("dp", encodePlacePin({ lat: destPlaceInfo.lat, lng: destPlaceInfo.lng, label: destPlaceInfo.placeName }));
+    }
     const qs = params.toString();
     const url = qs ? `?${qs}` : window.location.pathname;
     window.history.replaceState(null, "", url);
-  }, [originId, destId]);
+  }, [originId, destId, originPlaceInfo, destPlaceInfo]);
 
   const route = useMemo(() => {
     if (!originId || !destId || originId === destId) return null;
@@ -84,9 +192,6 @@ export function HomePage() {
     setDestId(originId);
     setOriginPlaceInfo(destPlaceInfo);
     setDestPlaceInfo(originPlaceInfo);
-    setPlaceMarkers((prev) =>
-      prev.map((m) => ({ ...m, role: m.role === "origin" ? "dest" : "origin" })),
-    );
   }
 
   function handlePlaceSelect(place: { lat: number; lng: number; name: string }, asOrigin: boolean) {
@@ -95,10 +200,13 @@ export function HomePage() {
 
     const station = nearest[0].station;
     const km = haversineKm(place.lat, place.lng, station.location.lat, station.location.lng);
-    const info = {
-      placeName: place.name,
-      stationName: isFa ? station.name.fa : station.name.en,
+    // Short names keep shared links small; the map shortens them anyway.
+    const info: PlaceInfo = {
+      placeName: shortPlaceLabel(place.name),
+      stationId: station.id,
       distanceKm: km,
+      lat: place.lat,
+      lng: place.lng,
     };
 
     if (asOrigin) {
@@ -108,21 +216,14 @@ export function HomePage() {
       setDestId(station.id);
       setDestPlaceInfo(info);
     }
-
-    setPlaceMarkers((prev) => [
-      ...prev.filter((m) => m.role !== (asOrigin ? "origin" : "dest")),
-      { lat: place.lat, lng: place.lng, label: place.name, role: asOrigin ? "origin" : "dest" },
-    ]);
   }
 
   function clearOriginPlace() {
     setOriginPlaceInfo(null);
-    setPlaceMarkers((prev) => prev.filter((m) => m.role !== "origin"));
   }
 
   function clearDestPlace() {
     setDestPlaceInfo(null);
-    setPlaceMarkers((prev) => prev.filter((m) => m.role !== "dest"));
   }
 
   return (
@@ -142,6 +243,12 @@ export function HomePage() {
           onPlaceSelect={handlePlaceSelect}
           clearOriginPlace={clearOriginPlace}
           clearDestPlace={clearDestPlace}
+          onGpsOrigin={(info, onlyIfSameCoords) =>
+            setOriginPlaceInfo((prev) => {
+              if (!onlyIfSameCoords) return info;
+              return prev && prev.lat === info.lat && prev.lng === info.lng ? info : prev;
+            })
+          }
           swap={swap}
         />
       </div>
@@ -190,6 +297,7 @@ function RouteView({
   onPlaceSelect,
   clearOriginPlace,
   clearDestPlace,
+  onGpsOrigin,
   swap,
 }: {
   lang: Lang;
@@ -200,35 +308,77 @@ function RouteView({
   setOriginId: (id: string | null) => void;
   setDestId: (id: string | null) => void;
   setSelectedId: (id: string | null) => void;
-  originPlaceInfo: { placeName: string; stationName: string; distanceKm: number } | null;
-  destPlaceInfo: { placeName: string; stationName: string; distanceKm: number } | null;
+  originPlaceInfo: PlaceInfo | null;
+  destPlaceInfo: PlaceInfo | null;
   onPlaceSelect: (place: { lat: number; lng: number; name: string }, asOrigin: boolean) => void;
   clearOriginPlace: () => void;
   clearDestPlace: () => void;
+  onGpsOrigin: (info: PlaceInfo, onlyIfSameCoords?: boolean) => void;
   swap: () => void;
 }) {
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
   const [locating, setLocating] = useState(false);
+  const gpsLangRef = useRef(lang);
+  gpsLangRef.current = lang;
 
   function locateOrigin() {
     if (!navigator.geolocation) return;
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const nearest = nearestStations(
-          pos.coords.latitude,
-          pos.coords.longitude,
-          { limit: 1 },
-        );
-        if (nearest.length > 0) setOriginId(nearest[0].station.id);
+        const { latitude, longitude } = pos.coords;
+        const nearest = nearestStations(latitude, longitude, { limit: 1 });
+        if (nearest.length === 0) {
+          setLocating(false);
+          return;
+        }
+        const station = nearest[0].station;
+        // GPS origin becomes a place-style card (like Iran Mall) so it
+        // sticks across tabs/reloads via the same place persistence.
+        onGpsOrigin({
+          placeName: t.yourLocation,
+          stationId: station.id,
+          distanceKm: haversineKm(latitude, longitude, station.location.lat, station.location.lng),
+          lat: latitude,
+          lng: longitude,
+        });
+        setOriginId(station.id);
         setLocating(false);
+        // Upgrade the generic label to the neighborhood name when available.
+        // Guarded by coords so a newer selection is never overwritten.
+        const requestLang = gpsLangRef.current;
+        reverseGeocode(latitude, longitude, requestLang).then((name) => {
+          if (!name) return;
+          onGpsOrigin(
+            {
+              placeName: name,
+              stationId: station.id,
+              distanceKm: haversineKm(latitude, longitude, station.location.lat, station.location.lng),
+              lat: latitude,
+              lng: longitude,
+            },
+            true,
+          );
+        });
       },
       () => setLocating(false),
       { enableHighAccuracy: true, timeout: 10000 },
     );
   }
+
+  const mapHref = buildMapHref({
+    from: originId,
+    to: destId,
+    originPlace: originPlaceInfo
+      ? { lat: originPlaceInfo.lat, lng: originPlaceInfo.lng, label: originPlaceInfo.placeName }
+      : null,
+    destPlace: destPlaceInfo
+      ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng, label: destPlaceInfo.placeName }
+      : null,
+  });
+  const showViewOnMap = originPlaceInfo !== null || destPlaceInfo !== null;
 
   return (
     <div className="flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10">
@@ -266,24 +416,11 @@ function RouteView({
             </button>
           </div>
           {originPlaceInfo && (
-            <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
-              <Building2 className="size-4 shrink-0 text-primary md:size-5" />
-              <span className="min-w-0 flex-1 truncate">
-                <span className="font-medium">{originPlaceInfo.placeName}</span>
-                <span className="mx-1.5 text-muted-foreground">→</span>
-                <span>{t.nearestStation}: <span className="font-medium">{originPlaceInfo.stationName}</span></span>
-                <span className="ml-1.5 text-muted-foreground">
-                  ({formatDistance(originPlaceInfo.distanceKm, lang)} {t.walkDistance})
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={() => clearOriginPlace()}
-                className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            </div>
+            <PlaceCard
+              lang={lang}
+              info={originPlaceInfo}
+              onClear={clearOriginPlace}
+            />
           )}
           <label className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
             {t.to}
@@ -312,24 +449,20 @@ function RouteView({
             </button>
           </div>
           {destPlaceInfo && (
-            <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
-              <Building2 className="size-4 shrink-0 text-primary md:size-5" />
-              <span className="min-w-0 flex-1 truncate">
-                <span className="font-medium">{destPlaceInfo.placeName}</span>
-                <span className="mx-1.5 text-muted-foreground">→</span>
-                <span>{t.nearestStation}: <span className="font-medium">{destPlaceInfo.stationName}</span></span>
-                <span className="ml-1.5 text-muted-foreground">
-                  ({formatDistance(destPlaceInfo.distanceKm, lang)} {t.walkDistance})
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={() => clearDestPlace()}
-                className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            </div>
+            <PlaceCard
+              lang={lang}
+              info={destPlaceInfo}
+              onClear={clearDestPlace}
+            />
+          )}
+          {showViewOnMap && (
+            <Link
+              href={mapHref}
+              className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent md:py-2.5 md:text-base"
+            >
+              <MapIcon className="size-4 shrink-0 text-primary" />
+              {t.viewOnMap}
+            </Link>
           )}
         </div>
 
@@ -375,6 +508,47 @@ function RouteView({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function PlaceCard({
+  lang,
+  info,
+  onClear,
+}: {
+  lang: Lang;
+  info: PlaceInfo;
+  onClear: () => void;
+}) {
+  const t = STRINGS[lang];
+  const isFa = lang === "fa";
+  const station = STATION_MAP.get(info.stationId);
+  const stationName = station ? (isFa ? station.name.fa : station.name.en) : info.stationId;
+  const walkMin = estimateWalkMinutes(info.distanceKm);
+
+  // Warnings live on the /map page only — this card stays a single line.
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
+      <Building2 className="size-4 shrink-0 text-primary md:size-5" />
+      <span className="min-w-0 flex-1 truncate">
+        <span className="font-medium">{info.placeName}</span>
+        <span className="mx-1.5 text-muted-foreground">→</span>
+        <span>
+          {t.nearestStation}: <span className="font-medium">{stationName}</span>
+        </span>
+        <span className="ml-1.5 text-muted-foreground">
+          {" "}({formatDistance(info.distanceKm, lang)} · ~{formatWalkTime(walkMin, lang)} {t.walkTime})
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label={t.clear}
+        className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <X className="size-3.5" />
+      </button>
     </div>
   );
 }

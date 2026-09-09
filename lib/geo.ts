@@ -55,6 +55,123 @@ export function formatDistance(km: number, lang: Lang): string {
   return lang === "fa" ? `${persianDigits(v, lang)} کیلومتر` : `${v} km`;
 }
 
+// ---- Walking estimates for searched places (e.g. Iran Mall) ----
+
+// Average urban walking speed. 5 km/h ≈ 12 min/km — a common conservative
+// default for "guess the walk time" without routing data.
+export const WALK_KM_PER_H = 5;
+
+// Beyond this straight-line distance we warn that the place is too far to
+// comfortably walk from its nearest station.
+export const TOO_FAR_WALK_KM = 1.5;
+
+export function estimateWalkMinutes(distanceKm: number): number {
+  if (!Number.isFinite(distanceKm) || distanceKm <= 0) return 0;
+  return (distanceKm / WALK_KM_PER_H) * 60;
+}
+
+export function isTooFarToWalk(
+  distanceKm: number,
+  thresholdKm: number = TOO_FAR_WALK_KM,
+): boolean {
+  return Number.isFinite(distanceKm) && distanceKm > thresholdKm;
+}
+
+export function formatWalkTime(minutes: number, lang: Lang): string {
+  const rounded = Math.round(minutes);
+  if (rounded < 1) return lang === "fa" ? "کمتر از ۱ دقیقه" : "<1 min";
+  return lang === "fa"
+    ? `${persianDigits(rounded, lang)} دقیقه`
+    : `${rounded} min`;
+}
+
+export type PlacePinParam = { lat: number; lng: number; label: string } | null;
+
+// Compact single-param encoding for a place pin: "lat,lng,label" with coords
+// rounded to 4 decimals (~11 m — plenty for a pin) and a short label.
+// Keeps shared links small even with percent-encoded Persian names.
+export function encodePlacePin(pin: { lat: number; lng: number; label: string }): string {
+  return `${pin.lat.toFixed(4)},${pin.lng.toFixed(4)},${pin.label}`;
+}
+
+// Parses encodePlacePin output. The label is everything after the second
+// comma, so commas inside names are safe. Returns null when malformed.
+export function decodePlacePin(
+  raw: string | null,
+): { lat: number; lng: number; label: string } | null {
+  if (!raw) return null;
+  const first = raw.indexOf(",");
+  const second = raw.indexOf(",", first + 1);
+  if (first <= 0 || second <= first + 1 || second + 1 >= raw.length) return null;
+  const lat = Number(raw.slice(0, first));
+  const lng = Number(raw.slice(first + 1, second));
+  const label = raw.slice(second + 1).trim();
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || label.length === 0) return null;
+  return { lat, lng, label };
+}
+
+// Reads a place pin from URL params: compact `op`/`dp` first, legacy
+// `oPlat/oPlng/oPlabel` second so old shared links keep working.
+// Prefix "oP" reads op + oPlat…; prefix "dP" reads dp + dPlat….
+export function parsePlaceParam(
+  searchParams: URLSearchParams,
+  prefix: "oP" | "dP",
+): { lat: number; lng: number; label: string } | null {
+  const shortKey = prefix === "oP" ? "op" : "dp";
+  const compact = decodePlacePin(searchParams.get(shortKey));
+  if (compact) return compact;
+  const lat = Number(searchParams.get(`${prefix}lat`));
+  const lng = Number(searchParams.get(`${prefix}lng`));
+  const label = searchParams.get(`${prefix}label`);
+  if (!label || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng, label };
+}
+
+function setPlaceParams(
+  params: URLSearchParams,
+  prefix: "oP" | "dP",
+  pin: { lat: number; lng: number; label: string },
+): void {
+  params.set(prefix === "oP" ? "op" : "dp", encodePlacePin(pin));
+}
+
+// Shareable /map URL that preserves the route plus searched-place pins
+// (e.g. Iran Mall).
+export function buildMapHref(args: {
+  from?: string | null;
+  to?: string | null;
+  originPlace?: PlacePinParam;
+  destPlace?: PlacePinParam;
+}): string {
+  const params = new URLSearchParams();
+  if (args.from) params.set("from", args.from);
+  if (args.to) params.set("to", args.to);
+  if (args.originPlace) setPlaceParams(params, "oP", args.originPlace);
+  if (args.destPlace) setPlaceParams(params, "dP", args.destPlace);
+  const qs = params.toString();
+  return qs ? `/map?${qs}` : "/map";
+}
+
+// Same preserved state (route + place pins) on any tab path, so switching
+// tabs never drops a half-filled selection or a searched landmark.
+export function buildTabHref(
+  base: string,
+  args: {
+    from?: string | null;
+    to?: string | null;
+    originPlace?: PlacePinParam;
+    destPlace?: PlacePinParam;
+  },
+): string {
+  const params = new URLSearchParams();
+  if (args.from) params.set("from", args.from);
+  if (args.to) params.set("to", args.to);
+  if (args.originPlace) setPlaceParams(params, "oP", args.originPlace);
+  if (args.destPlace) setPlaceParams(params, "dP", args.destPlace);
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
 // geo: URI — on Android this pops up the native app-chooser so the user can
 // pick any installed app that handles locations: Google Maps, Waze, Snapp,
 // Tapsi, etc. On iOS it opens Apple Maps. On desktop most browsers ignore it.

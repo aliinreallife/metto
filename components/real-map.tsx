@@ -34,7 +34,7 @@ type Props = {
   initialCenter?: [number, number]
   initialZoom?: number
   onViewChange?: (center: [number, number], zoom: number) => void
-  placeMarkers?: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest" }>
+  placeMarkers?: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest"; stationId?: string | null }>
 }
 
 const TEHRAN_CENTER: [number, number] = [35.7, 51.38]
@@ -43,8 +43,13 @@ const SATELLITE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Worl
 const SATELLITE_ATTR = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 const LABELS_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_BASEMAP_KEY
-const MINIMALIST_URL =
-  `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+// CARTO serves raster tiles without a key (with an "API key required"
+// watermark) — far better than a blank map. Append the key only when set,
+// and never gate layer creation on it: a missing key must degrade to
+// watermarked tiles, not to zero tile layers (white/blank background).
+const MINIMALIST_URL = CARTO_KEY
+  ? `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+  : `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png`
 const MINIMALIST_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
@@ -137,7 +142,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const onSelectRef = useRef(onSelect)
   onSelectRef.current = onSelect
   const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null, hoveredId: null as string | null, lang: lang as Lang })
+  // Landmark labels (searched-place pins, GPS dot) rendered through the same
+  // engine as station labels. Keys are namespaced ("place:origin", "gps")
+  // so they never collide with station ids.
+  const extraLabelStateRef = useRef<Array<{ key: string; lat: number; lng: number; text: string }>>([])
   const [hasGps, setHasGps] = useState(false)
+  const [gpsPos, setGpsPos] = useState<[number, number] | null>(null)
   const [locating, setLocating] = useState(false)
   const isFa = lang === "fa"
 
@@ -151,6 +161,24 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
   // Keep label state ref in sync
   labelStateRef.current = { routeStations, originId, destId, selectedId, hoveredId: hoveredRef.current, lang }
+  // Landmark label inputs for the engine (short pin names + GPS dot).
+  {
+    const extras: Array<{ key: string; lat: number; lng: number; text: string }> = []
+    if (placeMarkers) {
+      for (const pm of placeMarkers) {
+        extras.push({ key: `place:${pm.role}`, lat: pm.lat, lng: pm.lng, text: pm.label })
+      }
+    }
+    if (gpsPos) {
+      extras.push({
+        key: "gps",
+        lat: gpsPos[0],
+        lng: gpsPos[1],
+        text: lang === "fa" ? "شما اینجا هستید" : "You are here",
+      })
+    }
+    extraLabelStateRef.current = extras
+  }
 
   function scheduleLabels(immediate = false) {
     if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current)
@@ -165,6 +193,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       updateStationLabels()
     }, 50)
   }
+
+  // Re-run placement when landmark labels change (pins, GPS, language).
+  useEffect(() => {
+    scheduleLabels()
+  }, [placeMarkers, gpsPos, lang])
 
   function updateStationLabels() {
     const map = mapRef.current
@@ -228,6 +261,28 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       })
     }
 
+    // Landmark labels (searched places, GPS dot) go through the same
+    // engine so they look and collide like station labels — always forced.
+    // Places have no marker art, so their label anchors right at the
+    // coordinate; the GPS label sits just above its dot.
+    const extraByKey = new Map(extraLabelStateRef.current.map((e) => [e.key, e]))
+    for (const extra of extraLabelStateRef.current) {
+      const p = map.latLngToContainerPoint([extra.lat, extra.lng])
+      const isGps = extra.key === "gps"
+      const point = { x: p.x, y: p.y - (isGps ? 12 : 0) }
+      dots.push({ id: extra.key, point, radius: isGps ? 4 : 2 })
+      const { w, h } = measureStationLabel(container, extra.text, currentLang)
+      candidates.push({
+        id: extra.key,
+        point,
+        width: w,
+        height: h,
+        priority: LABEL_PRIORITY.endpoint,
+        forced: true,
+        prevAnchor: prevAnchorRef.current.get(extra.key) ?? null,
+      })
+    }
+
     const placements = placeLabels(candidates, dots, viewport)
     const alive = new Set<string>()
     for (const pl of placements) {
@@ -241,12 +296,20 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         continue
       }
       const entry = markersRef.current.get(pl.id)
-      if (!entry) continue
+      const extra = entry ? null : extraByKey.get(pl.id)
+      if (!entry && !extra) continue
       alive.add(pl.id)
       prevAnchorRef.current.set(pl.id, pl.anchor)
-      const text = currentLang === "fa" ? entry.station.name.fa : entry.station.name.en
+      const text = entry
+        ? currentLang === "fa"
+          ? entry.station.name.fa
+          : entry.station.name.en
+        : extra!.text
       const c = candidates.find((k) => k.id === pl.id)!
-      const p = map.latLngToContainerPoint([entry.station.location.lat, entry.station.location.lng])
+      const src = entry
+        ? { lat: entry.station.location.lat, lng: entry.station.location.lng }
+        : { lat: extra!.lat, lng: extra!.lng }
+      const p = map.latLngToContainerPoint([src.lat, src.lng])
       const key = `${text}|${c.width}x${c.height}|${pl.anchor}|${pl.x.toFixed(1)},${pl.y.toFixed(1)}`
       const existing = labelNodesRef.current.get(pl.id)
       if (existing && existing.key === key) continue
@@ -255,14 +318,15 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         existing.marker.setIcon(icon)
         existing.key = key
       } else {
-        const marker = L.marker([entry.station.location.lat, entry.station.location.lng], {
+        const marker = L.marker([src.lat, src.lng], {
           icon,
-          interactive: true,
+          interactive: !!entry,
           keyboard: false,
         })
-        // Labels are tappable like dots: non-draggable Leaflet markers do
-        // not block map panning, and click fires only when no drag happened.
-        marker.on("click", () => onSelectRef.current(pl.id))
+        // Station labels are tappable like dots; landmark labels are
+        // display-only (the pin itself keeps its hover tooltip).
+        // Labels are non-draggable Leaflet markers and do not block panning.
+        if (entry) marker.on("click", () => onSelectRef.current(pl.id))
         marker.addTo(layer)
         labelNodesRef.current.set(pl.id, { marker, key })
       }
@@ -300,24 +364,22 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     })
     labelsLayerRef.current = labelsLayer
 
-    const minimalistLayer = CARTO_KEY
-      ? L.tileLayer(MINIMALIST_URL, {
-          maxZoom: 20,
-          attribution: MINIMALIST_ATTR,
-          subdomains: "abcd",
-        })
-      : null
+    const minimalistLayer = L.tileLayer(MINIMALIST_URL, {
+      maxZoom: 20,
+      attribution: MINIMALIST_ATTR,
+      subdomains: "abcd",
+    })
     minimalistLayerRef.current = minimalistLayer
     if (!CARTO_KEY) {
       console.warn(
-        "NEXT_PUBLIC_CARTO_BASEMAP_KEY is missing; CARTO Minimalist basemap cannot load.",
+        "NEXT_PUBLIC_CARTO_BASEMAP_KEY is missing; using watermarked CARTO tiles.",
       )
     }
 
     if (initialMapModeRef.current === "satellite") {
       tileLayer.addTo(map)
       labelsLayer.addTo(map)
-    } else if (minimalistLayer) {
+    } else {
       minimalistLayer.addTo(map)
     }
 
@@ -484,16 +546,17 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (gpsMarkerRef.current) gpsMarkerRef.current.addTo(layer)
   }, [edges, route, routeStations, routeEdgeKeys, originId, destId, selectedId, isFa, onSelect])
 
-  // Fit to the route bounds when it changes.
+  // Fit to the route bounds when it changes (no place pins: keep old behavior).
   useEffect(() => {
     const map = mapRef.current
     if (!map || !route || route.path.length === 0) return
+    if (placeMarkers && placeMarkers.length > 0) return
     const pts = route.path
       .map((id) => STATION_MAP.get(id))
       .filter(Boolean)
       .map((s) => [s!.location.lat, s!.location.lng] as [number, number])
     if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 14 })
-  }, [route])
+  }, [route, placeMarkers])
 
   // Render place markers when placeMarkers prop changes.
   useEffect(() => {
@@ -505,32 +568,38 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     if (!placeMarkers || placeMarkers.length === 0) return
 
-    const PLACE_STYLE = {
-      origin: {
-        bg: "#22c55e",
-        shadow: "#16a34a",
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><defs><filter id="os" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter></defs><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#22c55e" filter="url(#os)"/><circle cx="14" cy="13" r="6" fill="white"/></svg>`,
-      },
-      dest: {
-        bg: "#ef4444",
-        shadow: "#dc2626",
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><defs><filter id="ds" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter></defs><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#ef4444" filter="url(#ds)"/><circle cx="14" cy="13" r="6" fill="white"/></svg>`,
-      },
-    } as const
-
+    // No pin markers: places are marked by their engine label plus the
+    // dashed walk connector below. GPS keeps its blue dot.
     const pts: [number, number][] = []
     for (const pm of placeMarkers) {
-      const s = PLACE_STYLE[pm.role]
-      const icon = L.divIcon({
-        html: s.svg,
-        className: "",
-        iconSize: [28, 40],
-        iconAnchor: [14, 40],
-        tooltipAnchor: [0, -40],
-      })
-      const marker = L.marker([pm.lat, pm.lng], { icon }).addTo(layer)
-      marker.bindTooltip(pm.label, { direction: "top", className: "station-label" })
       pts.push([pm.lat, pm.lng])
+
+      // Dashed "walk" connector from the searched place to its station.
+      const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
+      if (st) {
+        L.polyline(
+          [
+            [pm.lat, pm.lng],
+            [st.location.lat, st.location.lng],
+          ],
+          {
+            color: pm.role === "origin" ? "#22c55e" : "#ef4444",
+            weight: 3,
+            opacity: 0.9,
+            dashArray: "6 6",
+          },
+        ).addTo(layer)
+        pts.push([st.location.lat, st.location.lng])
+      }
+    }
+
+    // Include the metro route so the place stays in context (e.g. Iran Mall
+    // far from its station still shows the line).
+    if (route && route.path.length > 0) {
+      for (const id of route.path) {
+        const st = STATION_MAP.get(id)
+        if (st) pts.push([st.location.lat, st.location.lng])
+      }
     }
 
     if (pts.length === 1) {
@@ -538,7 +607,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     } else if (pts.length > 1) {
       map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
     }
-  }, [placeMarkers])
+  }, [placeMarkers, route])
 
   function locateMe() {
     if (!mapRef.current || !navigator.geolocation) return
@@ -565,9 +634,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           fillOpacity: 0.9,
           opacity: 1,
         }).addTo(map)
-        marker.bindTooltip(isFa ? "شما اینجا هید" : "You are here", { direction: "top" })
+        // No hover tooltip: the always-visible engine label (via gpsPos)
+        // is the single label for the dot.
         gpsMarkerRef.current = marker
         setHasGps(true)
+        setGpsPos([lat, lng])
 
         // Pan to location
         map.setView([lat, lng], 14)

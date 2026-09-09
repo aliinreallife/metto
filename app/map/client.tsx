@@ -3,10 +3,19 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Layers, Satellite } from "lucide-react";
+import { Loader2, Layers, Satellite, Building2, AlertTriangle } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { STRINGS } from "@/lib/i18n";
+import {
+  haversineKm,
+  formatDistance,
+  estimateWalkMinutes,
+  formatWalkTime,
+  isTooFarToWalk,
+  parsePlaceParam,
+} from "@/lib/geo";
+import { shortPlaceLabel } from "@/lib/geocoding";
 import { StationDetail } from "@/components/station-detail";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +33,7 @@ const RealMap = dynamic(
 
 export function MapPage() {
   const searchParams = useSearchParams();
-  const { lang, mapMode, setMapMode } = useMetro();
+  const { lang, mapMode, setMapMode, originPlace: ctxOriginPlace, destPlace: ctxDestPlace } = useMetro();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
 
@@ -48,13 +57,48 @@ export function MapPage() {
     const station = searchParams.get("station");
     const from = searchParams.get("from");
     const to = searchParams.get("to");
-    return { center, zoom, station, from, to };
+    // Prefer shareable URL params (compact op/dp, legacy oPlat… fallback);
+    // fall back to in-session context (SPA nav).
+    const originPin = parsePlaceParam(searchParams, "oP") ?? ctxOriginPlace;
+    const destPin = parsePlaceParam(searchParams, "dP") ?? ctxDestPlace;
+    return { center, zoom, station, from, to, originPin, destPlace: destPin };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const route = useMemo(() => {
     if (!initialParams.from || !initialParams.to || initialParams.from === initialParams.to) return null;
     return findRoute(initialParams.from, initialParams.to);
   }, [initialParams.from, initialParams.to]);
+
+  const placeMarkers = useMemo(() => {
+    const markers: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest"; stationId: string | null }> = [];
+    if (initialParams.originPin) {
+      markers.push({ ...initialParams.originPin, label: shortPlaceLabel(initialParams.originPin.label), role: "origin", stationId: initialParams.from });
+    }
+    if (initialParams.destPlace) {
+      markers.push({ ...initialParams.destPlace, label: shortPlaceLabel(initialParams.destPlace.label), role: "dest", stationId: initialParams.to });
+    }
+    return markers;
+  }, [initialParams]);
+
+  const placeInfos = useMemo(() => {
+    return placeMarkers
+      .map((m) => {
+        const station = m.stationId ? STATION_MAP.get(m.stationId) : null;
+        if (!station) return null;
+        const km = haversineKm(m.lat, m.lng, station.location.lat, station.location.lng);
+        const walkMin = estimateWalkMinutes(km);
+        return {
+          role: m.role,
+          label: m.label,
+          stationName: isFa ? station.name.fa : station.name.en,
+          distanceText: formatDistance(km, lang),
+          walkText: formatWalkTime(walkMin, lang),
+          tooFar: isTooFarToWalk(km),
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+  }, [placeMarkers, isFa, lang]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
@@ -81,7 +125,41 @@ export function MapPage() {
         initialCenter={mapView.center}
         initialZoom={mapView.zoom}
         onViewChange={handleViewChange}
+        placeMarkers={placeMarkers}
       />
+
+      {placeInfos.length > 0 && (
+        <div className="absolute inset-x-3 top-14 z-[500] mx-auto flex max-w-md flex-col gap-1.5">
+          {placeInfos.map((p) => (
+            <div
+              key={p.role}
+              className={cn(
+                "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm backdrop-blur",
+                p.tooFar
+                  ? "border-amber-500/40 bg-background/95 text-foreground"
+                  : "border-border bg-background/90 text-foreground",
+              )}
+            >
+              {p.tooFar ? (
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+              ) : (
+                <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{p.label}</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  {t.nearestStation}: {p.stationName} · {p.distanceText} · ~{p.walkText} {t.walkTime}
+                </p>
+                {p.tooFar && (
+                  <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
+                    {t.tooFarFromStation} (~{p.walkText})
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Map mode toggle */}
       <div className="absolute top-3 left-3 z-[500] flex overflow-hidden rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur">
