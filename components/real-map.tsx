@@ -43,8 +43,13 @@ const SATELLITE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Worl
 const SATELLITE_ATTR = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 const LABELS_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_BASEMAP_KEY
-const MINIMALIST_URL =
-  `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+// CARTO serves raster tiles without a key (with an "API key required"
+// watermark) — far better than a blank map. Append the key only when set,
+// and never gate layer creation on it: a missing key must degrade to
+// watermarked tiles, not to zero tile layers (white/blank background).
+const MINIMALIST_URL = CARTO_KEY
+  ? `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+  : `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png`
 const MINIMALIST_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
@@ -300,24 +305,22 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     })
     labelsLayerRef.current = labelsLayer
 
-    const minimalistLayer = CARTO_KEY
-      ? L.tileLayer(MINIMALIST_URL, {
-          maxZoom: 20,
-          attribution: MINIMALIST_ATTR,
-          subdomains: "abcd",
-        })
-      : null
+    const minimalistLayer = L.tileLayer(MINIMALIST_URL, {
+      maxZoom: 20,
+      attribution: MINIMALIST_ATTR,
+      subdomains: "abcd",
+    })
     minimalistLayerRef.current = minimalistLayer
     if (!CARTO_KEY) {
       console.warn(
-        "NEXT_PUBLIC_CARTO_BASEMAP_KEY is missing; CARTO Minimalist basemap cannot load.",
+        "NEXT_PUBLIC_CARTO_BASEMAP_KEY is missing; using watermarked CARTO tiles.",
       )
     }
 
     if (initialMapModeRef.current === "satellite") {
       tileLayer.addTo(map)
       labelsLayer.addTo(map)
-    } else if (minimalistLayer) {
+    } else {
       minimalistLayer.addTo(map)
     }
 
