@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Layers, Satellite, Building2, AlertTriangle } from "lucide-react";
+import { Loader2, Layers, Satellite, Building2, AlertTriangle, X } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { STRINGS } from "@/lib/i18n";
@@ -101,6 +101,7 @@ export function MapPage() {
   }, [placeMarkers, isFa, lang]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
+  const [dismissedWarnings, setDismissedWarnings] = useState<string[]>([]);
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
     center: initialParams.center,
     zoom: initialParams.zoom,
@@ -113,51 +114,67 @@ export function MapPage() {
   }, []);
 
   return (
-    <div className="relative flex-1 min-h-0 flex flex-col">
-      <RealMap
-        lang={lang}
-        mapMode={mapMode}
-        route={route}
-        originId={initialParams.from}
-        destId={initialParams.to}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
-        initialCenter={mapView.center}
-        initialZoom={mapView.zoom}
-        onViewChange={handleViewChange}
-        placeMarkers={placeMarkers}
-      />
+    <div className="relative mb-14 min-h-0 flex-1 flex flex-col md:mb-0">
+      <div className="min-h-0 flex-1">
+        <RealMap
+          lang={lang}
+          mapMode={mapMode}
+          route={route}
+          originId={initialParams.from}
+          destId={initialParams.to}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          initialCenter={mapView.center}
+          initialZoom={mapView.zoom}
+          onViewChange={handleViewChange}
+          placeMarkers={placeMarkers}
+        />
+      </div>
 
       {placeInfos.length > 0 && (
         <div className="absolute inset-x-3 top-14 z-[500] mx-auto flex max-w-md flex-col gap-1.5">
-          {placeInfos.map((p) => (
-            <div
-              key={p.role}
-              className={cn(
-                "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm backdrop-blur",
-                p.tooFar
-                  ? "border-amber-500/40 bg-background/95 text-foreground"
-                  : "border-border bg-background/90 text-foreground",
-              )}
-            >
-              {p.tooFar ? (
-                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-              ) : (
-                <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{p.label}</p>
-                <p className="mt-0.5 text-muted-foreground">
-                  {t.nearestStation}: {p.stationName} · {p.distanceText} · ~{p.walkText} {t.walkTime}
-                </p>
-                {p.tooFar && (
-                  <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
-                    {t.tooFarFromStation} (~{p.walkText})
+          {placeInfos.map((p) => {
+            const warningKey = `${p.role}-${p.label}`;
+            if (p.tooFar && dismissedWarnings.includes(warningKey)) return null;
+            return (
+              <div
+                key={p.role}
+                className={cn(
+                  "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm backdrop-blur",
+                  p.tooFar
+                    ? "border-amber-500/40 bg-background/95 text-foreground"
+                    : "border-border bg-background/90 text-foreground",
+                )}
+              >
+                {p.tooFar ? (
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                ) : (
+                  <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{p.label}</p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    {t.nearestStation}: {p.stationName} · {p.distanceText} · ~{p.walkText} {t.walkTime}
                   </p>
+                  {p.tooFar && (
+                    <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
+                      {t.tooFarFromStation} (~{p.walkText})
+                    </p>
+                  )}
+                </div>
+                {p.tooFar && (
+                  <button
+                    type="button"
+                    onClick={() => setDismissedWarnings((current) => [...current, warningKey])}
+                    className="-mr-1 -mt-1 rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    aria-label={lang === "fa" ? "بستن هشدار" : "Dismiss warning"}
+                  >
+                    <X className="size-4" />
+                  </button>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
