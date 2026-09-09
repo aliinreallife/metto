@@ -189,7 +189,7 @@ export const STRINGS = {
     shareRoute: "اشتراک‌گذاری مسیر",
     shareStation: "اشتراک‌گذاری ایستگاه",
     copied: "لینک کپی شد!",
-    copyLink: "کپی لینک",
+    copyLink: "کپی لینک مسیر",
     copiedShort: "کپی شد!",
     copyFailed: "کپی نشد",
     directionsToStart: "مسیریابی تا مبدأ",
