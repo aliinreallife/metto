@@ -1,0 +1,35 @@
+{
+  "$comment": "Hand-maintained Metto-only overrides. Canonical coordinates and amenities always come from data/tehran-metro-stations.json (upstream: tehran-metro-data, mostafa-kheibary). Do NOT add canonical coordinate overrides here except Soleimani (intentional Metto pin).",
+  "soleimaniOverride": {
+    "en": "Shahid Sepahbod Qasem Soleimani",
+    "location": { "lat": 35.95882966952798, "lng": 50.71920151458703 }
+  },
+  "statusOverrides": {
+    "vavan": "under_construction",
+    "chaharbagh": "under_construction",
+    "haram-e-hazrat-e-abdol-azim": "under_construction",
+    "meydan-e-hazrat-e-abdol-azim": "under_construction",
+    "ebn-e-babviyeh": "under_construction",
+    "cheshmeh-ali": "under_construction"
+  },
+  "fakhrizadeh": {
+    "id": "shahid-fakhrizadeh",
+    "name": { "fa": "شهید فخری‌زاده", "en": "Shahid Fakhrizadeh" },
+    "location": { "lat": 35.91758, "lng": 50.7911 },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": false
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "insertAfterEn": "Golshahr"
+  }
+}

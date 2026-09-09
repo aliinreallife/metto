@@ -173,7 +173,7 @@ server.registerTool("get_station", {
   }
 
   const amenityList = Object.entries(station.amenities)
-    .filter(([, v]) => v)
+    .filter(([, v]) => v === true)
     .map(([k]) => k);
 
   return {

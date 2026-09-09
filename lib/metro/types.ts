@@ -37,16 +37,20 @@ export type ServiceStatus =
   | "service_disruption";
 
 export interface StationAmenities {
-  wc: boolean;
-  elevator: boolean;
-  atm: boolean;
-  coffeeShop: boolean;
-  fastFood: boolean;
-  groceryStore: boolean;
-  freeWifi: boolean;
-  prayerRoom: boolean;
-  parking: boolean;
-  police: boolean;
+  /**
+   * true = confirmed available, false = confirmed unavailable,
+   * null = unknown / no upstream data (missing or null upstream).
+   */
+  wc: boolean | null;
+  elevator: boolean | null;
+  atm: boolean | null;
+  coffeeShop: boolean | null;
+  fastFood: boolean | null;
+  groceryStore: boolean | null;
+  freeWifi: boolean | null;
+  prayerRoom: boolean | null;
+  parking: boolean | null;
+  police: boolean | null;
 }
 
 export interface MetroStation {
