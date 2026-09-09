@@ -100,7 +100,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
         : "";
 
   return (
-    <div className="flex size-full min-h-0 flex-col overflow-y-auto bg-background">
+    <div className="flex size-full min-h-0 flex-col overflow-y-auto overscroll-contain bg-background">
       <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
         {/* Location setter */}
         <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">

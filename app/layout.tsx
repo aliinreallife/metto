@@ -187,7 +187,7 @@ export default function RootLayout({
         >
           <MetroProvider>
             <AppNav />
-            <div className="relative min-h-0 flex-1 flex flex-col pb-14 md:pb-0">{children}</div>
+            <div className="relative min-h-0 flex-1 flex flex-col overflow-hidden pb-16 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">{children}</div>
           </MetroProvider>
         </FingerprintProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}

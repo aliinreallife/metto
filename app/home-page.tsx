@@ -231,7 +231,7 @@ function RouteView({
   }
 
   return (
-    <div className="flex size-full flex-col overflow-y-auto p-4 md:items-center md:p-8 lg:p-10">
+    <div className="flex size-full flex-col overflow-y-auto overscroll-contain p-4 md:items-center md:p-8 lg:p-10">
       <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
         <div className="flex flex-col gap-2.5">
           <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
