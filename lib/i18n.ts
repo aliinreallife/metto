@@ -92,6 +92,7 @@ export const STRINGS = {
     shareRoute: "Share route",
     shareStation: "Share station",
     copied: "Link copied!",
+    opensInNewTab: "opens in new tab",
   },
   fa: {
     appTitle: "متو",
@@ -184,6 +185,7 @@ export const STRINGS = {
     shareRoute: "اشتراک‌گذاری مسیر",
     shareStation: "اشتراک‌گذاری ایستگاه",
     copied: "لینک کپی شد!",
+    opensInNewTab: "در برگه جدید باز می‌شود",
   },
 } as const;
 
