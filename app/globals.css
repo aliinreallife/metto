@@ -166,6 +166,18 @@
   html {
     @apply font-sans;
   }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+/* Tabular Persian numerals: keeps times like ۱۵:۱۱ aligned
+   in Vazirmatn without switching to a monospace font. */
+.tnum {
+  font-variant-numeric: tabular-nums;
 }
 
 .station-label {

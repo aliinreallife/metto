@@ -233,7 +233,7 @@ function Stat({
   return (
     <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-3 py-3 md:px-5 md:py-4">
       <span className="text-muted-foreground">{icon}</span>
-      <span className="text-2xl font-bold leading-none md:text-3xl" title={tooltip}>{value}</span>
+      <span className="tnum text-2xl font-bold leading-none md:text-3xl" title={tooltip}>{value}</span>
       <span className="text-sm text-muted-foreground md:text-base">{label}</span>
     </div>
   );
@@ -285,8 +285,8 @@ function SegmentCard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold font-mono leading-none md:text-3xl" style={{ color }}>
-                {trip ? trip.departTime : next?.time ?? "—"}
+              <span className="tnum text-2xl font-bold leading-none md:text-3xl" style={{ color }}>
+                {persianDigits(trip ? trip.departTime : (next?.time ?? "—"), lang)}
               </span>
               {(trip?.train.isExpress || next?.isExpress) && (
                 <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
@@ -300,7 +300,7 @@ function SegmentCard({
               {trip ? (
                 <>
                   <span className="mx-1.5">·</span>
-                  {isFa ? "رسیدن" : "arrive"} <span className="font-mono font-semibold">{persianDigits(trip.arriveTime, lang)}</span>
+                  {isFa ? "رسیدن" : "arrive"} <span className="tnum font-semibold">{persianDigits(trip.arriveTime, lang)}</span>
                   <span className="mx-1.5">·</span>
                   {persianDigits(trip.travelMinutes, lang)}{isFa ? " دقیقه" : " min"}
                 </>
@@ -317,7 +317,7 @@ function SegmentCard({
               return (
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
                   {isFa ? "بعدی:" : "Then:"}{" "}
-                  <span className="font-mono font-semibold">{persianDigits(nextDifferent.time, lang)}</span>
+                  <span className="tnum font-semibold">{persianDigits(nextDifferent.time, lang)}</span>
                   {nextDifferent.isExpress && (
                     <span className="ms-1 text-amber-600 dark:text-amber-400">
                       ({isFa ? "سریع السیر" : "express"})
