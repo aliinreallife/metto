@@ -146,7 +146,7 @@ export function HomePage() {
         />
       </div>
 
-      <div className="z-20 flex items-center justify-start gap-4 border-t border-border bg-card/90 px-4 py-2 backdrop-blur">
+      <div className="z-20 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 border-t border-border bg-card/90 px-4 py-2 backdrop-blur">
         <a
           href="https://github.com/aliinreallife"
           target="_blank"
