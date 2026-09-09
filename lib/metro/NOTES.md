@@ -93,3 +93,44 @@ Garmdarreh, Atmosfer.
 3. Whether any timetabled service runs through Parand/Mehrabad junctions
    without train change (currently assumed to require one).
 4. Transliteration canonicalization kept app spelling (qolhak etc.).
+
+## Routing preference (current policy + future options)
+
+Current default policy: **fewest transfers wins ties of time**. The Dijkstra
+cost (`RIDE_COST=1`, `TRANSFER_PENALTY=5`, walk-scaled Eram-e Sabz = 11)
+deliberately prices a transfer above its pure seconds cost (walk + typical
+wait), because transfers also cost inconvenience (stairs, crowds,
+missed-connection risk) that timetables cannot see. Do not "fix" the penalty
+to match stopwatch seconds without reading the rest of this section.
+
+Recalibration experiment (Sep 2026, reverted): penalty 5 -> 3 with walk
+scaling capped at 1.5x (standard transfer 6 -> 4, Eram 11 -> 5.5, calibrated
+against schedule-data.json medians: urban hop ≈ 120 s, L5 hop ≈ 360 s).
+Full all-pairs sweep (22,650 ODs): 1,472 paths changed (6.5%), ~1,393 faster
+in real-seconds terms (best: L7-north -> downtown up to -11 min; Karaj ->
+Beheshti 112 -> 99 min), 51 slightly worse (worst +4 min). Reverted because:
+(a) cheaper transfers introduced exact-cost ties (403 flips) decided by heap
+order, including backtracking itineraries (e.g. Eram -> Sadeghiyeh -> back
+east on L5); (b) static costs cannot see headways, so L7-heavy reroutes
+sometimes lose real minutes on low-frequency days; (c) product call: the app
+currently promises least-changing-lines behavior, and choppy 2-transfer
+itineraries feel worse than the minutes suggest. The sweep harness pattern
+(temp tsx script over all pairs, before/after diff) is the required
+validation for ANY future cost change.
+
+Future: user-selectable routing preference. Sketch (not implemented):
+- `RoutePreference = "fewest-transfers" (default) | "fastest" | "least-walking"`.
+- Same Dijkstra, different weight presets — no logic fork. "fastest" uses
+  static-seconds weights (per-line median hop seconds, walk + half-headway
+  waits); full timetable-driven path search is explicitly out of scope until
+  schedule data is available at path-choice time on all clients.
+- Deterministic tie-break on exact cost ties (fewer transfers, then fewer
+  hops) so outcomes never depend on heap order.
+- Plumbing: `FindRouteOptions.preference`, `?preference=` on GET /api/route,
+  optional MCP `preference` input (additive only), UI selector in the route
+  panel persisted like `mapMode`.
+- Advanced routing (later): avoid-line/station list, step-free-only (needs
+  elevator data per interchange first), departure-time-aware PATH choice
+  (today only the ETA varies with departure; the path is static).
+- Guardrail: any default-weight change must re-run the all-pairs sweep and
+  attach the improved/tied/worsened counts plus worst-case examples.
