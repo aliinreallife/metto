@@ -180,6 +180,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Hide painted scrollbar chrome on the main tab lists (mobile-app pattern).
+   Scrolling stays fully native (touch, wheel, keyboard, screen readers) —
+   only the OS scrollbar track/buttons/thumb are not painted, so classic
+   non-overlay scrollbar themes can't show dark gutters inside the lists. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .station-label {
   background: var(--background) !important;
   border: 1px solid var(--border) !important;
