@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Layers, Satellite, Building2, AlertTriangle } from "lucide-react";
+import { Loader2, Layers, Satellite, Building2, AlertTriangle, X } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { STRINGS } from "@/lib/i18n";
@@ -18,6 +18,10 @@ import {
 import { shortPlaceLabel } from "@/lib/geocoding";
 import { StationDetail } from "@/components/station-detail";
 import { cn } from "@/lib/utils";
+
+// Feature flag: dismiss buttons on the map place info/warning cards.
+// Disabled for now — set to true to re-enable. Dismiss logic below is kept intact.
+const ENABLE_PLACE_CARD_DISMISS = false;
 
 const RealMap = dynamic(
   () => import("@/components/real-map").then((m) => m.RealMap),
@@ -101,6 +105,16 @@ export function MapPage() {
   }, [placeMarkers, isFa, lang]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
+  const [dismissedKeys, setDismissedKeys] = useState<ReadonlySet<string>>(new Set());
+
+  // A dismissed card stays dismissed for this search; a new search (URL change) brings cards back.
+  useEffect(() => {
+    setDismissedKeys(new Set());
+  }, [searchParams]);
+
+  const visiblePlaceInfos = ENABLE_PLACE_CARD_DISMISS
+    ? placeInfos.filter((p) => !dismissedKeys.has(`${p.role}:${p.label}`))
+    : placeInfos;
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
     center: initialParams.center,
     zoom: initialParams.zoom,
@@ -128,11 +142,11 @@ export function MapPage() {
         placeMarkers={placeMarkers}
       />
 
-      {placeInfos.length > 0 && (
+      {visiblePlaceInfos.length > 0 && (
         <div className="absolute inset-x-3 top-14 z-[500] mx-auto flex max-w-md flex-col gap-1.5">
-          {placeInfos.map((p) => (
+          {visiblePlaceInfos.map((p) => (
             <div
-              key={p.role}
+              key={`${p.role}:${p.label}`}
               className={cn(
                 "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm backdrop-blur",
                 p.tooFar
@@ -156,6 +170,18 @@ export function MapPage() {
                   </p>
                 )}
               </div>
+              {ENABLE_PLACE_CARD_DISMISS && (
+              <button
+                type="button"
+                onClick={() =>
+                  setDismissedKeys((prev) => new Set(prev).add(`${p.role}:${p.label}`))
+                }
+                aria-label={t.close}
+                className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+              )}
             </div>
           ))}
         </div>
