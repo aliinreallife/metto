@@ -128,7 +128,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
         {persianDigits(results.length, lang)} {isFa ? "ایستگاه" : "stations"}
       </p>
 
-      <ul className="no-scrollbar flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain pb-2 md:flex-none md:overflow-visible">
+      <ul className="no-scrollbar flex flex-col gap-3 overflow-x-hidden pb-2">
         {results.length === 0 && (
           <li className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
             {t.noResults}
