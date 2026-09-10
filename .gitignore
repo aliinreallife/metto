@@ -20,3 +20,12 @@ tsconfig.tsbuildinfo
 
 # Agent working notes (local only)
 .mimocode/
+
+# Serwist (generated service worker; source is app/sw.ts)
+public/sw.js
+public/sw.js.map
+public/sw.js.map.txt
+
+# Playwright
+test-results/
+playwright-report/

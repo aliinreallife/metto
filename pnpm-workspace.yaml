@@ -2,5 +2,6 @@ overrides:
   hono: 4.12.25
 allowBuilds:
   '@fingerprint/react': true
+  esbuild: true
   msw: true
   sharp: true

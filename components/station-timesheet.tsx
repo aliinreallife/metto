@@ -12,6 +12,8 @@ import {
   type Departure,
   type DayType,
 } from "@/lib/schedule-utils";
+import { useHolidayData } from "@/lib/holidays/use-holiday-data";
+import { HolidayCard } from "@/components/holiday-card";
 import { useScheduleData } from "@/lib/use-schedule-data";
 import { cn } from "@/lib/utils";
 
@@ -25,9 +27,12 @@ export function StationTimesheet({
   onClose: () => void;
 }) {
   const loaded = useScheduleData();
+  const { isHolidayDate } = useHolidayData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
-  const [dayType, setDayType] = useState<DayType>(getCurrentDayType());
+  const [dayType, setDayType] = useState<DayType>(() =>
+    getCurrentDayType(undefined, isHolidayDate),
+  );
   const [expandedLine, setExpandedLine] = useState<number | null>(null);
 
   const dayLabels: Record<DayType, string> = {
@@ -103,6 +108,11 @@ export function StationTimesheet({
         >
           <X className="size-4" />
         </button>
+      </div>
+
+      {/* Compact offline holiday summary (same dataset as routing). */}
+      <div className="border-b border-border px-4 py-2">
+        <HolidayCard lang={lang} />
       </div>
 
       {/* Day type selector */}

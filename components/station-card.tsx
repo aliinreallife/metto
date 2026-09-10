@@ -12,6 +12,7 @@ import {
   getNextDepartures,
   getCurrentDayType,
 } from "@/lib/schedule-utils";
+import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { useScheduleData } from "@/lib/use-schedule-data";
 
 type Props = {
@@ -24,6 +25,7 @@ type Props = {
 
 export function StationCard({ station, lang, distance, onSetDest, onShowTimetable }: Props) {
   const loaded = useScheduleData();
+  const { isHolidayDate } = useHolidayData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const lines = getStationLines(station.id);
@@ -36,10 +38,10 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
   const departures = useMemo(() => {
     const grouped = lines.map((line) => ({
       line,
-      departures: getNextDepartures(station.id, line, getCurrentDayType(), 2),
+      departures: getNextDepartures(station.id, line, getCurrentDayType(undefined, isHolidayDate), 2),
     }));
     return grouped.filter((g) => g.departures.length > 0);
-  }, [station.id, lines.join(","), loaded]);
+  }, [station.id, lines.join(","), loaded, isHolidayDate]);
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">

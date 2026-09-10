@@ -1,5 +1,5 @@
 {
-  "buildCommand": "next build",
+  "buildCommand": "next build && serwist build",
   "crons": [
     {
       "path": "/api/cron/sync-holidays",

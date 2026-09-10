@@ -57,3 +57,21 @@ export function getTehranTodayAndTomorrow(nowMs: number): {
     },
   };
 }
+
+/**
+ * Normal daily refresh window: today + the next 7 Tehran calendar dates
+ * (8 dates total). One upstream request per date ≈ 8 requests/day, a tiny
+ * fraction of the ~200/day provider limit, regardless of user count.
+ */
+export function getTehranWeekDates(nowMs: number): TehranDay[] {
+  const days: TehranDay[] = [];
+  let gregorian = tehranParts(nowMs).dateStr;
+  for (let i = 0; i < 8; i++) {
+    days.push({
+      gregorianDate: gregorian,
+      jalaliDate: gregorianToJalali(gregorian),
+    });
+    gregorian = nextTehranCalendarDate(gregorian);
+  }
+  return days;
+}

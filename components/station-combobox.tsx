@@ -23,6 +23,9 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
   const [query, setQuery] = useState("")
   const [places, setPlaces] = useState<PlaceResult[]>([])
   const [placesLoading, setPlacesLoading] = useState(false)
+  const [isOffline, setIsOffline] = useState(
+    () => typeof navigator !== "undefined" && navigator.onLine === false,
+  )
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -30,9 +33,24 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
   const selected = value ? STATION_MAP.get(value) : null
   const results = useMemo(() => searchStations(query, 40), [query])
 
-  // Debounced place search
   useEffect(() => {
-    if (query.length < 3) {
+    const onOnline = () => setIsOffline(false)
+    const onOffline = () => {
+      setIsOffline(true)
+      setPlaces([])
+      setPlacesLoading(false)
+    }
+    window.addEventListener("online", onOnline)
+    window.addEventListener("offline", onOffline)
+    return () => {
+      window.removeEventListener("online", onOnline)
+      window.removeEventListener("offline", onOffline)
+    }
+  }, [])
+
+  // Debounced place search (online-only; station search stays local/offline).
+  useEffect(() => {
+    if (query.length < 3 || isOffline) {
       setPlaces([])
       setPlacesLoading(false)
       return
@@ -56,7 +74,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
       clearTimeout(timer)
       abortRef.current?.abort()
     }
-  }, [query, lang])
+  }, [query, lang, isOffline])
 
   // Clear places when dropdown closes
   useEffect(() => {
@@ -143,6 +161,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                   onClick={() => {
                     const example = STRINGS[lang].searchHintExample
                     setQuery(example)
+                    if (isOffline) return
                     searchPlaces(example, lang, 1).then((res) => {
                       if (res.length > 0) {
                         onPlaceSelect({ lat: res[0].lat, lng: res[0].lng, name: res[0].displayName })
@@ -191,8 +210,8 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
               </li>
             ))}
 
-            {/* Divider + place results */}
-            {query.length >= 3 && (hasPlaceResults || placesLoading) && (
+            {/* Divider + place results (online-only enhancement) */}
+            {query.length >= 3 && (hasPlaceResults || placesLoading || isOffline) && (
               <>
                 {hasStationResults && (
                   <li className="mx-3 my-1 border-t border-border" />
@@ -200,29 +219,37 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                 <li className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {t.places}
                 </li>
-                {placesLoading && places.length === 0 && (
-                  <li className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                    <Loader2 className="size-3.5 animate-spin" />
-                    {t.searchingPlaces}
+                {isOffline ? (
+                  <li className="px-3 py-2 text-xs text-muted-foreground md:px-4 md:text-sm">
+                    {t.placeSearchOffline}
                   </li>
+                ) : (
+                  <>
+                    {placesLoading && places.length === 0 && (
+                      <li className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                        <Loader2 className="size-3.5 animate-spin" />
+                        {t.searchingPlaces}
+                      </li>
+                    )}
+                    {places.map((p, i) => (
+                      <li key={`${p.lat}-${p.lng}-${i}`}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
+                            setOpen(false)
+                          }}
+                          className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent md:px-4 md:py-2.5 md:text-base"
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium">{p.displayName}</span>
+                          </span>
+                          <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
+                        </button>
+                      </li>
+                    ))}
+                  </>
                 )}
-                {places.map((p, i) => (
-                  <li key={`${p.lat}-${p.lng}-${i}`}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
-                        setOpen(false)
-                      }}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent md:px-4 md:py-2.5 md:text-base"
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium">{p.displayName}</span>
-                      </span>
-                      <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
-                    </button>
-                  </li>
-                ))}
               </>
             )}
 

@@ -5,10 +5,13 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && serwist build",
+    "build:next": "next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e:offline": "playwright test tests/offline.spec.ts tests/map-tiles.spec.ts",
+    "holidays:sync": "node scripts/sync-holidays.mjs",
     "generate:stations": "node scripts/generate-stations.ts"
   },
   "dependencies": {
@@ -33,12 +36,17 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@serwist/cli": "9.5.12",
+    "@serwist/next": "9.5.12",
     "@tailwindcss/postcss": "^4.2.0",
     "@types/jalaali-js": "^1.2.0",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "^0.28.2",
     "postcss": "^8.5",
+    "serwist": "9.5.12",
     "shadcn": "^4.13.0",
     "tailwindcss": "^4.2.0",
     "typescript": "5.7.3",

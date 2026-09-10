@@ -13,6 +13,7 @@ import {
   Database,
 } from "lucide-react";
 import { InstallButton } from "@/components/pwa";
+import { OfflineStatus } from "@/components/offline-status";
 import { useMetro } from "./providers";
 import { STRINGS } from "@/lib/i18n";
 import { buildTabHref } from "@/lib/geo";
@@ -102,6 +103,8 @@ export function AppNav() {
           </button>
         </div>
       </header>
+
+      <OfflineStatus lang={lang} />
 
       {/* mobile bottom tab bar - fixed to viewport bottom; credits sit
           directly on top with zero gap, main tab only */}

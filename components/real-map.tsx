@@ -149,6 +149,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const [hasGps, setHasGps] = useState(false)
   const [gpsPos, setGpsPos] = useState<[number, number] | null>(null)
   const [locating, setLocating] = useState(false)
+  const [gpsError, setGpsError] = useState<string | null>(null)
   const isFa = lang === "fa"
 
   const edges = useMemo(() => buildMapEdges(), [])
@@ -368,6 +369,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       maxZoom: 20,
       attribution: MINIMALIST_ATTR,
       subdomains: "abcd",
+      // Anonymous CORS (CARTO serves Access-Control-Allow-Origin: *):
+      // tile fetches become CORS requests with exposed status, so the
+      // service worker caches real `cors` responses instead of opaque
+      // ones — avoiding Chromium's ~7MB-per-entry opaque quota padding.
+      // Esri layers intentionally stay non-CORS (online-only, uncached).
+      crossOrigin: "anonymous",
     })
     minimalistLayerRef.current = minimalistLayer
     if (!CARTO_KEY) {
@@ -610,8 +617,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   }, [placeMarkers, route])
 
   function locateMe() {
-    if (!mapRef.current || !navigator.geolocation) return
+    if (!mapRef.current || !navigator.geolocation) {
+      setGpsError(isFa ? "موقعیت شما به‌دست نیامد." : "Couldn't get your location.")
+      return
+    }
     setLocating(true)
+    setGpsError(null)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const map = mapRef.current
@@ -644,7 +655,20 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         map.setView([lat, lng], 14)
         setLocating(false)
       },
-      () => { setLocating(false) },
+      (err) => {
+        setLocating(false)
+        // Offline with a cached fix still succeeds above; only genuine
+        // failures land here (denied/unavailable/timeout).
+        setGpsError(
+          err.code === err.PERMISSION_DENIED
+            ? isFa
+              ? "دسترسی به موقعیت رد شد."
+              : "Location access denied."
+            : isFa
+              ? "موقعیت شما به‌دست نیامد."
+              : "Couldn't get your location.",
+        )
+      },
       { enableHighAccuracy: true, timeout: 10000 },
     )
   }
@@ -652,6 +676,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" aria-label="Tehran metro on real map" />
+      {gpsError && (
+        <div className="absolute bottom-3 left-3 z-[1000] max-w-[70%] rounded-lg border border-border bg-background/95 px-3 py-1.5 text-xs text-destructive shadow-sm backdrop-blur">
+          {gpsError}
+        </div>
+      )}
       <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-1.5">
         <MapBtn label="Zoom in" onClick={() => mapRef.current?.zoomIn()}>
           <Plus className="size-4" />

@@ -13,11 +13,8 @@ export function InstallButton({ label }: { label: string }) {
   const [installed, setInstalled] = useState(false)
 
   useEffect(() => {
-    // Register the service worker.
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {})
-    }
-
+    // Service-worker registration lives in app/layout.tsx (SerwistProvider,
+    // early + updateViaCache:"none"). This button only handles install UX.
     const onPrompt = (e: Event) => {
       e.preventDefault()
       setDeferred(e as BeforeInstallPromptEvent)

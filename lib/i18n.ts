@@ -76,6 +76,21 @@ export const STRINGS = {
     viewOnMap: "View on map",
     noPlacesFound: "No places found",
     searchingPlaces: "Searching places…",
+    placeSearchOffline: "Internet is required to search for places.",
+    offlineNotPrepared:
+      "Offline data hasn't finished downloading on this device. Connect to the Internet once to prepare Metto for offline use.",
+    mapOfflineNote:
+      "The basemap requires Internet; metro lines and stations are still available offline.",
+    holidaysTitle: "Official holidays",
+    holidayLastUpdate: "Last update",
+    upcomingHolidays: "Upcoming holidays",
+    todaySchedule: "Today's schedule",
+    scheduleHoliday: "Holiday service",
+    scheduleFriday: "Friday service",
+    scheduleThursday: "Thursday service",
+    scheduleWeekday: "Weekday service",
+    holidayCoverageNote:
+      "Coverage is incomplete — unverified dates use the normal weekday schedule.",
 
     timeNote: "⚠ Travel time is a work in progress and may not be accurate.",
 
@@ -176,6 +191,21 @@ export const STRINGS = {
     viewOnMap: "نمایش روی نقشه",
     noPlacesFound: "مکانی یافت نشد",
     searchingPlaces: "در حال جستجوی مکان‌ها…",
+    placeSearchOffline: "برای جستجوی مکان به اینترنت نیاز است.",
+    offlineNotPrepared:
+      "این دستگاه هنوز برای استفاده آفلاین آماده نشده است. برای دریافت اطلاعات لازم یک‌بار به اینترنت متصل شوید.",
+    mapOfflineNote:
+      "نقشه پایه به اینترنت نیاز دارد؛ خطوط و ایستگاه‌های مترو آفلاین نمایش داده می‌شوند.",
+    holidaysTitle: "تعطیلات رسمی",
+    holidayLastUpdate: "آخرین بروزرسانی",
+    upcomingHolidays: "تعطیلات پیش‌رو",
+    todaySchedule: "برنامه امروز",
+    scheduleHoliday: "سرویس تعطیلات",
+    scheduleFriday: "سرویس جمعه",
+    scheduleThursday: "سرویس پنجشنبه",
+    scheduleWeekday: "سرویس روزهای عادی",
+    holidayCoverageNote:
+      "پوشش اطلاعات ناقص است — تاریخ‌های تأییدنشده از برنامه عادی هفته استفاده می‌کنند.",
 
     timeNote: "⚠ زمان سفر در حال توسعه است و ممکن است دقیق نباشد.",
 

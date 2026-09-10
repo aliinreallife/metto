@@ -24,6 +24,7 @@ import {
   getCurrentDayType,
   type TripResult,
 } from "@/lib/schedule-utils";
+import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { useScheduleData } from "@/lib/use-schedule-data";
 
 export function RoutePanel({
@@ -258,6 +259,7 @@ function SegmentCard({
 }) {
   const [open, setOpen] = useState(false);
   const loaded = useScheduleData();
+  const { isHolidayDate } = useHolidayData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const color = LINE_COLORS[line];
@@ -266,9 +268,9 @@ function SegmentCard({
   const alight = stations[stations.length - 1];
 
   const nextDep = useMemo(() => {
-    const deps = getNextDepartures(board, line, getCurrentDayType(), 10);
+    const deps = getNextDepartures(board, line, getCurrentDayType(undefined, isHolidayDate), 10);
     return deps;
-  }, [board, line, loaded]);
+  }, [board, line, loaded, isHolidayDate]);
 
   const next = nextDep[0] ?? null;
 

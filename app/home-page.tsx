@@ -21,6 +21,7 @@ import { StationDetail } from "@/components/station-detail";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useScheduleData } from "@/lib/use-schedule-data";
+import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
 import {
   nearestStations,
@@ -80,6 +81,7 @@ function readStoredPlaceInfo(storageKey: string, stationId: string | null): Plac
 
 export function HomePage() {
   const loaded = useScheduleData();
+  const { isHolidayDate } = useHolidayData();
   const { getData } = useVisitorData({ immediate: true });
   const {
     lang,
@@ -184,8 +186,10 @@ export function HomePage() {
 
   const route = useMemo(() => {
     if (!originId || !destId || originId === destId) return null;
-    return findRoute(originId, destId);
-  }, [originId, destId, loaded]);
+    // Holiday-aware: same local resolver the server uses (offline dataset,
+    // never a network request inside routing).
+    return findRoute(originId, destId, { isHolidayDate });
+  }, [originId, destId, loaded, isHolidayDate]);
 
   function swap() {
     setOriginId(destId);
@@ -320,12 +324,17 @@ function RouteView({
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
   const [locating, setLocating] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
   const gpsLangRef = useRef(lang);
   gpsLangRef.current = lang;
 
   function locateOrigin() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setGpsError(STRINGS[gpsLangRef.current].gpsUnavailable);
+      return;
+    }
     setLocating(true);
+    setGpsError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -363,7 +372,15 @@ function RouteView({
           );
         });
       },
-      () => setLocating(false),
+      (err) => {
+        const strings = STRINGS[gpsLangRef.current];
+        setGpsError(
+          err.code === err.PERMISSION_DENIED
+            ? strings.gpsDenied
+            : strings.gpsUnavailable,
+        );
+        setLocating(false);
+      },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   }
@@ -421,6 +438,14 @@ function RouteView({
               info={originPlaceInfo}
               onClear={clearOriginPlace}
             />
+          )}
+          {gpsError && (
+            <p
+              role="alert"
+              className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive md:text-sm"
+            >
+              {gpsError}
+            </p>
           )}
           <label className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
             {t.to}
