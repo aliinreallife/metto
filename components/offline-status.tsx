@@ -5,6 +5,7 @@ import { CheckCircle2, RefreshCw, WifiOff, X } from "lucide-react";
 import { useOfflineReadiness } from "@/lib/offline/use-offline-readiness";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { ensurePersistentStorage } from "@/lib/offline/storage";
+import { scheduleRegistrationDiagnostic } from "@/lib/offline/sw-registration-diagnostic";
 import type { Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,9 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
   useEffect(() => {
     // Best-effort once per session; never prompts, never blocks.
     void ensurePersistentStorage();
+    // Console-only registration probe (no UI): reports the real error if
+    // the worker can never take control (e.g. redirected /sw.js).
+    scheduleRegistrationDiagnostic();
   }, []);
 
   const {

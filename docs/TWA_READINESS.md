@@ -269,20 +269,35 @@ intercepted and never called).
 ### Troubleshooting readiness
 
 If the console never leaves `{ state: "preparing", … }`, inspect which flag
-is stuck:
+is stuck. A dedicated one-shot probe also logs
+`[Metto Offline] service worker registration failed` with the real error
+(console only, never UI) when registration definitively fails:
 
-- `serviceWorkerControlled: false` → the worker never took control:
-  confirm the deployment ran `next build && serwist build` (Vercel
-  `buildCommand`), that `/sw.js` returns 200 (not a stale cached copy or a
-  404 from a build that skipped the `serwist build` step), and that no
-  deployment-protection auth wall is answering SW precache fetches with
-  non-200 pages (a failed precache install prevents activation).
+- `serviceWorkerControlled: false` + registration failure naming a
+  **redirect** (`SecurityError … script … is behind a redirect`, worker
+  stuck “trying to install”, empty Cache Storage) → **confirmed cause on
+  protected previews: Vercel Deployment Protection.** It 302-redirects
+  every request including `/sw.js`, and the Service Worker spec forbids
+  registering a redirected script. Eliminated as repo causes: no
+  `redirects`/`rewrites` in `vercel.json`, no middleware, no
+  `redirects()`/`trailingSlash`/`cleanUrls` in `next.config.mjs`, no
+  canonical-domain redirect code. Remediation (Vercel dashboard, not code):
+  disable Deployment Protection for the preview environment used for PWA
+  testing, or test on an unprotected staging/custom domain. Do NOT point
+  registration at a redirected URL and do NOT weaken the worker.
+- `serviceWorkerControlled: false` without a redirect → confirm the
+  deployment ran `next build && serwist build` (Vercel `buildCommand`)
+  and that `/sw.js` returns HTTP 200 directly.
 - `precacheReady: false` → Cache Storage lacks the datasets: check
   DevTools → Application → Cache Storage for the `serwist-precache-*`
   entries (`schedule-data.json`, `holidays.json`).
 - `scheduleReady: false` → `/schedule-data.json` never loaded (network or
   SW fetch path); `holidaysReady: false` → bundled dataset missing
   (build issue).
+
+Production note: `GET https://metto.ir/sw.js` was verified to return HTTP
+200 with no redirect hop, so production registration is unaffected; the
+first activation there also purges the legacy `metto-v*` caches.
 
 ---
 

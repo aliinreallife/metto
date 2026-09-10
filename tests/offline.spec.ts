@@ -88,6 +88,10 @@ test.describe("Metto offline PWA", () => {
       page.getByText("Metto is ready for offline use"),
     ).toHaveCount(0);
     expect(offlineLogs.length).toBeGreaterThan(0);
+    // Healthy run: the registration-failure probe must stay silent.
+    expect(
+      offlineLogs.filter((l) => l.includes("registration failed")),
+    ).toHaveLength(0);
 
     // 5-7. Interactive station select + route calc (origin via combobox).
     const originToggle = page.getByRole("button", {
