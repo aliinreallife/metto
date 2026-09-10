@@ -63,13 +63,54 @@ hang, never a misleading empty state):
   nothing is retried aggressively, and nothing is precached.
 - **Reverse geocoding** (GPS origin labels, e.g. neighborhood names).
   Offline, GPS origins fall back to the generic “Your location” label.
-- **CARTO/Esri basemap tiles.** The geographic background needs Internet.
+- **CARTO/Esri basemap tiles.** The geographic background needs Internet
+  (subject only to the opportunistic recently-viewed CARTO retention in
+  §2.1 — never a full offline map).
   Metro lines/station markers/route vectors still render; `/map` shows:
   - FA: «نقشه پایه به اینترنت نیاز دارد؛ خطوط و ایستگاه‌های مترو آفلاین نمایش داده می‌شوند.»
   - EN: “The basemap requires Internet; metro lines and stations are still available offline.”
 - Future live service-disruption/closure feeds (not implemented; planned as
   online-only additions — calendar holidays and emergency closures are kept
   strictly separate).
+
+### 2.1 Opportunistic CARTO tile retention (recently viewed only — NOT offline maps)
+
+- CARTO raster tiles the user has **actually viewed** may be retained in a
+  small service-worker cache (`metto-carto-tiles`): **≤ 300 entries (LRU),
+  ≤ 30 days retention**, browser Cache Storage only, never server-side.
+- Policy basis: **CARTO Basemaps Terms and Conditions** (live copy:
+  `https://carto.com/legal/basemap-terms`; text verified as last updated
+  **26 Aug 2026**), §9.c, which prohibits bulk downloading, server-side
+  proxying/caching, and redistribution — while expressly permitting
+  *“caching map content on an end user's device or in an end user's browser
+  for [up to] thirty (30) days.”* This feature implements exactly that
+  allowance: no prefetch, no tile enumeration, no zoom-level crawling, no
+  offline-area download, no tile packs. (CARTO’s own CDN sends
+  `Cache-Control: public, max-age=15552000`, so a 30-day client cap is
+  conservative.)
+- Offline behavior: cached tiles may render where previously viewed;
+  unviewed areas stay blank; metro vectors/stations still render; the
+  offline-basemap banner (§2) still shows. A cache miss fails cleanly
+  (handled failure → Leaflet `tileerror`) with no worker `no-response`
+  noise and no fabricated placeholder tile.
+- Tiles arrive as **opaque** responses (Leaflet `<img>` without CORS mode —
+  kept deliberately so map behavior never depends on CORS headers). Only
+  validated tiles are stored (HTTP 200 basic/cors or opaque; never
+  redirects, `opaqueredirect`, errors, or 3xx/4xx/5xx). Note: Chromium
+  quota accounting pads opaque entries (~MBs each for accounting, not real
+  bytes — real tiles measured ~15 KB); the 300-entry LRU, 30-day expiry,
+  and quota-pressure purge-first rule bound this. Measured during testing
+  (see PR); re-measure on low-end devices if quota pressure is suspected.
+- **Esri stays network-only** (satellite + labels unmatched, never cached).
+- **Not part of offline readiness**: an empty tile cache changes nothing
+  about the ready state, which depends only on app shell + metro data +
+  schedule + holidays.
+- **Provider-removal cleanup rule**: if Metto ever stops using CARTO,
+  switches providers, or otherwise ceases using the CARTO basemap service,
+  that release MUST explicitly delete the `metto-carto-tiles` cache
+  (helper: `purgeCartoTileCache()` in `lib/map/carto-tiles.ts` — e.g. from
+  service-worker activation or first app startup), per §9.c’s ban on
+  retaining cached content after ceasing use.
 
 ---
 
