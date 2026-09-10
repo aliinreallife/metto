@@ -369,6 +369,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       maxZoom: 20,
       attribution: MINIMALIST_ATTR,
       subdomains: "abcd",
+      // Anonymous CORS (CARTO serves Access-Control-Allow-Origin: *):
+      // tile fetches become CORS requests with exposed status, so the
+      // service worker caches real `cors` responses instead of opaque
+      // ones — avoiding Chromium's ~7MB-per-entry opaque quota padding.
+      // Esri layers intentionally stay non-CORS (online-only, uncached).
+      crossOrigin: "anonymous",
     })
     minimalistLayerRef.current = minimalistLayer
     if (!CARTO_KEY) {

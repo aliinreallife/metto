@@ -90,7 +90,9 @@ const serwist = new Serwist({
     {
       // Opportunistic CARTO raster tiles the user actually viewed (Leaflet
       // <img> requests only — see isCartoTileRequest). CacheFirst: cache,
-      // else network, caching only validated 200/opaque tile responses.
+      // else network, caching only validated 200 cors/basic responses —
+      // opaque is rejected so a no-cors regression can never refill this
+      // 300-entry cache with quota-padded responses (see carto-tiles.ts).
       // Bounded by MAX_CARTO_TILES / MAX_CARTO_TILE_AGE_S (provider terms);
       // NOT part of offline readiness; Esri stays unmatched (network-only).
       matcher: ({ url, request, sameOrigin }) =>

@@ -74,21 +74,29 @@ export interface TileResponseShape {
 }
 
 /**
- * Tile cacheability gate. Allows exactly:
- * - HTTP 200, type "basic" or "cors";
- * - status 0, type "opaque" (Leaflet <img> loads are no-cors, so genuine
- *   tiles legitimately arrive opaque — constrained here to known tile URLs
- *   by the matcher above).
- * Rejects: "opaqueredirect", "error", any redirected response, 3xx/4xx/5xx.
+ * Tile response gate. Allows exactly:
+ * - HTTP 200, type "basic" or "cors", not redirected.
+ *
+ * Rejects everything else, deliberately including type "opaque":
+ * the 300-entry limit is ONLY valid under normal CORS quota accounting.
+ * A regression to no-cors must never silently refill this cache with
+ * Chromium-padded (~7MB each) opaque responses — such tiles fail to cache
+ * and the map falls back to its normal offline-basemap UX instead.
+ * (If Metto ever intentionally reverts to no-cors/opaque caching, that
+ * change must shrink MAX_CARTO_TILES to ~20 AND re-enable opaque here.)
  */
 export function isCacheableTileResponse(res: TileResponseShape): boolean {
   if (res.redirected) return false;
-  if (res.type === "opaqueredirect" || res.type === "error") return false;
-  if (res.status === 200 && (res.type === "basic" || res.type === "cors")) {
-    return true;
+  if (
+    res.type === "opaque" ||
+    res.type === "opaqueredirect" ||
+    res.type === "error"
+  ) {
+    return false;
   }
-  if (res.status === 0 && res.type === "opaque") return true;
-  return false;
+  return (
+    res.status === 200 && (res.type === "basic" || res.type === "cors")
+  );
 }
 
 /**

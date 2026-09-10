@@ -93,14 +93,15 @@ hang, never a misleading empty state):
   offline-basemap banner (§2) still shows. A cache miss fails cleanly
   (handled failure → Leaflet `tileerror`) with no worker `no-response`
   noise and no fabricated placeholder tile.
-- Tiles arrive as **opaque** responses (Leaflet `<img>` without CORS mode —
-  kept deliberately so map behavior never depends on CORS headers). Only
-  validated tiles are stored (HTTP 200 basic/cors or opaque; never
-  redirects, `opaqueredirect`, errors, or 3xx/4xx/5xx). Note: Chromium
-  quota accounting pads opaque entries (~MBs each for accounting, not real
-  bytes — real tiles measured ~15 KB); the 300-entry LRU, 30-day expiry,
-  and quota-pressure purge-first rule bound this. Measured during testing
-  (see PR); re-measure on low-end devices if quota pressure is suspected.
+- Tiles load with **anonymous CORS** (`crossOrigin: "anonymous"` on the
+  CARTO layer; the CDN sends `Access-Control-Allow-Origin: *`, verified
+  live) precisely to avoid Chromium opaque-response quota padding. The
+  cache invariant is strict:
+  **300 entries ⇔ CORS/basic-only; opaque caching ⇔ small cache only.**
+  Opaque responses are rejected, so a no-cors regression fails to cache
+  instead of silently filling the cache with ~7 MB-padded entries; if CORS
+  support is ever intentionally abandoned, shrink the cache to ~20 entries
+  *before* re-enabling opaque validation, and document the tradeoff.
 - **Esri stays network-only** (satellite + labels unmatched, never cached).
 - **Not part of offline readiness**: an empty tile cache changes nothing
   about the ready state, which depends only on app shell + metro data +

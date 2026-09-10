@@ -58,11 +58,14 @@ async function foreignCachedUrls(page: {
 
 test.describe("CARTO opportunistic tile cache", () => {
   test.beforeEach(async ({ context }: { context: BrowserContext }) => {
-    // Mock every CARTO tile with a 1px PNG: realistic headers, zero live use.
+    // Mock every CARTO tile with a 1px PNG served with real CORS headers
+    // (mirrors the live CDN's Access-Control-Allow-Origin: *): realistic
+    // headers, zero live use.
     await context.route("https://*.basemaps.cartocdn.com/**", (route) =>
       route.fulfill({
         status: 200,
         contentType: "image/png",
+        headers: { "Access-Control-Allow-Origin": "*" },
         body: PNG_1PX,
       }),
     );
@@ -91,6 +94,28 @@ test.describe("CARTO opportunistic tile cache", () => {
     await page.waitForTimeout(1500);
     await page.getByRole("button", { name: "Zoom in" }).click();
 
+    // Leaflet must issue anonymous-CORS tile requests (not no-cors).
+    const crossoriginValues = await page.evaluate(() =>
+      [...document.querySelectorAll("img.leaflet-tile")].map((img) =>
+        img.getAttribute("crossorigin"),
+      ),
+    );
+    expect(crossoriginValues.length).toBeGreaterThan(0);
+    expect(crossoriginValues.every((v) => v === "anonymous")).toBe(true);
+
+    // The CDN exposes CORS headers (page fetch is cors-mode by default).
+    // Note: `Access-Control-Allow-Origin` itself is not a CORS-safelisted
+    // response header, so JS cannot read it back — but a cross-origin fetch
+    // resolving with type "cors" proves the CORS check passed (without a
+    // valid ACAO header this fetch would reject instead).
+    const cdnCors = await page.evaluate(async () => {
+      const res = await fetch(
+        "https://a.basemaps.cartocdn.com/dark_nolabels/11/1315/806.png",
+      );
+      return { status: res.status, type: res.type };
+    });
+    expect(cdnCors).toEqual({ status: 200, type: "cors" });
+
     await expect
       .poll(async () => (await tileUrls(page)).length, { timeout: 30_000 })
       .toBeGreaterThan(0);
@@ -98,6 +123,19 @@ test.describe("CARTO opportunistic tile cache", () => {
     // Only genuinely viewed tiles, all matching the narrow rule.
     expect(urls.length).toBeLessThanOrEqual(300);
     expect(urls.every((u) => TILE_KEY_RE.test(u))).toBe(true);
+    // Every cached entry is a real CORS response — never opaque.
+    const entryTypes = await page.evaluate(async () => {
+      const cache = await caches.open("metto-carto-tiles");
+      const out: { status: number; type: string }[] = [];
+      for (const req of await cache.keys()) {
+        const res = await cache.match(req);
+        if (res) out.push({ status: res.status, type: res.type });
+      }
+      return out;
+    });
+    expect(entryTypes.length).toBe(urls.length);
+    expect(entryTypes.every((e) => e.status === 200 && e.type === "cors")).toBe(true);
+    expect(entryTypes.some((e) => e.type === "opaque")).toBe(false);
     expect(await foreignCachedUrls(page)).toEqual([]);
 
     const after = await storageUsage(page);

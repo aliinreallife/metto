@@ -89,16 +89,20 @@ describe("carto tile matcher", () => {
 });
 
 describe("tile response validation", () => {
-  it("allows 200 basic, 200 cors, and opaque tiles", () => {
+  it("allows 200 basic and 200 cors", () => {
     expect(
       isCacheableTileResponse({ status: 200, type: "basic", redirected: false }),
     ).toBe(true);
     expect(
       isCacheableTileResponse({ status: 200, type: "cors", redirected: false }),
     ).toBe(true);
+  });
+  it("rejects opaque: 300 entries are only valid under CORS accounting", () => {
+    // A no-cors regression must never refill this cache with padded
+    // opaque responses — see the invariant in lib/map/carto-tiles.ts.
     expect(
       isCacheableTileResponse({ status: 0, type: "opaque", redirected: false }),
-    ).toBe(true);
+    ).toBe(false);
   });
   it("rejects redirects, opaqueredirect, errors and bad statuses", () => {
     expect(
