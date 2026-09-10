@@ -7,6 +7,7 @@ import { Loader2, Layers, Satellite, Building2, AlertTriangle, X, WifiOff } from
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
+import { useConnectivity } from "@/lib/offline/use-connectivity";
 import { STRINGS } from "@/lib/i18n";
 import {
   haversineKm,
@@ -108,20 +109,41 @@ export function MapPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
   const [dismissedKeys, setDismissedKeys] = useState<ReadonlySet<string>>(new Set());
-  const [isOffline, setIsOffline] = useState(
-    () => typeof navigator !== "undefined" && navigator.onLine === false,
-  );
+  // Shared connectivity state (mount + online/offline + pageshow +
+  // foreground resync), so the banner reflects real network state even
+  // after the PWA resumes from background — never tile-error state.
+  const online = useConnectivity();
+  const isOffline = !online;
 
+  // One-time informational save notice: shown once per device while online,
+  // remembered locally. Never stacked with the offline banner, never a
+  // warning, no retention promises or implementation details.
+  const [saveNoticeSeen, setSaveNoticeSeen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("metto.mapSaveNoticeSeen") === "1";
+    } catch {
+      return true;
+    }
+  });
+  const [saveNoticeDismissed, setSaveNoticeDismissed] = useState(false);
   useEffect(() => {
-    const onOnline = () => setIsOffline(false);
-    const onOffline = () => setIsOffline(true);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
+    if (online && !saveNoticeSeen) {
+      try {
+        localStorage.setItem("metto.mapSaveNoticeSeen", "1");
+      } catch {
+        // Private mode etc. — notice simply shows again next visit.
+      }
+    }
+  }, [online, saveNoticeSeen]);
+  const showSaveNotice = online && !saveNoticeSeen && !saveNoticeDismissed;
+  function dismissSaveNotice() {
+    setSaveNoticeDismissed(true);
+    try {
+      localStorage.setItem("metto.mapSaveNoticeSeen", "1");
+    } catch {
+      // Ignore.
+    }
+  }
 
   // A dismissed card stays dismissed for this search; a new search (URL change) brings cards back.
   useEffect(() => {
@@ -158,13 +180,36 @@ export function MapPage() {
         placeMarkers={placeMarkers}
       />
 
-      {/* Offline basemap notice: vectors still render, tiles need Internet. */}
+      {/* Offline notice: purely connectivity-driven (never tile-error
+          state), so it shows even when cached tiles render fine, hides on
+          reconnect, and never flickers per tile. */}
       {isOffline && (
         <div className="absolute inset-x-3 top-14 z-[500] mx-auto flex max-w-md items-start gap-2 rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-sm backdrop-blur">
           <WifiOff className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <p className="min-w-0 flex-1 text-muted-foreground">
-            {t.mapOfflineNote}
-          </p>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-foreground">{t.mapOfflineTitle}</p>
+            <p className="mt-0.5 text-muted-foreground">{t.mapOfflineBody}</p>
+          </div>
+        </div>
+      )}
+
+      {/* One-time save notice: informational only, online only, never
+          stacked with the offline banner. */}
+      {showSaveNotice && (
+        <div className="absolute inset-x-3 top-14 z-[500] mx-auto flex max-w-md items-start gap-2 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow-sm backdrop-blur">
+          <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-foreground">{t.mapSaveTitle}</p>
+            <p className="mt-0.5 text-muted-foreground">{t.mapSaveBody}</p>
+          </div>
+          <button
+            type="button"
+            onClick={dismissSaveNotice}
+            aria-label={t.close}
+            className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
         </div>
       )}
 

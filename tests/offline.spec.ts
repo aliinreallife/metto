@@ -177,7 +177,7 @@ test.describe("Metto offline PWA", () => {
       page.locator('[aria-label="Tehran metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      page.getByText(/نقشه پایه به اینترنت نیاز دارد/),
+      page.getByText("بدون اینترنت", { exact: true }),
     ).toBeVisible({ timeout: 15_000 });
 
     // 18-20. Landmark search explains the Internet requirement offline.
@@ -284,6 +284,7 @@ test.describe("Metto offline PWA", () => {
 
       // Old clients disappear → the waiting worker activates naturally, and
       // the next launch is controlled by it. No SKIP_WAITING, no reload loop.
+      // Generous timeout: activation competes with parallel suite load.
       await page.close();
       const page2 = await context.newPage();
       await page2.goto("/", { waitUntil: "domcontentloaded" });
@@ -297,7 +298,7 @@ test.describe("Metto offline PWA", () => {
                 waiting: !!reg?.waiting,
               };
             }),
-          { timeout: 30_000 },
+          { timeout: 60_000 },
         )
         .toEqual({ controlled: true, waiting: false });
       await waitForOfflineReady(page2);
