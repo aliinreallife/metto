@@ -79,8 +79,12 @@ export const STRINGS = {
     placeSearchOffline: "Internet is required to search for places.",
     offlineNotPrepared:
       "Offline data hasn't finished downloading on this device. Connect to the Internet once to prepare Metto for offline use.",
-    mapOfflineNote:
-      "The basemap requires Internet; metro lines and stations are still available offline.",
+    mapOfflineTitle: "You're offline",
+    mapOfflineBody:
+      "Areas you've viewed before may still be available. Connect to the internet to load new areas of the map.",
+    mapSaveTitle: "Saved for offline use",
+    mapSaveBody:
+      "Areas of the map you view are saved for use without an internet connection. The entire map is not available offline.",
     holidaysTitle: "Official holidays",
     holidayLastUpdate: "Last update",
     upcomingHolidays: "Upcoming holidays",
@@ -194,8 +198,12 @@ export const STRINGS = {
     placeSearchOffline: "برای جستجوی مکان به اینترنت نیاز است.",
     offlineNotPrepared:
       "این دستگاه هنوز برای استفاده آفلاین آماده نشده است. برای دریافت اطلاعات لازم یک‌بار به اینترنت متصل شوید.",
-    mapOfflineNote:
-      "نقشه پایه به اینترنت نیاز دارد؛ خطوط و ایستگاه‌های مترو آفلاین نمایش داده می‌شوند.",
+    mapOfflineTitle: "بدون اینترنت",
+    mapOfflineBody:
+      "بخش‌هایی از نقشه که قبلاً دیده‌اید همچنان در دسترس‌اند. برای دیدن بخش‌های جدید نقشه به اینترنت نیاز دارید.",
+    mapSaveTitle: "ذخیره برای استفاده آفلاین",
+    mapSaveBody:
+      "بخش‌هایی از نقشه که می‌بینید، برای استفاده بدون اینترنت ذخیره می‌شوند. همهٔ نقشه آفلاین نیست.",
     holidaysTitle: "تعطیلات رسمی",
     holidayLastUpdate: "آخرین بروزرسانی",
     upcomingHolidays: "تعطیلات پیش‌رو",

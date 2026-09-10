@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, WifiOff, X } from "lucide-react";
 import { useOfflineReadiness } from "@/lib/offline/use-offline-readiness";
+import { useConnectivity } from "@/lib/offline/use-connectivity";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { ensurePersistentStorage } from "@/lib/offline/storage";
 import { scheduleRegistrationDiagnostic } from "@/lib/offline/sw-registration-diagnostic";
@@ -49,14 +50,46 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
     scheduleLoaded,
     holidayLoaded,
     precacheReady,
+    coreReady,
+    readinessVerified,
   } = readiness;
+  // Shared effective state (same singleton every consumer observes).
+  const {
+    state: connectivity,
+    navigatorOnline,
+    reachabilityVerified,
+  } = useConnectivity();
+
+  // Anti-flicker grace (≈1.75 s) for the GLOBAL warning only: internal
+  // connectivity transitions immediately, but the warning appears only if
+  // still offline-incomplete after the grace. Recovery inside the window
+  // means it never renders.
+  const [warningArmed, setWarningArmed] = useState(false);
+  useEffect(() => {
+    if (phase !== "offline-incomplete") {
+      setWarningArmed(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setWarningArmed(true), 1750);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
 
   // Debug-only transition log: fires only when a meaningful value changes,
-  // never on every render.
+  // never on every render. Distinguishes link state (navigatorOnline)
+  // from effective reachability (connectivity) — the VPN case reads
+  // navigatorOnline: true with connectivity: "offline". readinessVerified
+  // + coreReady expose the UNKNOWN-vs-MISSING gate: offline boot must show
+  // {readinessVerified: false, coreReady: false, phase: "preparing"} and
+  // transition straight to offline-ready with no offline-incomplete between.
   const lastLoggedRef = useRef<string>("");
   useEffect(() => {
     const snapshot = {
       state: phase,
+      connectivity,
+      navigatorOnline,
+      reachabilityVerified,
+      readinessVerified,
+      coreReady,
       serviceWorkerControlled: swControlling,
       precacheReady,
       scheduleReady: scheduleLoaded,
@@ -72,7 +105,7 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
     } catch {
       // Diagnostics must never break the app.
     }
-  }, [phase, swControlling, precacheReady, scheduleLoaded, holidayLoaded, online]);
+  }, [phase, connectivity, navigatorOnline, reachabilityVerified, readinessVerified, coreReady, swControlling, precacheReady, scheduleLoaded, holidayLoaded, online]);
 
   return (
     <div
@@ -81,7 +114,7 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
       data-phase={phase}
       className="z-10 flex flex-col items-stretch gap-1 px-4 pt-1 md:px-6"
     >
-      {phase === "offline-incomplete" && (
+      {phase === "offline-incomplete" && warningArmed && (
         <StatusRow tone="warn">
           <WifiOff className="size-3.5 shrink-0" />
           <span className="min-w-0 flex-1">

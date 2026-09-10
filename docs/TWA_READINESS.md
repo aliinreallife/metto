@@ -48,6 +48,27 @@ are logged as `console.debug("[Metto Offline]", …)` and mirrored to
 3. The timetable dataset is loaded in memory.
 4. The holiday dataset is loaded in memory.
 
+### Effective connectivity (not just `navigator.onLine`)
+
+`navigator.onLine` only reflects link state: with Wi-Fi/cellular off but an
+Android VPN virtual interface up, it stays `true` with no usable Internet.
+Metto therefore tracks *effective* reachability (`lib/offline/`):
+
+- States: `checking` → `online` (only after `GET /api/connectivity`
+  returns 204) or `offline` (link down, or probe failed/timed out at ~3 s).
+- `/api/connectivity` is a bodyless 204 with `Cache-Control: no-store`
+  and the SW keeps `/api/*` `NetworkOnly`, so a success always proves a
+  live round trip — never a cache hit.
+- One shared singleton store (module-level + `useSyncExternalStore`):
+  one listener set, one in-flight probe, one retry timer per page; all of
+  OfflineStatus, map banner, `RealMap` redraw, and `TabLink` observe it.
+- Resync on mount, `online`/`offline` events, `pageshow`, and foreground
+  `visibilitychange`. A visible-only ~25 s retry covers recovery with no
+  browser event (VPN case); nothing polls while hidden or link-down.
+- UI matrix: `checking` shows no offline UI anywhere (but tab taps already
+  take the safe document path); the global warning appears only for
+  confirmed-offline + missing core after a ~1.75 s anti-flicker grace.
+
 ---
 
 ## 2. Internet-required functionality
@@ -126,9 +147,10 @@ hang, never a misleading empty state):
   file list exists. Current production precache: 46 URLs (~8.4 MB).
 - **Runtime rules** (`app/sw.ts`, conservative by design):
   - `CacheFirst`: immutable same-origin `/_next/static/*`.
-  - `NetworkFirst`: same-origin navigations/RSC (8 s timeout) with an
-    offline fallback to precached `/`; only `200` basic responses stored
-    (errors/redirects can never poison the cache across deploys).
+  - `NetworkFirst`: same-origin navigations/RSC (8 s timeout) with
+    pathname-aware offline document fallback (see below); only `200`
+    basic responses stored (errors/redirects can never poison the cache
+    across deploys).
   - `NetworkFirst`: `/holidays.version.json` (tiny update pointer,
     deliberately **not** precached so it revalidates).
   - `NetworkOnly` (never cached): `POST` (no rule matches non-GET),
@@ -138,6 +160,14 @@ hang, never a misleading empty state):
     except the narrow opportunistic CARTO tile rule (§2.1).
 - **Installation:** the worker precaches during `install`; activation
   removes legacy `metto-v*` caches from the old hand-written worker.
+- **Offline document fallback (pathname-aware):** tab links preserve
+  route state as query params (`/map?from=…&to=…`), and Serwist only
+  strips `utm_*`/`fbclid` when matching precache — so a query-bearing
+  navigation can never hit the canonical entry directly. On failure the
+  worker therefore resolves each of `/`, `/map`, `/stations`, `/nearby`
+  to its own precached HTML (query ignored for lookup only; the address
+  bar is untouched). There is deliberately **no** universal `/` fallback
+  and no fallback for unknown paths, and HTML is never served for RSC.
 - **Updating (silent by design):** a new worker **never** `skipWaiting()`
   on its own (`skipWaiting: false`), the app shows **no** update banner,
   toast, or dialog, and a running session is **never** reloaded for an
@@ -308,6 +338,55 @@ try a landmark search (Internet-required message)
 restore network
 ↓
 verify recovery + update banner behavior if a deploy happened
+```
+
+Map reconnect + offline tabs (also on real Android Chrome / installed PWA):
+
+```text
+install/open Metto online
+↓
+open Map (note the one-time save notice on first visit)
+↓
+go offline
+↓
+pan into an uncached area (blank tiles, offline banner "بدون اینترنت")
+↓
+put the PWA in background
+↓
+restore Internet
+↓
+reopen the PWA (no zoom/pan)
+↓
+missing visible tiles begin loading on their own; banner clears
+↓
+toggle offline again
+↓
+tap Route/Map/Stations/Nearby repeatedly (from /?from=…&to=… too)
+↓
+every static tab opens offline with route state intact
+```
+
+VPN false-online case (real Android, installed PWA):
+
+```text
+open installed Metto PWA online, confirm ready
+↓
+leave VPN connected; turn Wi-Fi OFF and cellular data OFF
+↓
+wait for reachability verification (no browser event needed)
+↓
+Metto shows the normal offline state even if the OS still claims online
+↓
+cycle Route → Map → Stations → Nearby → Route (all precached tabs work)
+↓
+turn Wi-Fi back ON (VPN still enabled)
+↓
+offline banner disappears; missing map imagery resumes without zoom/pan;
+no full-page refresh
+↓
+background the PWA, change connectivity, resume it
+↓
+state reflects current effective connectivity, not pre-suspend state
 ```
 
 Automated equivalent: `pnpm build && pnpm test:e2e:offline`

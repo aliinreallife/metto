@@ -13,6 +13,10 @@ export default defineConfig({
   timeout: 120_000,
   expect: { timeout: 20_000 },
   fullyParallel: false,
+  // Serial: offline tests mutate shared server state (one spec rewrites
+  // public/sw.js to simulate a release) and assert timing-sensitive SW
+  // cache contents; parallelism makes both flaky.
+  workers: 1,
   retries: 0,
   reporter: "list",
   use: {

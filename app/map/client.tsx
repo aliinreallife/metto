@@ -7,6 +7,7 @@ import { Loader2, Layers, Satellite, Building2, AlertTriangle, X, WifiOff } from
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
+import { useConnectivity } from "@/lib/offline/use-connectivity";
 import { STRINGS } from "@/lib/i18n";
 import {
   haversineKm,
@@ -108,20 +109,48 @@ export function MapPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
   const [dismissedKeys, setDismissedKeys] = useState<ReadonlySet<string>>(new Set());
-  const [isOffline, setIsOffline] = useState(
-    () => typeof navigator !== "undefined" && navigator.onLine === false,
-  );
+  // Effective connectivity (verified reachability, not just link state):
+  // the banner shows only on confirmed offline — never during checking,
+  // so a normal launch waiting ~ms for verification never flashes it.
+  const { state: connectivity } = useConnectivity();
+  const isOffline = connectivity === "offline";
 
+  // One-time informational save notice: shown once per device while online,
+  // remembered locally. Never stacked with the offline banner, never a
+  // warning, no retention promises or implementation details.
+  // Hydration-safe: deterministic hidden initial on SSR AND first client
+  // render; localStorage is read only post-hydration. First-visit notice
+  // appearing after mount is intended; SSR/client markup must agree.
+  const [saveNoticeSeen, setSaveNoticeSeen] = useState<boolean>(true);
+  const [saveNoticeDismissed, setSaveNoticeDismissed] = useState(false);
   useEffect(() => {
-    const onOnline = () => setIsOffline(false);
-    const onOffline = () => setIsOffline(true);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
+    try {
+      if (localStorage.getItem("metto.mapSaveNoticeSeen") !== "1") {
+        setSaveNoticeSeen(false);
+      }
+    } catch {
+      // Storage unreadable — stay hidden (safe, no flash).
+    }
   }, []);
+  useEffect(() => {
+    if (connectivity === "online" && !saveNoticeSeen) {
+      try {
+        localStorage.setItem("metto.mapSaveNoticeSeen", "1");
+      } catch {
+        // Private mode etc. — notice simply shows again next visit.
+      }
+    }
+  }, [connectivity, saveNoticeSeen]);
+  const showSaveNotice =
+    connectivity === "online" && !saveNoticeSeen && !saveNoticeDismissed;
+  function dismissSaveNotice() {
+    setSaveNoticeDismissed(true);
+    try {
+      localStorage.setItem("metto.mapSaveNoticeSeen", "1");
+    } catch {
+      // Ignore.
+    }
+  }
 
   // A dismissed card stays dismissed for this search; a new search (URL change) brings cards back.
   useEffect(() => {
@@ -158,50 +187,74 @@ export function MapPage() {
         placeMarkers={placeMarkers}
       />
 
-      {/* Offline basemap notice: vectors still render, tiles need Internet. */}
-      {isOffline && (
-        <div className="absolute inset-x-3 top-14 z-[500] mx-auto flex max-w-md items-start gap-2 rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-sm backdrop-blur">
-          <WifiOff className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <p className="min-w-0 flex-1 text-muted-foreground">
-            {t.mapOfflineNote}
-          </p>
-        </div>
-      )}
+      {/* Top overlay stack: banner/notice/place cards lay out in normal
+          flow inside ONE absolute container, so variable card heights
+          (fa/en copy, font size, screen width) can never overlap. */}
+      <div className="absolute inset-x-3 top-14 z-[500] mx-auto flex max-w-md flex-col gap-1.5">
+        {/* Offline notice: purely connectivity-driven (never tile-error
+            state), so it shows even when cached tiles render fine, hides on
+            reconnect, and never flickers per tile. */}
+        {isOffline && (
+          <div
+            data-testid="map-offline-banner"
+            className="flex items-start gap-2 rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-sm backdrop-blur"
+          >
+            <WifiOff className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-foreground">{t.mapOfflineTitle}</p>
+              <p className="mt-0.5 text-muted-foreground">{t.mapOfflineBody}</p>
+            </div>
+          </div>
+        )}
 
-      {visiblePlaceInfos.length > 0 && (
-        <div
-          className={cn(
-            "absolute inset-x-3 z-[500] mx-auto flex max-w-md flex-col gap-1.5",
-            isOffline ? "top-28" : "top-14",
-          )}
-        >
-          {visiblePlaceInfos.map((p) => (
-            <div
-              key={`${p.role}:${p.label}`}
-              className={cn(
-                "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm backdrop-blur",
-                p.tooFar
-                  ? "border-amber-500/40 bg-background/95 text-foreground"
-                  : "border-border bg-background/90 text-foreground",
-              )}
+        {/* One-time save notice: informational only, online only, never
+            stacked with the offline banner. */}
+        {showSaveNotice && (
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow-sm backdrop-blur">
+            <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-foreground">{t.mapSaveTitle}</p>
+              <p className="mt-0.5 text-muted-foreground">{t.mapSaveBody}</p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissSaveNotice}
+              aria-label={t.close}
+              className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              {p.tooFar ? (
-                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-              ) : (
-                <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{p.label}</p>
-                <p className="mt-0.5 text-muted-foreground">
-                  {t.nearestStation}: {p.stationName} · {p.distanceText} · ~{p.walkText} {t.walkTime}
+              <X className="size-3.5" />
+            </button>
+          </div>
+        )}
+
+        {visiblePlaceInfos.map((p) => (
+          <div
+            key={`${p.role}:${p.label}`}
+            data-testid="map-place-card"
+            className={cn(
+              "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm backdrop-blur",
+              p.tooFar
+                ? "border-amber-500/40 bg-background/95 text-foreground"
+                : "border-border bg-background/90 text-foreground",
+            )}
+          >
+            {p.tooFar ? (
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+            ) : (
+              <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{p.label}</p>
+              <p className="mt-0.5 text-muted-foreground">
+                {t.nearestStation}: {p.stationName} · {p.distanceText} · ~{p.walkText} {t.walkTime}
+              </p>
+              {p.tooFar && (
+                <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
+                  {t.tooFarFromStation} (~{p.walkText})
                 </p>
-                {p.tooFar && (
-                  <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
-                    {t.tooFarFromStation} (~{p.walkText})
-                  </p>
-                )}
-              </div>
-              {ENABLE_PLACE_CARD_DISMISS && (
+              )}
+            </div>
+            {ENABLE_PLACE_CARD_DISMISS && (
               <button
                 type="button"
                 onClick={() =>
@@ -212,11 +265,10 @@ export function MapPage() {
               >
                 <X className="size-3.5" />
               </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+            )}
+          </div>
+        ))}
+      </div>
 
       {/* Map mode toggle */}
       <div className="absolute top-3 left-3 z-[500] flex overflow-hidden rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur">

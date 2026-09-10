@@ -17,6 +17,12 @@ import { OfflineStatus } from "@/components/offline-status";
 import { useMetro } from "./providers";
 import { STRINGS } from "@/lib/i18n";
 import { buildTabHref } from "@/lib/geo";
+import {
+  isPrecachedTabUrl,
+  shouldInterceptOfflineNav,
+  useConnectivity,
+  type ConnectivityState,
+} from "@/lib/offline/use-connectivity";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -26,10 +32,82 @@ const NAV_ITEMS = [
   { href: "/map", labelKey: "tabMap" as const, icon: MapIcon },
 ] as const;
 
+/**
+ * Top-level tab link. When effectively online it behaves exactly like Next
+ * <Link> (client navigation + prefetch). Otherwise (offline, or still
+ * checking — the safe default since destinations are precached), plain
+ * primary clicks on the four precached static tabs use a native
+ * full-document navigation instead: client-side RSC fetches cannot succeed
+ * offline and would abort the transition, while a document request is
+ * served from the Serwist precache. Modifier/middle clicks, new-tab targets
+ * and non-precached URLs keep normal browser semantics.
+ *
+ * Offline-ness is decided synchronously at event time from BOTH the shared
+ * connectivity state and the live `navigator.onLine` getter: React state
+ * can lag a just-fired offline event by a frame, and a tap landing in that
+ * window must still take the safe path (a failed client navigation leaves
+ * a broken intermediate tree). Bias is deliberate — full-document
+ * navigation works online too for precached tabs, while a client
+ * navigation while offline always breaks.
+ */
+function TabLink({
+  href,
+  connectivity,
+  className,
+  ariaCurrent,
+  children,
+}: {
+  href: string;
+  connectivity: ConnectivityState;
+  className?: string;
+  ariaCurrent?: "page";
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={className}
+      aria-current={ariaCurrent}
+      onClick={(e) => {
+        if (e.defaultPrevented) return;
+        if (
+          !shouldInterceptOfflineNav({
+            button: e.button,
+            ctrlKey: e.ctrlKey,
+            metaKey: e.metaKey,
+            shiftKey: e.shiftKey,
+            altKey: e.altKey,
+            target: (e.currentTarget as HTMLAnchorElement).target,
+          })
+        ) {
+          return;
+        }
+        if (!isPrecachedTabUrl(href)) return;
+        const stateOffline = connectivity !== "online";
+        let linkOffline = false;
+        try {
+          linkOffline =
+            typeof navigator !== "undefined" && navigator.onLine === false;
+        } catch {
+          linkOffline = false;
+        }
+        // Normal Next behavior only when BOTH agree we are online.
+        if (!stateOffline && !linkOffline) return;
+        e.preventDefault();
+        window.location.assign(href);
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export function AppNav() {
   const { lang, setLang, originId, destId, originPlace, destPlace } = useMetro();
   const pathname = usePathname();
   const t = STRINGS[lang];
+  // One shared subscription for every tab link below.
+  const { state: connectivity } = useConnectivity();
 
   const currentPath = pathname === "/" ? "/" : pathname;
   const isMainTab = currentPath === "/";
@@ -53,7 +131,7 @@ export function AppNav() {
   return (
     <>
       <header className="z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-6 md:py-4">
-        <Link href="/" className="flex items-center gap-2.5 md:gap-3">
+          <TabLink href="/" connectivity={connectivity} className="flex items-center gap-2.5 md:gap-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground md:size-10">
             <TrainFront className="size-5 md:size-6" />
           </span>
@@ -61,7 +139,7 @@ export function AppNav() {
             <h1 className="text-base font-bold md:text-lg">{t.appTitle}</h1>
             <p className="text-xs text-muted-foreground md:text-sm">{t.appSubtitle}</p>
           </div>
-        </Link>
+        </TabLink>
 
         {/* desktop tabs */}
         <nav className="hidden items-center gap-1 md:flex">
@@ -69,9 +147,10 @@ export function AppNav() {
             const href = getHref(item.href);
             const active = currentPath === item.href;
             return (
-              <Link
+              <TabLink
                 key={item.href}
                 href={href}
+                connectivity={connectivity}
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors md:gap-2 md:px-4 md:py-2.5 md:text-base",
                   active
@@ -81,7 +160,7 @@ export function AppNav() {
               >
                 <item.icon className="size-5" />
                 {t[item.labelKey]}
-              </Link>
+              </TabLink>
             );
           })}
         </nav>
@@ -142,18 +221,19 @@ export function AppNav() {
             const href = getHref(item.href);
             const active = currentPath === item.href;
             return (
-              <Link
+              <TabLink
                 key={item.href}
                 href={href}
+                connectivity={connectivity}
                 className={cn(
                   "flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
-                aria-current={active ? "page" : undefined}
+                ariaCurrent={active ? "page" : undefined}
               >
                 <item.icon className="size-5" />
                 {t[item.labelKey]}
-              </Link>
+              </TabLink>
             );
           })}
         </nav>

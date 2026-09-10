@@ -21,6 +21,7 @@ import {
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
 import { type Lang } from "@/lib/i18n"
+import { useConnectivity, type ConnectivityState } from "@/lib/offline/use-connectivity"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -151,6 +152,13 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const [locating, setLocating] = useState(false)
   const [gpsError, setGpsError] = useState<string | null>(null)
   const isFa = lang === "fa"
+  const { state: connectivity } = useConnectivity()
+  // Tracks the previous EFFECTIVE connectivity state so only a real
+  // offline → online transition triggers a retry. In particular,
+  // checking → online (e.g. after a pageshow resync while already online)
+  // must not redraw: nothing failed, so there is nothing to retry.
+  // An initial online mount is likewise not a transition.
+  const prevConnectivityRef = useRef<ConnectivityState>(connectivity)
 
   const edges = useMemo(() => buildMapEdges(), [])
   const routeStations = useMemo(() => new Set(route?.path ?? []), [route])
@@ -466,6 +474,22 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       container.style.backgroundColor = ""
     }
   }, [mapMode])
+
+  // Retry the active basemap layer(s) when EFFECTIVE connectivity returns,
+  // so tiles that failed while offline start loading without any zoom/pan
+  // gesture. Runs only on a real offline → online transition of the shared
+  // state (checking → online is not one). No remount, no view reset, no
+  // overlay or cache touch.
+  useEffect(() => {
+    const was = prevConnectivityRef.current
+    prevConnectivityRef.current = connectivity
+    if (was !== "offline" || connectivity !== "online") return
+    const map = mapRef.current
+    if (!map) return
+    for (const layer of [tileLayerRef.current, minimalistLayerRef.current, labelsLayerRef.current]) {
+      if (layer && map.hasLayer(layer)) layer.redraw()
+    }
+  }, [connectivity])
 
   // Redraw overlay whenever the route/selection changes.
   useEffect(() => {
