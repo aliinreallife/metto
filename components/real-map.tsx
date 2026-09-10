@@ -153,12 +153,17 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const [gpsError, setGpsError] = useState<string | null>(null)
   const isFa = lang === "fa"
   const { state: connectivity } = useConnectivity()
-  // Tracks the previous EFFECTIVE connectivity state so only a real
-  // offline → online transition triggers a retry. In particular,
-  // checking → online (e.g. after a pageshow resync while already online)
-  // must not redraw: nothing failed, so there is nothing to retry.
-  // An initial online mount is likewise not a transition.
-  const prevConnectivityRef = useRef<ConnectivityState>(connectivity)
+  // Tracks the previous SETTLED connectivity state so only a real
+  // offline → online transition triggers a retry. The machine always
+  // interposes "checking" between offline and online on the event-driven
+  // path, so comparing consecutive renders would consume the edge on the
+  // checking render and never redraw. In particular, a settled
+  // online → … → online resync (e.g. pageshow while already online) must
+  // not redraw: nothing failed, so there is nothing to retry. An initial
+  // online mount is likewise not a transition.
+  const lastSettledConnectivityRef = useRef<ConnectivityState | null>(
+    connectivity === "checking" ? null : connectivity,
+  )
 
   const edges = useMemo(() => buildMapEdges(), [])
   const routeStations = useMemo(() => new Set(route?.path ?? []), [route])
@@ -477,13 +482,16 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
   // Retry the active basemap layer(s) when EFFECTIVE connectivity returns,
   // so tiles that failed while offline start loading without any zoom/pan
-  // gesture. Runs only on a real offline → online transition of the shared
-  // state (checking → online is not one). No remount, no view reset, no
-  // overlay or cache touch.
+  // gesture. Runs only on a settled offline → online transition of the
+  // shared state ("checking" renders are skipped, so the machine's
+  // offline → checking → online recovery still redraws exactly once,
+  // while online → checking → online resyncs never do). No remount, no
+  // view reset, no overlay or cache touch.
   useEffect(() => {
-    const was = prevConnectivityRef.current
-    prevConnectivityRef.current = connectivity
-    if (was !== "offline" || connectivity !== "online") return
+    if (connectivity === "checking") return
+    const wasSettled = lastSettledConnectivityRef.current
+    lastSettledConnectivityRef.current = connectivity
+    if (wasSettled !== "offline" || connectivity !== "online") return
     const map = mapRef.current
     if (!map) return
     for (const layer of [tileLayerRef.current, minimalistLayerRef.current, labelsLayerRef.current]) {

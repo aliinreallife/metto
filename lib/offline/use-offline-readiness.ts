@@ -4,7 +4,9 @@
 // 1. "preparing": online-but-incomplete, OR offline with verification still
 //    pending (UNKNOWN — must never warn).
 // 2. "ready": online + SW controlling + schedule + holiday dataset present.
-// 3. "offline-ready": offline + verified + core data available.
+// 3. "offline-ready": offline + verified + core data available from the
+//    durable SW precache guarantee (Cache Storage — never incidental
+//    HTTP-cache availability).
 // 4. "offline-incomplete": offline + VERIFIED missing core (the only warning).
 //
 // "Core ready" NEVER claims readiness from SW install alone — the timetable
@@ -285,7 +287,10 @@ export function useOfflineReadiness(): OfflineReadiness {
   // because verification took longer than the UI grace period.
   // Tri-state aware: "checking" connectivity is neither online nor offline —
   // it follows the online path (preparing/ready) so nothing offline is ever
-  // claimed before reachability resolves.
+  // claimed before reachability resolves. Offline "ready" additionally
+  // requires precacheReady: scheduleLoaded may be true from the incidental
+  // browser HTTP cache while the durable Cache Storage guarantee is gone —
+  // that must report offline-incomplete, never offline-ready.
   const readinessVerified =
     scheduleChecked && holidayChecked && precacheChecked;
   const confirmedOffline = connectivity.state === "offline";
@@ -297,7 +302,7 @@ export function useOfflineReadiness(): OfflineReadiness {
   } else if (!readinessVerified) {
     phase = "preparing";
   } else {
-    phase = coreReady ? "offline-ready" : "offline-incomplete";
+    phase = coreReady && precacheReady ? "offline-ready" : "offline-incomplete";
   }
 
   return {
