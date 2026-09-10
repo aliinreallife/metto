@@ -310,6 +310,32 @@ restore network
 verify recovery + update banner behavior if a deploy happened
 ```
 
+Map reconnect + offline tabs (also on real Android Chrome / installed PWA):
+
+```text
+install/open Metto online
+↓
+open Map (note the one-time save notice on first visit)
+↓
+go offline
+↓
+pan into an uncached area (blank tiles, offline banner "بدون اینترنت")
+↓
+put the PWA in background
+↓
+restore Internet
+↓
+reopen the PWA (no zoom/pan)
+↓
+missing visible tiles begin loading on their own; banner clears
+↓
+toggle offline again
+↓
+tap Route/Map/Stations/Nearby repeatedly (from /?from=…&to=… too)
+↓
+every static tab opens offline with route state intact
+```
+
 Automated equivalent: `pnpm build && pnpm test:e2e:offline`
 (Playwright, production server, real browser offline mode, mocked Tehran
 geolocation `35.6892, 51.3890`; Nominatim/CARTO/Esri/upstream-holiday

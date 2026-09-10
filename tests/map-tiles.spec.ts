@@ -119,23 +119,29 @@ test.describe("CARTO opportunistic tile cache", () => {
     await expect
       .poll(async () => (await tileUrls(page)).length, { timeout: 30_000 })
       .toBeGreaterThan(0);
-    const urls = await tileUrls(page);
-    // Only genuinely viewed tiles, all matching the narrow rule.
-    expect(urls.length).toBeLessThanOrEqual(300);
-    expect(urls.every((u) => TILE_KEY_RE.test(u))).toBe(true);
-    // Every cached entry is a real CORS response — never opaque.
-    const entryTypes = await page.evaluate(async () => {
+    // Single atomic snapshot: keys + entries together, so tiles cached
+    // between two reads cannot skew the assertions.
+    const entries = await page.evaluate(async () => {
       const cache = await caches.open("metto-carto-tiles");
-      const out: { status: number; type: string }[] = [];
+      const out: { url: string; status: number; type: string }[] = [];
       for (const req of await cache.keys()) {
         const res = await cache.match(req);
-        if (res) out.push({ status: res.status, type: res.type });
+        out.push({
+          url: req.url,
+          status: res ? res.status : -1,
+          type: res ? res.type : "missing",
+        });
       }
       return out;
     });
-    expect(entryTypes.length).toBe(urls.length);
-    expect(entryTypes.every((e) => e.status === 200 && e.type === "cors")).toBe(true);
-    expect(entryTypes.some((e) => e.type === "opaque")).toBe(false);
+    const urls = entries.map((e) => e.url);
+    // Only genuinely viewed tiles, all matching the narrow rule.
+    expect(urls.length).toBeGreaterThan(0);
+    expect(urls.length).toBeLessThanOrEqual(300);
+    expect(urls.every((u) => TILE_KEY_RE.test(u))).toBe(true);
+    // Every cached entry is a real CORS response — never opaque.
+    expect(entries.every((e) => e.status === 200 && e.type === "cors")).toBe(true);
+    expect(entries.some((e) => e.type === "opaque")).toBe(false);
     expect(await foreignCachedUrls(page)).toEqual([]);
 
     const after = await storageUsage(page);
@@ -160,7 +166,7 @@ test.describe("CARTO opportunistic tile cache", () => {
       offlinePage.locator('[aria-label="Tehran metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      offlinePage.getByText(/نقشه پایه به اینترنت نیاز دارد/),
+      offlinePage.getByText("بدون اینترنت", { exact: true }),
     ).toBeVisible({ timeout: 15_000 });
 
     // Cached tile returns 200 offline (served by the worker cache).

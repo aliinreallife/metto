@@ -177,7 +177,7 @@ test.describe("Metto offline PWA", () => {
       page.locator('[aria-label="Tehran metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      page.getByText(/نقشه پایه به اینترنت نیاز دارد/),
+      page.getByText("بدون اینترنت", { exact: true }),
     ).toBeVisible({ timeout: 15_000 });
 
     // 18-20. Landmark search explains the Internet requirement offline.
@@ -218,6 +218,59 @@ test.describe("Metto offline PWA", () => {
       /ready|preparing/,
       { timeout: 30_000 },
     );
+  });
+
+  test("map overlay cards never overlap, online or offline", async ({
+    context,
+  }) => {
+    const page = await context.newPage();
+    const pinsUrl =
+      `/map?from=${ORIGIN_ID}&to=${DEST_ID}` +
+      `&op=35.7448,51.3755,مبدأ تست` +
+      `&dp=35.7000,51.4000,مقصد تست`;
+    await page.goto(pinsUrl, { waitUntil: "domcontentloaded" });
+    await expect(
+      page.locator('[aria-label="Tehran metro on real map"]'),
+    ).toBeVisible({ timeout: 30_000 });
+
+    async function assertStackedTopToBottom() {
+      // Every visible card in the top stack must sit fully below the
+      // previous one (2px tolerance for subpixel rounding).
+      const boxes: Array<{ y: number; height: number }> = [];
+      for (const testid of ["map-offline-banner", "map-place-card"]) {
+        const loc = page.getByTestId(testid);
+        const count = await loc.count();
+        for (let i = 0; i < count; i++) {
+          const box = await loc.nth(i).boundingBox();
+          // Only consider actually rendered cards.
+          if (box && box.height > 0) boxes.push(box);
+        }
+      }
+      // Order top-to-bottom as they appear in the stack.
+      boxes.sort((a, b) => a.y - b.y);
+      expect(boxes.length).toBeGreaterThanOrEqual(2);
+      for (let i = 1; i < boxes.length; i++) {
+        expect(boxes[i].y).toBeGreaterThanOrEqual(
+          boxes[i - 1].y + boxes[i - 1].height - 2,
+        );
+      }
+    }
+
+    // Online: save notice + 2 place cards stacked without overlap.
+    await expect(page.getByTestId("map-place-card")).toHaveCount(2, {
+      timeout: 15_000,
+    });
+    await assertStackedTopToBottom();
+
+    // Offline: banner replaces the notice; banner + 2 cards still stacked.
+    await context.setOffline(true);
+    await expect(
+      page.getByText("بدون اینترنت", { exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("map-offline-banner")).toBeVisible();
+    await expect(page.getByTestId("map-place-card")).toHaveCount(2);
+    await assertStackedTopToBottom();
+    await context.setOffline(false);
   });
 
   test("waiting worker stays silent, never reloads, activates naturally", async ({
@@ -284,6 +337,7 @@ test.describe("Metto offline PWA", () => {
 
       // Old clients disappear → the waiting worker activates naturally, and
       // the next launch is controlled by it. No SKIP_WAITING, no reload loop.
+      // Generous timeout: activation competes with parallel suite load.
       await page.close();
       const page2 = await context.newPage();
       await page2.goto("/", { waitUntil: "domcontentloaded" });
@@ -297,7 +351,7 @@ test.describe("Metto offline PWA", () => {
                 waiting: !!reg?.waiting,
               };
             }),
-          { timeout: 30_000 },
+          { timeout: 60_000 },
         )
         .toEqual({ controlled: true, waiting: false });
       await waitForOfflineReady(page2);
