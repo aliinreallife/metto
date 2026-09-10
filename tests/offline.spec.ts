@@ -67,10 +67,27 @@ test.describe("Metto offline PWA", () => {
     const upstreamHits = { count: 0 };
     await blockThirdParty(context, upstreamHits);
 
-    // 1-4. Online setup + readiness.
+    // 1-4. Online setup + readiness (silent: no user-facing prep text).
     let page = await context.newPage();
+    const offlineLogs: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "debug" && msg.text().includes("[Metto Offline]")) {
+        offlineLogs.push(msg.text());
+      }
+    });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await waitForOfflineReady(page);
+    await expect(
+      page.getByText("در حال آماده‌سازی آفلاین"),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText("متو برای استفاده آفلاین آماده است"),
+    ).toHaveCount(0);
+    await expect(page.getByText("Preparing offline")).toHaveCount(0);
+    await expect(
+      page.getByText("Metto is ready for offline use"),
+    ).toHaveCount(0);
+    expect(offlineLogs.length).toBeGreaterThan(0);
 
     // 5-7. Interactive station select + route calc (origin via combobox).
     const originToggle = page.getByRole("button", {
@@ -113,11 +130,13 @@ test.describe("Metto offline PWA", () => {
       )
       .toBe("offline-ready");
 
-    // 11. Station-to-station route calc while offline.
+    // 11. Station-to-station route calc while offline (no global offline
+    // banner: the planner simply works).
     await page.goto(`/?from=${ORIGIN_ID}&to=${DEST_ID}`, {
       waitUntil: "domcontentloaded",
     });
     await expectRouteResult(page);
+    await expect(page.getByText("شما آفلاین هستید")).toHaveCount(0);
 
     // 12-13. Station search works offline (stations page, direct load).
     await page.goto("/stations", { waitUntil: "domcontentloaded" });
@@ -185,5 +204,52 @@ test.describe("Metto offline PWA", () => {
       /ready|preparing/,
       { timeout: 30_000 },
     );
+  });
+
+  test("offline with missing core data shows the setup warning", async ({
+    context,
+  }) => {
+    const upstreamHits = { count: 0 };
+    await blockThirdParty(context, upstreamHits);
+
+    const page = await context.newPage();
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await waitForOfflineReady(page);
+
+    // Simulate a device whose offline download never finished: evict the
+    // datasets from every cache while keeping the app shell.
+    await page.evaluate(async () => {
+      for (const name of await caches.keys()) {
+        const cache = await caches.open(name);
+        for (const req of await cache.keys()) {
+          if (
+            req.url.includes("schedule-data.json") ||
+            (req.url.includes("holidays.json") &&
+              !req.url.includes("version"))
+          ) {
+            await cache.delete(req);
+          }
+        }
+      }
+    });
+
+    await context.setOffline(true);
+    await page.close();
+    const offlinePage = await context.newPage();
+    await offlinePage.goto("/", { waitUntil: "domcontentloaded" });
+    await expect
+      .poll(
+        async () =>
+          offlinePage
+            .getByTestId("offline-status")
+            .getAttribute("data-phase")
+            .then((p) => p ?? "unknown"),
+        { timeout: 60_000 },
+      )
+      .toBe("offline-incomplete");
+    await expect(
+      offlinePage.getByText("این دستگاه هنوز برای استفاده آفلاین آماده نشده است"),
+    ).toBeVisible({ timeout: 15_000 });
+    expect(upstreamHits.count).toBe(0);
   });
 });

@@ -77,6 +77,8 @@ export const STRINGS = {
     noPlacesFound: "No places found",
     searchingPlaces: "Searching places…",
     placeSearchOffline: "Internet is required to search for places.",
+    offlineNotPrepared:
+      "Offline data hasn't finished downloading on this device. Connect to the Internet once to prepare Metto for offline use.",
     mapOfflineNote:
       "The basemap requires Internet; metro lines and stations are still available offline.",
     holidaysTitle: "Official holidays",
@@ -190,6 +192,8 @@ export const STRINGS = {
     noPlacesFound: "مکانی یافت نشد",
     searchingPlaces: "در حال جستجوی مکان‌ها…",
     placeSearchOffline: "برای جستجوی مکان به اینترنت نیاز است.",
+    offlineNotPrepared:
+      "این دستگاه هنوز برای استفاده آفلاین آماده نشده است. برای دریافت اطلاعات لازم یک‌بار به اینترنت متصل شوید.",
     mapOfflineNote:
       "نقشه پایه به اینترنت نیاز دارد؛ خطوط و ایستگاه‌های مترو آفلاین نمایش داده می‌شوند.",
     holidaysTitle: "تعطیلات رسمی",

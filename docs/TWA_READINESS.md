@@ -14,10 +14,10 @@ Café Bazaar / Myket Trusted Web Activity (TWA) release.
 
 ## 1. Offline functionality (after one online initialization)
 
-After opening Metto online once and waiting for the
-“متو برای استفاده آفلاین آماده است.” / “Metto is ready for offline use.”
-status, fully closing the app, going offline, and reopening it, all of the
-following work without Internet:
+After opening Metto online once (offline caching runs silently in the
+background — normal usage shows no preparation text), fully closing the
+app, going offline, and reopening it, all of the following work without
+Internet:
 
 - Opening `/` (cold start, no warm SPA session required).
 - Direct offline loads of `/`, `/stations`, `/nearby`, `/map`.
@@ -36,7 +36,10 @@ following work without Internet:
 - Compact holiday summary inside the timetable UI (today’s schedule rules,
   last update, next/upcoming known holidays).
 
-“Offline ready” is only claimed when **all** of these hold:
+“Offline ready” is only claimed when **all** of these hold
+(tracked silently by `lib/offline/use-offline-readiness.ts`; transitions
+are logged as `console.debug("[Metto Offline]", …)` and mirrored to
+`window.__mettoOffline` — no user-facing preparation text):
 
 1. A service worker controls the page.
 2. The Serwist precache contains the datasets
@@ -102,6 +105,9 @@ hang, never a misleading empty state):
 - **Registration:** `SerwistProvider` in `app/layout.tsx` (early,
   `updateViaCache: "none"`, disabled in development). The install-PWA
   button (`components/pwa.tsx`) handles only the install prompt.
+  `reloadOnOnline` is **off** (a tunnel/elevator network flicker must never
+  reload mid-route-planning) and `cacheOnNavigation` is **off** (our worker
+  ignores `CACHE_URLS`; precache already covers navigations).
 
 ---
 
@@ -225,9 +231,8 @@ hang, never a misleading empty state):
 ```text
 clear all metto.ir site data
 ↓
-open Metto online
-↓
-wait for "متو برای استفاده آفلاین آماده است."
+open Metto online (open DevTools console: watch for
+"[Metto Offline]" { state: "ready", ... })
 ↓
 calculate a station-to-station route
 ↓
@@ -260,6 +265,24 @@ Automated equivalent: `pnpm build && pnpm test:e2e:offline`
 (Playwright, production server, real browser offline mode, mocked Tehran
 geolocation `35.6892, 51.3890`; Nominatim/CARTO/Esri/upstream-holiday
 intercepted and never called).
+
+### Troubleshooting readiness
+
+If the console never leaves `{ state: "preparing", … }`, inspect which flag
+is stuck:
+
+- `serviceWorkerControlled: false` → the worker never took control:
+  confirm the deployment ran `next build && serwist build` (Vercel
+  `buildCommand`), that `/sw.js` returns 200 (not a stale cached copy or a
+  404 from a build that skipped the `serwist build` step), and that no
+  deployment-protection auth wall is answering SW precache fetches with
+  non-200 pages (a failed precache install prevents activation).
+- `precacheReady: false` → Cache Storage lacks the datasets: check
+  DevTools → Application → Cache Storage for the `serwist-precache-*`
+  entries (`schedule-data.json`, `holidays.json`).
+- `scheduleReady: false` → `/schedule-data.json` never loaded (network or
+  SW fetch path); `holidaysReady: false` → bundled dataset missing
+  (build issue).
 
 ---
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { CheckCircle2, RefreshCw, WifiOff, X } from "lucide-react";
 import { useOfflineReadiness } from "@/lib/offline/use-offline-readiness";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
@@ -8,6 +8,23 @@ import { ensurePersistentStorage } from "@/lib/offline/storage";
 import type { Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+declare global {
+  interface Window {
+    __mettoOffline?: Record<string, unknown>;
+  }
+}
+
+/**
+ * Offline status shell. Offline caching runs silently in the background:
+ * normal online usage shows NO preparation/readiness text. Readiness
+ * transitions are logged to the console (and mirrored to
+ * `window.__mettoOffline`) for debugging and Playwright.
+ *
+ * Visible UI appears only when the user must act:
+ * - a waiting service worker (refresh requires a user action);
+ * - offline with core data missing (one online visit needed);
+ * - a genuinely new holiday dataset was just installed (one-time notice).
+ */
 export function OfflineStatus({ lang }: { lang: Lang }) {
   const isFa = lang === "fa";
   const readiness = useOfflineReadiness();
@@ -18,8 +35,39 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
     void ensurePersistentStorage();
   }, []);
 
-  const { phase, swWaiting, readyDismissed, dismissReady, applyUpdate } =
-    readiness;
+  const {
+    phase,
+    online,
+    swControlling,
+    swWaiting,
+    scheduleLoaded,
+    holidayLoaded,
+    precacheReady,
+    applyUpdate,
+  } = readiness;
+
+  // Debug-only transition log: fires only when a meaningful value changes,
+  // never on every render.
+  const lastLoggedRef = useRef<string>("");
+  useEffect(() => {
+    const snapshot = {
+      state: phase,
+      serviceWorkerControlled: swControlling,
+      precacheReady,
+      scheduleReady: scheduleLoaded,
+      holidaysReady: holidayLoaded,
+      online,
+    };
+    const key = JSON.stringify(snapshot);
+    if (lastLoggedRef.current === key) return;
+    lastLoggedRef.current = key;
+    console.debug("[Metto Offline]", snapshot);
+    try {
+      window.__mettoOffline = { ...snapshot, at: new Date().toISOString() };
+    } catch {
+      // Diagnostics must never break the app.
+    }
+  }, [phase, swControlling, precacheReady, scheduleLoaded, holidayLoaded, online]);
 
   return (
     <div
@@ -44,51 +92,15 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
         </StatusRow>
       )}
 
-      {phase === "offline-ready" && (
-        <StatusRow tone="offline">
-          <WifiOff className="size-3.5 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">
-            {isFa
-              ? "شما آفلاین هستید؛ مسیریابی مترو در دسترس است"
-              : "You're offline; metro routing is available"}
-          </span>
-        </StatusRow>
-      )}
-
       {phase === "offline-incomplete" && (
         <StatusRow tone="warn">
           <WifiOff className="size-3.5 shrink-0" />
           <span className="min-w-0 flex-1">
             {isFa
-              ? "برای استفاده آفلاین، ابتدا یک‌بار با اینترنت وارد شوید"
-              : "Connect online once to enable offline use"}
+              ? "این دستگاه هنوز برای استفاده آفلاین آماده نشده است. برای دریافت اطلاعات لازم یک‌بار به اینترنت متصل شوید."
+              : "Offline data hasn't finished downloading on this device. Connect to the Internet once to prepare Metto for offline use."}
           </span>
         </StatusRow>
-      )}
-
-      {phase === "ready" && !readyDismissed && !swWaiting && (
-        <StatusRow tone="ready">
-          <CheckCircle2 className="size-3.5 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">
-            {isFa
-              ? "متو برای استفاده آفلاین آماده است."
-              : "Metto is ready for offline use."}
-          </span>
-          <button
-            type="button"
-            onClick={dismissReady}
-            aria-label={isFa ? "بستن" : "Dismiss"}
-            className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <X className="size-3.5" />
-          </button>
-        </StatusRow>
-      )}
-
-      {phase === "preparing" && (
-        <p className="px-1 text-[11px] text-muted-foreground">
-          {isFa ? "در حال آماده‌سازی آفلاین…" : "Preparing offline…"}
-        </p>
       )}
 
       {justUpdated && (
@@ -117,7 +129,7 @@ function StatusRow({
   tone,
   children,
 }: {
-  tone: "ready" | "offline" | "warn" | "update";
+  tone: "ready" | "warn" | "update";
   children: React.ReactNode;
 }) {
   return (
@@ -126,8 +138,6 @@ function StatusRow({
         "flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium md:text-xs",
         tone === "ready" &&
           "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-        tone === "offline" &&
-          "border-border bg-muted/60 text-muted-foreground",
         tone === "warn" &&
           "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
         tone === "update" &&

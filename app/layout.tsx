@@ -185,6 +185,11 @@ export default function RootLayout({
         <SerwistProvider
           swUrl="/sw.js"
           options={{ scope: "/", updateViaCache: "none" }}
+          // Never auto-reload on reconnect (tunnels/elevators flicker) and
+          // never patch history for cache-on-navigation: our Serwist worker
+          // ignores CACHE_URLS and precache already covers navigations.
+          reloadOnOnline={false}
+          cacheOnNavigation={false}
           disable={process.env.NODE_ENV === "development"}
         >
         <FingerprintProvider
