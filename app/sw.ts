@@ -9,10 +9,12 @@
 // Conservative runtime policy:
 // - precache: app shell + build assets + local JSON/icons (versioned)
 // - CacheFirst: immutable same-origin /_next/static
-// - StaleWhileRevalidate: same-origin local datasets/icons/manifest
 // - NetworkFirst (+ offline fallback to "/"): same-origin navigations/RSC
-// - NetworkOnly: POST, /api/*, ALL cross-origin (Nominatim/Esri/CARTO/
-//   timestamp.ir/fonts), failures, redirects/opaque. Never cached.
+// - NetworkFirst: /holidays.version.json update pointer (not precached)
+// - NetworkOnly: same-origin /api/* and version-pinned dataset downloads
+// - Cross-origin (Nominatim/Esri/CARTO/timestamp.ir/fonts/fingerprint):
+//   NO route — unmatched, handled directly by the browser, never cached.
+// Only 200 basic responses are ever stored (no errors, no redirects).
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import {
   CacheFirst,
@@ -89,9 +91,8 @@ const serwist = new Serwist({
       handler: new NetworkOnly(),
     },
     {
-      // Holiday version check must be cheap + always revalidated online.
-      // (Covered by LOCAL_DATA_RE; listed explicitly for clarity — first
-      // matching rule wins in Serwist, so keep this before navigations.)
+      // Reserved same-origin API path for holiday data: never cached
+      // (first matching rule wins, so keep this before navigations).
       matcher: ({ url, sameOrigin }) =>
         sameOrigin && url.pathname === "/api/holidays",
       handler: new NetworkOnly(),
@@ -100,12 +101,6 @@ const serwist = new Serwist({
       // Server/API routes are never part of the offline core.
       matcher: ({ url, sameOrigin }) =>
         sameOrigin && url.pathname.startsWith("/api/"),
-      handler: new NetworkOnly(),
-    },
-    {
-      // Third-party: Nominatim, Esri, CARTO, timestamp.ir, Google Fonts,
-      // or anything cross-origin. Online-only by design; never cached.
-      matcher: ({ sameOrigin }) => !sameOrigin,
       handler: new NetworkOnly(),
     },
     {
