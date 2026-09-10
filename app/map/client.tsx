@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Layers, Satellite, Building2, AlertTriangle, X } from "lucide-react";
+import { Loader2, Layers, Satellite, Building2, AlertTriangle, X, WifiOff } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
+import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { STRINGS } from "@/lib/i18n";
 import {
   haversineKm,
@@ -38,6 +39,7 @@ const RealMap = dynamic(
 export function MapPage() {
   const searchParams = useSearchParams();
   const { lang, mapMode, setMapMode, originPlace: ctxOriginPlace, destPlace: ctxDestPlace } = useMetro();
+  const { isHolidayDate } = useHolidayData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
 
@@ -71,8 +73,8 @@ export function MapPage() {
 
   const route = useMemo(() => {
     if (!initialParams.from || !initialParams.to || initialParams.from === initialParams.to) return null;
-    return findRoute(initialParams.from, initialParams.to);
-  }, [initialParams.from, initialParams.to]);
+    return findRoute(initialParams.from, initialParams.to, { isHolidayDate });
+  }, [initialParams.from, initialParams.to, isHolidayDate]);
 
   const placeMarkers = useMemo(() => {
     const markers: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest"; stationId: string | null }> = [];
@@ -106,6 +108,20 @@ export function MapPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
   const [dismissedKeys, setDismissedKeys] = useState<ReadonlySet<string>>(new Set());
+  const [isOffline, setIsOffline] = useState(
+    () => typeof navigator !== "undefined" && navigator.onLine === false,
+  );
+
+  useEffect(() => {
+    const onOnline = () => setIsOffline(false);
+    const onOffline = () => setIsOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   // A dismissed card stays dismissed for this search; a new search (URL change) brings cards back.
   useEffect(() => {
@@ -142,8 +158,23 @@ export function MapPage() {
         placeMarkers={placeMarkers}
       />
 
+      {/* Offline basemap notice: vectors still render, tiles need Internet. */}
+      {isOffline && (
+        <div className="absolute inset-x-3 top-14 z-[500] mx-auto flex max-w-md items-start gap-2 rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-sm backdrop-blur">
+          <WifiOff className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <p className="min-w-0 flex-1 text-muted-foreground">
+            {t.mapOfflineNote}
+          </p>
+        </div>
+      )}
+
       {visiblePlaceInfos.length > 0 && (
-        <div className="absolute inset-x-3 top-14 z-[500] mx-auto flex max-w-md flex-col gap-1.5">
+        <div
+          className={cn(
+            "absolute inset-x-3 z-[500] mx-auto flex max-w-md flex-col gap-1.5",
+            isOffline ? "top-28" : "top-14",
+          )}
+        >
           {visiblePlaceInfos.map((p) => (
             <div
               key={`${p.role}:${p.label}`}

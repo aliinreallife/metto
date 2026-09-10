@@ -12,6 +12,7 @@ import {
   getCurrentDayType,
   type Departure,
 } from "@/lib/schedule-utils";
+import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { useScheduleData } from "@/lib/use-schedule-data";
 
 export function StationDetail({
@@ -24,6 +25,7 @@ export function StationDetail({
   onClose: () => void;
 }) {
   const loaded = useScheduleData();
+  const { isHolidayDate } = useHolidayData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const lines = getStationLines(station.id);
@@ -32,9 +34,9 @@ export function StationDetail({
   );
 
   const departures = useMemo(() => {
-    const grouped = getStationDepartures(station.id, getCurrentDayType(), 3);
+    const grouped = getStationDepartures(station.id, getCurrentDayType(undefined, isHolidayDate), 3);
     return grouped.flatMap((g) => g.departures);
-  }, [station.id, loaded]);
+  }, [station.id, loaded, isHolidayDate]);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">

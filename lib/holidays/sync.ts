@@ -1,7 +1,11 @@
-// Cron sync job: refresh exactly today + tomorrow (Tehran calendar).
+// Cron sync job: refresh today + next 7 Tehran calendar dates (8 total).
 // Same function can run daily (Hobby) or every 6h (Pro) with no logic change.
+// Normal operation uses ~8 upstream requests/day regardless of user count —
+// never one refresh per user, never ~190/day. Initial bulk seeding lives in
+// public/holidays.json; this job only verifies the upcoming window and
+// picks up late announcements/exceptional closures.
 
-import { getTehranTodayAndTomorrow } from "./jalali";
+import { getTehranWeekDates } from "./jalali";
 import { fetchDayEvents, type FetchDayResult } from "./timestamp-client";
 import type { HolidayStore } from "./store";
 
@@ -26,7 +30,7 @@ export interface SyncSummary {
 export type FetchDayFn = (jalaliDate: string) => Promise<FetchDayResult>;
 
 /**
- * Sync today + tomorrow. Exactly 2 fetchDay calls per run.
+ * Sync today + next 7 days. Exactly 8 fetchDay calls per run.
  * - Success (true OR false, incl. empty events) overwrites that date.
  * - Failure/malformed NEVER overwrites an existing value.
  * - Dates on the entry come from the request, never from events[0].
@@ -40,8 +44,7 @@ export async function syncHolidays(deps: {
   const { nowMs, store } = deps;
   const syncedAt = deps.syncedAtIso ?? new Date(nowMs).toISOString();
   const fetchDay = deps.fetchDay ?? fetchDayEvents;
-  const { today, tomorrow } = getTehranTodayAndTomorrow(nowMs);
-  const days = [today, tomorrow];
+  const days = getTehranWeekDates(nowMs);
 
   const results: SyncDayResult[] = [];
   let anySuccess = false;
@@ -50,7 +53,7 @@ export async function syncHolidays(deps: {
     const previous = await store.get(day.gregorianDate);
     let fetched: FetchDayResult;
     try {
-      // Exactly one timestamp.ir request per day (2 per run).
+      // Exactly one timestamp.ir request per day (8 per run).
       fetched = await fetchDay(day.jalaliDate);
     } catch {
       fetched = { ok: false, error: "fetch-threw" };

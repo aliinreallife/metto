@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getTehranTodayAndTomorrow,
+  getTehranWeekDates,
   gregorianToJalali,
   nextTehranCalendarDate,
 } from "./lib/holidays/jalali";
@@ -247,10 +248,10 @@ describe("redis env resolution", () => {
   });
 });
 
-describe("sync job (today + tomorrow)", () => {
+describe("sync job (today + next 7 days)", () => {
   const nowMs = T(MON, 3, 30).getTime(); // Monday 2026-09-07 Tehran
 
-  it("requests exactly today + tomorrow Jalali dates (2 fetches)", async () => {
+  it("requests exactly today + next 7 Jalali dates (8 fetches)", async () => {
     const store = createMemoryHolidayStore();
     const seen: string[] = [];
     const fetchDay: FetchDayFn = (jalali) => {
@@ -258,11 +259,22 @@ describe("sync job (today + tomorrow)", () => {
       return okFalse();
     };
     const summary = await syncHolidays({ nowMs, store, fetchDay });
-    const { today, tomorrow } = getTehranTodayAndTomorrow(nowMs);
-    expect(seen).toEqual([today.jalaliDate, tomorrow.jalaliDate]);
-    expect(summary.dates).toHaveLength(2);
+    const week = getTehranWeekDates(nowMs);
+    expect(week).toHaveLength(8);
+    expect(seen).toEqual(week.map((d) => d.jalaliDate));
+    expect(summary.dates).toHaveLength(8);
     expect(summary.success).toBe(true);
     expect(gregorianToJalali("2026-07-05")).toBe("1405-04-14");
+  });
+  it("week window uses Tehran date boundaries", () => {
+    const week = getTehranWeekDates(nowMs);
+    expect(week[0].gregorianDate).toBe("2026-09-07");
+    expect(week[7].gregorianDate).toBe("2026-09-14");
+    for (let i = 1; i < week.length; i++) {
+      expect(week[i].gregorianDate).toBe(
+        nextTehranCalendarDate(week[i - 1].gregorianDate),
+      );
+    }
   });
   it("computes tomorrow as next Tehran calendar date (no raw arithmetic in sync)", () => {
     expect(nextTehranCalendarDate("2026-09-07")).toBe("2026-09-08");

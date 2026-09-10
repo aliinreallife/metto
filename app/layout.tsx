@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 import { Vazirmatn } from "next/font/google";
 import { FingerprintProvider } from "@fingerprint/react";
 import { MetroProvider } from "./providers";
+import { SerwistProvider } from "./serwist";
 import { AppNav } from "./nav";
 import "./globals.css";
 
@@ -181,6 +182,11 @@ export default function RootLayout({
         />
       </head>
       <body className="flex h-dvh flex-col font-sans antialiased">
+        <SerwistProvider
+          swUrl="/sw.js"
+          options={{ scope: "/", updateViaCache: "none" }}
+          disable={process.env.NODE_ENV === "development"}
+        >
         <FingerprintProvider
           apiKey="PeMqnfaeFyuBBJjOvNQ5"
           region="us"
@@ -190,6 +196,7 @@ export default function RootLayout({
             <div className="relative min-h-0 flex-1 flex flex-col overflow-hidden pb-[60px] pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">{children}</div>
           </MetroProvider>
         </FingerprintProvider>
+        </SerwistProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
         {process.env.NODE_ENV === "production" && <SpeedInsights />}
       </body>

@@ -23,6 +23,9 @@ export async function searchPlaces(
   const cached = cache.get(cacheKey)
   if (cached) return cached
 
+  // Online-only enhancement: never burn requests while offline.
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return []
+
   // Cancel any in-flight request
   controller?.abort()
   controller = new AbortController()
@@ -80,6 +83,11 @@ export async function reverseGeocode(
 ): Promise<string | null> {
   const cacheKey = `${lang}:${lat.toFixed(4)},${lng.toFixed(4)}`
   if (reverseCache.has(cacheKey)) return reverseCache.get(cacheKey) ?? null
+
+  // Reverse geocoding is online-only; callers fall back to a generic label.
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return null
+  }
 
   const params = new URLSearchParams({
     lat: String(lat),
