@@ -153,8 +153,11 @@ test.describe("Metto offline PWA", () => {
     await expect(page.getByText("شما آفلاین هستید")).toHaveCount(0);
 
     // 12-13. Station search works offline (stations page, direct load).
+    // :visible because Next may briefly retain a hidden transition copy.
     await page.goto("/stations", { waitUntil: "domcontentloaded" });
-    const stationSearch = page.getByPlaceholder("جستجوی ایستگاه…");
+    const stationSearch = page.locator(
+      'input[placeholder="جستجوی ایستگاه…"]:visible',
+    );
     await expect(stationSearch).toBeVisible({ timeout: 30_000 });
     await stationSearch.fill(ORIGIN_FA);
     await expect(
@@ -199,7 +202,9 @@ test.describe("Metto offline PWA", () => {
     // 21-23. Holiday info renders offline from the local dataset via the
     // existing timetable UI; routing made zero upstream holiday calls.
     await page.goto("/stations", { waitUntil: "domcontentloaded" });
-    await page.getByPlaceholder("جستجوی ایستگاه…").fill(ORIGIN_FA);
+    await page
+      .locator('input[placeholder="جستجوی ایستگاه…"]:visible')
+      .fill(ORIGIN_FA);
     await page.getByRole("button", { name: /برنامه/ }).first().click();
     await expect(page.getByText("تعطیلات رسمی").first()).toBeVisible({
       timeout: 15_000,

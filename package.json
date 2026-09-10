@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e:offline": "playwright test tests/offline.spec.ts tests/map-tiles.spec.ts tests/map-reconnect.spec.ts tests/offline-nav.spec.ts",
+    "test:e2e:offline": "playwright test tests/offline.spec.ts tests/map-tiles.spec.ts tests/map-reconnect.spec.ts tests/offline-nav.spec.ts tests/connectivity.spec.ts",
     "holidays:sync": "node scripts/sync-holidays.mjs",
     "generate:stations": "node scripts/generate-stations.ts"
   },

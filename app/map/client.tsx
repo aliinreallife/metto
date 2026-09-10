@@ -109,11 +109,11 @@ export function MapPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
   const [dismissedKeys, setDismissedKeys] = useState<ReadonlySet<string>>(new Set());
-  // Shared connectivity state (mount + online/offline + pageshow +
-  // foreground resync), so the banner reflects real network state even
-  // after the PWA resumes from background — never tile-error state.
-  const online = useConnectivity();
-  const isOffline = !online;
+  // Effective connectivity (verified reachability, not just link state):
+  // the banner shows only on confirmed offline — never during checking,
+  // so a normal launch waiting ~ms for verification never flashes it.
+  const { state: connectivity } = useConnectivity();
+  const isOffline = connectivity === "offline";
 
   // One-time informational save notice: shown once per device while online,
   // remembered locally. Never stacked with the offline banner, never a
@@ -127,15 +127,16 @@ export function MapPage() {
   });
   const [saveNoticeDismissed, setSaveNoticeDismissed] = useState(false);
   useEffect(() => {
-    if (online && !saveNoticeSeen) {
+    if (connectivity === "online" && !saveNoticeSeen) {
       try {
         localStorage.setItem("metto.mapSaveNoticeSeen", "1");
       } catch {
         // Private mode etc. — notice simply shows again next visit.
       }
     }
-  }, [online, saveNoticeSeen]);
-  const showSaveNotice = online && !saveNoticeSeen && !saveNoticeDismissed;
+  }, [connectivity, saveNoticeSeen]);
+  const showSaveNotice =
+    connectivity === "online" && !saveNoticeSeen && !saveNoticeDismissed;
   function dismissSaveNotice() {
     setSaveNoticeDismissed(true);
     try {

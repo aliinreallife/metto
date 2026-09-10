@@ -1,52 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+import {
+  getConnectivitySnapshot,
+  getServerConnectivitySnapshot,
+  subscribeConnectivity,
+  type ConnectivitySnapshot,
+  type ConnectivityState,
+} from "./connectivity-store";
+
+export type { ConnectivityState };
+
+export interface ConnectivityValue {
+  state: ConnectivityState;
+  /** True only when reachability was verified (state === "online"). */
+  online: boolean;
+  /** False while the first/renewed verification is still running. */
+  verified: boolean;
+  /** Raw link flag last observed (diagnostics only — never UI truth). */
+  navigatorOnline: boolean;
+  /** True once a probe resolved for the current episode. */
+  reachabilityVerified: boolean;
+}
+
+function toValue(snapshot: ConnectivitySnapshot): ConnectivityValue {
+  return {
+    state: snapshot.state,
+    online: snapshot.state === "online",
+    verified: snapshot.state !== "checking",
+    navigatorOnline: snapshot.navigatorOnline,
+    reachabilityVerified: snapshot.reachabilityVerified,
+  };
+}
 
 /**
- * Single reliable client-side connectivity source for the whole app.
- *
- * Based primarily on `navigator.onLine`, resynchronized on:
- * - initial client mount,
- * - `window` online / offline events,
- * - `pageshow` (back/forward cache restores, PWA resume),
- * - `visibilitychange` when the document becomes visible again
- *   (an installed PWA may have slept through a connectivity change).
- *
- * Deliberately NOT derived from tile/API failures: a CARTO CDN failure
- * while `navigator.onLine === true` must never mark the device offline.
+ * The single shared effective-connectivity state. Safe to call from any
+ * number of components — all observe the same value, driven by one probe
+ * at a time. Deliberately NOT derived from tile/API failures.
  */
-export function useConnectivity(): boolean {
-  const [online, setOnline] = useState<boolean>(() =>
-    typeof navigator === "undefined" ? true : navigator.onLine !== false,
+export function useConnectivity(): ConnectivityValue {
+  const snapshot = useSyncExternalStore(
+    subscribeConnectivity,
+    getConnectivitySnapshot,
+    getServerConnectivitySnapshot,
   );
-
-  useEffect(() => {
-    const sync = () => {
-      try {
-        setOnline(navigator.onLine !== false);
-      } catch {
-        // Keep the last known value if unreadable.
-      }
-    };
-    // Align immediately on mount in case connectivity changed while
-    // suspended/backgrounded before this component mounted.
-    sync();
-    const onVisibility = () => {
-      if (!document.hidden) sync();
-    };
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    window.addEventListener("pageshow", sync);
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-      window.removeEventListener("pageshow", sync);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, []);
-
-  return online;
+  return toValue(snapshot);
 }
 
 /** Top-level static tabs known to be in the Serwist precache. */

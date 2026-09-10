@@ -48,6 +48,27 @@ are logged as `console.debug("[Metto Offline]", …)` and mirrored to
 3. The timetable dataset is loaded in memory.
 4. The holiday dataset is loaded in memory.
 
+### Effective connectivity (not just `navigator.onLine`)
+
+`navigator.onLine` only reflects link state: with Wi-Fi/cellular off but an
+Android VPN virtual interface up, it stays `true` with no usable Internet.
+Metto therefore tracks *effective* reachability (`lib/offline/`):
+
+- States: `checking` → `online` (only after `GET /api/connectivity`
+  returns 204) or `offline` (link down, or probe failed/timed out at ~3 s).
+- `/api/connectivity` is a bodyless 204 with `Cache-Control: no-store`
+  and the SW keeps `/api/*` `NetworkOnly`, so a success always proves a
+  live round trip — never a cache hit.
+- One shared singleton store (module-level + `useSyncExternalStore`):
+  one listener set, one in-flight probe, one retry timer per page; all of
+  OfflineStatus, map banner, `RealMap` redraw, and `TabLink` observe it.
+- Resync on mount, `online`/`offline` events, `pageshow`, and foreground
+  `visibilitychange`. A visible-only ~25 s retry covers recovery with no
+  browser event (VPN case); nothing polls while hidden or link-down.
+- UI matrix: `checking` shows no offline UI anywhere (but tab taps already
+  take the safe document path); the global warning appears only for
+  confirmed-offline + missing core after a ~1.75 s anti-flicker grace.
+
 ---
 
 ## 2. Internet-required functionality
@@ -343,6 +364,29 @@ toggle offline again
 tap Route/Map/Stations/Nearby repeatedly (from /?from=…&to=… too)
 ↓
 every static tab opens offline with route state intact
+```
+
+VPN false-online case (real Android, installed PWA):
+
+```text
+open installed Metto PWA online, confirm ready
+↓
+leave VPN connected; turn Wi-Fi OFF and cellular data OFF
+↓
+wait for reachability verification (no browser event needed)
+↓
+Metto shows the normal offline state even if the OS still claims online
+↓
+cycle Route → Map → Stations → Nearby → Route (all precached tabs work)
+↓
+turn Wi-Fi back ON (VPN still enabled)
+↓
+offline banner disappears; missing map imagery resumes without zoom/pan;
+no full-page refresh
+↓
+background the PWA, change connectivity, resume it
+↓
+state reflects current effective connectivity, not pre-suspend state
 ```
 
 Automated equivalent: `pnpm build && pnpm test:e2e:offline`

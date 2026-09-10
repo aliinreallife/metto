@@ -65,12 +65,16 @@ test.describe("Offline bottom navigation", () => {
     // `Next-Router-Prefetch`) — those stay allowed and are excluded here.
     const navRscRequests: string[] = [];
     page.on("request", (req) => {
+      // catch(): header reads reject for requests torn down mid-flight;
+      // an unhandled rejection would fail the test spuriously.
       void Promise.all([
         req.headerValue("rsc"),
         req.headerValue("next-router-prefetch"),
-      ]).then(([rsc, prefetch]) => {
-        if (rsc !== null && prefetch === null) navRscRequests.push(req.url());
-      });
+      ])
+        .then(([rsc, prefetch]) => {
+          if (rsc !== null && prefetch === null) navRscRequests.push(req.url());
+        })
+        .catch(() => {});
     });
 
     await tabLink(page, "نقشه").click();
@@ -84,7 +88,7 @@ test.describe("Offline bottom navigation", () => {
       "/stations",
     );
     await expect(
-      page.getByPlaceholder("جستجوی ایستگاه…"),
+      page.locator('input[placeholder="جستجوی ایستگاه…"]:visible'),
     ).toBeVisible({ timeout: 30_000 });
 
     await tabLink(page, "نزدیک من").click();
@@ -198,12 +202,16 @@ test.describe("Offline bottom navigation", () => {
     });
     const navRscRequests: string[] = [];
     page.on("request", (req) => {
+      // catch(): header reads reject for requests torn down mid-flight;
+      // an unhandled rejection would fail the test spuriously.
       void Promise.all([
         req.headerValue("rsc"),
         req.headerValue("next-router-prefetch"),
-      ]).then(([rsc, prefetch]) => {
-        if (rsc !== null && prefetch === null) navRscRequests.push(req.url());
-      });
+      ])
+        .then(([rsc, prefetch]) => {
+          if (rsc !== null && prefetch === null) navRscRequests.push(req.url());
+        })
+        .catch(() => {});
     });
     await context.setOffline(true);
 
@@ -225,7 +233,7 @@ test.describe("Offline bottom navigation", () => {
     );
     expect(new URL(page.url()).searchParams.get("from")).toBe("tajrish");
     await expect(
-      page.getByPlaceholder("جستجوی ایستگاه…"),
+      page.locator('input[placeholder="جستجوی ایستگاه…"]:visible'),
     ).toBeVisible({ timeout: 30_000 });
 
     // Nearby with query → Nearby HTML.

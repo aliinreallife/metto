@@ -17,6 +17,7 @@
 import { useEffect, useState } from "react";
 import { isScheduleDataLoaded, onScheduleDataReady } from "../schedule-utils";
 import { getLocalHolidayDataset } from "../holidays/use-holiday-data";
+import { useConnectivity } from "./use-connectivity";
 
 export type OfflinePhase =
   | "preparing"
@@ -46,9 +47,10 @@ function logSwLifecycle(message: string): void {
 }
 
 export function useOfflineReadiness(): OfflineReadiness {
-  const [online, setOnline] = useState<boolean>(() =>
-    typeof navigator === "undefined" ? true : navigator.onLine !== false,
-  );
+  // Single shared effective-connectivity state — this module no longer
+  // tracks online/offline itself (it used to, and the two could disagree).
+  const connectivity = useConnectivity();
+  const online = connectivity.online;
   const [swControlling, setSwControlling] = useState(false);
   const [swWaiting, setSwWaiting] = useState(false);
   const [scheduleLoaded, setScheduleLoaded] = useState(() => {
@@ -65,17 +67,6 @@ export function useOfflineReadiness(): OfflineReadiness {
   const [holidayLoaded, setHolidayLoaded] = useState(
     () => getLocalHolidayDataset() !== null,
   );
-
-  useEffect(() => {
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
 
   useEffect(() => {
     if (isScheduleDataLoaded()) {
@@ -212,13 +203,17 @@ export function useOfflineReadiness(): OfflineReadiness {
 
   const coreReady = scheduleLoaded && holidayLoaded;
 
+  // Tri-state aware: "checking" is neither online nor offline — it follows
+  // the online path (preparing/ready) so nothing offline is ever claimed
+  // before reachability resolves.
+  const confirmedOffline = connectivity.state === "offline";
+
   let phase: OfflinePhase;
-  if (!online) {
-    phase = coreReady ? "offline-ready" : "offline-incomplete";
-  } else if (coreReady && swControlling && precacheReady) {
-    phase = "ready";
+  if (!confirmedOffline) {
+    phase =
+      coreReady && swControlling && precacheReady ? "ready" : "preparing";
   } else {
-    phase = "preparing";
+    phase = coreReady ? "offline-ready" : "offline-incomplete";
   }
 
   return {
