@@ -1,10 +1,11 @@
 "use client";
 
 // Offline-readiness state machine (4 states):
-// 1. "preparing": online, SW/schedule/holiday not all ready yet.
+// 1. "preparing": online-but-incomplete, OR offline with verification still
+//    pending (UNKNOWN — must never warn).
 // 2. "ready": online + SW controlling + schedule + holiday dataset present.
-// 3. "offline-ready": offline + core data available (full planner works).
-// 4. "offline-incomplete": offline but core was never initialized.
+// 3. "offline-ready": offline + verified + core data available.
+// 4. "offline-incomplete": offline + VERIFIED missing core (the only warning).
 //
 // "Core ready" NEVER claims readiness from SW install alone — the timetable
 // (`schedule-data.json`) and the holiday dataset must both be loaded.
@@ -15,7 +16,11 @@
 // no toast, no automatic reload — ever. Service-worker transitions are
 // console-only diagnostics (see logSwLifecycle).
 import { useEffect, useState } from "react";
-import { isScheduleDataLoaded, onScheduleDataReady } from "../schedule-utils";
+import {
+  isScheduleDataLoaded,
+  loadScheduleData,
+  onScheduleDataReady,
+} from "../schedule-utils";
 import { getLocalHolidayDataset } from "../holidays/use-holiday-data";
 import { useConnectivity } from "./use-connectivity";
 
@@ -34,6 +39,13 @@ export type OfflineReadiness = {
   holidayLoaded: boolean;
   precacheReady: boolean;
   coreReady: boolean;
+  /**
+   * True once the initial schedule + holiday + precache checks have EACH
+   * completed one full pass. Means "has this been checked?", not "was the
+   * required data found?". Settle (success, missing, or thrown error) counts
+   * as completed — a rejecting lookup must never leave this false forever.
+   */
+  readinessVerified: boolean;
 };
 
 // Module-level guard: one lifecycle transition logs at most once per
@@ -67,22 +79,70 @@ export function useOfflineReadiness(): OfflineReadiness {
   const [holidayLoaded, setHolidayLoaded] = useState(
     () => getLocalHolidayDataset() !== null,
   );
+  // Completion flags: each initial check settling (found, missing, or
+  // thrown) marks its flag. All three must be true before an offline
+  // document may claim anything about missing core data.
+  const [scheduleChecked, setScheduleChecked] = useState(false);
+  const [holidayChecked, setHolidayChecked] = useState(false);
+  const [precacheChecked, setPrecacheChecked] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    const markChecked = () => {
+      if (!cancelled) setScheduleChecked(true);
+    };
     if (isScheduleDataLoaded()) {
       setScheduleLoaded(true);
-      return;
+      markChecked();
+      return () => {
+        cancelled = true;
+      };
     }
-    return onScheduleDataReady(() => setScheduleLoaded(true));
+    const unsubscribe = onScheduleDataReady(() => {
+      if (cancelled) return;
+      setScheduleLoaded(true);
+      markChecked();
+    });
+    // Settle guard: the load promise resolves AND rejects through here, so
+    // a failed offline fetch (evicted/missing core) still completes the
+    // check instead of leaving readinessVerified false forever.
+    // loadScheduleData is deduped with the providers' call — safe to attach.
+    try {
+      const pending = loadScheduleData();
+      if (pending && typeof pending.then === "function") {
+        pending.then(markChecked, markChecked);
+      } else {
+        markChecked();
+      }
+    } catch {
+      markChecked();
+    }
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     let timer: number | null = null;
+    let firstPassDone = false;
+    const markFirstPass = () => {
+      // The FIRST lookup settling (found, missing, or thrown) completes the
+      // check. Later 1s retries only flip precacheReady, never verification.
+      if (!firstPassDone) {
+        firstPassDone = true;
+        if (!cancelled) setPrecacheChecked(true);
+      }
+    };
     const check = async () => {
       if (cancelled) return;
+      let found = false;
       try {
-        if (typeof caches === "undefined") return;
+        if (typeof caches === "undefined") {
+          markFirstPass();
+          return;
+        }
         // Serwist precache keys carry `?__WB_REVISION__=` cache-busting
         // params (only `/_next/static/` is exempt), so match while ignoring
         // the query string. The SW's own routes resolve the same entries.
@@ -90,12 +150,17 @@ export function useOfflineReadiness(): OfflineReadiness {
           caches.match("/schedule-data.json", { ignoreSearch: true }),
           caches.match("/holidays.json", { ignoreSearch: true }),
         ]);
-        if (schedule && holidays) {
-          setPrecacheReady(true);
-          return;
-        }
+        if (cancelled) return;
+        found = !!(schedule && holidays);
       } catch {
-        // Cache Storage unreadable — stay in "preparing".
+        // Cache Storage unreadable — still a completed pass, never hang.
+        found = false;
+      }
+      if (cancelled) return;
+      markFirstPass();
+      if (found) {
+        setPrecacheReady(true);
+        return;
       }
       timer = window.setTimeout(check, 1000);
     };
@@ -107,16 +172,26 @@ export function useOfflineReadiness(): OfflineReadiness {
   }, []);
 
   useEffect(() => {
-    // Holiday dataset ships bundled, so this is instant in practice; the
-    // poll covers the LKG-storage path resolving after mount.
-    if (getLocalHolidayDataset() !== null) {
-      setHolidayLoaded(true);
-      return;
-    }
-    const t = window.setInterval(() => {
+    // Holiday dataset ships bundled, so the sync read below settles the
+    // check immediately in practice; errors count as settled too. The poll
+    // covers the LKG-storage path resolving after mount and only affects
+    // the loaded flag, never verification.
+    try {
       if (getLocalHolidayDataset() !== null) {
         setHolidayLoaded(true);
-        window.clearInterval(t);
+      }
+    } catch {
+      // Sync read failed — still a completed pass.
+    }
+    setHolidayChecked(true);
+    const t = window.setInterval(() => {
+      try {
+        if (getLocalHolidayDataset() !== null) {
+          setHolidayLoaded(true);
+          window.clearInterval(t);
+        }
+      } catch {
+        // Keep polling until the stop timer; verification already done.
       }
     }, 500);
     const stop = window.setTimeout(() => window.clearInterval(t), 10000);
@@ -203,15 +278,24 @@ export function useOfflineReadiness(): OfflineReadiness {
 
   const coreReady = scheduleLoaded && holidayLoaded;
 
-  // Tri-state aware: "checking" is neither online nor offline — it follows
-  // the online path (preparing/ready) so nothing offline is ever claimed
-  // before reachability resolves.
+  // Verified-readiness gate (UNKNOWN vs MISSING): an offline document whose
+  // three initial checks have not all settled yet reports "preparing", never
+  // "offline-incomplete". Only a settled check run with missing core data
+  // may show the amber warning — a slow phone/cache must never warn merely
+  // because verification took longer than the UI grace period.
+  // Tri-state aware: "checking" connectivity is neither online nor offline —
+  // it follows the online path (preparing/ready) so nothing offline is ever
+  // claimed before reachability resolves.
+  const readinessVerified =
+    scheduleChecked && holidayChecked && precacheChecked;
   const confirmedOffline = connectivity.state === "offline";
 
   let phase: OfflinePhase;
   if (!confirmedOffline) {
     phase =
       coreReady && swControlling && precacheReady ? "ready" : "preparing";
+  } else if (!readinessVerified) {
+    phase = "preparing";
   } else {
     phase = coreReady ? "offline-ready" : "offline-incomplete";
   }
@@ -225,5 +309,6 @@ export function useOfflineReadiness(): OfflineReadiness {
     holidayLoaded,
     precacheReady,
     coreReady,
+    readinessVerified,
   };
 }

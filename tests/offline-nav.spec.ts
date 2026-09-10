@@ -41,6 +41,43 @@ function tabLink(page: Page, name: string) {
   return bottomNav(page).getByRole("link", { name, exact: true });
 }
 
+const INCOMPLETE_WARNING_FA =
+  "این دستگاه هنوز برای استفاده آفلاین آماده نشده است";
+
+/**
+ * Settle assertion for an offline full-document navigation on an
+ * already-prepared device: the fresh boot must go UNKNOWN (preparing) and
+ * then straight to offline-ready — NEVER through offline-incomplete.
+ * Samples the phase continuously while waiting so a transient flash of the
+ * amber warning state fails the test instead of slipping between polls.
+ */
+async function expectOfflineReadyWithoutIncompleteFlash(page: Page) {
+  const status = page.getByTestId("offline-status");
+  await expect
+    .poll(
+      async () => {
+        const p =
+          await status.getAttribute("data-phase").then((v) => v ?? "unknown");
+        // Structural guard: unknown-vs-missing. Any intermediate
+        // offline-incomplete on a prepared device is the real-device bug.
+        expect(p).not.toBe("offline-incomplete");
+        return p;
+      },
+      { timeout: 30_000 },
+    )
+    .toBe("offline-ready");
+  // Verified gate actually engaged on this document.
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __mettoOffline?: Record<string, unknown> })
+          .__mettoOffline,
+    ),
+  ).toMatchObject({ readinessVerified: true });
+  // And the amber warning never rendered (grace + gate combined).
+  await expect(page.getByText(INCOMPLETE_WARNING_FA)).toHaveCount(0);
+}
+
 test.describe("Offline bottom navigation", () => {
   test("Route → Map → Stations → Nearby → Route all open offline", async ({
     context,
@@ -58,6 +95,15 @@ test.describe("Offline bottom navigation", () => {
     expect(routeHref).toContain("to=aliabad");
 
     await context.setOffline(true);
+
+    // Transition guard: collect every readiness snapshot logged while
+    // offline. No document in this cycle may ever report offline-incomplete.
+    const offlineLogs: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "debug" && msg.text().includes("[Metto Offline]")) {
+        offlineLogs.push(msg.text());
+      }
+    });
 
     // Mechanism guard: offline taps must not issue client-side *navigation*
     // RSC requests at all (they are what used to abort the transition).
@@ -82,6 +128,7 @@ test.describe("Offline bottom navigation", () => {
     await expect(
       page.locator('[aria-label="Tehran metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
+    await expectOfflineReadyWithoutIncompleteFlash(page);
 
     await tabLink(page, "ایستگاه‌ها").click();
     await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe(
@@ -90,6 +137,7 @@ test.describe("Offline bottom navigation", () => {
     await expect(
       page.locator('input[placeholder="جستجوی ایستگاه…"]:visible'),
     ).toBeVisible({ timeout: 30_000 });
+    await expectOfflineReadyWithoutIncompleteFlash(page);
 
     await tabLink(page, "نزدیک من").click();
     await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe(
@@ -98,6 +146,7 @@ test.describe("Offline bottom navigation", () => {
     await expect(
       page.getByText("موقعیت شما", { exact: true }),
     ).toBeVisible({ timeout: 30_000 });
+    await expectOfflineReadyWithoutIncompleteFlash(page);
 
     // Back to Route: same href semantics as online, route state intact.
     await tabLink(page, "مسیر").click();
@@ -105,9 +154,14 @@ test.describe("Offline bottom navigation", () => {
     expect(new URL(page.url()).searchParams.get("from")).toBe("ahang");
     expect(new URL(page.url()).searchParams.get("to")).toBe("aliabad");
     await expectRouteResult(page);
+    await expectOfflineReadyWithoutIncompleteFlash(page);
     // Flush any in-flight header reads, then assert zero navigation RSC.
     await page.waitForTimeout(1000);
     expect(navRscRequests).toEqual([]);
+    // No document in the whole offline cycle ever entered the warning state.
+    expect(
+      offlineLogs.filter((l) => l.includes("offline-incomplete")),
+    ).toEqual([]);
 
     await context.setOffline(false);
   });

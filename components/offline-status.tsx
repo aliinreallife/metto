@@ -50,6 +50,8 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
     scheduleLoaded,
     holidayLoaded,
     precacheReady,
+    coreReady,
+    readinessVerified,
   } = readiness;
   // Shared effective state (same singleton every consumer observes).
   const {
@@ -75,7 +77,10 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
   // Debug-only transition log: fires only when a meaningful value changes,
   // never on every render. Distinguishes link state (navigatorOnline)
   // from effective reachability (connectivity) — the VPN case reads
-  // navigatorOnline: true with connectivity: "offline".
+  // navigatorOnline: true with connectivity: "offline". readinessVerified
+  // + coreReady expose the UNKNOWN-vs-MISSING gate: offline boot must show
+  // {readinessVerified: false, coreReady: false, phase: "preparing"} and
+  // transition straight to offline-ready with no offline-incomplete between.
   const lastLoggedRef = useRef<string>("");
   useEffect(() => {
     const snapshot = {
@@ -83,6 +88,8 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
       connectivity,
       navigatorOnline,
       reachabilityVerified,
+      readinessVerified,
+      coreReady,
       serviceWorkerControlled: swControlling,
       precacheReady,
       scheduleReady: scheduleLoaded,
@@ -98,7 +105,7 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
     } catch {
       // Diagnostics must never break the app.
     }
-  }, [phase, connectivity, navigatorOnline, reachabilityVerified, swControlling, precacheReady, scheduleLoaded, holidayLoaded, online]);
+  }, [phase, connectivity, navigatorOnline, reachabilityVerified, readinessVerified, coreReady, swControlling, precacheReady, scheduleLoaded, holidayLoaded, online]);
 
   return (
     <div
