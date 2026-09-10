@@ -8,7 +8,13 @@
 //
 // "Core ready" NEVER claims readiness from SW install alone — the timetable
 // (`schedule-data.json`) and the holiday dataset must both be loaded.
-import { useCallback, useEffect, useState } from "react";
+//
+// Update lifecycle is intentionally silent: a newer worker installs in the
+// background and waits (skipWaiting: false) without interrupting the
+// session; it activates naturally once old clients are gone. No banner,
+// no toast, no automatic reload — ever. Service-worker transitions are
+// console-only diagnostics (see logSwLifecycle).
+import { useEffect, useState } from "react";
 import { isScheduleDataLoaded, onScheduleDataReady } from "../schedule-utils";
 import { getLocalHolidayDataset } from "../holidays/use-holiday-data";
 
@@ -17,16 +23,6 @@ export type OfflinePhase =
   | "ready"
   | "offline-ready"
   | "offline-incomplete";
-
-const READY_DISMISSED_KEY = "metto.offline.readyDismissed";
-
-function readReadyDismissed(): boolean {
-  try {
-    return localStorage.getItem(READY_DISMISSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 export type OfflineReadiness = {
   phase: OfflinePhase;
@@ -37,11 +33,17 @@ export type OfflineReadiness = {
   holidayLoaded: boolean;
   precacheReady: boolean;
   coreReady: boolean;
-  readyDismissed: boolean;
-  dismissReady: () => void;
-  /** Ask the waiting worker to activate, then reload exactly once. */
-  applyUpdate: () => void;
 };
+
+// Module-level guard: one lifecycle transition logs at most once per
+// session, even across React remounts. Console-only, never UI.
+let lastSwLifecycleLog = "";
+
+function logSwLifecycle(message: string): void {
+  if (lastSwLifecycleLog === message) return;
+  lastSwLifecycleLog = message;
+  console.debug("[Metto Offline]", message);
+}
 
 export function useOfflineReadiness(): OfflineReadiness {
   const [online, setOnline] = useState<boolean>(() =>
@@ -62,9 +64,6 @@ export function useOfflineReadiness(): OfflineReadiness {
   const [precacheReady, setPrecacheReady] = useState(false);
   const [holidayLoaded, setHolidayLoaded] = useState(
     () => getLocalHolidayDataset() !== null,
-  );
-  const [readyDismissed, setReadyDismissed] = useState(() =>
-    readReadyDismissed(),
   );
 
   useEffect(() => {
@@ -145,24 +144,41 @@ export function useOfflineReadiness(): OfflineReadiness {
       if (disposed) return;
       setSwControlling(!!navigator.serviceWorker.controller);
       try {
-        setSwWaiting(!!registration?.waiting);
+        const waiting = !!registration?.waiting;
+        setSwWaiting(waiting);
+        // A rediscovered waiting worker is normal background lifecycle
+        // (new precache installed while this session runs) — log only.
+        if (waiting) logSwLifecycle("service worker waiting");
       } catch {
         setSwWaiting(false);
       }
     };
 
+    // Never reloads: activation is left to the natural lifecycle (old
+    // clients close → waiting worker activates → next launch uses it).
     const onControllerChange = () => {
-      // A new worker just took over (fresh install or applied update):
-      // re-show the ready state once instead of staying dismissed forever.
-      try {
-        localStorage.removeItem(READY_DISMISSED_KEY);
-      } catch {
-        // Non-fatal.
-      }
-      if (!disposed) {
-        setReadyDismissed(false);
-        syncState();
-      }
+      logSwLifecycle("service worker activated");
+      syncState();
+    };
+
+    const trackInstalling = (worker: ServiceWorker | null) => {
+      if (!worker) return;
+      const onStateChange = () => {
+        if (worker.state === "installed") {
+          // With skipWaiting:false this worker now waits when an old
+          // controller exists, or activates right away on first install.
+          if (navigator.serviceWorker.controller) {
+            logSwLifecycle("service worker waiting");
+          } else {
+            logSwLifecycle("service worker activated");
+          }
+          syncState();
+        } else if (worker.state === "activated") {
+          logSwLifecycle("service worker activated");
+          syncState();
+        }
+      };
+      worker.addEventListener("statechange", onStateChange);
     };
 
     navigator.serviceWorker
@@ -172,25 +188,25 @@ export function useOfflineReadiness(): OfflineReadiness {
         registration = reg ?? null;
         syncState();
         if (!registration) return;
+        trackInstalling(registration.installing);
         registration.addEventListener("updatefound", () => {
-          const installing = registration?.installing;
-          if (!installing) return;
-          installing.addEventListener("statechange", syncState);
+          logSwLifecycle("service worker update installed");
+          trackInstalling(registration?.installing ?? null);
+          syncState();
         });
       })
       .catch(() => {});
 
-    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
-    // Fires for SerwistProvider-driven updates as well.
-    const onMessage = () => syncState();
-    navigator.serviceWorker.addEventListener("message", onMessage);
+    navigator.serviceWorker.addEventListener(
+      "controllerchange",
+      onControllerChange,
+    );
     return () => {
       disposed = true;
       navigator.serviceWorker.removeEventListener(
         "controllerchange",
         onControllerChange,
       );
-      navigator.serviceWorker.removeEventListener("message", onMessage);
     };
   }, []);
 
@@ -205,45 +221,6 @@ export function useOfflineReadiness(): OfflineReadiness {
     phase = "preparing";
   }
 
-  const dismissReady = useCallback(() => {
-    setReadyDismissed(true);
-    try {
-      localStorage.setItem(READY_DISMISSED_KEY, "1");
-    } catch {
-      // Non-fatal.
-    }
-  }, []);
-
-  const applyUpdate = useCallback(() => {
-    try {
-      if (!("serviceWorker" in navigator)) {
-        window.location.reload();
-        return;
-      }
-      void navigator.serviceWorker.getRegistration().then((reg) => {
-        const waiting = reg?.waiting;
-        if (waiting) {
-          let reloaded = false;
-          const reloadOnce = () => {
-            if (reloaded) return;
-            reloaded = true;
-            window.location.reload();
-          };
-          navigator.serviceWorker.addEventListener("controllerchange", reloadOnce, {
-            once: true,
-          });
-          // Safety net: reload even if the event is missed.
-          window.setTimeout(reloadOnce, 1500);
-          waiting.postMessage({ type: "SKIP_WAITING" });
-        } else {
-          window.location.reload();
-        }
-      });
-    } catch {
-      window.location.reload();
-    }
-  }, []);
-
   return {
     phase,
     online,
@@ -253,8 +230,5 @@ export function useOfflineReadiness(): OfflineReadiness {
     holidayLoaded,
     precacheReady,
     coreReady,
-    readyDismissed,
-    dismissReady,
-    applyUpdate,
   };
 }

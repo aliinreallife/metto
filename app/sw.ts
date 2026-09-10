@@ -80,9 +80,11 @@ registerQuotaErrorCallback(async () => {
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
-  // Safe updates: a waiting worker NEVER takes over mid-session on its own.
-  // The page shows a "new version available → refresh" banner which posts
-  // { type: "SKIP_WAITING" }. See lib/offline/use-offline-readiness.
+  // Safe updates: a waiting worker NEVER takes over mid-session on its own
+  // (skipWaiting: false) and the app NEVER reloads for updates: the waiting
+  // worker activates naturally once old clients are gone. The SKIP_WAITING
+  // handler below exists only for development/testing and explicit future
+  // recovery flows — no user-facing update UI may depend on it.
   skipWaiting: false,
   clientsClaim: true,
   navigationPreload: true,

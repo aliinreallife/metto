@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { CheckCircle2, RefreshCw, WifiOff, X } from "lucide-react";
+import { CheckCircle2, WifiOff, X } from "lucide-react";
 import { useOfflineReadiness } from "@/lib/offline/use-offline-readiness";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { ensurePersistentStorage } from "@/lib/offline/storage";
@@ -22,9 +22,12 @@ declare global {
  * `window.__mettoOffline`) for debugging and Playwright.
  *
  * Visible UI appears only when the user must act:
- * - a waiting service worker (refresh requires a user action);
  * - offline with core data missing (one online visit needed);
  * - a genuinely new holiday dataset was just installed (one-time notice).
+ *
+ * Service-worker updates are fully silent: a waiting worker never shows UI
+ * and never reloads the session; it activates naturally once old clients
+ * are gone. Update transitions are console-only (see useOfflineReadiness).
  */
 export function OfflineStatus({ lang }: { lang: Lang }) {
   const isFa = lang === "fa";
@@ -43,11 +46,9 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
     phase,
     online,
     swControlling,
-    swWaiting,
     scheduleLoaded,
     holidayLoaded,
     precacheReady,
-    applyUpdate,
   } = readiness;
 
   // Debug-only transition log: fires only when a meaningful value changes,
@@ -80,22 +81,6 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
       data-phase={phase}
       className="z-10 flex flex-col items-stretch gap-1 px-4 pt-1 md:px-6"
     >
-      {swWaiting && (
-        <StatusRow tone="update">
-          <RefreshCw className="size-3.5 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">
-            {isFa ? "نسخه جدید متو آماده است" : "A new version is available"}
-          </span>
-          <button
-            type="button"
-            onClick={applyUpdate}
-            className="shrink-0 rounded-md bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground hover:opacity-90"
-          >
-            {isFa ? "به‌روزرسانی" : "Update"}
-          </button>
-        </StatusRow>
-      )}
-
       {phase === "offline-incomplete" && (
         <StatusRow tone="warn">
           <WifiOff className="size-3.5 shrink-0" />
@@ -133,7 +118,7 @@ function StatusRow({
   tone,
   children,
 }: {
-  tone: "ready" | "warn" | "update";
+  tone: "ready" | "warn";
   children: React.ReactNode;
 }) {
   return (
@@ -144,8 +129,6 @@ function StatusRow({
           "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
         tone === "warn" &&
           "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-        tone === "update" &&
-          "border-primary/30 bg-primary/5 text-foreground",
       )}
     >
       {children}

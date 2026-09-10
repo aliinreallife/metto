@@ -132,18 +132,25 @@ hang, never a misleading empty state):
   - `NetworkFirst`: `/holidays.version.json` (tiny update pointer,
     deliberately **not** precached so it revalidates).
   - `NetworkOnly` (never cached): `POST` (no rule matches non-GET),
-    `/api/*`, **all** cross-origin (Nominatim, Esri, CARTO, timestamp.ir,
-    fonts), version-pinned `/holidays.json?v=…` downloads.
+    `/api/*`, version-pinned `/holidays.json?v=…` downloads. Unmatched
+    cross-origin requests (Nominatim, Esri, timestamp.ir, fonts,
+    fingerprint) are handled directly by the browser, never cached —
+    except the narrow opportunistic CARTO tile rule (§2.1).
 - **Installation:** the worker precaches during `install`; activation
   removes legacy `metto-v*` caches from the old hand-written worker.
-- **Updating:** a new worker **never** `skipWaiting()` on its own. When one
-  is waiting, the app shows a small “new version available / به‌روزرسانی”
-  banner; refresh posts `SKIP_WAITING` and reloads once on
-  `controllerchange` (with a timeout safety net). This avoids old-HTML +
-  new-chunks breakage mid-route-planning.
-- **User-controlled refresh:** the update banner; otherwise clearing site
-  data in the browser removes everything (service worker, precache,
-  datasets, preferences) and the app re-initializes on next online visit.
+- **Updating (silent by design):** a new worker **never** `skipWaiting()`
+  on its own (`skipWaiting: false`), the app shows **no** update banner,
+  toast, or dialog, and a running session is **never** reloaded for an
+  update. The waiting worker activates naturally once old clients are
+  gone; the next launch is then controlled by it. This keeps route
+  planning uninterrupted (no old-HTML + new-chunks breakage, no mid-
+  journey reloads). Update transitions are console-only diagnostics
+  (`[Metto Offline] service worker …`). The worker keeps a `SKIP_WAITING`
+  message handler solely for development/testing and explicit future
+  recovery flows — normal releases must never depend on it.
+- **Clearing data:** clearing site data in the browser removes everything
+  (service worker, precache, datasets, preferences) and the app
+  re-initializes on next online visit.
 - **Registration:** `SerwistProvider` in `app/layout.tsx` (early,
   `updateViaCache: "none"`, disabled in development). The install-PWA
   button (`components/pwa.tsx`) handles only the install prompt.

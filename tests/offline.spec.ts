@@ -1,4 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
 
 // Production offline suite: real `next start` build + real browser offline.
 // Never touches live Nominatim/CARTO/Esri/upstream-holiday (all intercepted).
@@ -92,6 +94,14 @@ test.describe("Metto offline PWA", () => {
     expect(
       offlineLogs.filter((l) => l.includes("registration failed")),
     ).toHaveLength(0);
+    // No update banner ever: silent lifecycle means no "new version" text
+    // and no refresh CTA in the status area.
+    await expect(
+      page.getByTestId("offline-status").getByText("نسخه جدید"),
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("offline-status").getByRole("button"),
+    ).toHaveCount(0);
 
     // 5-7. Interactive station select + route calc (origin via combobox).
     const originToggle = page.getByRole("button", {
@@ -208,6 +218,92 @@ test.describe("Metto offline PWA", () => {
       /ready|preparing/,
       { timeout: 30_000 },
     );
+  });
+
+  test("waiting worker stays silent, never reloads, activates naturally", async ({
+    context,
+  }) => {
+    const page = await context.newPage();
+    const swLogs: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "debug" && msg.text().includes("[Metto Offline]")) {
+        swLogs.push(msg.text());
+      }
+    });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await waitForOfflineReady(page);
+
+    // Marker: any automatic reload would wipe window state.
+    await page.evaluate(() => {
+      (window as unknown as { __updateProbe?: number }).__updateProbe = 1;
+    });
+
+    // Simulate a newly deployed worker: byte-different sw.js on disk, then
+    // an update check. It installs and waits (skipWaiting is false) while
+    // this page keeps running. Restored afterwards no matter what.
+    const swPath = path.join(process.cwd(), "public", "sw.js");
+    const originalSw = fs.readFileSync(swPath, "utf8");
+    try {
+      fs.appendFileSync(swPath, "\n;// e2e simulated release\n");
+      await page.evaluate(async () => {
+        const reg = await navigator.serviceWorker.getRegistration();
+        await reg?.update();
+      });
+      await expect
+        .poll(
+          async () =>
+            page.evaluate(async () => {
+              const reg = await navigator.serviceWorker.getRegistration();
+              return reg?.waiting ? reg.waiting.scriptURL : null;
+            }),
+          { timeout: 30_000 },
+        )
+        .not.toBeNull();
+
+      // The waiting worker must not interrupt: no reload, no banner, no CTA.
+      await page.waitForTimeout(3000);
+      expect(
+        await page.evaluate(
+          () => (window as unknown as { __updateProbe?: number }).__updateProbe,
+        ),
+      ).toBe(1);
+      await expect(
+        page.getByTestId("offline-status").getByText("نسخه جدید"),
+      ).toHaveCount(0);
+      await expect(
+        page.getByTestId("offline-status").getByRole("button"),
+      ).toHaveCount(0);
+      // Console-only diagnostics may note the waiting worker.
+      expect(swLogs.some((l) => l.includes("waiting"))).toBe(true);
+
+      // The app remains fully functional while the newer worker waits.
+      await page.goto(`/?from=${ORIGIN_ID}&to=${DEST_ID}`, {
+        waitUntil: "domcontentloaded",
+      });
+      await expectRouteResult(page);
+
+      // Old clients disappear → the waiting worker activates naturally, and
+      // the next launch is controlled by it. No SKIP_WAITING, no reload loop.
+      await page.close();
+      const page2 = await context.newPage();
+      await page2.goto("/", { waitUntil: "domcontentloaded" });
+      await expect
+        .poll(
+          async () =>
+            page2.evaluate(async () => {
+              const reg = await navigator.serviceWorker.getRegistration();
+              return {
+                controlled: !!navigator.serviceWorker.controller,
+                waiting: !!reg?.waiting,
+              };
+            }),
+          { timeout: 30_000 },
+        )
+        .toEqual({ controlled: true, waiting: false });
+      await waitForOfflineReady(page2);
+    } finally {
+      fs.writeFileSync(swPath, originalSw);
+    }
   });
 
   test("offline with missing core data shows the setup warning", async ({
