@@ -128,4 +128,138 @@ test.describe("Offline bottom navigation", () => {
 
     await context.setOffline(false);
   });
+
+  test("cold query navigations serve their canonical precached document", async ({
+    context,
+  }) => {
+    // Truly cold: only `/` is ever loaded online. In particular NO
+    // query-bearing document may be warmed into `metto-pages` first.
+    const page = await context.newPage();
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await waitForOfflineReady(page);
+
+    // Canonical static documents exist ONLY because of precache…
+    const precachedPaths: string[] = await page.evaluate(async () => {
+      const found = new Set<string>();
+      for (const name of await caches.keys()) {
+        if (!name.includes("precache")) continue;
+        const cache = await caches.open(name);
+        for (const req of await cache.keys()) {
+          found.add(new URL(req.url).pathname);
+        }
+      }
+      return [...found].sort();
+    });
+    for (const p of ["/", "/map", "/stations", "/nearby"]) {
+      expect(precachedPaths).toContain(p);
+    }
+
+    // …while query-specific versions are absent from the runtime cache.
+    const warmedQueryDocs: string[] = await page.evaluate(async () => {
+      const out: string[] = [];
+      try {
+        const cache = await caches.open("metto-pages");
+        for (const req of await cache.keys()) {
+          const u = new URL(req.url);
+          if (u.search.length > 0) out.push(u.pathname + u.search);
+        }
+      } catch {
+        // Cache may not exist yet — equally cold.
+      }
+      return out;
+    });
+    expect(warmedQueryDocs).toEqual([]);
+
+    // Create route context WITHOUT navigating: combobox selection updates
+    // tab hrefs client-side to arbitrary (non-hardcoded) values.
+    await page
+      .getByRole("button", { name: /ایستگاه یا نام مکان/ })
+      .first()
+      .click();
+    await page.locator('input[dir="auto"]').first().fill("تجریش");
+    await page.getByRole("button", { name: /تجریش/ }).first().click();
+    await expect(page).toHaveURL(/from=tajrish/, { timeout: 15_000 });
+    await page
+      .getByRole("button", { name: /ایستگاه یا نام مکان/ })
+      .first()
+      .click();
+    await page.locator('input[dir="auto"]').first().fill("تهران (صادقیه)");
+    await page.getByRole("button", { name: /تهران/ }).first().click();
+    const mapHref =
+      (await tabLink(page, "نقشه").getAttribute("href")) ?? "";
+    expect(mapHref).toContain("from=tajrish");
+    expect(mapHref).toContain("to=tehran-sadeghiyeh");
+    await expectRouteResult(page);
+
+    // Offline from here on. Track fatal document failures + RSC fallback.
+    const failedDocs: string[] = [];
+    page.on("requestfailed", (req) => {
+      if (req.resourceType() === "document") failedDocs.push(req.url());
+    });
+    const navRscRequests: string[] = [];
+    page.on("request", (req) => {
+      void Promise.all([
+        req.headerValue("rsc"),
+        req.headerValue("next-router-prefetch"),
+      ]).then(([rsc, prefetch]) => {
+        if (rsc !== null && prefetch === null) navRscRequests.push(req.url());
+      });
+    });
+    await context.setOffline(true);
+
+    // Map with query → Map HTML (never Route HTML), query intact.
+    await tabLink(page, "نقشه").click();
+    await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe("/map");
+    expect(new URL(page.url()).searchParams.get("from")).toBe("tajrish");
+    expect(new URL(page.url()).searchParams.get("to")).toBe(
+      "tehran-sadeghiyeh",
+    );
+    await expect(
+      page.locator('[aria-label="Tehran metro on real map"]'),
+    ).toBeVisible({ timeout: 30_000 });
+
+    // Stations with query → Stations HTML.
+    await tabLink(page, "ایستگاه‌ها").click();
+    await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe(
+      "/stations",
+    );
+    expect(new URL(page.url()).searchParams.get("from")).toBe("tajrish");
+    await expect(
+      page.getByPlaceholder("جستجوی ایستگاه…"),
+    ).toBeVisible({ timeout: 30_000 });
+
+    // Nearby with query → Nearby HTML.
+    await tabLink(page, "نزدیک من").click();
+    await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe(
+      "/nearby",
+    );
+    expect(new URL(page.url()).searchParams.get("to")).toBe(
+      "tehran-sadeghiyeh",
+    );
+    await expect(
+      page.getByText("موقعیت شما", { exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
+
+    // Route with query → Route HTML.
+    await tabLink(page, "مسیر").click();
+    await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe("/");
+    await expectRouteResult(page);
+
+    // Cold arbitrary combo incl. junk param → canonical Nearby HTML,
+    // full requested URL preserved.
+    await page.goto(
+      "/nearby?from=tajrish&to=tehran-sadeghiyeh&x=1",
+      { waitUntil: "domcontentloaded" },
+    );
+    await expect(
+      page.getByText("موقعیت شما", { exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
+    expect(page.url()).toContain("x=1");
+
+    await page.waitForTimeout(1000);
+    expect(failedDocs).toEqual([]);
+    expect(navRscRequests).toEqual([]);
+
+    await context.setOffline(false);
+  });
 });

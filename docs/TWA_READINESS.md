@@ -126,9 +126,10 @@ hang, never a misleading empty state):
   file list exists. Current production precache: 46 URLs (~8.4 MB).
 - **Runtime rules** (`app/sw.ts`, conservative by design):
   - `CacheFirst`: immutable same-origin `/_next/static/*`.
-  - `NetworkFirst`: same-origin navigations/RSC (8 s timeout) with an
-    offline fallback to precached `/`; only `200` basic responses stored
-    (errors/redirects can never poison the cache across deploys).
+  - `NetworkFirst`: same-origin navigations/RSC (8 s timeout) with
+    pathname-aware offline document fallback (see below); only `200`
+    basic responses stored (errors/redirects can never poison the cache
+    across deploys).
   - `NetworkFirst`: `/holidays.version.json` (tiny update pointer,
     deliberately **not** precached so it revalidates).
   - `NetworkOnly` (never cached): `POST` (no rule matches non-GET),
@@ -138,6 +139,14 @@ hang, never a misleading empty state):
     except the narrow opportunistic CARTO tile rule (§2.1).
 - **Installation:** the worker precaches during `install`; activation
   removes legacy `metto-v*` caches from the old hand-written worker.
+- **Offline document fallback (pathname-aware):** tab links preserve
+  route state as query params (`/map?from=…&to=…`), and Serwist only
+  strips `utm_*`/`fbclid` when matching precache — so a query-bearing
+  navigation can never hit the canonical entry directly. On failure the
+  worker therefore resolves each of `/`, `/map`, `/stations`, `/nearby`
+  to its own precached HTML (query ignored for lookup only; the address
+  bar is untouched). There is deliberately **no** universal `/` fallback
+  and no fallback for unknown paths, and HTML is never served for RSC.
 - **Updating (silent by design):** a new worker **never** `skipWaiting()`
   on its own (`skipWaiting: false`), the app shows **no** update banner,
   toast, or dialog, and a running session is **never** reloaded for an

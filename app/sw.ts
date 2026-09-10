@@ -9,7 +9,8 @@
 // Conservative runtime policy:
 // - precache: app shell + build assets + local JSON/icons (versioned)
 // - CacheFirst: immutable same-origin /_next/static
-// - NetworkFirst (+ offline fallback to "/"): same-origin navigations/RSC
+// - NetworkFirst (+ pathname-aware offline document fallback): same-origin
+//   navigations/RSC — a failed `/map?...` serves precached `/map`, never `/`
 // - NetworkFirst: /holidays.version.json update pointer (not precached)
 // - NetworkOnly: same-origin /api/* and version-pinned dataset downloads
 // - Cross-origin: NO blanket route — unmatched requests (Nominatim,
@@ -34,6 +35,10 @@ import {
   isCacheableTileResponse,
   isCartoTileRequest,
 } from "../lib/map/carto-tiles";
+import {
+  CANONICAL_STATIC_DOCS,
+  canonicalDocFallbackFor,
+} from "../lib/offline/document-fallback";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -186,7 +191,10 @@ const serwist = new Serwist({
     },
     {
       // Same-origin navigations + App Router RSC. NetworkFirst keeps
-      // deployments fresh; the precached "/" fallback renders offline.
+      // deployments fresh. Offline, failed navigations resolve through the
+      // pathname-aware fallback entries below (canonical precached
+      // document per tab); RSC failures propagate untouched — HTML is
+      // never served as a fake RSC response.
       // Only 200 basic HTML/RSC responses are stored (no errors, no
       // redirects — those would poison the cache across deploys).
       matcher: ({ request, sameOrigin, url }) => {
@@ -220,14 +228,25 @@ const serwist = new Serwist({
     },
   ],
   fallbacks: {
-    entries: [
-      {
-        url: "/",
-        matcher({ request }) {
-          return request.destination === "document";
-        },
-      },
-    ],
+    // Pathname-aware offline documents: a failed navigation to e.g.
+    // `/map?from=ahang&to=aliabad` resolves to the precached canonical
+    // `/map` document (query ignored ONLY for the cache lookup — the
+    // browser URL is never touched). Never `/` for other pages, never a
+    // fallback for unknown routes, and never HTML for RSC (non-navigate
+    // requests match no entry and fail normally).
+    entries: CANONICAL_STATIC_DOCS.map((pathname) => ({
+      url: pathname,
+      matcher: ({ request }: { request: Request }) =>
+        canonicalDocFallbackFor(
+          pathname as `/${string}`,
+          {
+            mode: request.mode,
+            destination: (request as Request).destination,
+            url: request.url,
+            origin: self.location.origin,
+          },
+        ) !== null,
+    })),
   },
 });
 

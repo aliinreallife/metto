@@ -284,23 +284,29 @@ test.describe("Metto offline PWA", () => {
 
       // Old clients disappear → the waiting worker activates naturally, and
       // the next launch is controlled by it. No SKIP_WAITING, no reload loop.
-      // Generous timeout: activation competes with parallel suite load.
+      // If the fresh navigation wins the race and lands on the old worker,
+      // it blocks activation itself — reloading retries the navigation at a
+      // moment with zero controlled clients, which is also exactly how a
+      // real user launch behaves.
       await page.close();
       const page2 = await context.newPage();
       await page2.goto("/", { waitUntil: "domcontentloaded" });
-      await expect
-        .poll(
-          async () =>
-            page2.evaluate(async () => {
-              const reg = await navigator.serviceWorker.getRegistration();
-              return {
-                controlled: !!navigator.serviceWorker.controller,
-                waiting: !!reg?.waiting,
-              };
-            }),
-          { timeout: 60_000 },
-        )
-        .toEqual({ controlled: true, waiting: false });
+      let settled = false;
+      for (let i = 0; i < 6 && !settled; i++) {
+        const s = await page2.evaluate(async () => {
+          const reg = await navigator.serviceWorker.getRegistration();
+          return {
+            controlled: !!navigator.serviceWorker.controller,
+            waiting: !!reg?.waiting,
+          };
+        });
+        settled = s.controlled && !s.waiting;
+        if (!settled) {
+          await page2.reload({ waitUntil: "domcontentloaded" });
+          await page2.waitForTimeout(2000);
+        }
+      }
+      expect(settled).toBe(true);
       await waitForOfflineReady(page2);
     } finally {
       fs.writeFileSync(swPath, originalSw);
