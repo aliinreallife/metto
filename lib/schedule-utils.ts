@@ -135,11 +135,14 @@ export function getNextDepartures(
   line: number,
   dayType?: DayType,
   maxResults: number = 5,
+  at?: Date,
 ): Departure[] {
   const stationId = normId(stationIdInput);
   const dt = dayType ?? getCurrentDayType();
-  const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  // Tehran wall clock — never the device timezone. Timetable service times
+  // are Tehran-local, and so is the dayType above; mixing in device-local
+  // getHours() shifted "next departures" by the host offset.
+  const nowMinutes = tehranParts((at ?? new Date()).getTime()).minuteOfDay;
   const results: Departure[] = [];
 
   for (const ls of getSchedules()) {

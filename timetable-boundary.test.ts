@@ -18,6 +18,11 @@ import { createLocalIsHolidayDate } from "./lib/holidays/local-resolver";
 import { parseHolidayDataset } from "./lib/holidays/local-dataset";
 import type { TripLookupResult, TripResult } from "./lib/schedule-utils";
 import {
+  __setScheduleDataForTests,
+  getNextDepartures,
+} from "./lib/schedule-utils";
+import type { LineScheduleData } from "./lib/schedule-data";
+import {
   parseServiceTimeToMinutes,
   tehranMinuteToInstant,
 } from "./lib/tehran-time";
@@ -170,6 +175,72 @@ describe("omitted departure uses the Tehran-classified now", () => {
   });
 });
 
+describe("station next-departures use Tehran wall clock", () => {
+  const line1: LineScheduleData = {
+    line: 1,
+    terminalA: "tajrish",
+    terminalB: "kahrizak",
+    isBranch: false,
+    scheduleKey: "1",
+    trains: [
+      {
+        line: 1,
+        direction: "kahrizak",
+        dayType: "saturday_wednesday",
+        isExpress: false,
+        stops: [
+          { stationId: "tajrish", time: "13:00" },
+          { stationId: "kahrizak", time: "14:00" },
+        ],
+      },
+      {
+        line: 1,
+        direction: "kahrizak",
+        dayType: "saturday_wednesday",
+        isExpress: false,
+        stops: [
+          { stationId: "tajrish", time: "15:00" },
+          { stationId: "kahrizak", time: "16:00" },
+        ],
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    __setScheduleDataForTests([line1]);
+  });
+  afterEach(() => {
+    __setScheduleDataForTests(null);
+  });
+
+  it("filters by Tehran minute-of-day, not the device timezone", () => {
+    // 10:30Z == 14:00 Tehran: the 13:00 train is gone, the 15:00 is 60 min out.
+    // (On a UTC host the old device-local code saw 10:30 and kept both.)
+    const at = new Date("2026-09-07T10:30:00Z");
+    const deps = getNextDepartures("tajrish", 1, "saturday_wednesday", 5, at);
+    expect(deps.map((d) => d.time)).toEqual(["15:00"]);
+    expect(deps[0].minutesUntil).toBe(60);
+  });
+
+  it("defaults to the same Tehran conversion as an explicit now", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(Date.parse("2026-09-07T10:30:00Z"));
+      const implicit = getNextDepartures("tajrish", 1, "saturday_wednesday");
+      const explicit = getNextDepartures(
+        "tajrish",
+        1,
+        "saturday_wednesday",
+        5,
+        new Date(),
+      );
+      expect(implicit).toEqual(explicit);
+      expect(implicit.map((d) => d.time)).toEqual(["15:00"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
 describe("midnight timetable switching across legs", () => {
   it("Thursday 23:40: leg 1 Thursday, post-midnight legs Friday", () => {
     const calls: TripLookupArgs[] = [];
