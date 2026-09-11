@@ -137,6 +137,10 @@ jobs:
           # mint; never printed, never persisted). Playwright sends it as
           # x-vercel-trusted-oidc-idp-token when present; locally unset.
           VERCEL_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+          # Long-lived automation bypass (GitHub Actions secret, never
+          # hardcoded, never printed). Playwright sends it as
+          # x-vercel-protection-bypass when present; locally unset.
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm test:e2e:preview
 
       - name: Upload failure artifacts

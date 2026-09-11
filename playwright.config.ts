@@ -12,6 +12,11 @@ const chromiumPath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
 // workflow), every context request carries it as a Trusted Sources identity
 // token. Absent locally: no header, unchanged behavior.
 const trustedOidcToken = process.env.VERCEL_TRUSTED_OIDC_TOKEN;
+// Automation bypass for the same gate: when set (CI secret, never
+// hardcoded), every context request additionally carries it as
+// x-vercel-protection-bypass. Absent locally: no header, unchanged
+// behavior — normal tests never depend on it.
+const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 export default defineConfig({
   testDir: "./tests",
@@ -35,8 +40,17 @@ export default defineConfig({
     ...(chromiumPath
       ? { launchOptions: { executablePath: chromiumPath } }
       : {}),
-    ...(trustedOidcToken
-      ? { extraHTTPHeaders: { "x-vercel-trusted-oidc-idp-token": trustedOidcToken } }
+    ...(trustedOidcToken || bypassSecret
+      ? {
+          extraHTTPHeaders: {
+            ...(trustedOidcToken
+              ? { "x-vercel-trusted-oidc-idp-token": trustedOidcToken }
+              : {}),
+            ...(bypassSecret
+              ? { "x-vercel-protection-bypass": bypassSecret }
+              : {}),
+          },
+        }
       : {}),
   },
   projects: [
