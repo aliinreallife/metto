@@ -65,9 +65,9 @@ export function StationDetail({
             type="button"
             aria-label={t.close}
             onClick={onClose}
-            className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <X className="size-4" />
+            <X aria-hidden="true" className="size-4" />
           </button>
         </div>
       </div>
@@ -80,7 +80,7 @@ export function StationDetail({
 
       {station.status !== "operational" && (
         <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
-          <Ban className="size-3.5" />
+          <Ban aria-hidden="true" className="size-3.5" />
           {t.underConstruction}
         </span>
       )}
@@ -94,7 +94,7 @@ export function StationDetail({
                 key={key}
                 className="flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-foreground"
               >
-                {Icon && <Icon className="size-3.5 shrink-0 text-primary" />}
+                {Icon && <Icon aria-hidden="true" className="size-3.5 shrink-0 text-primary" />}
                 {AMENITY_LABELS[key]?.[lang] ?? key}
               </span>
             );
@@ -103,20 +103,20 @@ export function StationDetail({
       )}
 
       {!loaded && (
-        <div className="text-xs text-muted-foreground">
+        <div role="status" className="text-xs text-muted-foreground">
           {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
         </div>
       )}
       {loaded && departures.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {isFa ? "حرکت‌های بعدی" : "Next departures"}
-          </span>
-          <div className="flex flex-col gap-1">
+          </h4>
+          <ul className="flex flex-col gap-1">
             {departures.map((dep, i) => (
               <DepartureRow key={i} dep={dep} lang={lang} />
             ))}
-          </div>
+          </ul>
         </div>
       )}
     </div>
@@ -128,22 +128,23 @@ function DepartureRow({ dep, lang }: { dep: Departure; lang: Lang }) {
   const color = LINE_COLORS[dep.line];
 
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs">
+    <li className="flex items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs">
       <span
+        aria-hidden="true"
         className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
         style={{ backgroundColor: color }}
       >
         {persianDigits(dep.line, lang)}
       </span>
-      <Clock className="size-3 shrink-0 text-muted-foreground" />
+      <Clock aria-hidden="true" className="size-3 shrink-0 text-muted-foreground" />
       <span className="tnum font-semibold">{persianDigits(dep.time, lang)}</span>
       {dep.isExpress && (
         <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-          <Zap className="size-2.5" />
+          <Zap aria-hidden="true" className="size-2.5" />
           {isFa ? "سریع السیر" : "Express"}
         </span>
       )}
-      <span className="ml-auto truncate text-muted-foreground">
+      <span className="ms-auto truncate text-muted-foreground">
         {isFa ? "به سمت" : "→"} {dep.directionName}
       </span>
       {dep.minutesUntil <= 2 && (
@@ -151,6 +152,6 @@ function DepartureRow({ dep, lang }: { dep: Departure; lang: Lang }) {
           {isFa ? "الان" : "Now"}
         </span>
       )}
-    </div>
+    </li>
   );
 }

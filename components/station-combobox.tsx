@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useId, useMemo, useRef, useState } from "react"
 import { Building2, ChevronDown, Loader2, MapPin, X } from "lucide-react"
 import { STATION_MAP, searchStations } from "@/lib/route"
 import { LINE_COLORS } from "@/lib/metro/lines"
@@ -16,9 +16,10 @@ type Props = {
   placeholder: string
   lang: Lang
   accentClass: string
+  id?: string
 }
 
-export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, lang, accentClass }: Props) {
+export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, lang, accentClass, id }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [places, setPlaces] = useState<PlaceResult[]>([])
@@ -28,7 +29,14 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
   )
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const rawId = useId()
+  const safeId = rawId.replace(/[^a-zA-Z0-9_-]/g, "")
+  const triggerId = id ?? `station-trigger-${safeId}`
+  const inputId = `${triggerId}-input`
+  const listboxId = `${triggerId}-listbox`
+  const statusId = `${triggerId}-status`
 
   const selected = value ? STATION_MAP.get(value) : null
   const results = useMemo(() => searchStations(query, 40), [query])
@@ -97,6 +105,19 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
     if (open) inputRef.current?.focus()
   }, [open])
 
+  function closeAndRefocusTrigger() {
+    setOpen(false)
+    // Focus restore so keyboard users don't lose their place after Escape.
+    requestAnimationFrame(() => triggerRef.current?.focus())
+  }
+
+  function handleDropdownKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.stopPropagation()
+      closeAndRefocusTrigger()
+    }
+  }
+
   const isFa = lang === "fa"
   const t = STRINGS[lang]
   const hasStationResults = results.length > 0
@@ -104,57 +125,98 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
   const hasAnyResults = hasStationResults || hasPlaceResults || placesLoading
   const showNoResults = query.length >= 2 && !hasAnyResults && !placesLoading
 
+  const statusMessage = placesLoading
+    ? t.searchingPlaces
+    : showNoResults
+      ? t.noResults
+      : open && query.length > 0
+        ? isFa
+          ? `${results.length} ایستگاه`
+          : `${results.length} stations`
+        : ""
+
   return (
     <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-start transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:px-4 md:py-3 md:text-base"
-      >
-        <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden />
-        <span className="min-w-0 flex-1 truncate">
-          {selected ? (
-            <span className="flex items-center gap-2">
-              <span className="truncate font-medium">{isFa ? selected.name.fa : selected.name.en}</span>
-              <span className="truncate text-xs text-muted-foreground">{isFa ? selected.name.en : selected.name.fa}</span>
-            </span>
-          ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
-          )}
-        </span>
+      {/* Outer container is a plain div so the clear action can be a real
+          sibling <button> — a button-in-button is invalid HTML and breaks
+          keyboard/screen-reader interaction. */}
+      <div className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm transition-colors hover:bg-accent/50 md:px-4 md:py-3 md:text-base">
+        <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden="true" />
+        <button
+          ref={triggerRef}
+          id={triggerId}
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && open) {
+              e.stopPropagation()
+              closeAndRefocusTrigger()
+            }
+          }}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          className="flex min-w-0 flex-1 items-center gap-2 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
+        >
+          <span className="min-w-0 flex-1 truncate">
+            {selected ? (
+              <span className="flex items-center gap-2">
+                <span className="truncate font-medium">{isFa ? selected.name.fa : selected.name.en}</span>
+                <span className="truncate text-xs text-muted-foreground">{isFa ? selected.name.en : selected.name.fa}</span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )}
+          </span>
+          <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+        </button>
         {value ? (
-          <span
-            role="button"
-            tabIndex={0}
+          <button
+            type="button"
             aria-label={t.clear}
             onClick={(e) => {
               e.stopPropagation()
               onChange(null)
+              triggerRef.current?.focus()
             }}
-            className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <X className="size-4" />
-          </span>
-        ) : (
-          <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-        )}
-      </button>
+            <X aria-hidden="true" className="size-4" />
+          </button>
+        ) : null}
+      </div>
+      {/* Polite live region: announces result counts / loading / empty states. */}
+      <p role="status" aria-live="polite" id={statusId} className="sr-only">
+        {statusMessage}
+      </p>
 
       {open && (
-        <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-lg border border-border bg-popover shadow-lg">
+        <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-lg border border-border bg-popover shadow-lg" onKeyDown={handleDropdownKeyDown}>
           <div className="border-b border-border p-2">
             <input
               ref={inputRef}
+              id={inputId}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.stopPropagation()
+                  closeAndRefocusTrigger()
+                }
+              }}
               placeholder={placeholder}
+              aria-label={placeholder}
+              role="combobox"
+              aria-expanded={open}
+              aria-controls={listboxId}
+              aria-autocomplete="list"
               dir="auto"
               className="ios-no-zoom-input w-full rounded-md bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background md:px-4 md:py-2.5 md:text-base"
             />
           </div>
-          <ul className="max-h-64 overflow-y-auto py-1">
+          <ul id={listboxId} role="listbox" aria-label={placeholder} className="max-h-64 overflow-y-auto py-1">
             {query.length === 0 && onPlaceSelect && (
-              <li className="px-3 py-2 text-center text-xs text-muted-foreground md:px-4 md:py-2.5 md:text-sm">
+              <li role="presentation" className="px-3 py-2 text-center text-xs text-muted-foreground md:px-4 md:py-2.5 md:text-sm">
                 {STRINGS[lang].searchHintBefore}{" "}
                 <button
                   type="button"
@@ -169,7 +231,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                       }
                     })
                   }}
-                  className="cursor-pointer font-bold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+                  className="cursor-pointer font-bold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 >
                   {STRINGS[lang].searchHintExample}
                 </button>
@@ -178,25 +240,28 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
             )}
             {/* Station results */}
             {results.map((s) => (
-              <li key={s.id}>
+              <li key={s.id} role="presentation">
                 <button
                   type="button"
+                  role="option"
+                  aria-selected={value === s.id}
                   onClick={() => {
                     onChange(s.id)
                     setOpen(false)
+                    triggerRef.current?.focus()
                   }}
                   className={cn(
-                    "flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent",
+                    "flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent focus:outline-none focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                     value === s.id && "bg-accent",
                   )}
                 >
-                  <span className="flex shrink-0 gap-1">
+                  <span className="flex shrink-0 gap-1" aria-hidden="true">
                     {getStationLines(s.id).map((l) => (
                       <span
                         key={l}
                         className="size-2.5 rounded-full"
                         style={{ backgroundColor: LINE_COLORS[l] }}
-                        aria-hidden
+                        aria-hidden="true"
                       />
                     ))}
                   </span>
@@ -204,8 +269,8 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                     <span className="block font-medium">{isFa ? s.name.fa : s.name.en}</span>
                     <span className="block text-xs text-muted-foreground">{isFa ? s.name.en : s.name.fa}</span>
                   </span>
-                  <span className="flex-1" />
-                  <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="flex-1" aria-hidden="true" />
+                  <MapPin aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
                 </button>
               </li>
             ))}
@@ -214,37 +279,40 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
             {query.length >= 3 && (hasPlaceResults || placesLoading || isOffline) && (
               <>
                 {hasStationResults && (
-                  <li className="mx-3 my-1 border-t border-border" />
+                  <li role="presentation" aria-hidden="true" className="mx-3 my-1 border-t border-border" />
                 )}
-                <li className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <li role="presentation" className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {t.places}
                 </li>
                 {isOffline ? (
-                  <li className="px-3 py-2 text-xs text-muted-foreground md:px-4 md:text-sm">
+                  <li role="presentation" className="px-3 py-2 text-xs text-muted-foreground md:px-4 md:text-sm">
                     {t.placeSearchOffline}
                   </li>
                 ) : (
                   <>
                     {placesLoading && places.length === 0 && (
-                      <li className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                        <Loader2 className="size-3.5 animate-spin" />
+                      <li role="presentation" className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                        <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
                         {t.searchingPlaces}
                       </li>
                     )}
                     {places.map((p, i) => (
-                      <li key={`${p.lat}-${p.lng}-${i}`}>
+                      <li key={`${p.lat}-${p.lng}-${i}`} role="presentation">
                         <button
                           type="button"
+                          role="option"
+                          aria-selected="false"
                           onClick={() => {
                             onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
                             setOpen(false)
+                            triggerRef.current?.focus()
                           }}
-                          className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent md:px-4 md:py-2.5 md:text-base"
+                          className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent focus:outline-none focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:px-4 md:py-2.5 md:text-base"
                         >
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-medium">{p.displayName}</span>
                           </span>
-                          <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
+                          <Building2 aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
                         </button>
                       </li>
                     ))}
@@ -255,7 +323,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
 
             {/* No results */}
             {showNoResults && (
-              <li className="px-3 py-6 text-center text-sm text-muted-foreground md:py-8 md:text-base">
+              <li role="presentation" className="px-3 py-6 text-center text-sm text-muted-foreground md:py-8 md:text-base">
                 {t.noResults}
               </li>
             )}

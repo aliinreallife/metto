@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   ArrowRight,
   ChevronDown,
@@ -102,19 +102,19 @@ export function RoutePanel({
   return (
     <div className="flex flex-col gap-3 md:gap-4">
       {scheduleLoading && (
-        <div className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          <Loader2 className="size-3 animate-spin" />
+        <div role="status" className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <Loader2 aria-hidden="true" className="size-3 animate-spin" />
           {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
         </div>
       )}
       <div className="grid grid-cols-3 gap-3 md:gap-4">
         <Stat
-          icon={<TrainFront className="size-5 md:size-6" />}
+          icon={<TrainFront aria-hidden="true" className="size-5 md:size-6" />}
           value={persianDigits(route.numStops + 1, lang)}
           label={isFa ? "ایستگاه" : "stops"}
         />
         <Stat
-          icon={<Clock className="size-5" />}
+          icon={<Clock aria-hidden="true" className="size-5" />}
           value={
             firstWait > 0 ? (
               <>
@@ -133,33 +133,34 @@ export function RoutePanel({
           }
         />
         <Stat
-          icon={<Flag className="size-5" />}
+          icon={<Flag aria-hidden="true" className="size-5" />}
           value={persianDigits(eta, lang)}
           label={isFa ? "رسیدن" : "arrival"}
         />
       </div>
       {topWarning && (
         <div
+          role={topWarning.severity === "red" ? "alert" : "status"}
           className={
             topWarning.severity === "red"
               ? "flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400"
               : "flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600 dark:text-amber-400"
           }
         >
-          <AlertTriangle className="size-4 shrink-0" />
+          <AlertTriangle aria-hidden="true" className="size-4 shrink-0" />
           <span>{topWarning.message}</span>
         </div>
       )}
       {route.numTransfers > 0 && (
         <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
-          <Repeat className="size-3.5" />
+          <Repeat aria-hidden="true" className="size-3.5" />
           <span>{persianDigits(route.numTransfers, lang)} {isFa ? "تعویض خط" : "transfers"}</span>
         </div>
       )}
 
       {route.numTrainChanges > 0 && (
         <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
-          <Repeat className="size-3.5" />
+          <Repeat aria-hidden="true" className="size-3.5" />
           <span>{persianDigits(route.numTrainChanges, lang)} {isFa ? "تعویض قطار" : "train changes"}</span>
         </div>
       )}
@@ -172,7 +173,7 @@ export function RoutePanel({
             {i > 0 && seg.changeFromPrevious.type === "line_transfer" && (
               <div className="flex flex-col gap-1 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <Footprints className="size-4 shrink-0" />
+                  <Footprints aria-hidden="true" className="size-4 shrink-0" />
                   <span>
                     {t.transferTo} {persianDigits(seg.line, lang)} {t.via}{" "}
                     {name(seg.stations[0])}
@@ -180,7 +181,7 @@ export function RoutePanel({
                 </div>
                 {route.connections[i - 1]?.hasExplicitRule && (
                   <div className="flex items-center gap-2 ps-6">
-                    <Footprints className="size-3.5 shrink-0" />
+                    <Footprints aria-hidden="true" className="size-3.5 shrink-0" />
                     <span>
                       {t.walkToLine} {persianDigits(seg.line, lang)} · {t.about}{" "}
                       {persianDigits(
@@ -197,7 +198,7 @@ export function RoutePanel({
             )}
             {i > 0 && seg.changeFromPrevious.type === "train_change" && (
               <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
-                <TrainFront className="size-4 shrink-0" />
+                <TrainFront aria-hidden="true" className="size-4 shrink-0" />
                 <span>
                   {isFa ? "تعویض قطار" : "Change trains"}{" "}
                   {t.via} {name(seg.stations[0])}
@@ -233,7 +234,7 @@ function Stat({
 }) {
   return (
     <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-3 py-3 md:px-5 md:py-4">
-      <span className="text-muted-foreground">{icon}</span>
+      <span aria-hidden="true" className="text-muted-foreground">{icon}</span>
       <span className="tnum text-2xl font-bold leading-none md:text-3xl" title={tooltip}>{value}</span>
       <span className="text-sm text-muted-foreground md:text-base">{label}</span>
     </div>
@@ -273,6 +274,7 @@ function SegmentCard({
   }, [board, line, loaded, isHolidayDate]);
 
   const next = nextDep[0] ?? null;
+  const stopsId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -282,7 +284,7 @@ function SegmentCard({
           className="flex items-center gap-3 px-4 py-3 md:gap-4 md:px-5 md:py-4"
           style={{ backgroundColor: `${color}11` }}
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white md:size-12 md:text-base" style={{ backgroundColor: color }}>
+          <div aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white md:size-12 md:text-base" style={{ backgroundColor: color }}>
             {persianDigits(line, lang)}
           </div>
           <div className="min-w-0 flex-1">
@@ -292,7 +294,7 @@ function SegmentCard({
               </span>
               {(trip?.train.isExpress || next?.isExpress) && (
                 <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                  <Zap className="size-3" />
+                  <Zap aria-hidden="true" className="size-3" />
                   {isFa ? "سریع السیر" : "Express"}
                 </span>
               )}
@@ -333,7 +335,7 @@ function SegmentCard({
       )}
 
       <div className="flex gap-3 p-4 md:gap-4 md:p-5">
-        <div className="flex flex-col items-center pt-1">
+        <div aria-hidden="true" className="flex flex-col items-center pt-1">
           <span
             className="size-4 rounded-full ring-2 ring-offset-2 ring-offset-card md:size-5"
             style={{ backgroundColor: color, color }}
@@ -359,7 +361,7 @@ function SegmentCard({
               className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold md:px-3 md:py-2 md:text-sm"
               style={{ backgroundColor: `${color}22`, color }}
             >
-              <Compass className="size-4 shrink-0" />
+              <Compass aria-hidden="true" className="size-4 shrink-0" />
               <span className="shrink-0">{t.towards}</span>
               <span className="truncate font-bold">{name(terminal)}</span>
             </span>
@@ -370,7 +372,7 @@ function SegmentCard({
             <span className="font-semibold truncate shrink-0 max-w-[38%]">
               {name(board)}
             </span>
-            <div className="relative h-2 flex-1 md:h-3">
+            <div aria-hidden="true" className="relative h-2 flex-1 md:h-3">
               <div
                 className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2"
                 style={{ backgroundColor: `${color}55` }}
@@ -395,6 +397,7 @@ function SegmentCard({
               )}
             </div>
             <ArrowRight
+              aria-hidden="true"
               className="size-4 shrink-0 rtl:rotate-180"
               style={{ color }}
             />
@@ -408,9 +411,12 @@ function SegmentCard({
               <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                aria-expanded={open}
+                aria-controls={stopsId}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <ChevronDown
+                  aria-hidden="true"
                   className={cn(
                     "size-4 transition-transform",
                     open && "rotate-180",
@@ -418,12 +424,13 @@ function SegmentCard({
                 />
                 <span>{isFa ? "ایستگاه‌های بین‌راهی" : "Intermediate stops"}</span>
                 <span
+                  aria-hidden="true"
                   className="h-px flex-1 opacity-40"
                   style={{ backgroundColor: color }}
                 />
               </button>
               {open && (
-                <ul className="ml-2 flex flex-col gap-1 border-l-2 border-dashed border-border pl-4 text-xs text-muted-foreground">
+                <ul id={stopsId} className="ms-2 flex flex-col gap-1 border-s-2 border-dashed border-border ps-4 text-xs text-muted-foreground">
                   {intermediates.map((id) => (
                     <li key={id} className="truncate py-0.5">
                       {name(id)}

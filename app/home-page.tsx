@@ -399,12 +399,13 @@ function RouteView({
     <div className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10">
       <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
         <div className="flex flex-col gap-2.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
+          <label htmlFor="origin-combobox" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
             {t.from}
           </label>
           <div className="flex gap-2">
             <div className="flex-1">
               <StationCombobox
+                id="origin-combobox"
                 value={originId}
                 onChange={(id) => {
                   setOriginId(id);
@@ -421,12 +422,12 @@ function RouteView({
               onClick={locateOrigin}
               disabled={locating}
               aria-label={t.useMyLocation}
-              className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50"
+              className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               {locating ? (
-                <Loader2 className="size-4 animate-spin" />
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
               ) : (
-                <LocateFixed className="size-4" />
+                <LocateFixed aria-hidden="true" className="size-4" />
               )}
             </button>
           </div>
@@ -445,12 +446,13 @@ function RouteView({
               {gpsError}
             </p>
           )}
-          <label className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
+          <label htmlFor="dest-combobox" className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
             {t.to}
           </label>
           <div className="flex gap-2">
             <div className="flex-1">
               <StationCombobox
+                id="dest-combobox"
                 value={destId}
                 onChange={(id) => {
                   setDestId(id);
@@ -466,9 +468,9 @@ function RouteView({
               type="button"
               onClick={() => swap()}
               aria-label={t.swap}
-              className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent"
+              className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              <ArrowUpDown className="size-4" />
+              <ArrowUpDown aria-hidden="true" className="size-4" />
             </button>
           </div>
           {destPlaceInfo && (
@@ -481,9 +483,9 @@ function RouteView({
           {showViewOnMap && (
             <Link
               href={mapHref}
-              className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent md:py-2.5 md:text-base"
+              className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:py-2.5 md:text-base"
             >
-              <MapIcon className="size-4 shrink-0 text-primary" />
+              <MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />
               {t.viewOnMap}
             </Link>
           )}
@@ -516,7 +518,7 @@ function RouteView({
             {!originId && (
               <p className="mt-2 flex flex-wrap items-center justify-center gap-1 text-xs">
                 {isFa ? "یا روی" : "or tap"}
-                <LocateFixed className="inline size-3.5 shrink-0" />
+                <LocateFixed aria-hidden="true" className="inline size-3.5 shrink-0" />
                 {isFa
                   ? "ضربه بزنید تا نزدیک‌ترین ایستگاه مبدأ شود"
                   : "to set your nearest station as origin"}
@@ -556,14 +558,14 @@ function PlaceCard({
   // Warnings live on the /map page only — this card stays a single line.
   return (
     <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
-      <Building2 className="size-4 shrink-0 text-primary md:size-5" />
+      <Building2 aria-hidden="true" className="size-4 shrink-0 text-primary md:size-5" />
       <span className="min-w-0 flex-1 truncate">
         <span className="font-medium">{info.placeName}</span>
-        <span className="mx-1.5 text-muted-foreground">→</span>
+        <span aria-hidden="true" className="mx-1.5 text-muted-foreground">→</span>
         <span>
           {t.nearestStation}: <span className="font-medium">{stationName}</span>
         </span>
-        <span className="ml-1.5 text-muted-foreground">
+        <span className="ms-1.5 text-muted-foreground">
           {" "}({formatDistance(info.distanceKm, lang)} · ~{formatWalkTime(walkMin, lang)} {t.walkTime})
         </span>
       </span>
@@ -571,9 +573,9 @@ function PlaceCard({
         type="button"
         onClick={onClear}
         aria-label={t.clear}
-        className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <X className="size-3.5" />
+        <X aria-hidden="true" className="size-3.5" />
       </button>
     </div>
   );

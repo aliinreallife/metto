@@ -42,6 +42,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
     }));
     return grouped.filter((g) => g.departures.length > 0);
   }, [station.id, lines.join(","), loaded, isHolidayDate]);
+  const constructionId = `station-card-${station.id}-construction`;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -68,8 +69,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {underConstruction && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-              <Ban className="size-3" />
+            <span id={constructionId} className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+              <Ban aria-hidden="true" className="size-3" />
               {t.underConstruction}
             </span>
           )}
@@ -98,7 +99,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
                 className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground"
                 title={label}
               >
-                {Icon && <Icon className="size-3 shrink-0 text-primary" />}
+                {Icon && <Icon aria-hidden="true" className="size-3 shrink-0 text-primary" />}
                 <span className="inline">{label}</span>
               </span>
             );
@@ -108,20 +109,21 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
 
       {/* Next departures - compact */}
       {!loaded && (
-        <div className="border-t border-border px-4 py-2 text-[10px] text-muted-foreground">
+        <div role="status" className="border-t border-border px-4 py-2 text-[10px] text-muted-foreground">
           {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
         </div>
       )}
       {loaded && departures.length > 0 && (
         <div className="border-t border-border px-4 py-2.5">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-            <Clock className="size-3" />
+          <h4 className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+            <Clock aria-hidden="true" className="size-3" />
             {isFa ? "حرکت بعدی" : "Next"}
-          </div>
+          </h4>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {departures.map((g) => (
               <div key={g.line} className="flex items-center gap-1.5 text-xs">
                 <span
+                  aria-hidden="true"
                   className="flex size-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-white"
                   style={{ backgroundColor: LINE_COLORS[g.line] }}
                 >
@@ -132,7 +134,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
                 </span>
                 {g.departures[0]?.isExpress && (
                   <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
-                    <Zap className="size-3" />
+                    <Zap aria-hidden="true" className="size-3" />
                     <span className="text-[9px] font-bold">{isFa ? "سریع السیر" : "express"}</span>
                   </span>
                 )}
@@ -153,9 +155,9 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
           <button
             type="button"
             onClick={onShowTimetable}
-            className="flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
           >
-            <Calendar className="size-3.5" />
+            <Calendar aria-hidden="true" className="size-3.5" />
             {isFa ? "برنامه" : "Timetable"}
           </button>
         )}
@@ -168,9 +170,9 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
           rel="noopener noreferrer"
           aria-label={`${t.directions} — ${t.opensInNewTab}`}
           title={t.directions}
-          className="flex flex-1 items-center justify-center gap-1.5 border-x border-border px-2 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex flex-1 items-center justify-center gap-1.5 border-x border-border px-2 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
-          <MapPin className="size-3.5" />
+          <MapPin aria-hidden="true" className="size-3.5" />
           {t.directions}
           <span className="sr-only"> ({t.opensInNewTab})</span>
         </a>
@@ -178,9 +180,10 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
           type="button"
           onClick={onSetDest}
           disabled={underConstruction}
-          className="flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-describedby={underConstruction ? constructionId : undefined}
+          className="flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
-          <Flag className="size-3.5" />
+          <Flag aria-hidden="true" className="size-3.5" />
           {t.setDestination}
         </button>
       </div>
