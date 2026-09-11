@@ -5,3 +5,5 @@ allowBuilds:
   esbuild: true
   msw: true
   sharp: true
+  # Native resolver for eslint-import-resolver-typescript (via eslint-config-next).
+  unrs-resolver: true
