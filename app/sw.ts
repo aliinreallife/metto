@@ -42,6 +42,7 @@ import {
   CANONICAL_STATIC_DOCS,
   canonicalDocFallbackFor,
 } from "../lib/offline/document-fallback";
+import { resolveQuietly } from "../lib/offline/quiet-network";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -85,6 +86,25 @@ registerQuotaErrorCallback(async () => {
     // Best-effort.
   }
 });
+
+// NetworkOnly routes must never leak a Serwist `no-response` rejection:
+// offline/aborted API + version-pinned dataset requests are routine (the
+// connectivity probe fails by design offline) and the client classifies
+// them — the worker only reports the failure. Failure mapping lives in
+// resolveQuietly (unit-tested): opaque network error only, never a
+// synthetic success that would fake a 204 and report false "online",
+// and never cache.
+function networkOnlyQuiet(): ({
+  request,
+  event,
+}: {
+  request: Request;
+  event: ExtendableEvent;
+}) => Promise<Response> {
+  const strategy = new NetworkOnly();
+  return ({ request, event }) =>
+    resolveQuietly(() => strategy.handle({ request, event }));
+}
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
@@ -177,20 +197,20 @@ const serwist = new Serwist({
         sameOrigin &&
         url.pathname === "/holidays.json" &&
         url.search.length > 0,
-      handler: new NetworkOnly(),
+      handler: networkOnlyQuiet(),
     },
     {
       // Reserved same-origin API path for holiday data: never cached
       // (first matching rule wins, so keep this before navigations).
       matcher: ({ url, sameOrigin }) =>
         sameOrigin && url.pathname === "/api/holidays",
-      handler: new NetworkOnly(),
+      handler: networkOnlyQuiet(),
     },
     {
       // Server/API routes are never part of the offline core.
       matcher: ({ url, sameOrigin }) =>
         sameOrigin && url.pathname.startsWith("/api/"),
-      handler: new NetworkOnly(),
+      handler: networkOnlyQuiet(),
     },
     {
       // Same-origin document navigations ONLY. NetworkFirst keeps
