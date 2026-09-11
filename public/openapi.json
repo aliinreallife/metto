@@ -59,6 +59,13 @@
             "in": "query",
             "description": "Destination longitude",
             "schema": { "type": "number" }
+          },
+          {
+            "name": "departAt",
+            "in": "query",
+            "description": "Optional ISO-8601 departure datetime with explicit timezone offset or Z (e.g. 2026-09-07T14:00:00+03:30). Defaults to now. Metto automatically derives the Tehran weekday/Thursday/Friday-or-official-holiday timetable from this instant.",
+            "schema": { "type": "string" },
+            "example": "2026-09-07T14:00:00+03:30"
           }
         ],
         "responses": {

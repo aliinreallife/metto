@@ -15,10 +15,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { nextTehranCalendarDate } from "./holidays/jalali";
-import {
-  createIsHolidayDate,
-  getMetroScheduleDayType,
-} from "./holidays/schedule-day";
+import { createIsHolidayDate } from "./holidays/schedule-day";
 import {
   createRedisHolidayStore,
   resolveRedisConfig,
@@ -31,8 +28,23 @@ import {
   setServerScheduleData,
 } from "./schedule-utils";
 import { tehranParts } from "./tehran-time";
-import type { LegTiming } from "./route";
 import { findRoute, type RouteResult } from "./route";
+import { parseDepartAtParam } from "./mcp/tool-defs";
+import {
+  buildScheduleNote,
+  classifyTimingSource,
+  type TimingSource,
+} from "./mcp/schedule-note";
+
+// Single implementations live in lib/mcp/* so WebMCP can share the client-safe
+// ones without node: imports. Re-exported here for existing REST/MCP callers.
+export { parseDepartAtParam };
+export {
+  buildScheduleNote,
+  classifyTimingSource,
+  type TimingSource,
+};
+export { departureScheduleLabel, timingSourceWord } from "./mcp/schedule-note";
 
 let scheduleLoadPromise: Promise<boolean> | null = null;
 
@@ -123,62 +135,6 @@ export async function getRequestHolidayResolver(
   return createIsHolidayDate(known);
 }
 
-// ISO-8601 datetime with an EXPLICIT timezone (Z or ±hh:mm / ±hhmm).
-// Naive timestamps (no offset) are ambiguous and rejected.
-const ISO_WITH_TZ =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-]\d{2}:?\d{2})$/;
-
-/**
- * Parse a depart_at/departAt parameter. Returns null for anything that is
- * not ISO-8601 with an explicit timezone offset or Z (e.g. "2026-09-07T14:00:00"
- * is rejected). Callers map null to isError (MCP) or HTTP 400 (REST).
- */
-export function parseDepartAtParam(value: string): Date | null {
-  if (!ISO_WITH_TZ.test(value.trim())) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-export type TimingSource = "timetable" | "mixed" | "estimated";
-
-/**
- * Classify where a route's timing came from. An empty legTiming array
- * must NOT classify as timetable (Array.every on [] is vacuously true).
- */
-export function classifyTimingSource(legTiming: LegTiming[]): TimingSource {
-  if (legTiming.length === 0) return "estimated";
-  if (legTiming.every((t) => t === "timetable")) return "timetable";
-  if (legTiming.some((t) => t === "timetable")) return "mixed";
-  return "estimated";
-}
-
-/**
- * Human label for the departure's schedule day, e.g. "Friday (holiday)",
- * "Thursday", "Saturday–Wednesday", "Weekday (official holiday)".
- * Describes the departure instant only — a midnight-crossing journey may
- * span two schedule days (legs re-evaluate inside findRoute).
- */
-export function departureScheduleLabel(
-  departAt: Date,
-  isHolidayDate: IsHolidayDate,
-): string {
-  const parts = tehranParts(departAt.getTime());
-  const scheduleDay = getMetroScheduleDayType(departAt.getTime(), isHolidayDate);
-  if (scheduleDay === "holiday") {
-    return parts.dayType === "friday"
-      ? "Friday (holiday)"
-      : "Weekday (official holiday)";
-  }
-  if (scheduleDay === "thursday") return "Thursday";
-  return "Saturday–Wednesday";
-}
-
-export function timingSourceWord(source: TimingSource): string {
-  if (source === "timetable") return "timetable-based";
-  if (source === "mixed") return "partially timetable-based";
-  return "estimated";
-}
-
 export type ScheduledRoute =
   | { ok: true; route: RouteResult; scheduleNote: string }
   | { ok: false; error: string };
@@ -210,10 +166,9 @@ export async function findRouteWithSchedule(
   const isHolidayDate = await getRequestHolidayResolver(departAt);
   const route = findRoute(from, to, { departAt, isHolidayDate });
   if (!route) return null;
-  const source = classifyTimingSource(route.legTiming);
   return {
     ok: true,
     route,
-    scheduleNote: `${departureScheduleLabel(departAt, isHolidayDate)} · ${timingSourceWord(source)}`,
+    scheduleNote: buildScheduleNote(departAt, isHolidayDate, route.legTiming),
   };
 }
