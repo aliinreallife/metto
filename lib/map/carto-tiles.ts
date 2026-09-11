@@ -12,7 +12,7 @@
 // - nothing older than MAX_CARTO_TILE_AGE_S (30 days);
 // - ONLY tiles the user naturally viewed (Leaflet <img> requests) —
 //   no prefetch, no enumeration, no zoom-level crawling, no offline packs.
-// - Esri, Nominatim, timestamp.ir, FingerprintJS and every other
+// - Esri, Nominatim, timestamp.ir and every other
 //   third-party host structurally cannot match.
 //
 // This cache is OPTIONAL: it is not part of offline readiness, and an

@@ -13,7 +13,6 @@ import {
   Map as MapIcon,
   X,
 } from "lucide-react";
-import { useVisitorData } from "@fingerprint/react";
 import { StationCombobox } from "@/components/station-combobox";
 import { RoutePanel } from "@/components/route-panel";
 import { RouteActions } from "@/components/route-actions";
@@ -82,7 +81,6 @@ function readStoredPlaceInfo(storageKey: string, stationId: string | null): Plac
 export function HomePage() {
   const loaded = useScheduleData();
   const { isHolidayDate } = useHolidayData();
-  const { getData } = useVisitorData({ immediate: true });
   const {
     lang,
     setOriginId: setCtxOrigin,
