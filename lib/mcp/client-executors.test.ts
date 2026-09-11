@@ -180,4 +180,28 @@ describe("station executors", () => {
     expect((await executeWebMcpTool("daydream", {})).isError).toBe(true);
     expect((await executeWebMcpTool("get_route", null)).isError).toBe(true);
   });
+
+  it("rejects an invented day_type on every tool (additionalProperties:false)", async () => {
+    const valid: Record<string, Record<string, unknown>> = {
+      get_route: {
+        from: "tajrish",
+        to: "tehran-sadeghiyeh",
+        depart_at: "2026-09-07T14:00:00+03:30",
+      },
+      list_stations: {},
+      get_station: { id: "tajrish" },
+      find_nearby: { lat: 35.804, lng: 51.433 },
+    };
+    for (const [name, args] of Object.entries(valid)) {
+      const ok = await executeWebMcpTool(name, args, { isHolidayDate: NEVER_HOLIDAY });
+      expect(ok.isError, `${name} valid call`).not.toBe(true);
+      const bad = await executeWebMcpTool(
+        name,
+        { ...args, day_type: "friday" },
+        { isHolidayDate: NEVER_HOLIDAY },
+      );
+      expect(bad.isError, `${name} rejects day_type`).toBe(true);
+      expect(bad.content[0].text).toContain("day_type");
+    }
+  });
 });
