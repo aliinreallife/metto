@@ -139,9 +139,10 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
     <div ref={rootRef} className="relative">
       {/* Outer container is a plain div so the clear action can be a real
           sibling <button> — a button-in-button is invalid HTML and breaks
-          keyboard/screen-reader interaction. */}
-      <div className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm transition-colors hover:bg-accent/50 md:px-4 md:py-3 md:text-base">
-        <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden="true" />
+          keyboard/screen-reader interaction. Padding lives on the trigger
+          itself so the entire visible selector (dot + label + chevron)
+          opens the dropdown. */}
+      <div className="flex w-full items-center gap-2 rounded-lg border border-input bg-background text-sm transition-colors md:text-base">
         <button
           ref={triggerRef}
           id={triggerId}
@@ -156,8 +157,9 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={listboxId}
-          className="flex min-w-0 flex-1 items-center gap-2 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2.5 text-start transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:px-4 md:py-3"
         >
+          <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden="true" />
           <span className="min-w-0 flex-1 truncate">
             {selected ? (
               <span className="flex items-center gap-2">
@@ -179,7 +181,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
               onChange(null)
               triggerRef.current?.focus()
             }}
-            className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="me-3 flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:me-4"
           >
             <X aria-hidden="true" className="size-4" />
           </button>
