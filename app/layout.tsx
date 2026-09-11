@@ -6,6 +6,8 @@ import { FingerprintProvider } from "@fingerprint/react";
 import { MetroProvider } from "./providers";
 import { SerwistProvider } from "./serwist";
 import { AppNav } from "./nav";
+import { ChunkRecovery } from "@/components/chunk-recovery";
+import { VersionReporter } from "@/components/version-reporter";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -199,6 +201,8 @@ export default function RootLayout({
           <MetroProvider>
             <AppNav />
             <div className="relative min-h-0 flex-1 flex flex-col overflow-hidden pb-[60px] pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">{children}</div>
+            <ChunkRecovery />
+            <VersionReporter />
           </MetroProvider>
         </FingerprintProvider>
         </SerwistProvider>

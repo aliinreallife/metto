@@ -121,6 +121,14 @@ export const STRINGS = {
     copyFailed: "Copy failed",
     directionsToStart: "Directions to start",
     opensInNewTab: "opens in new tab",
+    staleBundleTitle: "This page needs a fresh load",
+    staleBundleBody:
+      "The app was updated in the background and this page is stuck on old files. Reload to get the latest version.",
+    reloadFresh: "Reload fresh",
+    tryAgain: "Try again",
+    pageLoadErrorTitle: "Something went wrong loading this page",
+    pageLoadErrorBody:
+      "Please try again. If the problem keeps happening, reload fresh to clear stale cached files.",
   },
   fa: {
     appTitle: "متو",
@@ -242,6 +250,14 @@ export const STRINGS = {
     copyFailed: "کپی نشد",
     directionsToStart: "مسیریابی تا مبدأ",
     opensInNewTab: "در برگه جدید باز می‌شود",
+    staleBundleTitle: "این صفحه نیاز به بارگذاری تازه دارد",
+    staleBundleBody:
+      "برنامه در پس‌زمینه به‌روزرسانی شد و این صفحه روی فایل‌های قدیمی گیر کرده است. برای دریافت نسخه جدید بارگذاری کنید.",
+    reloadFresh: "بارگذاری تازه",
+    tryAgain: "تلاش مجدد",
+    pageLoadErrorTitle: "خطایی در بارگذاری این صفحه رخ داد",
+    pageLoadErrorBody:
+      "لطفاً دوباره تلاش کنید. اگر مشکل ادامه داشت، با بارگذاری تازه فایل‌های قدیمی ذخیره‌شده پاک می‌شوند.",
   },
 } as const;
 

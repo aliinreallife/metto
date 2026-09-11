@@ -149,7 +149,7 @@ describe("singleton connectivity store", () => {
     store.__resetConnectivityStoreForTests();
   });
 
-  it("single retry schedule while offline-with-link; all see recovery", async () => {
+  it("link-up failures stay checking with steady retries; all see recovery", async () => {
     const env = installBrowserStubs();
     let fetchCalls = 0;
     let failProbes = true;
@@ -170,11 +170,16 @@ describe("singleton connectivity store", () => {
       lastSeen.push(store.getConnectivitySnapshot().state);
     });
     await vi.advanceTimersByTimeAsync(0);
-    expect(store.getConnectivitySnapshot().state).toBe("offline");
+    // A failing probe with the link up is unknown (checking), never offline.
+    expect(store.getConnectivitySnapshot().state).toBe("checking");
     expect(fetchCalls).toBe(1);
-    // Exactly one retry fires per 25 s window (single schedule).
-    await vi.advanceTimersByTimeAsync(25000);
+    // Quick retry, then steady cadence — still checking throughout.
+    await vi.advanceTimersByTimeAsync(1500);
     expect(fetchCalls).toBe(2);
+    expect(store.getConnectivitySnapshot().state).toBe("checking");
+    await vi.advanceTimersByTimeAsync(25000);
+    expect(fetchCalls).toBe(3);
+    expect(store.getConnectivitySnapshot().state).toBe("checking");
     // Recovery: both subscribers observe online, cadence stops.
     failProbes = false;
     await vi.advanceTimersByTimeAsync(25000);

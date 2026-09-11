@@ -4,7 +4,8 @@ import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 // Uses the mobile viewport so the bottom tab bar is exercised.
 // never touches live Nominatim/CARTO/Esri/upstream-holiday (intercepted);
 // /api/connectivity is served by the real local prod server except where
-// a test deliberately breaks it to simulate VPN-style false-online.
+// a test deliberately breaks it at the fetch layer to simulate link-up
+// probe failure (blocked endpoint on an otherwise-online device).
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
 // Effective-connectivity (verified reachability) regression suite.
@@ -70,6 +71,52 @@ async function connectivityOf(page: Page): Promise<string | null> {
   );
 }
 
+/**
+ * Fail the reachability probe at the page-fetch layer. Unlike
+ * `context.route` aborts (which only affect page-initiated requests and
+ * are bypassed once the service worker controls the page), a fetch
+ * override fails the probe deterministically before AND after worker
+ * takeover — with `navigator.onLine` still true and zero browser events.
+ * Flip `window.__e2eConnectivityDown` to false to restore reachability.
+ */
+async function breakConnectivityProbe(context: BrowserContext) {
+  await context.addInitScript(() => {
+    const w = window as unknown as {
+      __e2eConnectivityDown?: boolean;
+    };
+    w.__e2eConnectivityDown = true;
+    const origFetch = window.fetch.bind(window);
+    window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      try {
+        const url = String(
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.href
+              : (input as Request).url,
+        );
+        if (
+          url.includes("/api/connectivity") &&
+          (window as unknown as { __e2eConnectivityDown?: boolean })
+            .__e2eConnectivityDown
+        ) {
+          return Promise.reject(new Error("e2e: connectivity down"));
+        }
+      } catch {
+        // Fall through to the real fetch on introspection failure.
+      }
+      return origFetch(input as RequestInfo, init);
+    }) as typeof window.fetch;
+  });
+}
+
+async function restoreConnectivityProbe(page: Page) {
+  await page.evaluate(() => {
+    (window as unknown as { __e2eConnectivityDown?: boolean })
+      .__e2eConnectivityDown = false;
+  });
+}
+
 const WARN_TEXT = "آماده نشده است";
 const OLD_PREP_TEXT = "در حال آماده";
 
@@ -117,31 +164,64 @@ test.describe("Effective connectivity", () => {
     await context.unroute("**/schedule-data.json");
   });
 
-  test("D. VPN-style false online drives offline UI without browser events", async ({
+  test("B. persistently failing probe with link up never warns", async ({
     context,
   }) => {
-    // Break reachability BEFORE the first mount probe. The mount probe
-    // fires during hydration — long before any worker can control the
-    // page — so interception reliably applies exactly once here. (After
-    // a worker takes control, its subrequests bypass route interception;
-    // that is a test-observability limit, not an app bug.)
+    // The original desktop bug: a blocked/failing probe endpoint on an
+    // otherwise-online device must never produce the "connect to the
+    // internet" warning. Break reachability at the page-fetch layer with
+    // the link still up, then sample through multiple retry rounds.
+    await blockThirdParty(context);
+    await breakConnectivityProbe(context);
+    const page = await context.newPage();
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+
+    // The app renders normally despite the failing probe.
+    await expect(
+      page.getByRole("button", { name: /ایستگاه یا نام مکان/ }).first(),
+    ).toBeVisible({ timeout: 30_000 });
+
+    // ~15 s of sampling (covers the quick retry and beyond): the Persian
+    // warning never renders, the phase never enters offline-incomplete,
+    // and connectivity never becomes offline.
+    const status = page.getByTestId("offline-status");
+    await expect(status).toBeAttached({ timeout: 60_000 });
+    for (let i = 0; i < 30; i++) {
+      expect(await page.getByText(WARN_TEXT).count()).toBe(0);
+      const phase = await status.getAttribute("data-phase");
+      expect(phase).not.toBe("offline-incomplete");
+      expect(await connectivityOf(page)).not.toBe("offline");
+      await page.waitForTimeout(500);
+    }
+    expect(await connectivityOf(page)).toBe("checking");
+    expect(await page.getByText(WARN_TEXT).count()).toBe(0);
+  });
+
+  test("D. link-up probe failure never drives offline UI", async ({
+    context,
+  }) => {
+    // Same failure shape as B, on the map: no offline banner, no global
+    // warning — with zero browser events dispatched in this test.
     await blockThirdParty(context);
     await mockTiles(context);
-    await context.route("**/api/connectivity", (route) =>
-      route.abort("failed"),
-    );
+    await breakConnectivityProbe(context);
     const page = await context.newPage();
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
       page.locator('[aria-label="Tehran metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
 
-    // Offline UI with zero browser events dispatched in this test.
-    await expect(
-      page.getByText("بدون اینترنت", { exact: true }),
-    ).toBeVisible({ timeout: 15_000 });
+    for (let i = 0; i < 24; i++) {
+      await expect(
+        page.getByText("بدون اینترنت", { exact: true }),
+      ).toHaveCount(0);
+      expect(await page.getByText(WARN_TEXT).count()).toBe(0);
+      expect(await connectivityOf(page)).not.toBe("offline");
+      await page.waitForTimeout(500);
+    }
 
-    // Diagnostics distinguish link state from effective reachability.
+    // Diagnostics distinguish link state from effective reachability:
+    // unknown (checking) with the link up — never confirmed offline.
     const diag = await page.evaluate(
       () =>
         (
@@ -150,54 +230,47 @@ test.describe("Effective connectivity", () => {
           }
         ).__mettoOffline,
     );
-    expect(diag?.connectivity).toBe("offline");
+    expect(diag?.connectivity).toBe("checking");
     expect(diag?.navigatorOnline).toBe(true);
 
-    // Core was ready, so no global warning — only the map banner.
-    expect(await page.getByText(WARN_TEXT).count()).toBe(0);
+    // The map itself stays fully usable.
+    await expect(
+      page.locator('[aria-label="Tehran metro on real map"]'),
+    ).toBeVisible();
   });
 
-  test("E. visible-only retry recovers without events, redraws once, no reload", async ({
+  test("E. checking recovers to online without events, no reload, never offline", async ({
     context,
   }) => {
     await blockThirdParty(context);
     await mockTiles(context);
-    // Abort installed before the mount probe so the app starts offline.
-    // (Post-control probes bypass interception and hit the live local
-    // server — which is exactly what lets the retry below succeed.)
-    await context.route("**/api/connectivity", (route) =>
-      route.abort("failed"),
-    );
+    // Start unreachable at the page-fetch layer (deterministic before and
+    // after worker takeover); recovery is simulated later by restoring the
+    // probe — the only signal is the steady retry cadence.
+    await breakConnectivityProbe(context);
     const page = await context.newPage();
-    const tileRequests: number[] = [];
-    page.on("request", (req) => {
-      if (req.url().includes("basemaps.cartocdn.com")) tileRequests.push(Date.now());
-    });
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
       page.locator('[aria-label="Tehran metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
+    // The link is up, so there is never an offline banner — only unknown.
     await expect(
       page.getByText("بدون اینترنت", { exact: true }),
-    ).toBeVisible({ timeout: 15_000 });
+    ).toHaveCount(0);
     await page.evaluate(() => {
       (window as unknown as { __e2eNoReload?: number }).__e2eNoReload = 1;
     });
 
-    // Still offline well before the ~25 s retry window: no spurious
-    // recovery, and no browser event is dispatched anywhere in this test.
+    // Still unknown deep into the steady cadence: no spurious offline or
+    // online, and no browser event is dispatched anywhere in this test.
     await page.waitForTimeout(10000);
-    expect(await connectivityOf(page)).toBe("offline");
+    expect(await connectivityOf(page)).toBe("checking");
 
-    // Evict tiles so the post-recovery redraw must hit the network
-    // (observably proving it fired).
-    await page.evaluate(() => caches.delete("metto-carto-tiles"));
-    tileRequests.length = 0;
-
-    // Only the visible-only retry (~25 s cadence) can notice recovery.
-    // Sample connectivity edges meanwhile.
+    // Restore reachability with no browser event: only the steady retry
+    // cadence can notice recovery. Sample connectivity edges meanwhile.
+    await restoreConnectivityProbe(page);
     const edges: string[] = [];
-    let last = "offline";
+    let last = "checking";
     await expect
       .poll(
         async () => {
@@ -211,18 +284,14 @@ test.describe("Effective connectivity", () => {
         { timeout: 90_000 },
       )
       .toBe("online");
-    // Exactly one offline→online edge (no flapping, single redraw trigger).
-    expect(edges.filter((e) => e === "offline->online")).toHaveLength(1);
+    // Exactly one checking→online edge (no flapping, no offline in between).
+    expect(edges.filter((e) => e === "checking->online")).toHaveLength(1);
+    expect(edges.filter((e) => e.includes("offline"))).toHaveLength(0);
 
-    // Banner clears, tiles retry after the transition, page never reloaded.
+    // No banner ever appeared, and the page never reloaded.
     await expect(
       page.getByText("بدون اینترنت", { exact: true }),
     ).toHaveCount(0);
-    await expect
-      .poll(() => Promise.resolve(tileRequests.length), {
-        timeout: 20_000,
-      })
-      .toBeGreaterThan(0);
     expect(
       await page.evaluate(
         () => (window as unknown as { __e2eNoReload?: number }).__e2eNoReload,
@@ -234,10 +303,9 @@ test.describe("Effective connectivity", () => {
     context,
   }) => {
     await blockThirdParty(context);
-    // Abort installed before the mount probe so the app starts offline.
-    await context.route("**/api/connectivity", (route) =>
-      route.abort("failed"),
-    );
+    // Start unreachable at the page-fetch layer (deterministic regardless
+    // of worker takeover timing).
+    await breakConnectivityProbe(context);
     const page = await context.newPage();
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(
@@ -245,12 +313,11 @@ test.describe("Effective connectivity", () => {
     ).toBeAttached({ timeout: 60_000 });
     await expect
       .poll(() => connectivityOf(page), { timeout: 15_000 })
-      .toBe("offline");
+      .toBe("checking");
 
-    // Restore reachability at the network layer (the abort is bypassed
-    // once the worker controls the page — restoration is what matters),
-    // then resync via foreground visibility WITHOUT any online event.
-    await context.unroute("**/api/connectivity");
+    // Restore reachability at the fetch layer, then resync via foreground
+    // visibility WITHOUT any online event.
+    await restoreConnectivityProbe(page);
     await page.evaluate(() =>
       document.dispatchEvent(new Event("visibilitychange")),
     );
@@ -326,5 +393,69 @@ test.describe("Effective connectivity", () => {
     });
     expect(direct.status).toBe(204);
     expect(direct.cc).toContain("no-store");
+  });
+
+  // Skipped: asserts that a worker-relayed /api/connectivity failure stays
+  // quiet, but requires DevTools offline emulation to fail service-worker-
+  // initiated subrequests. In this Chromium, renderer requests honor the
+  // emulation (navigator.onLine flips, document loads fail) while worker
+  // subrequests still reach the live server (204), so the premise cannot
+  // hold here — it fails identically without any app change. The user-
+  // visible contract (no unhandled rejection noise, offline verdict from
+  // the machine) is covered by D/E/F plus the offline specs.
+  test.skip("G. failed probe through the worker is quiet but still fails client-side", async ({
+    context,
+  }) => {
+    await blockThirdParty(context);
+    const page = await context.newPage();
+    // SW/Serwist unhandled-failure noise only — a genuinely failed request
+    // itself (browser-level net::ERR_FAILED) is legitimate probe behavior
+    // and is deliberately NOT asserted here.
+    const swErrors: string[] = [];
+    page.on("console", (msg) => {
+      const text = msg.text();
+      if (/no-response|workbox/i.test(text) && !text.includes("[Metto Offline]")) {
+        swErrors.push(`${msg.type()}: ${text.slice(0, 220)}`);
+      }
+    });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("offline-status")).toBeAttached({
+      timeout: 60_000,
+    });
+    // The failing probe must travel through the worker's NetworkOnly route:
+    // wait for control first (pre-control failures never reach the worker).
+    await expect
+      .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller), {
+        timeout: 30_000,
+      })
+      .toBe(true);
+    // Break the network for one request: the worker must report the failure
+    // without an unhandled `no-response` rejection, while the caller still
+    // observes a plain network failure (so the probe keeps its offline
+    // verdict — never a synthetic success).
+    await context.setOffline(true);
+    // Wait until offline emulation is observable in-page before probing:
+    // a fetch dispatched in the same task as setOffline can otherwise win
+    // the race and return the live 204.
+    await expect
+      .poll(() => page.evaluate(() => navigator.onLine), { timeout: 15_000 })
+      .toBe(false);
+    const outcome = await page.evaluate(async () => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetch("/api/connectivity", { cache: "no-store" });
+          if (attempt === 2) return `status:${res.status}`;
+        } catch {
+          return "rejected";
+        }
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      return "rejected";
+    });
+    expect(outcome).toBe("rejected");
+    // Allow any unhandled worker rejection to surface, then require silence.
+    await page.waitForTimeout(3000);
+    expect(swErrors).toHaveLength(0);
+    await context.setOffline(false);
   });
 });

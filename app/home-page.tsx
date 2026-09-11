@@ -13,7 +13,6 @@ import {
   Map as MapIcon,
   X,
 } from "lucide-react";
-import { useVisitorData } from "@fingerprint/react";
 import { StationCombobox } from "@/components/station-combobox";
 import { RoutePanel } from "@/components/route-panel";
 import { RouteActions } from "@/components/route-actions";
@@ -82,7 +81,6 @@ function readStoredPlaceInfo(storageKey: string, stationId: string | null): Plac
 export function HomePage() {
   const loaded = useScheduleData();
   const { isHolidayDate } = useHolidayData();
-  const { getData } = useVisitorData({ immediate: true });
   const {
     lang,
     setOriginId: setCtxOrigin,
@@ -170,18 +168,23 @@ export function HomePage() {
   }, [isFa]);
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (originId) params.set("from", originId);
-    if (destId) params.set("to", destId);
-    if (originPlaceInfo) {
-      params.set("op", encodePlacePin({ lat: originPlaceInfo.lat, lng: originPlaceInfo.lng, label: originPlaceInfo.placeName }));
+    try {
+      const params = new URLSearchParams();
+      if (originId) params.set("from", originId);
+      if (destId) params.set("to", destId);
+      if (originPlaceInfo) {
+        params.set("op", encodePlacePin({ lat: originPlaceInfo.lat, lng: originPlaceInfo.lng, label: originPlaceInfo.placeName }));
+      }
+      if (destPlaceInfo) {
+        params.set("dp", encodePlacePin({ lat: destPlaceInfo.lat, lng: destPlaceInfo.lng, label: destPlaceInfo.placeName }));
+      }
+      const qs = params.toString();
+      const url = qs ? `?${qs}` : window.location.pathname;
+      window.history.replaceState(null, "", url);
+    } catch {
+      // History unavailable (sandboxed iframe, blocked storage, edge-case
+      // privacy modes): route state still works in memory + context.
     }
-    if (destPlaceInfo) {
-      params.set("dp", encodePlacePin({ lat: destPlaceInfo.lat, lng: destPlaceInfo.lng, label: destPlaceInfo.placeName }));
-    }
-    const qs = params.toString();
-    const url = qs ? `?${qs}` : window.location.pathname;
-    window.history.replaceState(null, "", url);
   }, [originId, destId, originPlaceInfo, destPlaceInfo]);
 
   const route = useMemo(() => {

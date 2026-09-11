@@ -100,24 +100,85 @@ describe("definite browser offline", () => {
   });
 });
 
-describe("VPN-style false positive", () => {
-  it("navigator.onLine true + rejecting probe → offline, verified", async () => {
+describe("link-up probe failures never confirm offline", () => {
+  it("persistent link-up failures stay checking forever, never offline", async () => {
     const h = createHarness();
     h.machine.handleMount();
     await h.rejectProbe(0);
+    expect(h.machine.getSnapshot().state).toBe("checking");
+    // Quick retry, then steady cadence — every round fails, state never
+    // leaves checking no matter how long this goes on.
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(h.probeCalls).toBe(2);
+    await h.rejectProbe(1);
+    expect(h.machine.getSnapshot().state).toBe("checking");
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(h.probeCalls).toBe(2);
+    await vi.advanceTimersByTimeAsync(25000);
+    expect(h.probeCalls).toBe(3);
+    await h.rejectProbe(2);
+    expect(h.machine.getSnapshot().state).toBe("checking");
+    await vi.advanceTimersByTimeAsync(100000);
+    // Steady-state retries keep firing (recovery is still detected)…
+    expect(h.probeCalls).toBeGreaterThan(3);
+    // …but a link-up browser is never classified offline.
+    expect(h.machine.getSnapshot().state).toBe("checking");
+    expect(h.machine.getSnapshot().navigatorOnline).toBe(true);
+    expect(h.machine.getSnapshot().reachabilityVerified).toBe(false);
+    h.machine.dispose();
+  });
+
+  it("a single transient link-up failure stays checking, then recovers", async () => {
+    const h = createHarness();
+    h.machine.handleMount();
+    await h.rejectProbe(0);
+    expect(h.machine.getSnapshot().state).toBe("checking");
+    expect(h.machine.getSnapshot().reachabilityVerified).toBe(false);
+    await vi.advanceTimersByTimeAsync(1500);
+    await h.resolveProbe(1, true);
+    const s = h.machine.getSnapshot();
+    expect(s.state).toBe("online");
+    expect(s.reachabilityVerified).toBe(true);
+    h.machine.dispose();
+  });
+
+  it("link-down probe failure confirms offline immediately", async () => {
+    const h = createHarness();
+    h.machine.handleMount();
+    h.setNavigatorOnline(false);
+    await h.rejectProbe(0);
     const s = h.machine.getSnapshot();
     expect(s.state).toBe("offline");
-    expect(s.navigatorOnline).toBe(true);
+    expect(s.navigatorOnline).toBe(false);
     expect(s.reachabilityVerified).toBe(true);
     h.machine.dispose();
   });
 });
 
 describe("timeout", () => {
-  it("probe exceeding the timeout → offline", async () => {
+  it("repeated link-up timeouts stay checking (backoff to steady cadence)", async () => {
     const h = createHarness({ probeTimeoutMs: 3000 });
     h.machine.handleMount();
     expect(h.machine.getSnapshot().state).toBe("checking");
+    await vi.advanceTimersByTimeAsync(3000);
+    // First timeout is just unknown.
+    expect(h.machine.getSnapshot().state).toBe("checking");
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(h.probeCalls).toBe(2);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(h.machine.getSnapshot().state).toBe("checking");
+    // Backed off: no immediate third round, steady cadence instead.
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(h.probeCalls).toBe(2);
+    await vi.advanceTimersByTimeAsync(25000);
+    expect(h.probeCalls).toBe(3);
+    h.machine.dispose();
+  });
+
+  it("link-down timeout confirms offline", async () => {
+    const h = createHarness({ probeTimeoutMs: 3000 });
+    h.machine.handleMount();
+    h.setNavigatorOnline(false);
     await vi.advanceTimersByTimeAsync(3000);
     const s = h.machine.getSnapshot();
     expect(s.state).toBe("offline");
@@ -127,15 +188,35 @@ describe("timeout", () => {
 });
 
 describe("recovery", () => {
-  it("offline + link + succeeding probe → online", async () => {
+  it("link-down offline + online event + succeeding probe → online", async () => {
     const h = createHarness();
     h.machine.handleMount();
+    h.setNavigatorOnline(false);
     await h.rejectProbe(0);
     expect(h.machine.getSnapshot().state).toBe("offline");
+    h.setNavigatorOnline(true);
     h.machine.handleOnlineEvent();
     expect(h.machine.getSnapshot().state).toBe("checking");
     await h.resolveProbe(1, true);
     expect(h.machine.getSnapshot().state).toBe("online");
+    h.machine.dispose();
+  });
+
+  it("checking recovers to online on the steady retry without any event", async () => {
+    const h = createHarness({ retryIntervalMs: 25000 });
+    h.machine.handleMount();
+    await h.rejectProbe(0);
+    expect(h.machine.getSnapshot().state).toBe("checking");
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(h.probeCalls).toBe(2);
+    await h.rejectProbe(1);
+    await vi.advanceTimersByTimeAsync(25000);
+    expect(h.probeCalls).toBe(3);
+    await h.resolveProbe(2, true);
+    expect(h.machine.getSnapshot().state).toBe("online");
+    // Cadence stops once online.
+    await vi.advanceTimersByTimeAsync(100000);
+    expect(h.probeCalls).toBe(3);
     h.machine.dispose();
   });
 
@@ -201,10 +282,14 @@ describe("visible-only retry", () => {
   it("retries while offline-with-link and visible; stops when hidden", async () => {
     const h = createHarness({ retryIntervalMs: 25000 });
     h.machine.handleMount();
-    await h.rejectProbe(0);
+    // Browser offline event confirms offline even with the link up.
+    h.machine.handleOfflineEvent();
+    expect(h.machine.getSnapshot().state).toBe("offline");
     expect(h.probeCalls).toBe(1);
     await vi.advanceTimersByTimeAsync(25000);
     expect(h.probeCalls).toBe(2);
+    await h.rejectProbe(1);
+    expect(h.machine.getSnapshot().state).toBe("offline");
     // Hidden document: no further retries scheduled.
     h.setVisible(false);
     await vi.advanceTimersByTimeAsync(100000);
@@ -224,7 +309,8 @@ describe("visible-only retry", () => {
   it("retry success transitions to online", async () => {
     const h = createHarness({ retryIntervalMs: 25000 });
     h.machine.handleMount();
-    await h.rejectProbe(0);
+    h.machine.handleOfflineEvent();
+    expect(h.machine.getSnapshot().state).toBe("offline");
     await vi.advanceTimersByTimeAsync(25000);
     expect(h.probeCalls).toBe(2);
     await h.resolveProbe(1, true);
@@ -232,6 +318,19 @@ describe("visible-only retry", () => {
     // And the cadence stops once online.
     await vi.advanceTimersByTimeAsync(100000);
     expect(h.probeCalls).toBe(2);
+    h.machine.dispose();
+  });
+
+  it("checking retries pause while hidden and resume on resync", async () => {
+    const h = createHarness({ retryIntervalMs: 25000 });
+    h.machine.handleMount();
+    await h.rejectProbe(0);
+    expect(h.machine.getSnapshot().state).toBe("checking");
+    h.setVisible(false);
+    // Hidden: not even the quick retry fires.
+    await vi.advanceTimersByTimeAsync(100000);
+    expect(h.probeCalls).toBe(1);
+    expect(h.machine.getSnapshot().state).toBe("checking");
     h.machine.dispose();
   });
 });

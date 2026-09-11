@@ -17,7 +17,7 @@
 // session; it activates naturally once old clients are gone. No banner,
 // no toast, no automatic reload — ever. Service-worker transitions are
 // console-only diagnostics (see logSwLifecycle).
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   isScheduleDataLoaded,
   loadScheduleData,
@@ -87,6 +87,31 @@ export function useOfflineReadiness(): OfflineReadiness {
   const [scheduleChecked, setScheduleChecked] = useState(false);
   const [holidayChecked, setHolidayChecked] = useState(false);
   const [precacheChecked, setPrecacheChecked] = useState(false);
+  // Bumped on every offline→online transition so the checks below re-run
+  // immediately when connectivity is restored (a check that settled
+  // "missing" while offline must not stay missing forever).
+  const [reconnectNonce, setReconnectNonce] = useState(0);
+  const prevConnectivityRef = useRef(connectivity.state);
+  useEffect(() => {
+    const prev = prevConnectivityRef.current;
+    prevConnectivityRef.current = connectivity.state;
+    if (prev !== "online" && connectivity.state === "online") {
+      // Best-effort: kick the schedule fetch again; success notifies the
+      // schedule listener below, failure just settles silently.
+      try {
+        const pending = loadScheduleData();
+        if (pending && typeof pending.then === "function") {
+          pending.then(
+            () => {},
+            () => {},
+          );
+        }
+      } catch {
+        // Ignore — the regular check path still applies.
+      }
+      setReconnectNonce((n) => n + 1);
+    }
+  }, [connectivity.state]);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,7 +196,10 @@ export function useOfflineReadiness(): OfflineReadiness {
       cancelled = true;
       if (timer !== null) window.clearTimeout(timer);
     };
-  }, []);
+    // Re-run when connectivity is restored: a pass that settled "missing"
+    // while offline must re-check instead of staying missing forever.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reconnectNonce]);
 
   useEffect(() => {
     // Holiday dataset ships bundled, so the sync read below settles the
@@ -222,6 +250,24 @@ export function useOfflineReadiness(): OfflineReadiness {
       }
     };
 
+    // Silent takeover at a safe lifecycle point: when the page is being
+    // discarded (tab close, full-document navigation away), hand control
+    // to the waiting worker (if any) so the NEXT session launches on the
+    // new build. No reload, no UI, and the current in-memory session is
+    // never interrupted — the old page is already going away. Without
+    // this, a waiting worker lingers until every old tab happens to
+    // close. Transient hides (tab switch) deliberately do NOT trigger:
+    // the user may return to an active planning session.
+    const takeOverQuietly = () => {
+      try {
+        const waiting = registration?.waiting;
+        if (waiting) waiting.postMessage({ type: "SKIP_WAITING" });
+      } catch {
+        // Best-effort only.
+      }
+    };
+    const onPageHide = () => takeOverQuietly();
+
     // Never reloads: activation is left to the natural lifecycle (old
     // clients close → waiting worker activates → next launch uses it).
     const onControllerChange = () => {
@@ -269,12 +315,14 @@ export function useOfflineReadiness(): OfflineReadiness {
       "controllerchange",
       onControllerChange,
     );
+    window.addEventListener("pagehide", onPageHide);
     return () => {
       disposed = true;
       navigator.serviceWorker.removeEventListener(
         "controllerchange",
         onControllerChange,
       );
+      window.removeEventListener("pagehide", onPageHide);
     };
   }, []);
 

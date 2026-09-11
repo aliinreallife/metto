@@ -5,12 +5,12 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && serwist build",
+    "build": "next build && node scripts/generate-version.mjs && serwist build",
     "build:next": "next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e:offline": "playwright test tests/offline.spec.ts tests/map-tiles.spec.ts tests/map-reconnect.spec.ts tests/offline-nav.spec.ts tests/connectivity.spec.ts",
+    "test:e2e:offline": "playwright test tests/offline.spec.ts tests/map-tiles.spec.ts tests/map-reconnect.spec.ts tests/offline-nav.spec.ts tests/connectivity.spec.ts tests/pwa-recovery.spec.ts",
     "holidays:sync": "node scripts/sync-holidays.mjs",
     "generate:stations": "node scripts/generate-stations.ts"
   },

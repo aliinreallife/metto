@@ -35,8 +35,25 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <Suspense>
+    <Suspense fallback={<SegmentLoading testId="route-loading" />}>
       <HomePage />
     </Suspense>
+  );
+}
+
+/** Visible loading state so a suspended segment never looks like an empty app. */
+function SegmentLoading({ testId }: { testId: string }) {
+  return (
+    <div
+      data-testid={testId}
+      role="status"
+      aria-label="Loading"
+      className="flex size-full items-center justify-center"
+    >
+      <div
+        aria-hidden
+        className="size-8 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary"
+      />
+    </div>
   );
 }

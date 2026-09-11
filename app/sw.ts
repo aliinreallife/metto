@@ -8,9 +8,12 @@
 //
 // Conservative runtime policy:
 // - precache: app shell + build assets + local JSON/icons (versioned)
-// - CacheFirst: immutable same-origin /_next/static
+// - CacheFirst: immutable same-origin /_next/static (content-hashed, kept)
 // - NetworkFirst (+ pathname-aware offline document fallback): same-origin
-//   navigations/RSC — a failed `/map?...` serves precached `/map`, never `/`
+//   document navigations only (RSC/prefetch bypass to the network) — a
+//   failed `/map?...` serves precached `/map`, never `/`
+// - Activation purges document caches (metto-pages*), so a previous
+//   build's HTML can never shadow the new precache after a deploy.
 // - NetworkFirst: /holidays.version.json update pointer (not precached)
 // - NetworkOnly: same-origin /api/* and version-pinned dataset downloads
 // - Cross-origin: NO blanket route — unmatched requests (Nominatim,
@@ -190,37 +193,40 @@ const serwist = new Serwist({
       handler: new NetworkOnly(),
     },
     {
-      // Same-origin navigations + App Router RSC. NetworkFirst keeps
+      // Same-origin document navigations ONLY. NetworkFirst keeps
       // deployments fresh. Offline, failed navigations resolve through the
       // pathname-aware fallback entries below (canonical precached
-      // document per tab); RSC failures propagate untouched — HTML is
-      // never served as a fake RSC response.
-      // Only 200 basic HTML/RSC responses are stored (no errors, no
+      // document per tab).
+      // App Router RSC / prefetch payloads are deliberately NOT handled
+      // here: they share URLs with documents but carry different bodies,
+      // so caching them under the same URL key would poison later
+      // navigations (stale RSC served as HTML or vice versa → blank tab
+      // content under an intact shell). Unmatched RSC requests go straight
+      // to the network and fail normally offline; offline tab taps already
+      // use full-document navigation (see TabLink).
+      // Only 200 basic HTML responses are stored (no errors, no
       // redirects — those would poison the cache across deploys).
       matcher: ({ request, sameOrigin, url }) => {
         if (!sameOrigin || request.method !== "GET") return false;
         if (url.pathname.startsWith("/api/")) return false;
         if (request.mode === "navigate") return true;
         const dest = (request as Request).destination;
-        if (dest === "document") return true;
-        // App Router client navigation (RSC payload).
-        try {
-          return (
-            request.headers.get("RSC") === "1" ||
-            request.headers.get("Next-Router-Prefetch") === "1"
-          );
-        } catch {
-          return false;
-        }
+        return dest === "document";
       },
       handler: new NetworkFirst({
+        // Unversioned name + purge-on-activate (see activate handler):
+        // every new worker starts from a clean document slate instead of
+        // inheriting the previous build's HTML across a deploy.
         cacheName: "metto-pages",
         networkTimeoutSeconds: 8,
         plugins: [
           new CacheableResponsePlugin({ statuses: [200] }),
           new ExpirationPlugin({
             maxEntries: 32,
-            maxAgeSeconds: 7 * 24 * 60 * 60,
+            // Documents revalidate on every online navigation anyway; the
+            // expiry only bounds how long a stale copy may serve while the
+            // network is unreachable (24h, not a sliding week).
+            maxAgeSeconds: 24 * 60 * 60,
             maxAgeFrom: "last-used",
           }),
         ],
@@ -256,6 +262,17 @@ self.addEventListener("message", (event) => {
   if (data?.type === "SKIP_WAITING") void self.skipWaiting();
 });
 
+// Document-cache names that must never survive a worker version change.
+// "metto-pages" is the current name; "metto-pages-*" covers any future
+// per-build versioning. Hashed _next/static assets are intentionally NOT
+// listed here — their URLs are content-hashed and safe across deploys.
+const STALE_DOCUMENT_CACHES = ["metto-pages"];
+function isStaleDocumentCache(name: string): boolean {
+  return (
+    STALE_DOCUMENT_CACHES.includes(name) || name.startsWith("metto-pages-")
+  );
+}
+
 // One-time migration: remove the legacy hand-written worker's caches so a
 // stale `metto-v*` shell can never shadow the Serwist precache.
 self.addEventListener("activate", (event) => {
@@ -265,7 +282,12 @@ self.addEventListener("activate", (event) => {
         const keys = await caches.keys();
         await Promise.all(
           keys
-            .filter((k) => k === "metto-v3" || k.startsWith("metto-v"))
+            .filter(
+              (k) =>
+                k === "metto-v3" ||
+                k.startsWith("metto-v") ||
+                isStaleDocumentCache(k),
+            )
             .map((k) => caches.delete(k)),
         );
       } catch {

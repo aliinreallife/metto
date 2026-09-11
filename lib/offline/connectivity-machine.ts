@@ -6,17 +6,24 @@
 //
 // States:
 // - "checking": the browser may have connectivity, but usable Internet has
-//   not been verified yet. Consumers must NOT show offline UI here, but
-//   navigation should already take the safe (precached-document) path.
-// - "online": the probe succeeded (204).
-// - "offline": the browser reports no link, or a probe verified
-//   unreachability.
+//   not been verified yet — including after ANY number of failed probes
+//   while the browser still reports a link (unknown, NEVER confirmed
+//   offline). A persistently blocked/failing probe endpoint (ad blocker,
+//   Brave shields, VPN/proxy, endpoint outage) must never flip a link-up
+//   browser to offline by itself.
+//   Consumers must NOT show offline UI here, but navigation should already
+//   take the safe (precached-document) path.
+// - "online": the probe succeeded (204) — returns immediately on success.
+// - "offline": confirmed ONLY by link-down evidence: the browser reports
+//   no link (`navigator.onLine === false`) or the browser `offline` event.
+//   There is deliberately no other path to this state: no probe failure,
+//   however repeated, classifies a link-up browser as offline.
 //
 // Stale-result protection: every probe run takes a monotonically increasing
 // generation ID, consumed by the first settle; later settles for the same
 // generation (timeout abort racing a late resolve/reject) are ignored, as
-// are settles from superseded generations. At most one probe and one retry
-// timer exist at any time.
+// are settles from superseded generations. At most one probe, one offline
+// retry timer, and one checking retry timer exist at any time.
 
 export type ConnectivityState = "checking" | "online" | "offline";
 
@@ -43,6 +50,12 @@ export interface ConnectivityMachineDeps {
   probeTimeoutMs?: number;
   /** Visible-only retry cadence while offline-with-link. Default 25000 ms. */
   retryIntervalMs?: number;
+  /**
+   * Delay before the first re-probe while checking-with-link (a transient
+   * blip recovers fast). Later retries back off to `retryIntervalMs`.
+   * Default 1500 ms.
+   */
+  confirmRetryMs?: number;
   setTimeoutFn?: typeof setTimeout;
   clearTimeoutFn?: typeof clearTimeout;
   onChange: (snapshot: ConnectivitySnapshot) => void;
@@ -66,6 +79,12 @@ export function createConnectivityMachine(
 ): ConnectivityMachine {
   const probeTimeoutMs = deps.probeTimeoutMs ?? 3000;
   const retryIntervalMs = deps.retryIntervalMs ?? 25000;
+  // Link-up failure policy: a failed probe while the browser reports a
+  // link NEVER confirms offline — the endpoint itself may be blocked
+  // (extensions, Brave shields), broken (proxy/VPN), or down while the
+  // rest of the Internet works. Stay "checking" (unknown) and keep
+  // re-probing so genuine recovery is still detected without events.
+  const confirmRetryMs = deps.confirmRetryMs ?? 1500;
   // Looked up lazily so injected/fake clocks apply.
   const schedule =
     (...args: Parameters<typeof setTimeout>): ReturnType<typeof setTimeout> =>
@@ -78,6 +97,11 @@ export function createConnectivityMachine(
   let probeController: AbortController | null = null;
   let probeTimer: ReturnType<typeof setTimeout> | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let checkingTimer: ReturnType<typeof setTimeout> | null = null;
+  // Consecutive probe failures observed while checking with the link up.
+  // Drives retry backoff only (quick first re-probe, steady cadence after)
+  // — it NEVER confirms offline. Reset on success and fresh verification.
+  let checkingFailures = 0;
   let snapshot: ConnectivitySnapshot = {
     state: "checking",
     navigatorOnline: true,
@@ -111,10 +135,18 @@ export function createConnectivityMachine(
     }
   }
 
+  function clearCheckingTimer(): void {
+    if (checkingTimer !== null) {
+      clearTimer(checkingTimer);
+      checkingTimer = null;
+    }
+  }
+
   /** Abort the in-flight probe and invalidate its generation. */
   function invalidateProbe(): void {
     generation += 1;
     clearProbeTimer();
+    clearCheckingTimer();
     if (probeController) {
       try {
         probeController.abort();
@@ -127,6 +159,7 @@ export function createConnectivityMachine(
 
   function enterOffline(reachabilityVerified: boolean): void {
     invalidateProbe();
+    checkingFailures = 0;
     emit({
       state: "offline",
       navigatorOnline: readLink(),
@@ -137,6 +170,7 @@ export function createConnectivityMachine(
 
   function enterOnline(): void {
     invalidateProbe();
+    checkingFailures = 0;
     emit({ state: "online", navigatorOnline: readLink(), reachabilityVerified: true });
     scheduleRetryIfNeeded();
   }
@@ -192,6 +226,12 @@ export function createConnectivityMachine(
    * Single settle gate: the first settle for a generation consumes it, so
    * a timeout abort racing a late resolve/reject can never double-apply,
    * and superseded generations are ignored.
+   *
+   * Failure policy: link-down evidence (`navigator.onLine === false`)
+   * confirms offline immediately. A failure WITH a link NEVER confirms
+   * offline — the state stays "checking" (unknown, never offline UI) no
+   * matter how many probes fail, with periodic re-probes scheduled so
+   * recovery is still detected without browser events.
    */
   function settle(gen: number, ok: boolean): void {
     if (gen !== generation || disposed) return;
@@ -200,14 +240,83 @@ export function createConnectivityMachine(
     probeController = null;
     if (ok) {
       enterOnline();
-    } else {
+      return;
+    }
+    let link = true;
+    try {
+      link = deps.getNavigatorOnline();
+    } catch {
+      link = snapshot.navigatorOnline;
+    }
+    if (!link) {
       emit({
         state: "offline",
-        navigatorOnline: readLink(),
+        navigatorOnline: false,
         reachabilityVerified: true,
       });
       scheduleRetryIfNeeded();
+      return;
     }
+    if (snapshot.state === "offline") {
+      // Confirmed offline stays offline: a failed background retry is just
+      // still-offline, never a downgrade back to unknown. Keep the cadence.
+      scheduleRetryIfNeeded();
+      return;
+    }
+    checkingFailures += 1;
+    // Unknown forever: re-probe on a backoff (quick first retry for
+    // transient blips, steady visible-only cadence after). A persistently
+    // blocked endpoint keeps the browser in checking — never offline.
+    emit({
+      state: "checking",
+      navigatorOnline: readLink(),
+      reachabilityVerified: false,
+    });
+    scheduleCheckingRetry();
+  }
+
+  /**
+   * Visible-only re-probe while checking with the link up. The first retry
+   * is quick (transient blips recover fast); later ones use the steady
+   * cadence. Recovery transitions to online; persistent failure just stays
+   * checking — this timer can never produce offline.
+   */
+  function scheduleCheckingRetry(): void {
+    clearCheckingTimer();
+    if (disposed) return;
+    if (snapshot.state !== "checking") return;
+    let link = false;
+    let visible = false;
+    try {
+      link = deps.getNavigatorOnline();
+    } catch {
+      return;
+    }
+    try {
+      visible = deps.isDocumentVisible();
+    } catch {
+      return;
+    }
+    if (!link || !visible) return;
+    const delay = checkingFailures <= 1 ? confirmRetryMs : retryIntervalMs;
+    checkingTimer = schedule(() => {
+      checkingTimer = null;
+      if (disposed) return;
+      if (snapshot.state !== "checking") return;
+      try {
+        if (!deps.getNavigatorOnline()) {
+          enterOffline(false);
+          return;
+        }
+        if (!deps.isDocumentVisible()) {
+          scheduleCheckingRetry();
+          return;
+        }
+      } catch {
+        return;
+      }
+      runProbe({ background: true });
+    }, delay);
   }
 
   function runProbe(options: { background: boolean }): void {
@@ -252,6 +361,7 @@ export function createConnectivityMachine(
   }
 
   function startVerificationProbe(): void {
+    checkingFailures = 0;
     runProbe({ background: false });
   }
 
@@ -282,6 +392,7 @@ export function createConnectivityMachine(
 
     handleOfflineEvent: () => {
       if (disposed) return;
+      checkingFailures = 0;
       enterOffline(false);
     },
 
@@ -301,6 +412,7 @@ export function createConnectivityMachine(
       disposed = true;
       invalidateProbe();
       clearRetryTimer();
+      clearCheckingTimer();
     },
   };
 }

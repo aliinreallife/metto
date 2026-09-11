@@ -29,7 +29,10 @@ export default serwist({
   // holidays.version.json is intentionally NOT precached: the client polls
   // it at startup to discover dataset updates, so it must revalidate over
   // the network (runtime NetworkFirst) instead of serving a frozen copy.
-  globIgnores: ["public/google*.html", "public/holidays.version.json"],
+  // version.json is likewise NOT precached: it identifies the CURRENT
+  // deployment, so the running client must always read it live — a
+  // precached copy would report the client's own (possibly stale) build.
+  globIgnores: ["public/google*.html", "public/holidays.version.json", "public/version.json"],
   additionalPrecacheEntries: [
     { url: "/manifest.webmanifest", revision: manifestRevision },
   ],

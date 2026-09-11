@@ -340,13 +340,18 @@ test.describe("Metto offline PWA", () => {
       });
       await expectRouteResult(page);
 
-      // Old clients disappear → the waiting worker activates naturally, and
-      // the next launch is controlled by it. No SKIP_WAITING, no reload loop.
+      // Old clients disappear → the waiting worker activates (the app hands
+      // over silently on pagehide; otherwise it waits for zero clients).
+      // No reload loop, no banner, no CTA at any point.
+      // (The app also nudges activation on pagehide; settle briefly so that
+      // takeover finishes before the fresh navigation starts instead of
+      // racing it.)
       // If the fresh navigation wins the race and lands on the old worker,
       // it blocks activation itself — reloading retries the navigation at a
       // moment with zero controlled clients, which is also exactly how a
       // real user launch behaves.
       await page.close();
+      await new Promise((r) => setTimeout(r, 3000));
       const page2 = await context.newPage();
       await page2.goto("/", { waitUntil: "domcontentloaded" });
       let settled = false;
