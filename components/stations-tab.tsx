@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { LINE_COLORS } from "@/lib/metro/lines";
 import { getAllStations } from "@/lib/metro/selectors";
@@ -29,6 +29,16 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
   const [lineFilter, setLineFilter] = useState<number | null>(null);
   const [branchIndex, setBranchIndex] = useState(0);
   const [timetableStation, setTimetableStation] = useState<MetroStation | null>(null);
+
+  // Backdrop click already closes the sheet; Escape covers keyboard users.
+  useEffect(() => {
+    if (!timetableStation) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setTimetableStation(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [timetableStation]);
 
   const lineOrder = useMemo(
     () => (lineFilter !== null ? orderLineStations(lineFilter) : null),
@@ -147,8 +157,14 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
       </ul>
 
       {timetableStation && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 md:items-center">
-          <div className="max-h-[85vh] w-full max-w-lg overflow-hidden">
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 md:items-center"
+          onClick={() => setTimetableStation(null)}
+        >
+          <div
+            className="max-h-[85vh] w-full max-w-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <StationTimesheet
               station={timetableStation}
               lang={lang}
