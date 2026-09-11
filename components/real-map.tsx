@@ -706,14 +706,18 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   }
 
   return (
-    <div className="relative h-full w-full">
+    // Isolated stacking context: Leaflet paints panes (z-200..700) and
+    // controls (z-800/1000) inside this z-0 context, so no tile, marker,
+    // popup, or attribution layer can ever cover app chrome (bottom nav
+    // z-50) no matter how panes transform while panning/zooming.
+    <div className="metto-map relative isolate z-0 h-full w-full">
       <div ref={containerRef} className="h-full w-full" aria-label="Tehran metro on real map" />
       {gpsError && (
-        <div className="absolute bottom-3 left-3 z-[1000] max-w-[70%] rounded-lg border border-border bg-background/95 px-3 py-1.5 text-xs text-destructive shadow-sm backdrop-blur">
+        <div className="absolute bottom-[calc(0.75rem+var(--metto-map-bottom-clearance,0px))] left-3 z-[1000] max-w-[70%] rounded-lg border border-border bg-background/95 px-3 py-1.5 text-xs text-destructive shadow-sm backdrop-blur">
           {gpsError}
         </div>
       )}
-      <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-1.5">
+      <div className="absolute bottom-[calc(0.75rem+var(--metto-map-bottom-clearance,0px))] right-3 z-[1000] flex flex-col gap-1.5">
         <MapBtn label="Zoom in" onClick={() => mapRef.current?.zoomIn()}>
           <Plus className="size-4" />
         </MapBtn>

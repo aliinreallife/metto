@@ -17,7 +17,7 @@
 // - NetworkFirst: /holidays.version.json update pointer (not precached)
 // - NetworkOnly: same-origin /api/* and version-pinned dataset downloads
 // - Cross-origin: NO blanket route — unmatched requests (Nominatim,
-//   Esri, timestamp.ir, fonts, fingerprint, …) are handled directly by the
+//   Esri, timestamp.ir, fonts, …) are handled directly by the
 //   browser, never cached. Sole exception: the narrow opportunistic CARTO
 //   raster-tile rule below (policy-bounded, see lib/map/carto-tiles.ts).
 // Only cacheable responses are ever stored (no errors, no redirects).

@@ -103,6 +103,22 @@ jobs:
             exit 1
           fi
           echo "Testing $BASE_URL"
+          echo "checked out: $(git rev-parse HEAD)"
+
+      - name: Probe Deployment Protection (status codes only)
+        # Diagnostic only, runs before the suite: proves whether the OIDC
+        # identity is accepted, in ~10 seconds instead of a 15-minute blind
+        # run. Prints STATUS CODES and public version metadata only — the
+        # token itself is never printed (masked at mint, never echoed).
+        # Read the two lines as: authed 200 + matching buildId = gate open,
+        # suite failures below are app/test issues; authed 302 = token
+        # rejected at the gate, suite failures below are access issues.
+        env:
+          VERCEL_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+        run: |
+          echo "deployment root with OIDC identity header -> HTTP $(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -H "x-vercel-trusted-oidc-idp-token: $VERCEL_TRUSTED_OIDC_TOKEN" "$BASE_URL/")"
+          echo "deployment root anonymous -> HTTP $(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BASE_URL/")"
+          echo "version.json with OIDC identity header -> $(curl -s --max-time 30 -H "x-vercel-trusted-oidc-idp-token: $VERCEL_TRUSTED_OIDC_TOKEN" "$BASE_URL/version.json")"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

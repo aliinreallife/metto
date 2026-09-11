@@ -110,8 +110,8 @@ export function StationTimesheet({
         </button>
       </div>
 
-      {/* Compact offline holiday summary (same dataset as routing). */}
-      <div className="border-b border-border px-4 py-2">
+      {/* Compact offline holiday summary (same dataset as routing). Collapsed by default. */}
+      <div className="border-b border-border px-4 py-1.5">
         <HolidayCard lang={lang} />
       </div>
 

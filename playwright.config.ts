@@ -27,6 +27,11 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL: process.env.BASE_URL ?? "http://127.0.0.1:3000",
+    // Failure forensics: a screenshot shows WHAT html arrived (SSO login
+    // vs error page vs app), a trace shows WHY (console + network). Kept
+    // only for failures; green runs store nothing.
+    screenshot: "only-on-failure",
+    trace: "retain-on-failure",
     ...(chromiumPath
       ? { launchOptions: { executablePath: chromiumPath } }
       : {}),

@@ -186,8 +186,10 @@ export function AppNav() {
       <OfflineStatus lang={lang} />
 
       {/* mobile bottom tab bar - fixed to viewport bottom; credits sit
-          directly on top with zero gap, main tab only */}
-      <div className="fixed bottom-0 inset-x-0 z-20 flex flex-col border-t border-border bg-card md:hidden">
+          directly on top with zero gap, main tab only. z-50 sits above the
+          isolated map stacking context (z-0), so Leaflet's internal
+          z-800/z-1000 layers can never cover it. */}
+      <div data-testid="mobile-tabbar" className="fixed bottom-0 inset-x-0 z-50 flex flex-col border-t border-border bg-card md:hidden">
         {isMainTab && (
         <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-0.5 px-4 py-1.5">
           <a

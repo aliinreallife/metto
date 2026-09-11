@@ -248,3 +248,22 @@
     }
   }
 }
+
+/* Map bottom clearance (mobile only): one shared offset — the fixed bottom
+   tab bar height (60px, matching the layout content reserve) plus the
+   PWA safe area — respected by Leaflet-native bottom controls AND the
+   custom zoom/locate buttons (via the same var). Desktop unchanged:
+   the tab bar is hidden there, so clearance stays 0. */
+.metto-map {
+  --metto-map-bottom-clearance: 0px;
+}
+@media (max-width: 767px) {
+  .metto-map {
+    --metto-map-bottom-clearance: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+  /* Leaflet-native bottom corner (attribution): ride above the tabs.
+     Attribution stays fully visible per CARTO/OSM terms. */
+  .metto-map .leaflet-bottom {
+    margin-bottom: var(--metto-map-bottom-clearance);
+  }
+}
