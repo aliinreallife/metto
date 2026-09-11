@@ -49,26 +49,28 @@ import {
 // Zod mirrors of the shared JSON input schemas. Descriptions are pulled from
 // tool-defs.ts; parity.test.ts asserts the mirrors never drift from the JSON
 // source of truth (property names, required sets, descriptions).
+// All four are .strict(): unknown properties are rejected, matching the
+// shared schemas' additionalProperties:false (Zod's default would strip).
 export const GET_ROUTE_ZOD_SCHEMA = z.object({
   from: z.string().describe(FROM_DESCRIPTION),
   to: z.string().describe(TO_DESCRIPTION),
   depart_at: z.string().optional().describe(DEPART_AT_DESCRIPTION),
-});
+}).strict();
 
 export const LIST_STATIONS_ZOD_SCHEMA = z.object({
   line: z.number().optional().describe(LINE_FILTER_DESCRIPTION),
   search: z.string().optional().describe(SEARCH_DESCRIPTION),
-});
+}).strict();
 
 export const GET_STATION_ZOD_SCHEMA = z.object({
   id: z.string().describe(STATION_ID_DESCRIPTION),
-});
+}).strict();
 
 export const FIND_NEARBY_ZOD_SCHEMA = z.object({
   lat: z.number().describe(LAT_DESCRIPTION),
   lng: z.number().describe(LNG_DESCRIPTION),
   limit: z.number().optional().describe(LIMIT_DESCRIPTION),
-});
+}).strict();
 
 export const MCP_ZOD_INPUT_SCHEMAS = {
   [TOOL_GET_ROUTE]: GET_ROUTE_ZOD_SCHEMA,

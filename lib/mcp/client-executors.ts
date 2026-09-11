@@ -26,6 +26,7 @@ import {
   TOOL_FIND_NEARBY,
   TOOL_GET_ROUTE,
   TOOL_GET_STATION,
+  TOOL_INPUT_SCHEMAS,
   TOOL_LIST_STATIONS,
   buildCanonicalRouteUrl,
   formatNearbyText,
@@ -262,8 +263,19 @@ export async function executeWebMcpTool(
   try {
     const record = asRecord(args);
     if (!record) return errorResult("Invalid tool arguments (expected an object).");
-    // Unknown extra properties (e.g. a caller-invented day_type) are ignored:
+    // Unknown properties are rejected, matching the shared schemas'
+    // additionalProperties:false (and the strict zod mirrors server-side):
     // the contract has no such inputs and the timetable is derived internally.
+    const schema = TOOL_INPUT_SCHEMAS[name];
+    if (!schema) return errorResult(`Unknown tool: '${name}'.`);
+    const unknown = Object.keys(record).filter(
+      (key) => !(key in schema.properties),
+    );
+    if (unknown.length > 0) {
+      return errorResult(
+        `Unknown argument(s) for tool '${name}': ${unknown.join(", ")}.`,
+      );
+    }
     switch (name) {
       case TOOL_GET_ROUTE:
         return executeGetRoute(record, opts);
