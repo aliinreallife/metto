@@ -105,12 +105,9 @@ test.describe("route search keyboard flow", () => {
     await listbox.getByRole("option").first().click();
     await expect(originTrigger).not.toBeEmpty();
 
-    // Clear button is a real 24px button with an accessible name.
-    const clear = page.getByRole("button", { name: "پاک کردن" }).first();
-    await expect(clear).toBeVisible();
-    const box = await clear.boundingBox();
-    expect(box?.width).toBeGreaterThanOrEqual(24);
-    expect(box?.height).toBeGreaterThanOrEqual(24);
+    // No X/clear button in the selectors by design — selection changes
+    // by picking another station.
+    await expect(page.getByRole("button", { name: "پاک کردن" })).toHaveCount(0);
   });
 
   test("route warnings and departures use live regions", async ({ page }) => {

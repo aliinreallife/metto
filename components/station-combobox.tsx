@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useId, useMemo, useRef, useState } from "react"
-import { Building2, ChevronDown, Loader2, MapPin, X } from "lucide-react"
+import { Building2, ChevronDown, Loader2, MapPin } from "lucide-react"
 import { STATION_MAP, searchStations } from "@/lib/route"
 import { LINE_COLORS } from "@/lib/metro/lines"
 import { getStationLines } from "@/lib/metro/selectors"
@@ -137,11 +137,10 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
 
   return (
     <div ref={rootRef} className="relative">
-      {/* Outer container is a plain div so the clear action can be a real
-          sibling <button> — a button-in-button is invalid HTML and breaks
-          keyboard/screen-reader interaction. Padding lives on the trigger
-          itself so the entire visible selector (dot + label + chevron)
-          opens the dropdown. */}
+      {/* Plain wrapper around the trigger so the dropdown can anchor to it.
+          No clear (X) button by design — selection changes by picking
+          another station. Padding lives on the trigger itself so the
+          entire visible selector (dot + label + chevron) opens the dropdown. */}
       <div className="flex w-full items-center gap-2 rounded-lg border border-input bg-background text-sm transition-colors md:text-base">
         <button
           ref={triggerRef}
@@ -172,20 +171,6 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
           </span>
           <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
         </button>
-        {value ? (
-          <button
-            type="button"
-            aria-label={t.clear}
-            onClick={(e) => {
-              e.stopPropagation()
-              onChange(null)
-              triggerRef.current?.focus()
-            }}
-            className="me-3 flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:me-4"
-          >
-            <X aria-hidden="true" className="size-4" />
-          </button>
-        ) : null}
       </div>
       {/* Polite live region: announces result counts / loading / empty states. */}
       <p role="status" aria-live="polite" id={statusId} className="sr-only">
