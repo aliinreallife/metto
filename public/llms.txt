@@ -11,7 +11,7 @@ Metto (متو) is a free, fast, and offline-capable web app for navigating the T
 
 ## API Endpoints
 
-- [Route Planner](https://metto.ir/api/route?from=Tajrish&to=Darvazeh Sharq) - Plan a route between two stations by name or GPS coordinates
+- [Route Planner](https://metto.ir/api/route?from=Tajrish&to=Darvazeh Sharq) - Plan a route between two stations by name or GPS coordinates. Time-aware: pass `departAt` as ISO-8601 with an explicit timezone offset or Z (e.g. `?from=tajrish&to=tehran-sadeghiyeh&departAt=2026-09-07T14:00:00+03:30`); Metto automatically derives the Tehran weekday/Thursday/Friday-or-official-holiday timetable from the departure instant. Omit `departAt` to route from now.
 - [Station List](https://metto.ir/api/stations) - List all stations, filterable by line or search query
 - [Station Details](https://metto.ir/api/station/Tajrish) - Get full details for a single station
 - [Nearby Stations](https://metto.ir/api/nearby?lat=35.804&lng=51.433) - Find nearest stations to GPS coordinates
@@ -21,6 +21,11 @@ Metto (متو) is a free, fast, and offline-capable web app for navigating the T
 An MCP server is available for AI assistants (Claude, etc).
 
 Tools: get_route, list_stations, get_station, find_nearby
+
+`get_route(from, to, depart_at?)` accepts an optional ISO-8601 departure
+instant with explicit offset/Z (same semantics as REST `departAt`); Friday and
+official holidays automatically use the Friday timetable. Canonical remote
+endpoint: `POST https://metto.ir/mcp`.
 
 ## Documentation
 
