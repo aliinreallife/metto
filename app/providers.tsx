@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { Lang } from "@/lib/i18n";
 import { loadScheduleData } from "@/lib/schedule-utils";
+import { WebMcpRegistrar } from "@/components/web-mcp";
 
 type PlacePin = {
   lat: number;
@@ -114,6 +115,7 @@ export function MetroProvider({ children }: { children: ReactNode }) {
 
   return (
     <MetroContext.Provider value={{ lang, setLang, mapMode, setMapMode, originId, setOriginId, destId, setDestId, originPlace, setOriginPlace, destPlace, setDestPlace }}>
+      <WebMcpRegistrar />
       {children}
     </MetroContext.Provider>
   );
