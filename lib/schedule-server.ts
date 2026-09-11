@@ -31,6 +31,11 @@ import {
   setServerScheduleData,
 } from "./schedule-utils";
 import { tehranParts } from "./tehran-time";
+import { parseDepartAtParam } from "./mcp/tool-defs";
+
+// Re-exported for REST/MCP callers (single implementation lives in
+// lib/mcp/tool-defs.ts so WebMCP can share it without node: imports).
+export { parseDepartAtParam };
 import type { LegTiming } from "./route";
 import { findRoute, type RouteResult } from "./route";
 
@@ -121,22 +126,6 @@ export async function getRequestHolidayResolver(
     );
   }
   return createIsHolidayDate(known);
-}
-
-// ISO-8601 datetime with an EXPLICIT timezone (Z or ±hh:mm / ±hhmm).
-// Naive timestamps (no offset) are ambiguous and rejected.
-const ISO_WITH_TZ =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-]\d{2}:?\d{2})$/;
-
-/**
- * Parse a depart_at/departAt parameter. Returns null for anything that is
- * not ISO-8601 with an explicit timezone offset or Z (e.g. "2026-09-07T14:00:00"
- * is rejected). Callers map null to isError (MCP) or HTTP 400 (REST).
- */
-export function parseDepartAtParam(value: string): Date | null {
-  if (!ISO_WITH_TZ.test(value.trim())) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 export type TimingSource = "timetable" | "mixed" | "estimated";
