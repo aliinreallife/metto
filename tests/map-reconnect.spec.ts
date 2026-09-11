@@ -261,7 +261,9 @@ test.describe("Map reconnect recovery", () => {
 
     // The retry proof: NEW CARTO assignments appear with no pan/zoom/nav —
     // only the product's redraw can have issued them — and they settle
-    // successfully, including the exact previously-failed tile sources.
+    // successfully. The overlap check slices off the pre-reconnect attempts
+    // so it inspects only post-reconnect retries: at least one retried
+    // assignment must match an exact previously-failed tile source.
     await expect
       .poll(async () => (await faultStats()).attempted.length, {
         timeout: 20_000,
@@ -271,8 +273,9 @@ test.describe("Map reconnect recovery", () => {
       .poll(async () => (await faultStats()).loaded, { timeout: 20_000 })
       .toBeGreaterThan(before.loaded);
     const after = await faultStats();
+    const retried = after.attempted.slice(before.attempted.length);
     expect(
-      after.attempted.filter((u) => failedBefore.includes(u)).length,
+      retried.filter((u) => failedBefore.includes(u)).length,
     ).toBeGreaterThan(0);
 
     // Failed state clears from the DOM: every visible tile settled loaded.
