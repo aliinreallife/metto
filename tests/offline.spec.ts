@@ -199,17 +199,23 @@ test.describe("Metto offline PWA", () => {
       page.getByRole("button", { name: new RegExp(ORIGIN_FA) }).first(),
     ).toBeVisible({ timeout: 15_000 });
 
-    // 21-23. Holiday info renders offline from the local dataset via the
-    // existing timetable UI; routing made zero upstream holiday calls.
+    // 21-23. Timetable renders offline from the local dataset with the
+    // Tehran-date day type auto-selected; clicking outside the sheet
+    // closes it; routing made zero upstream holiday calls.
     await page.goto("/stations", { waitUntil: "domcontentloaded" });
     await page
       .locator('input[placeholder="جستجوی ایستگاه…"]:visible')
       .fill(ORIGIN_FA);
     await page.getByRole("button", { name: /برنامه/ }).first().click();
-    await expect(page.getByText("تعطیلات رسمی").first()).toBeVisible({
+    await expect(page.getByText("برنامه حرکت").first()).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText(/آخرین بروزرسانی/).first()).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /شنبه تا چهارشنبه|پنجشنبه|جمعه/ }).first(),
+    ).toBeVisible();
+    // Clicking outside the sheet closes it (not only the X button).
+    await page.mouse.click(10, 10);
+    await expect(page.getByText("برنامه حرکت")).toBeHidden({ timeout: 5_000 });
     expect(upstreamHits.count).toBe(0);
 
     // 24-25. Restore network; app recovers (ready again, route works).

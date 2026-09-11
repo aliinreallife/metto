@@ -13,7 +13,6 @@ import {
   type DayType,
 } from "@/lib/schedule-utils";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
-import { HolidayCard } from "@/components/holiday-card";
 import { useScheduleData } from "@/lib/use-schedule-data";
 import { cn } from "@/lib/utils";
 
@@ -110,11 +109,7 @@ export function StationTimesheet({
         </button>
       </div>
 
-      {/* Compact offline holiday summary (same dataset as routing). */}
-      <div className="border-b border-border px-4 py-2">
-        <HolidayCard lang={lang} />
-      </div>
-
+      {/* Day type auto-selected from the Tehran date (holiday-aware). */}
       {/* Day type selector */}
       <div className="flex gap-1 border-b border-border px-4 py-2">
         {(Object.keys(dayLabels) as DayType[]).map((dt) => (
