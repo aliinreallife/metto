@@ -59,7 +59,7 @@ respective licenses and terms, including but not limited to:
   policy applies).
 * npm dependencies per their own licenses (mostly MIT/Apache-2.0/BSD;
   `@vercel/analytics` is MPL-2.0). Proprietary services used at
-  runtime (e.g. Fingerprint, Upstash, timestamp.ir, CARTO, Esri) are
+  runtime (e.g. Upstash, timestamp.ir, CARTO, Esri) are
   governed by their own terms.
 
 ## Deployments of modified versions
