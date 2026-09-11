@@ -166,7 +166,7 @@ export function AppNav() {
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <InstallButton label={t.install} />
+          <InstallButton label={t.install} iosHintLabel={t.installIosHint} iosHintSteps={t.installIosSteps} />
           <button
             type="button"
             onClick={toggleLang}
