@@ -154,7 +154,11 @@ test.describe("PWA recovery", () => {
     await expect(page.getByTestId("chunk-recovery")).toBeVisible();
   });
 
-  test("4. deploy: next safe session uses the new worker, stale docs purged", async ({
+  // LOCAL-ONLY (@local-only): simulates a deploy by appending bytes to the
+  // SERVED public/sw.js on local disk, then expects reg.update() to discover
+  // a waiting worker. Impossible against an immutable remote (Vercel Preview)
+  // deployment, where local disk writes never reach the server.
+  test("4. deploy: next safe session uses the new worker, stale docs purged @local-only", async ({
     context,
   }) => {
     await blockThirdParty(context);
