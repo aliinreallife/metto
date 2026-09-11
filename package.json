@@ -2,15 +2,22 @@
   "name": "metto",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@12.3.4",
   "license": "AGPL-3.0-only",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build && serwist build",
     "build:next": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:e2e:offline": "playwright test tests/offline.spec.ts tests/map-tiles.spec.ts tests/map-reconnect.spec.ts tests/offline-nav.spec.ts tests/connectivity.spec.ts",
+    "test:e2e:preview": "playwright test --grep-invert \"@local-only\"",
     "holidays:sync": "node scripts/sync-holidays.mjs",
     "generate:stations": "node scripts/generate-stations.ts"
   },
@@ -45,6 +52,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.3.4",
     "postcss": "^8.5",
     "serwist": "9.5.12",
     "shadcn": "^4.13.0",

@@ -57,7 +57,9 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
     );
   }
 
-  function useGps() {
+  // Plain event handler (calls no hooks) — intentionally NOT named `use*`,
+  // so the rules-of-hooks lint rule does not mistake it for a hook.
+  function requestGps() {
     if (!("geolocation" in navigator)) {
       setLoc({ kind: "error", message: t.gpsUnavailable });
       return;
@@ -116,7 +118,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
 
           <button
             type="button"
-            onClick={useGps}
+            onClick={requestGps}
             disabled={loc.kind === "locating"}
             className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
           >
@@ -162,7 +164,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
                 type="button"
                 onClick={() => {
                   setSelectedAmenities(["wc"]);
-                  useGps();
+                  requestGps();
                 }}
                 className="cursor-pointer font-bold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
               >
