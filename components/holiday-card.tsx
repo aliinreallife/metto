@@ -56,49 +56,50 @@ export function HolidayCard({ lang }: { lang: Lang }) {
   return (
     <section
       aria-label={t.holidaysTitle}
-      className="flex flex-col gap-1.5 rounded-xl border border-border bg-card px-3 py-2.5 text-xs md:text-sm"
+      className="flex flex-col gap-1 rounded-xl border border-border bg-card px-3 py-2 text-xs md:text-sm"
     >
-      <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls="holiday-details"
+        className="flex w-full items-center gap-2 text-start"
+      >
         <CalendarDays className="size-4 shrink-0 text-primary" />
-        <h3 className="font-bold">{t.holidaysTitle}</h3>
+        <span className="font-bold">{t.holidaysTitle}</span>
         <span className="ms-auto rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
           {t.todaySchedule}: {scheduleLabel}
         </span>
-      </div>
+        <ChevronDown
+          className={cn(
+            "size-3.5 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
 
-      <p className="text-[11px] text-muted-foreground md:text-xs">
-        {t.holidayLastUpdate}:{" "}
-        <span className="tnum font-medium text-foreground">
-          {persianDigits(lastUpdateJalali, lang)}
-        </span>
-      </p>
+      {open && (
+        <div id="holiday-details" className="flex flex-col gap-1.5 pt-1">
+          <p className="text-[11px] text-muted-foreground md:text-xs">
+            {t.holidayLastUpdate}:{" "}
+            <span className="tnum font-medium text-foreground">
+              {persianDigits(lastUpdateJalali, lang)}
+            </span>
+          </p>
 
-      {nextHoliday ? (
-        <p className="truncate text-[11px] md:text-xs">
-          <span className="text-muted-foreground">
-            {isFa ? "نزدیک‌ترین: " : "Next: "}
-          </span>
-          <span className="tnum font-semibold">
-            {fmtJalali(nextHoliday.jalaliDate)}
-          </span>{" "}
-          — {isFa ? nextHoliday.faName : nextHoliday.enName}
-        </p>
-      ) : null}
+          {nextHoliday ? (
+            <p className="truncate text-[11px] md:text-xs">
+              <span className="text-muted-foreground">
+                {isFa ? "نزدیک‌ترین: " : "Next: "}
+              </span>
+              <span className="tnum font-semibold">
+                {fmtJalali(nextHoliday.jalaliDate)}
+              </span>{" "}
+              — {isFa ? nextHoliday.faName : nextHoliday.enName}
+            </p>
+          ) : null}
 
-      {upcoming.length > 1 && (
-        <>
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            aria-expanded={open}
-            className="flex items-center gap-1 self-start rounded-md px-1 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/5"
-          >
-            <ChevronDown
-              className={cn("size-3.5 transition-transform", open && "rotate-180")}
-            />
-            {t.upcomingHolidays} ({persianDigits(upcoming.length, lang)})
-          </button>
-          {open && (
+          {upcoming.length > 1 && (
             <ul className="flex flex-col gap-1 border-t border-border pt-1.5">
               {upcoming.map((h) => (
                 <li
@@ -115,12 +116,12 @@ export function HolidayCard({ lang }: { lang: Lang }) {
               ))}
             </ul>
           )}
-        </>
-      )}
 
-      <p className="text-[10px] leading-relaxed text-muted-foreground md:text-[11px]">
-        {t.holidayCoverageNote}
-      </p>
+          <p className="text-[10px] leading-relaxed text-muted-foreground md:text-[11px]">
+            {t.holidayCoverageNote}
+          </p>
+        </div>
+      )}
     </section>
   );
 }

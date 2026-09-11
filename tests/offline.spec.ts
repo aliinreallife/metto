@@ -204,6 +204,9 @@ test.describe("Metto offline PWA", () => {
     await expect(page.getByText("تعطیلات رسمی").first()).toBeVisible({
       timeout: 15_000,
     });
+    // HolidayCard is collapsed by default (timetable-first); expand to verify
+    // offline details render from the local dataset.
+    await page.getByRole("button", { name: /تعطیلات رسمی/ }).first().click();
     await expect(page.getByText(/آخرین بروزرسانی/).first()).toBeVisible();
     expect(upstreamHits.count).toBe(0);
 
