@@ -1,0 +1,135 @@
+# Offline Playwright suite against a real Vercel deployment (Chromium, serial).
+#
+# Triggered natively by Vercel's GitHub integration: on every successful
+# deployment Vercel emits a `repository_dispatch` event
+# (`vercel.deployment.success`) to this repo — no dashboard webhook, PAT,
+# bridge, or middleware to configure. See "How can I run end-to-end tests
+# after my Vercel Preview Deployment?"
+# (https://vercel.com/kb/guide/how-can-i-run-end-to-end-tests-after-my-vercel-preview-deployment).
+#
+# Payload contract (per that guide — do not rename without reason):
+#   github.event.client_payload.url          -> deployment URL under test (BASE_URL)
+#   github.event.client_payload.git.sha      -> exact deployed commit (checkout ref)
+#   github.event.client_payload.environment  -> 'preview' | 'production'
+#
+# Environment gating: Preview deployments only, never production. The generic
+# Vercel webhook `target` field is intentionally NOT used here — the
+# repository_dispatch schema carries `environment` instead.
+# No project-name gate: single-project repo, and the `project` payload shape
+# is not part of the documented contract above.
+#
+# Remote suite: `test:e2e:preview` runs every spec EXCEPT `@local-only`
+# (the waiting-worker test mutates the served sw.js on local disk, which is
+# impossible against an immutable remote deployment). The full local suite
+# stays available as `test:e2e:offline`.
+#
+# Deployment Protection: Preview deployments sit behind Vercel Authentication,
+# so the suite authenticates as a Vercel Trusted Source with a short-lived
+# GitHub OIDC token (no long-lived secret anywhere — see the mint step below
+# and https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/trusted-sources).
+# Requires one manual dashboard step first: project Settings > Deployment
+# Protection > Trusted Sources > External Services > Add > GitHub Actions
+# (account aliinreallife, repository metto, applies to Preview environments).
+# Until that rule exists, Vercel ignores the token and protected deployments
+# fail at navigation with a clear 302 to SSO.
+#
+# NOTE (bootstrap): repository_dispatch only fires for workflow files that
+# already exist on the default branch, so the first real Vercel-triggered
+# run happens after this file merges. Until then, use workflow_dispatch.
+name: E2E (offline)
+
+on:
+  repository_dispatch:
+    types:
+      - vercel.deployment.success
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Deployment URL to test (e.g. a Vercel Preview URL)"
+        required: true
+        type: string
+
+jobs:
+  e2e:
+    name: playwright offline suite (vercel preview)
+    runs-on: ubuntu-latest
+    # OIDC minting needs an explicitly granted token permission; checkout
+    # needs repo read. (Least privilege — no other scopes.)
+    permissions:
+      contents: read
+      id-token: write
+    # Preview deployments only — never production.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.client_payload.environment == 'preview'
+    env:
+      BASE_URL: ${{ inputs.base_url || github.event.client_payload.url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Exact deployed commit for Vercel events; the dispatched branch
+          # head for manual runs (an empty ref input keeps default behavior).
+          ref: ${{ github.event.client_payload.git.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Mint OIDC token for Vercel Trusted Sources
+        id: oidc
+        uses: actions/github-script@v7
+        with:
+          # Default audience (https://github.com/<account>) matches the
+          # dashboard rule; the token is masked and never printed.
+          script: |
+            const token = await core.getIDToken();
+            core.setSecret(token);
+            core.setOutput('token', token);
+
+      - name: Validate dispatch payload
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "::error::BASE_URL is empty. repository_dispatch needs client_payload.url; manual runs need the base_url input."
+            exit 1
+          fi
+          if [ "${{ github.event_name }}" = "repository_dispatch" ] && [ -z "${{ github.event.client_payload.git.sha }}" ]; then
+            echo "::error::client_payload.git.sha is empty. Cannot pin the checkout to the deployed commit."
+            exit 1
+          fi
+          echo "Testing $BASE_URL"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium (with OS deps)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Preview E2E suite
+        # Serial by design (playwright.config.ts: workers 1 — specs share
+        # server-side SW expectations and assert timing-sensitive cache
+        # contents). No local build/server/wait: BASE_URL above is the
+        # already-live Vercel deployment under test. Runs the
+        # remote-compatible subset (excludes @local-only disk-mutation tests).
+        env:
+          # Short-lived GitHub OIDC identity for this run only (masked at
+          # mint; never printed, never persisted). Playwright sends it as
+          # x-vercel-trusted-oidc-idp-token when present; locally unset.
+          VERCEL_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+        run: pnpm test:e2e:preview
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-artifacts
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            playwright-report/
+            test-results/

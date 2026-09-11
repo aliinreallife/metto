@@ -278,7 +278,13 @@ test.describe("Metto offline PWA", () => {
     await context.setOffline(false);
   });
 
-  test("waiting worker stays silent, never reloads, activates naturally", async ({
+  // LOCAL-ONLY (@local-only): simulates a new deployment by appending bytes
+  // to the SERVED public/sw.js on local disk, then expects reg.update() to
+  // discover a waiting worker. Impossible against an immutable remote
+  // (Vercel Preview) deployment, where local disk writes never reach the
+  // server — so the remote preview suite excludes this tag (see
+  // `test:e2e:preview`). Never delete: it guards the silent-update contract.
+  test("waiting worker stays silent, never reloads, activates naturally @local-only", async ({
     context,
   }) => {
     const page = await context.newPage();
