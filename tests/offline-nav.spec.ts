@@ -230,19 +230,21 @@ test.describe("Offline bottom navigation", () => {
 
     // Create route context WITHOUT navigating: combobox selection updates
     // tab hrefs client-side to arbitrary (non-hardcoded) values.
+    // Trigger names come from the associated <label>s (مبدأ/مقصد), not the
+    // placeholder content; dropdown items are role=option since #44.
     await page
-      .getByRole("button", { name: /ایستگاه یا نام مکان/ })
+      .getByRole("button", { name: "مبدأ", exact: true })
       .first()
       .click();
     await page.getByRole("combobox").first().fill("تجریش");
-    await page.getByRole("button", { name: /تجریش/ }).first().click();
+    await page.getByRole("option", { name: /تجریش/ }).first().click();
     await expect(page).toHaveURL(/from=tajrish/, { timeout: 15_000 });
     await page
-      .getByRole("button", { name: /ایستگاه یا نام مکان/ })
+      .getByRole("button", { name: "مقصد", exact: true })
       .first()
       .click();
     await page.getByRole("combobox").first().fill("تهران (صادقیه)");
-    await page.getByRole("button", { name: /تهران/ }).first().click();
+    await page.getByRole("option", { name: /تهران/ }).first().click();
     const mapHref =
       (await tabLink(page, "نقشه").getAttribute("href")) ?? "";
     expect(mapHref).toContain("from=tajrish");

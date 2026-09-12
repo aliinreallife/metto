@@ -104,14 +104,17 @@ test.describe("Metto offline PWA", () => {
     ).toHaveCount(0);
 
     // 5-7. Interactive station select + route calc (origin via combobox).
+    // Trigger name comes from the associated <label> (مبدأ), not the
+    // placeholder content; dropdown items are role=option since #44.
     const originToggle = page.getByRole("button", {
-      name: /ایستگاه یا نام مکان/,
+      name: "مبدأ",
+      exact: true,
     });
     await originToggle.first().click();
     const searchInput = page.getByRole("combobox").first();
     await searchInput.fill(ORIGIN_FA);
     await page
-      .getByRole("button", { name: new RegExp(ORIGIN_FA) })
+      .getByRole("option", { name: new RegExp(ORIGIN_FA) })
       .first()
       .click();
     await expect(page).toHaveURL(new RegExp(`from=${ORIGIN_ID}`), {
@@ -186,7 +189,7 @@ test.describe("Metto offline PWA", () => {
     // 18-20. Landmark search explains the Internet requirement offline.
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await page
-      .getByRole("button", { name: /ایستگاه یا نام مکان/ })
+      .getByRole("button", { name: "مبدأ", exact: true })
       .first()
       .click();
     await page.getByRole("combobox").first().fill("Iran Mall");
@@ -196,7 +199,7 @@ test.describe("Metto offline PWA", () => {
     // Station search still works alongside the offline place note.
     await page.getByRole("combobox").first().fill(ORIGIN_FA);
     await expect(
-      page.getByRole("button", { name: new RegExp(ORIGIN_FA) }).first(),
+      page.getByRole("option", { name: new RegExp(ORIGIN_FA) }).first(),
     ).toBeVisible({ timeout: 15_000 });
 
     // 21-23. Timetable renders offline from the local dataset with the
