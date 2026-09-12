@@ -134,7 +134,9 @@ same rule as `/sw.js`).
   validation first, `origin/main` ancestry check
   (`merge-base --is-ancestor`), semver-derived
   `versionCode = major*1_000_000 + minor*1_000 + patch`
-  (`minor,patch <= 999`; e.g. v0.1.0→1000, v1.12.34→1012034) injected via
+  (`minor,patch <= 999`; Android requires a positive versionCode and Google
+  Play's maximum is 2_100_000_000, so 1 <= versionCode <= 2_100_000_000;
+  e.g. v0.1.0→1000, v1.12.34→1012034) injected via
   `-PmettoVersionCode/-PmettoVersionName`, signed
   `bundleRelease + assembleRelease`, `SHA256SUMS.txt`, GitHub Release with
   `.aab` + `.apk` + checksums. No Play auto-publish; upload the AAB to

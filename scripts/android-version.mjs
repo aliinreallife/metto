@@ -4,12 +4,16 @@
 //   node scripts/android-version.mjs v0.1.0
 //   -> versionName=0.1.0 versionCode=1000
 //
-// Rules (plan correction #2):
+// Rules:
 // - Tag must match ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ — nothing else.
 // - versionCode = major * 1_000_000 + minor * 1_000 + patch
-// - minor <= 999, patch <= 999 (major unbounded in practice).
+// - minor <= 999, patch <= 999.
+// - Android requires versionCode to be positive and Google Play's maximum
+//   versionCode is 2_100_000_000, so 1 <= versionCode <= 2_100_000_000.
 // - Emits KEY=VALUE lines for easy `eval`/GITHUB_OUTPUT consumption.
 const TAG_RE = /^v([0-9]+)\.([0-9]+)\.([0-9]+)$/;
+// Google Play maximum versionCode.
+const PLAY_MAX_VERSION_CODE = 2_100_000_000;
 
 export function androidVersionFromTag(tag) {
   const m = TAG_RE.exec(String(tag).trim());
@@ -24,8 +28,10 @@ export function androidVersionFromTag(tag) {
   if (patch > 999) throw new Error(`patch must be <= 999 (got ${patch})`);
   const versionName = `${major}.${minor}.${patch}`;
   const versionCode = major * 1_000_000 + minor * 1_000 + patch;
-  if (!Number.isSafeInteger(versionCode) || versionCode <= 0 || versionCode > 2100000000) {
-    throw new Error(`derived versionCode out of range: ${versionCode}`);
+  if (!Number.isSafeInteger(versionCode) || versionCode < 1 || versionCode > PLAY_MAX_VERSION_CODE) {
+    throw new Error(
+      `derived versionCode must satisfy 1 <= versionCode <= ${PLAY_MAX_VERSION_CODE} (got ${versionCode})`,
+    );
   }
   return { versionName, versionCode };
 }

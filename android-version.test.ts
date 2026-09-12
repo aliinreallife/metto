@@ -29,12 +29,16 @@ function parse(out: string): Record<string, string> {
 
 describe("android-version.mjs (tag -> versionName/versionCode)", () => {
   it.each([
+    ["v0.0.1", "0.0.1", "1"],
     ["v0.1.0", "0.1.0", "1000"],
     ["v0.1.1", "0.1.1", "1001"],
     ["v0.2.0", "0.2.0", "2000"],
     ["v1.0.0", "1.0.0", "1000000"],
     ["v1.12.34", "1.12.34", "1012034"],
     ["v12.34.56", "12.34.56", "12034056"],
+    ["v1.999.999", "1.999.999", "1999999"],
+    ["v2099.999.999", "2099.999.999", "2099999999"],
+    ["v2100.0.0", "2100.0.0", "2100000000"],
   ])("%s -> %s / %s", (tag, name, code) => {
     const r = versionOf(tag);
     expect(r.status).toBe(0);
@@ -43,10 +47,18 @@ describe("android-version.mjs (tag -> versionName/versionCode)", () => {
     expect(kv.versionCode).toBe(code);
   });
 
-  it.each([["v1"], ["v1.0"], ["1.0.0"], ["v1.0.0-beta"], ["v1.0.0foo"], ["v1.1000.0"], ["v1.0.1000"], ["latest"]])(
-    "rejects %s",
-    (tag) => {
-      expect(versionOf(tag).status).not.toBe(0);
-    },
-  );
+  it.each([
+    ["v0.0.0"],
+    ["v1"],
+    ["v1.0"],
+    ["1.0.0"],
+    ["v1.0.0-beta"],
+    ["v1.0.0foo"],
+    ["v1.1000.0"],
+    ["v1.0.1000"],
+    ["v2100.0.1"],
+    ["latest"],
+  ])("rejects %s", (tag) => {
+    expect(versionOf(tag).status).not.toBe(0);
+  });
 });
