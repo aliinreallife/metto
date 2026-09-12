@@ -54,7 +54,14 @@ Note: the CLI's first-run JDK/SDK prompts are interactive; generation
 itself needs neither. The project in this PR was generated
 programmatically with `@bubblewrap/core@1.25.0` (same code, no prompts).
 
-## Signing (one upload key, GitHub-hosted secrets only)
+## Signing (one release key, GitHub-hosted secrets only)
+
+Metto has a single long-term Android release signing key
+(`metto-release.jks`, alias `metto-release`, RSA-4096). It is Metto's
+signing identity for Bazaar/Myket/direct APK releases (and possibly
+F-Droid later). No Google-Play-specific setup exists yet — if Play
+publishing happens later, a separate decision will cover whether this key
+is imported into Play signing or used only as an upload key.
 
 Secrets live in the protected **`android-release`** GitHub Environment and
 are visible only to the release workflow (never to PR builds):
@@ -72,54 +79,57 @@ Gradle reads them exclusively from the environment
 (unsigned). Passwords are never printed, never committed, and the keystore
 is never uploaded as an artifact (ephemeral runner discards it).
 
-Create the upload key **once** (private machine, no shell-history password):
+Create the release key **once** (private machine, no shell-history password):
 
 ```bash
 # 1. Generate (pick strong passwords; read -s keeps them out of history)
 read -s -p "keystore password: " KS_PASS; echo
 read -s -p "key password: " KEY_PASS; echo
-keytool -genkeypair -v -keystore metto-upload.jks -alias metto-upload \
-  -keyalg RSA -keysize 4096 -validity 9125 \
+keytool -genkeypair -v -keystore metto-release.jks -alias metto-release \
+  -storetype JKS -keyalg RSA -keysize 4096 -validity 10950 \
   -storepass "$KS_PASS" -keypass "$KEY_PASS" \
-  -dname "CN=Metto, OU=Metto, O=Metto, C=IR"
+  -dname "CN=Ali Rashidi, OU=Metto, O=aliinreallife"
+# validity 10950 days = 30 years (long-term signing identity)
 unset KS_PASS KEY_PASS
 
-# 2. Back up metto-upload.jks OFFLINE and redundantly (2+ media +
-#    password manager). Losing it means a new package ID on Play.
+# 2. Back up metto-release.jks OFFLINE and redundantly (2+ media +
+#    password manager). Losing it means existing installs can never be
+#    updated in place — a new signing identity would be required.
 
 # 3. Fingerprint (public — this is what goes into assetlinks.json)
-keytool -list -v -keystore metto-upload.jks -alias metto-upload | grep SHA256
+keytool -list -v -keystore metto-release.jks -alias metto-release | grep SHA256
 
 # 4. Stage for GitHub (run from the key directory)
-base64 -w0 metto-upload.jks > metto-upload.b64
-gh secret set ANDROID_KEYSTORE_BASE64 --env android-release < metto-upload.b64
+base64 -w0 metto-release.jks > metto-release.b64
+gh secret set ANDROID_KEYSTORE_BASE64 --env android-release < metto-release.b64
 read -s -p "keystore password: " P; gh secret set ANDROID_KEYSTORE_PASSWORD --env android-release <<<"$P"; unset P
-gh secret set ANDROID_KEY_ALIAS --env android-release <<<"metto-upload"
+gh secret set ANDROID_KEY_ALIAS --env android-release <<<"metto-release"
 read -s -p "key password: " P; gh secret set ANDROID_KEY_PASSWORD --env android-release <<<"$P"; unset P
-shred -u metto-upload.b64  # or rm -P on macOS
+shred -u metto-release.b64  # or rm -P on macOS
 ```
 
-The signed APK from the release workflow uses this upload certificate, so
+The signed APK from the release workflow uses this release certificate, so
 its fingerprint belongs in Digital Asset Links and direct-installed APKs
 verify as a TWA.
 
-## Digital Asset Links — status: PENDING (no fake file committed)
+## Digital Asset Links — live with the release signing fingerprint
 
-`https://metto.ir/.well-known/assetlinks.json` currently 404s by design.
-No placeholder fingerprints are committed. After the upload key exists:
+`https://metto.ir/.well-known/assetlinks.json` serves the `ir.metto.app`
+release certificate fingerprint (source: `public/.well-known/assetlinks.json`).
+No placeholder fingerprints are committed. It was generated with:
 
 ```bash
 node scripts/generate-assetlinks.mjs \
-  --fingerprint '<UPLOAD-SHA256>' \
+  --fingerprint '<RELEASE-SHA256>' \
   --output public/.well-known/assetlinks.json
 node scripts/validate-assetlinks.mjs   # strict once the file exists
 curl -s https://metto.ir/.well-known/assetlinks.json | head -c 400
 ```
 
-After the first Play upload with Play App Signing enabled, append the Play
-signing certificate fingerprint alongside the upload fingerprint (re-run
-the generator with both `--fingerprint` flags) so store-installed and
-direct-installed builds both verify. `vercel.json` already stages
+If Google Play publishing is added later with Play App Signing, append the
+Play signing certificate fingerprint alongside the release fingerprint
+(re-run the generator with both `--fingerprint` flags) so store-installed
+and direct-installed builds both verify. `vercel.json` already stages
 `Content-Type: application/json` + short cache for this path, and the URL
 must stay a direct 200 (no redirect, no Deployment Protection gate —
 same rule as `/sw.js`).
@@ -139,8 +149,9 @@ same rule as `/sw.js`).
   e.g. v0.1.0→1000, v1.12.34→1012034) injected via
   `-PmettoVersionCode/-PmettoVersionName`, signed
   `bundleRelease + assembleRelease`, `SHA256SUMS.txt`, GitHub Release with
-  `.aab` + `.apk` + checksums. No Play auto-publish; upload the AAB to
-  Play Internal Testing manually.
+  `.aab` + `.apk` + checksums. No store auto-publish; the `.apk` is for
+  direct/GitHub distribution and Bazaar/Myket submission, the `.aab` is
+  kept for future store needs.
 
 ## First release (after this PR merges)
 
@@ -150,8 +161,6 @@ git tag v0.1.0 && git push origin v0.1.0
 # -> release workflow validates, builds, and creates the GitHub Release.
 ```
 
-Post-AAB: Play Console → create app (`ir.metto.app`) → Internal Testing →
-upload `app-release.aab` → copy the **Play App Signing** SHA-256 →
-re-run the generator with both fingerprints → commit the updated
-`public/.well-known/assetlinks.json` → verify TWA (no address bar) on a
-device with the store-installed and the GitHub APK builds.
+Post-release: test the signed `.apk` on a real device (installs cleanly,
+TWA verification via Digital Asset Links shows no address bar, `/nearby`
+GPS works), then submit it to Cafe Bazaar / Myket.

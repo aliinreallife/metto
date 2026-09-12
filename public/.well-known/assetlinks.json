@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ir.metto.app",
+      "sha256_cert_fingerprints": [
+        "6B:E6:0E:0C:FA:B3:85:DF:16:E4:09:1F:3A:4E:B9:24:87:69:91:DB:19:2D:99:DF:B0:BC:5F:E9:A1:AA:13:60"
+      ]
+    }
+  }
+]

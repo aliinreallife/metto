@@ -3,8 +3,8 @@
 # Flow: merge PR -> main -> `git tag vX.Y.Z && git push origin vX.Y.Z`
 #   -> validate semver -> verify tag is on main -> derive versions
 #   -> signed Gradle build (android-release env) -> GitHub Release.
-# No Google Play auto-publishing: upload the AAB to Play Internal Testing
-# manually for the first version.
+# No store auto-publishing: the signed APK is for direct distribution and
+# Bazaar/Myket submission; the AAB is kept for future store needs.
 #
 # The `gate` job runs WITHOUT secrets and rejects bad tags before the
 # environment-gated `build` job can load signing credentials.
@@ -103,7 +103,7 @@ jobs:
       - name: Assert committed TWA config
         run: node scripts/check-android-config.mjs
 
-      - name: Restore upload keystore to runner temp
+      - name: Restore release keystore to runner temp
         # Keystore exists only in $RUNNER_TEMP for this job. Secrets are
         # never printed; the ephemeral runner discards the file afterwards.
         env:
@@ -114,12 +114,12 @@ jobs:
             echo "::error::ANDROID_KEYSTORE_BASE64 is empty. Configure the android-release environment first (see docs/ANDROID_TWA.md)."
             exit 1
           fi
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/metto-upload.jks"
-          echo "keystore restored (${#ANDROID_KEYSTORE_BASE64} base64 chars -> $RUNNER_TEMP/metto-upload.jks)"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/metto-release.jks"
+          echo "keystore restored (${#ANDROID_KEYSTORE_BASE64} base64 chars -> $RUNNER_TEMP/metto-release.jks)"
 
       - name: Signed bundle + APK
         env:
-          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/metto-upload.jks
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/metto-release.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -147,11 +147,11 @@ jobs:
           set -euo pipefail
           gh release create "$GITHUB_REF_NAME" \
             --title "$GITHUB_REF_NAME" \
-            --notes "Metto Android TWA $GITHUB_REF_NAME (versionCode $VERSION_CODE).
+            --notes "Metto Android $GITHUB_REF_NAME (versionCode $VERSION_CODE).
 
-          Artifacts: signed .aab for Google Play Internal Testing + signed .apk (upload certificate) for direct testing, with SHA256SUMS.txt.
+          Artifacts: signed .apk (release certificate) for direct testing and Bazaar/Myket submission + signed .aab for future store needs, with SHA256SUMS.txt.
 
-          After downloading: upload the .aab to Play Console > Internal Testing manually. No auto-publishing is configured." \
+          No store auto-publishing is configured." \
             "dist/metto-${GITHUB_REF_NAME}.aab" \
             "dist/metto-${GITHUB_REF_NAME}.apk" \
             dist/SHA256SUMS.txt
