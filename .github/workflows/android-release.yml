@@ -117,6 +117,44 @@ jobs:
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/metto-release.jks"
           echo "keystore restored (${#ANDROID_KEYSTORE_BASE64} base64 chars -> $RUNNER_TEMP/metto-release.jks)"
 
+      - name: Signing preflight (keystore + key recoverability)
+        # Fails fast with a concise message when the restored keystore, alias,
+        # or key password is wrong — before the slower Gradle build. Mirrors
+        # the local keytool + jarsigner check (keytool -list alone cannot
+        # validate the private-key password). Passwords travel via env only
+        # (never echoed); just pass/fail is printed. Temp files are removed.
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/metto-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::signing preflight: $1"; exit 1; }
+          [ -s "${ANDROID_KEYSTORE_PATH:-}" ] || fail "keystore file missing or empty"
+          [ -n "${ANDROID_KEY_ALIAS:-}" ] || fail "ANDROID_KEY_ALIAS is empty"
+          # 1. Alias must exist (also validates the keystore password).
+          keytool -list -keystore "$ANDROID_KEYSTORE_PATH" \
+            -storepass:env ANDROID_KEYSTORE_PASSWORD \
+            -alias "$ANDROID_KEY_ALIAS" >/dev/null 2>&1 \
+            || fail "alias not found or keystore password rejected"
+          # 2. Private key must be recoverable (validates the key password)
+          #    by signing a throwaway JAR, exactly like the local check.
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          printf 'preflight' > "$work/p.txt"
+          (cd "$work" && jar cf preflight.jar p.txt)
+          jarsigner -keystore "$ANDROID_KEYSTORE_PATH" \
+            -storepass:env ANDROID_KEYSTORE_PASSWORD \
+            -keypass:env ANDROID_KEY_PASSWORD \
+            "$work/preflight.jar" "$ANDROID_KEY_ALIAS" >/dev/null 2>&1 \
+            || fail "private key is not recoverable (key password rejected)"
+          jarsigner -verify "$work/preflight.jar" >/dev/null 2>&1 \
+            || fail "preflight signature did not verify"
+          rm -rf "$work"
+          trap - EXIT
+          echo "signing preflight: PASS (keystore present, alias exists, key recoverable)"
+
       - name: Signed bundle + APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/metto-release.jks
