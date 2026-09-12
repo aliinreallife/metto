@@ -31,3 +31,15 @@ test-results/
 playwright-report/
 # Playwright bypass-cookie state (may hold a Vercel bypass grant)
 playwright/.auth/
+
+# Android TWA (see docs/ANDROID_TWA.md). The generated wrapper under
+# android/ IS committed (twa-manifest.json, Gradle project, manifests,
+# resources). Only secrets, local SDK paths, caches and outputs are ignored.
+*.jks
+*.keystore
+android/keystore.properties
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
