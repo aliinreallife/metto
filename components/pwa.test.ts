@@ -3,8 +3,10 @@ import {
   IOS_INSTALL_HINT_PREVIEW_FLAG,
   isIosDevice,
   isIosInstallHintPreviewForced,
+  isStandaloneDisplay,
   shouldForceIosHintPreview,
   shouldShowIosInstallHint,
+  supportsInstallPromptEvent,
   triggerDeferredInstall,
 } from "./pwa"
 
@@ -202,5 +204,39 @@ describe("isIosInstallHintPreviewForced (TEMPORARY dev override)", () => {
     expect(
       shouldForceIosHintPreview({ installed: true, previewForced: true }),
     ).toBe(false)
+  })
+})
+
+describe("isStandaloneDisplay", () => {
+  it("is true when either signal is true", () => {
+    expect(
+      isStandaloneDisplay({
+        matchMediaStandalone: true,
+        navigatorStandalone: false,
+      }),
+    ).toBe(true)
+    expect(
+      isStandaloneDisplay({
+        matchMediaStandalone: false,
+        navigatorStandalone: true,
+      }),
+    ).toBe(true)
+    expect(
+      isStandaloneDisplay({
+        matchMediaStandalone: false,
+        navigatorStandalone: false,
+      }),
+    ).toBe(false)
+  })
+})
+
+describe("supportsInstallPromptEvent", () => {
+  it("detects Chromium prompt support via the window property", () => {
+    expect(supportsInstallPromptEvent({ onbeforeinstallprompt: null })).toBe(
+      true,
+    )
+    expect(supportsInstallPromptEvent({})).toBe(false)
+    expect(supportsInstallPromptEvent(null)).toBe(false)
+    expect(supportsInstallPromptEvent(undefined)).toBe(false)
   })
 })
