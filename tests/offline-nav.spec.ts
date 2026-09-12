@@ -34,7 +34,7 @@ async function pathname(page: Page): Promise<string> {
 
 /** The mobile bottom tab bar (the reported component). */
 function bottomNav(page: Page) {
-  return page.locator("div.fixed.bottom-0 nav");
+  return page.locator("footer.fixed.bottom-0 nav");
 }
 
 function tabLink(page: Page, name: string) {
