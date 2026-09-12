@@ -23,6 +23,14 @@
 # impossible against an immutable remote deployment). The full local suite
 # stays available as `test:e2e:offline`.
 #
+# PR visibility: `repository_dispatch` runs anchor to the default branch, so
+# GitHub never shows them in a PR's Checks tab. This workflow therefore posts
+# its own commit status (context `Metto Preview E2E`) to the deployed SHA:
+# pending when the suite starts, success/failure at the end, error when the
+# run is cancelled — so a stuck pending is impossible and the context can be
+# made a required branch-protection check. Production dispatches are skipped
+# by the job-level `if` below and post nothing.
+#
 # Deployment Protection: Preview deployments sit behind Vercel Authentication,
 # so the suite authenticates as a Vercel Trusted Source with a short-lived
 # GitHub OIDC token (no long-lived secret anywhere — see the mint step below
@@ -54,10 +62,12 @@ jobs:
     name: playwright offline suite (vercel preview)
     runs-on: ubuntu-latest
     # OIDC minting needs an explicitly granted token permission; checkout
-    # needs repo read. (Least privilege — no other scopes.)
+    # needs repo read; commit statuses need statuses write so the result is
+    # visible on the PR. (Least privilege — no other scopes.)
     permissions:
       contents: read
       id-token: write
+      statuses: write
     # Preview deployments only — never production.
     if: >-
       github.event_name == 'workflow_dispatch' ||
@@ -105,6 +115,31 @@ jobs:
           echo "Testing $BASE_URL"
           echo "checked out: $(git rev-parse HEAD)"
 
+      - name: Resolve status SHA
+        id: target
+        # repository_dispatch carries the exact deployed commit; manual runs
+        # fall back to the dispatched branch head so the status still lands
+        # on a meaningful commit.
+        run: |
+          SHA="${{ github.event.client_payload.git.sha }}"
+          if [ -z "$SHA" ]; then SHA="${{ github.sha }}"; fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Metto Preview E2E status target: $SHA"
+
+      - name: Mark Metto Preview E2E pending
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ steps.target.outputs.sha }}',
+              state: 'pending',
+              context: 'Metto Preview E2E',
+              description: 'Preview E2E suite running…',
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
       - name: Probe Deployment Protection (status codes only)
         # Diagnostic only, runs before the suite: proves whether the gate is
         # open, in ~10 seconds instead of a 15-minute blind run. Prints STATUS
@@ -150,3 +185,51 @@ jobs:
           path: |
             playwright-report/
             test-results/
+
+      # Exactly one of these fires (success/failure/cancelled are mutually
+      # exclusive), so a finished run can never leave the status pending.
+      # Cancelled/aborted runs report `error` — neither green nor red.
+      - name: Report Metto Preview E2E success
+        if: success() && steps.target.outputs.sha != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ steps.target.outputs.sha }}',
+              state: 'success',
+              context: 'Metto Preview E2E',
+              description: 'Preview E2E suite passed',
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
+      - name: Report Metto Preview E2E failure
+        if: failure() && steps.target.outputs.sha != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ steps.target.outputs.sha }}',
+              state: 'failure',
+              context: 'Metto Preview E2E',
+              description: 'Preview E2E suite failed',
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
+      - name: Report Metto Preview E2E cancelled
+        if: cancelled() && steps.target.outputs.sha != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ steps.target.outputs.sha }}',
+              state: 'error',
+              context: 'Metto Preview E2E',
+              description: 'Preview E2E run was cancelled',
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
