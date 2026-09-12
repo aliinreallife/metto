@@ -325,6 +325,21 @@ test.describe("Map reconnect recovery", () => {
       page.locator('[aria-label="Tehran metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await waitForOfflineReady(page);
+    // Deterministic precondition: seed one tile entry directly so the
+    // offline half never depends on third-party tile timing. Natural
+    // end-to-end caching is map-tiles.spec.ts's job; this test's claim is
+    // the banner behavior with a non-empty tile cache. (Zooming below is
+    // kept so the map still issues real tile requests-shaped traffic.)
+    await page.evaluate(async () => {
+      const res = await fetch(
+        "https://a.basemaps.cartocdn.com/dark_nolabels/11/1315/806.png",
+      );
+      const cache = await caches.open("metto-carto-tiles");
+      await cache.put(
+        "https://a.basemaps.cartocdn.com/dark_nolabels/11/1315/806.png",
+        res.clone(),
+      );
+    });
     // Same nudge: ensure post-control tile requests exist to cache.
     await page.getByRole("button", { name: "Zoom in" }).click();
     await page.waitForTimeout(1500);
@@ -370,6 +385,11 @@ test.describe("Map reconnect recovery", () => {
     await expect(
       page.locator('[aria-label="Tehran metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
+    // A controlling worker is the prerequisite for the offline reload
+    // below (the precache fallback is served only by the worker). Fresh
+    // test profiles install ~8MB on first visit; without this wait the
+    // reload can land before activation and fail at the network layer.
+    await waitForOfflineReady(page);
 
     // First online visit: informational notice, info styling, no cache words.
     await expect(

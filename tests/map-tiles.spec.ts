@@ -39,6 +39,27 @@ async function tileUrls(page: {
   });
 }
 
+// A controlling worker is the prerequisite for every tile-cache assertion
+// below (entries are written only inside the worker). Fresh test profiles
+// install ~8MB on first visit; polling here instead of assuming install won
+// before the first zoom keeps slow (CI) networks green.
+async function waitForSWControl(page: {
+  evaluate: <T>(fn: () => Promise<T> | T) => Promise<T>;
+}): Promise<void> {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          () =>
+            typeof navigator !== "undefined" &&
+            "serviceWorker" in navigator &&
+            !!navigator.serviceWorker.controller,
+        ),
+      { timeout: 60_000 },
+    )
+    .toBe(true);
+}
+
 async function foreignCachedUrls(page: {
   evaluate: <T>(fn: () => Promise<T> | T) => Promise<T>;
 }): Promise<string[]> {
@@ -88,6 +109,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     await expect(
       page.locator('[aria-label="Tehran metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
+    await waitForSWControl(page);
 
     // Generate naturally-viewed tiles by zooming (no prefetch anywhere).
     await page.getByRole("button", { name: "Zoom in" }).click();
@@ -169,15 +191,30 @@ test.describe("CARTO opportunistic tile cache", () => {
       offlinePage.getByText("بدون اینترنت", { exact: true }),
     ).toBeVisible({ timeout: 15_000 });
 
-    // Cached tile returns 200 offline (served by the worker cache).
-    const cachedStatus = await offlinePage.evaluate(async (u) => {
-      const res = await fetch(u);
-      return res.status;
-    }, urls[0]);
-    expect(cachedStatus).toBe(200);
+    // Cached tile loads offline (served by the worker cache). Loaded as an
+    // image — the same destination ("image") Leaflet uses — so the request
+    // actually routes through the worker: a bare fetch() carries
+    // destination "" and never matches the tile route (it only ever passed
+    // via the incidental HTTP cache).
+    const cachedLoads = await offlinePage.evaluate(
+      (u) =>
+        new Promise<boolean>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = u;
+        }),
+      urls[0],
+    );
+    expect(cachedLoads).toBe(true);
 
     // Uncached tile offline: handled failure (fetch rejects to the caller),
-    // no unhandled Serwist rejection, banner remains.
+    // no unhandled Serwist rejection, banner remains. Deliberately a bare
+    // fetch(), not an image: worker-subrequest fetches are not covered by
+    // offline emulation, so an image load here would succeed over the live
+    // network and prove nothing — while a page-initiated fetch is genuinely
+    // offline and must reject.
     const miss = await offlinePage.evaluate(async () => {
       try {
         const res = await fetch(
