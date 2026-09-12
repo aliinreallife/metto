@@ -45,6 +45,7 @@
 # already exist on the default branch, so the first real Vercel-triggered
 # run happens after this file merges. Until then, use workflow_dispatch.
 name: E2E (offline)
+run-name: Preview E2E ${{ github.event.client_payload.environment || 'manual' }} @ ${{ github.event.client_payload.git.sha || github.sha }} - ${{ inputs.base_url || github.event.client_payload.url }}
 
 on:
   repository_dispatch:
