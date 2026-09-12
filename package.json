@@ -42,6 +42,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.48.2",
     "@serwist/cli": "9.5.12",
     "@serwist/next": "9.5.12",
