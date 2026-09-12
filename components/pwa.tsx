@@ -61,6 +61,35 @@ export function shouldShowIosInstallHint(opts: {
   )
 }
 
+/**
+ * Pure standalone detection for testability. True when the page runs as an
+ * installed PWA (display-mode: standalone) or iOS standalone web app.
+ */
+export function isStandaloneDisplay(opts: {
+  matchMediaStandalone: boolean
+  navigatorStandalone: boolean
+}): boolean {
+  return opts.matchMediaStandalone || opts.navigatorStandalone
+}
+
+/**
+ * Pure install-prompt support probe for testability. Chromium exposes
+ * `onbeforeinstallprompt` on window; Firefox/Safari do not. iOS Safari is
+ * handled separately via the manual hint, so a false result here only means
+ * "no deferred Chromium prompt will ever arrive".
+ */
+export function supportsInstallPromptEvent(
+  target: object | undefined | null,
+): boolean {
+  if (!target || (typeof target !== "object" && typeof target !== "function"))
+    return false
+  try {
+    return "onbeforeinstallprompt" in (target as Record<string, unknown>)
+  } catch {
+    return false
+  }
+}
+
 // --- TEMPORARY dev/manual-preview override (delete this block to remove) ---
 // Lets a developer preview the iOS hint on desktop via:
 //   sessionStorage.setItem("metto:force-ios-install-hint", "1"); location.reload()
@@ -104,6 +133,12 @@ export function InstallButton({
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(false)
   const [isIosStandaloneHint, setIsIosStandaloneHint] = useState(false)
+  const [isStandalone, setIsStandalone] = useState(false)
+  // True until proven otherwise: reserve the install slot on first paint so
+  // a late beforeinstallprompt does not shift the header tabs. Collapsed in
+  // the mount effect where install can never appear (standalone or no
+  // prompt support and no iOS hint).
+  const [canInstallPrompt, setCanInstallPrompt] = useState(true)
   // TEMPORARY dev preview flag (see block above; delete with it).
   const [isHintPreviewForced, setIsHintPreviewForced] = useState(false)
 
@@ -121,7 +156,9 @@ export function InstallButton({
     window.addEventListener("beforeinstallprompt", onPrompt)
     window.addEventListener("appinstalled", onInstalled)
     // iOS Safari never fires beforeinstallprompt — detect a non-standalone
-    // iOS/iPadOS environment once on mount for the manual hint.
+    // iOS/iPadOS environment once on mount for the manual hint. Also record
+    // general standalone (any platform) so an installed PWA collapses the
+    // reserved slot instead of holding an invisible gap forever.
     let standalone = false
     try {
       const nav = window.navigator
@@ -129,12 +166,22 @@ export function InstallButton({
       const platform = (nav as Navigator & { platform?: string }).platform ?? ""
       const maxTouchPoints = nav.maxTouchPoints ?? 0
       const isIos = isIosDevice(ua, platform, maxTouchPoints)
-      standalone =
-        window.matchMedia?.("(display-mode: standalone)").matches ||
-        (nav as Navigator & { standalone?: boolean }).standalone === true
+      standalone = isStandaloneDisplay({
+        matchMediaStandalone:
+          window.matchMedia?.("(display-mode: standalone)").matches ?? false,
+        navigatorStandalone:
+          (nav as Navigator & { standalone?: boolean }).standalone === true,
+      })
+      setIsStandalone(standalone)
       setIsIosStandaloneHint(isIos && !standalone)
     } catch {
+      setIsStandalone(false)
       setIsIosStandaloneHint(false)
+    }
+    try {
+      setCanInstallPrompt(supportsInstallPromptEvent(window))
+    } catch {
+      setCanInstallPrompt(false)
     }
     // TEMPORARY dev preview override (delete this block to remove): bypasses
     // only the isIosDevice() check. installed/standalone gating stays intact.
@@ -154,7 +201,9 @@ export function InstallButton({
     }
   }, [])
 
-  if (installed) return null
+  // Installed (this session via appinstalled, or opened as a standalone
+  // PWA): terminal state, collapse the slot — no future button will appear.
+  if (installed || isStandalone) return null
 
   // TEMPORARY preview rendering only (delete this branch to remove): when the
   // session flag is set, the iOS hint wins over a deferred Chromium prompt
@@ -229,5 +278,20 @@ export function InstallButton({
     )
   }
 
-  return null
+  // No prompt (yet) and no iOS hint: hold the exact button-sized slot so a
+  // late beforeinstallprompt does not shift the header tabs or lang button.
+  // Collapse only where install can never appear: browsers without prompt
+  // support and without an iOS hint (e.g. desktop Firefox, where holding a
+  // gap forever would waste header space).
+  if (!canInstallPrompt) return null
+
+  return (
+    <span
+      aria-hidden="true"
+      className="invisible pointer-events-none flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-2 text-sm font-medium text-primary-foreground select-none [@media(display-mode:standalone)]:hidden"
+    >
+      <Download className="size-4" />
+      <span className="hidden sm:inline">{label}</span>
+    </span>
+  )
 }
