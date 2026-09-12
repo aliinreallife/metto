@@ -45,6 +45,31 @@ for (const route of ROUTES) {
   });
 }
 
+test.describe("landmarks", () => {
+  for (const route of ROUTES) {
+    test(`${route} exposes exactly one main landmark`, async ({ page }) => {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      // Let client hydration settle (schedule/holiday data, map vectors).
+      await page.waitForTimeout(route === "/map" ? 4000 : 1500);
+
+      // Exactly one <main>: page content (fixes "page contains exactly
+      // one main landmark region") and every route's primary content
+      // lives inside it (fixes "visible content within landmarks").
+      await expect(page.locator("main")).toHaveCount(1);
+      // Mobile bottom-bar wrapper is a site <footer> (contentinfo), so
+      // the credits links above the tab bar are inside a landmark too.
+      await expect(page.locator("footer.fixed.bottom-0")).toHaveCount(1);
+    });
+  }
+
+  test("/ main contains the route search form", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const main = page.locator("main");
+    await expect(main.locator("#origin-combobox")).toBeVisible();
+    await expect(main.locator("#dest-combobox")).toBeVisible();
+  });
+});
+
 test.describe("route search keyboard flow", () => {
   test("From/To labels associated, combobox semantics, Escape restores focus", async ({
     page,

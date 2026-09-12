@@ -55,7 +55,7 @@ async function waitForOfflineReady(page: Page) {
 
 /** The mobile bottom tab bar. */
 function bottomNav(page: Page) {
-  return page.locator("div.fixed.bottom-0 nav");
+  return page.locator("footer.fixed.bottom-0 nav");
 }
 
 function tabLink(page: Page, name: string) {
