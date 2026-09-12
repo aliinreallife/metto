@@ -14,13 +14,10 @@
      limitations under the License.
 -->
 
-<!-- The "package" attribute is rewritten by the Gradle build with the value of applicationId.
-     It is still required here, as it is used to derive paths, for instance when referring
-     to an Activity by ".MyActivity" instead of the full name. If more Activities are added to the
-     application, the package attribute will need to reflect the correct path in order to use
-     the abbreviated format. -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="ir.metto.app">
+<!-- Namespace and applicationId are owned by the Gradle build
+     (see android/app/build.gradle). The obsolete package attribute was
+     removed; AGP derives component paths from the Gradle namespace. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     
 
