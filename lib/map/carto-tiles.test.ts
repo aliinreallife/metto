@@ -3,8 +3,10 @@ import {
   CARTO_TILE_CACHE,
   MAX_CARTO_TILES,
   MAX_CARTO_TILE_AGE_S,
+  TILE_STRIP_HEADERS,
   isCacheableTileResponse,
   isCartoTileRequest,
+  stripTileAuthHeaders,
 } from "./carto-tiles";
 
 const tile = (overrides: Partial<Parameters<typeof isCartoTileRequest>[0]> = {}) => ({
@@ -127,12 +129,37 @@ describe("tile response validation", () => {
     ).toBe(false);
   });
 });
-
 describe("tile cache bounds", () => {
   it("stays small and within the provider retention maximum", () => {
     expect(CARTO_TILE_CACHE).toBe("metto-carto-tiles");
     expect(MAX_CARTO_TILES).toBe(300);
     expect(MAX_CARTO_TILE_AGE_S).toBe(2_592_000);
     expect(MAX_CARTO_TILE_AGE_S).toBeLessThanOrEqual(30 * 24 * 60 * 60);
+  });
+});
+
+describe("tile auth header stripping", () => {
+  it("removes first-party auth headers and reports true", () => {
+    const headers = new Headers({
+      "x-vercel-trusted-oidc-idp-token": "token",
+      "x-vercel-protection-bypass": "secret",
+      "accept": "image/*",
+    });
+    expect(stripTileAuthHeaders(headers)).toBe(true);
+    expect(headers.has("x-vercel-trusted-oidc-idp-token")).toBe(false);
+    expect(headers.has("x-vercel-protection-bypass")).toBe(false);
+    expect(headers.get("accept")).toBe("image/*");
+  });
+
+  it("is a no-op returning false when no auth headers are present", () => {
+    const headers = new Headers({ accept: "image/*" });
+    expect(stripTileAuthHeaders(headers)).toBe(false);
+    expect(headers.get("accept")).toBe("image/*");
+  });
+
+  it("covers exactly the harness-injected header names", () => {
+    expect([...TILE_STRIP_HEADERS].sort()).toEqual(
+      ["x-vercel-protection-bypass", "x-vercel-trusted-oidc-idp-token"].sort(),
+    );
   });
 });

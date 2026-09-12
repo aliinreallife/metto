@@ -12,6 +12,11 @@ const chromiumPath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
 // workflow), every context request carries it as a Trusted Sources identity
 // token. Absent locally: no header, unchanged behavior.
 const trustedOidcToken = process.env.VERCEL_TRUSTED_OIDC_TOKEN;
+// Automation bypass for the same gate: when set (CI secret, never
+// hardcoded), every context request additionally carries it as
+// x-vercel-protection-bypass. Absent locally: no header, unchanged
+// behavior — normal tests never depend on it.
+const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 export default defineConfig({
   testDir: "./tests",
@@ -25,13 +30,34 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: "list",
+  // Bypass-cookie bootstrap (see tests/global-setup.ts): stamps Vercel's
+  // protection-bypass cookie once per run when VERCEL_AUTOMATION_BYPASS_SECRET
+  // is set, so browser-initiated requests (notably SW script fetches, which
+  // carry no page-context headers) also pass Deployment Protection. Writes
+  // an empty state when unset — local runs behave identically either way.
+  globalSetup: "./tests/global-setup.ts",
   use: {
     baseURL: process.env.BASE_URL ?? "http://127.0.0.1:3000",
+    storageState: "playwright/.auth/state.json",
+    // Failure forensics: a screenshot shows WHAT html arrived (SSO login
+    // vs error page vs app), a trace shows WHY (console + network). Kept
+    // only for failures; green runs store nothing.
+    screenshot: "only-on-failure",
+    trace: "retain-on-failure",
     ...(chromiumPath
       ? { launchOptions: { executablePath: chromiumPath } }
       : {}),
-    ...(trustedOidcToken
-      ? { extraHTTPHeaders: { "x-vercel-trusted-oidc-idp-token": trustedOidcToken } }
+    ...(trustedOidcToken || bypassSecret
+      ? {
+          extraHTTPHeaders: {
+            ...(trustedOidcToken
+              ? { "x-vercel-trusted-oidc-idp-token": trustedOidcToken }
+              : {}),
+            ...(bypassSecret
+              ? { "x-vercel-protection-bypass": bypassSecret }
+              : {}),
+          },
+        }
       : {}),
   },
   projects: [

@@ -66,6 +66,38 @@ export function isCartoTileRequest(req: CartoTileRequestShape): boolean {
   );
 }
 
+/**
+ * First-party auth headers that must never leave our origin on tile
+ * requests. Besides leaking credentials to the tile CDN, custom headers
+ * force a CORS preflight on every tile fetch, which the tile CDN rejects —
+ * breaking tiles (and their offline cache) in exactly the contexts that
+ * set such headers (e.g. authenticated test harnesses). Normal traffic
+ * never carries these headers, so stripping is a no-op for real users.
+ */
+export const TILE_STRIP_HEADERS: ReadonlyArray<string> = [
+  "x-vercel-trusted-oidc-idp-token",
+  "x-vercel-protection-bypass",
+];
+
+/**
+ * Remove first-party auth headers in place. Returns true when anything
+ * was removed (caller may then rebuild the request); never throws.
+ */
+export function stripTileAuthHeaders(headers: Headers): boolean {
+  let removed = false;
+  for (const name of TILE_STRIP_HEADERS) {
+    try {
+      if (headers.has(name)) {
+        headers.delete(name);
+        removed = true;
+      }
+    } catch {
+      // Immutable headers stay untouched; the fetch proceeds as-is.
+    }
+  }
+  return removed;
+}
+
 export interface TileResponseShape {
   status: number;
   /** Fetch response type: "basic" | "cors" | "opaque" | ... */

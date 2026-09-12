@@ -34,6 +34,7 @@ import {
   MAX_CARTO_TILE_AGE_S,
   isCacheableTileResponse,
   isCartoTileRequest,
+  stripTileAuthHeaders,
 } from "../lib/map/carto-tiles";
 import {
   CANONICAL_STATIC_DOCS,
@@ -118,6 +119,17 @@ const serwist = new Serwist({
         event: ExtendableEvent;
       }) => {
         try {
+          // Privacy + CORS: first-party auth headers (set only by
+          // test/CI harnesses via page-context headers) must never leave
+          // our origin on tile requests. Besides leaking credentials to
+          // the tile CDN, custom headers force a CORS preflight on every
+          // tile fetch, which the CDN rejects — breaking tiles and their
+          // offline cache exactly where coverage matters. The cache key
+          // (URL) is untouched, and headerless traffic skips the rebuild.
+          const headers = new Headers(request.headers);
+          if (stripTileAuthHeaders(headers)) {
+            request = new Request(request, { headers });
+          }
           const response = await cartoTileStrategy.handle({ request, event });
           return response ?? Response.error();
         } catch {

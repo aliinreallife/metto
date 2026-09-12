@@ -29,3 +29,5 @@ public/sw.js.map.txt
 # Playwright
 test-results/
 playwright-report/
+# Playwright bypass-cookie state (may hold a Vercel bypass grant)
+playwright/.auth/

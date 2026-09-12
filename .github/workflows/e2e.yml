@@ -103,6 +103,19 @@ jobs:
             exit 1
           fi
           echo "Testing $BASE_URL"
+          echo "checked out: $(git rev-parse HEAD)"
+
+      - name: Probe Deployment Protection (status codes only)
+        # Diagnostic only, runs before the suite: proves whether the gate is
+        # open, in ~10 seconds instead of a 15-minute blind run. Prints STATUS
+        # CODES and public version metadata only — secrets are never printed.
+        # Read as: authed 200 = gate open, suite failures below are app/test
+        # issues; authed 302 = token rejected at the gate.
+        env:
+          VERCEL_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+        run: |
+          echo "deployment root with OIDC identity header -> HTTP $(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -H "x-vercel-trusted-oidc-idp-token: $VERCEL_TRUSTED_OIDC_TOKEN" "$BASE_URL/")"
+          echo "deployment root anonymous -> HTTP $(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BASE_URL/")"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -121,6 +134,10 @@ jobs:
           # mint; never printed, never persisted). Playwright sends it as
           # x-vercel-trusted-oidc-idp-token when present; locally unset.
           VERCEL_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+          # Long-lived automation bypass (GitHub Actions secret, never
+          # hardcoded, never printed). Playwright sends it as
+          # x-vercel-protection-bypass when present; locally unset.
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm test:e2e:preview
 
       - name: Upload failure artifacts
