@@ -108,7 +108,7 @@ test.describe("Metto offline PWA", () => {
       name: /ایستگاه یا نام مکان/,
     });
     await originToggle.first().click();
-    const searchInput = page.locator('input[dir="auto"]').first();
+    const searchInput = page.getByRole("combobox").first();
     await searchInput.fill(ORIGIN_FA);
     await page
       .getByRole("button", { name: new RegExp(ORIGIN_FA) })
@@ -189,12 +189,12 @@ test.describe("Metto offline PWA", () => {
       .getByRole("button", { name: /ایستگاه یا نام مکان/ })
       .first()
       .click();
-    await page.locator('input[dir="auto"]').first().fill("Iran Mall");
+    await page.getByRole("combobox").first().fill("Iran Mall");
     await expect(
       page.getByText("برای جستجوی مکان به اینترنت نیاز است."),
     ).toBeVisible({ timeout: 15_000 });
     // Station search still works alongside the offline place note.
-    await page.locator('input[dir="auto"]').first().fill(ORIGIN_FA);
+    await page.getByRole("combobox").first().fill(ORIGIN_FA);
     await expect(
       page.getByRole("button", { name: new RegExp(ORIGIN_FA) }).first(),
     ).toBeVisible({ timeout: 15_000 });

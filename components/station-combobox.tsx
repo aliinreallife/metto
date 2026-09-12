@@ -159,7 +159,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
           className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2.5 text-start transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:px-4 md:py-3"
         >
           <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden="true" />
-          <span className="min-w-0 flex-1 truncate">
+          <span className="min-w-0 flex-1 truncate" dir={isFa ? "rtl" : "ltr"}>
             {selected ? (
               <span className="flex items-center gap-2">
                 <span className="truncate font-medium">{isFa ? selected.name.fa : selected.name.en}</span>
@@ -197,13 +197,13 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
               aria-expanded={open}
               aria-controls={listboxId}
               aria-autocomplete="list"
-              dir="auto"
-              className="ios-no-zoom-input w-full rounded-md bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background md:px-4 md:py-2.5 md:text-base"
+              dir={isFa ? "rtl" : "ltr"}
+              className="ios-no-zoom-input w-full rounded-md bg-muted px-3 py-2 text-start text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background md:px-4 md:py-2.5 md:text-base"
             />
           </div>
           <ul id={listboxId} role="listbox" aria-label={placeholder} className="max-h-64 overflow-y-auto py-1">
             {query.length === 0 && onPlaceSelect && (
-              <li role="presentation" className="px-3 py-2 text-center text-xs text-muted-foreground md:px-4 md:py-2.5 md:text-sm">
+              <li role="presentation" dir={isFa ? "rtl" : "ltr"} className="px-3 py-2 text-center text-xs text-muted-foreground md:px-4 md:py-2.5 md:text-sm">
                 {STRINGS[lang].searchHintBefore}{" "}
                 <button
                   type="button"

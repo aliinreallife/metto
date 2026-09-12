@@ -234,14 +234,14 @@ test.describe("Offline bottom navigation", () => {
       .getByRole("button", { name: /ایستگاه یا نام مکان/ })
       .first()
       .click();
-    await page.locator('input[dir="auto"]').first().fill("تجریش");
+    await page.getByRole("combobox").first().fill("تجریش");
     await page.getByRole("button", { name: /تجریش/ }).first().click();
     await expect(page).toHaveURL(/from=tajrish/, { timeout: 15_000 });
     await page
       .getByRole("button", { name: /ایستگاه یا نام مکان/ })
       .first()
       .click();
-    await page.locator('input[dir="auto"]').first().fill("تهران (صادقیه)");
+    await page.getByRole("combobox").first().fill("تهران (صادقیه)");
     await page.getByRole("button", { name: /تهران/ }).first().click();
     const mapHref =
       (await tabLink(page, "نقشه").getAttribute("href")) ?? "";
