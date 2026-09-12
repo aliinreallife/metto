@@ -6,8 +6,9 @@ what works offline, what still needs Internet, how the service-worker cache
 and holiday dataset behave, how to test manually, and what remains before a
 Café Bazaar / Myket Trusted Web Activity (TWA) release.
 
-> Scope rule: no Android/Bubblewrap wrapper has been created in this
-> repository, and no fake Digital Asset Links values exist. See
+> Scope rule: the Bubblewrap wrapper now lives in `android/` (branch
+> `feat/android-twa`, see `docs/ANDROID_TWA.md`), and no fake Digital Asset
+> Links values exist. See
 > [Future TWA steps](#future-twa-steps-do-not-perform-yet).
 
 ---
@@ -430,6 +431,10 @@ first activation there also purges the legacy `metto-v*` caches.
 ---
 
 ## 9. Future TWA steps (DO NOT perform yet)
+
+> Status: steps 1–2 are implemented on branch `feat/android-twa`
+> (wrapper in `android/`, CI + release pipeline, Asset Links tooling —
+> details in `docs/ANDROID_TWA.md`). Steps 3+ remain manual/in-order.
 
 1. Choose final Android package/application ID.
 2. Generate Bubblewrap/TWA wrapper project.
