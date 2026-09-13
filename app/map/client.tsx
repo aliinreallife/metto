@@ -172,7 +172,7 @@ export function MapPage() {
   }, []);
 
   return (
-    <div className="relative flex-1 min-h-0 flex flex-col">
+    <div className="relative isolate z-0 flex flex-1 min-h-0 flex-col overflow-hidden">
       <RealMap
         lang={lang}
         mapMode={mapMode}
