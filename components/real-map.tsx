@@ -706,7 +706,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative z-0 h-full w-full overflow-hidden">
       <div ref={containerRef} className="h-full w-full" aria-label="Tehran metro on real map" />
       {gpsError && (
         <div className="absolute bottom-3 left-3 z-[1000] max-w-[70%] rounded-lg border border-border bg-background/95 px-3 py-1.5 text-xs text-destructive shadow-sm backdrop-blur">
