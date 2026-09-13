@@ -6,10 +6,10 @@
 //     [--changelog PATH] [--base main] [--prs-file FIXTURES.json] [--dry-run] [--since YYYY-MM-DD]
 //
 // Boundary (primary): the previous version tag. The PRs in scope are those
-// represented by commits in PREV_TAG..BASE: the branch history is walked with
-// full pagination, cut at the previous tag's commit, and each commit is mapped
-// to its pull requests via GitHub's associated-PRs API (commit ancestry — not
-// timestamps, so normal merges, squash merges, and rebases all work).
+// represented by commits in the paginated GitHub compare PREV_TAG...BASE
+// (exactly that DAG range — never timestamps, never whole-history ordering),
+// each mapped to its pull requests via GitHub's associated-PRs API, so normal
+// merges, squash merges, and rebases all work.
 // PR bodies are the source of truth for notes. Any API failure aborts instead
 // of producing a partial changelog.
 // Date-based GitHub search is only a fallback when no previous tag exists
@@ -23,7 +23,7 @@
 import { execFileSync, execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { assembleRangeCommits, mergeIntoChangelog, parseReleaseNotes, selectPrsInRange } from "./release-notes.mjs";
+import { mergeIntoChangelog, parseReleaseNotes, selectCompareCommits, selectPrsInRange } from "./release-notes.mjs";
 
 const TAG_RE = /^v([0-9]+)\.([0-9]+)\.([0-9]+)$/;
 const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
@@ -82,60 +82,60 @@ function ghApi(args) {
   return execFileSync("gh", ["api", ...args], { encoding: "utf8" });
 }
 
-// Commits reachable from base but not from prevTag — real commit ancestry,
-// never timestamps. Works with normal merges, squash merges, and rebases:
-// GitHub associates each commit with its pull request regardless of strategy.
+// Commits in PREV_TAG..BASE — the paginated GitHub compare itself, which is
+// exactly that range (never timestamps, never whole-history ordering).
+// Works with normal merges, squash merges, and rebases: GitHub associates
+// each commit with its pull request regardless of strategy.
 //
-// Retrieval is fully paginated: the branch commit history is walked page by
-// page (explicit loop — the compare endpoint caps at 250 commits and cannot
-// page), cut at the previous tag's commit, and SHAs are deduplicated. Any API
-// failure aborts with an error instead of producing a partial changelog.
-const COMMITS_PER_PAGE = 100;
-const MAX_COMMIT_PAGES = 100; // 10k commits ceiling per release range
+// Retrieval is fully paginated with an explicit page loop: without paging
+// parameters the comparison is limited to 250 commits, so every page is
+// collected and SHAs are deduplicated. Any API failure aborts with an error
+// instead of producing a partial changelog.
+const COMPARE_PER_PAGE = 100;
+const MAX_COMPARE_PAGES = 100; // 10k commits ceiling per release range
 
-function compareStatus(repo, prevTag, base) {
+// One compare page: range-level status plus that page's `.commits` entries.
+function fetchComparePage(repo, prevTag, base, page) {
   let raw;
   try {
-    raw = ghApi([`repos/${repo}/compare/${prevTag}...${base}`]);
+    raw = ghApi([
+      `repos/${repo}/compare/${prevTag}...${base}?per_page=${COMPARE_PER_PAGE}&page=${page}`,
+    ]);
   } catch (err) {
-    throw new Error(`GitHub compare ${prevTag}...${base} failed: ${err.message}`);
+    throw new Error(`compare page ${page} of ${prevTag}...${base} failed (aborting, no partial changelog): ${err.message}`);
   }
-  const data = JSON.parse(raw);
-  return { status: data.status, aheadBy: data.ahead_by ?? 0, behindBy: data.behind_by ?? 0 };
-}
-
-function resolveCommitSha(repo, ref) {
-  let raw;
+  let data;
   try {
-    raw = ghApi([`repos/${repo}/commits/${encodeURIComponent(ref)}`]);
-  } catch (err) {
-    throw new Error(`cannot resolve ${ref} via GitHub API: ${err.message}`);
+    data = JSON.parse(raw);
+  } catch {
+    throw new Error(`compare page ${page} of ${prevTag}...${base} returned malformed JSON (aborting, no partial changelog)`);
   }
-  const sha = JSON.parse(raw)?.sha;
-  if (!sha) throw new Error(`cannot resolve ${ref} to a commit SHA via GitHub API`);
-  return sha;
+  if (!data || typeof data !== "object" || !Array.isArray(data.commits)) {
+    throw new Error(`compare page ${page} of ${prevTag}...${base} has no commits array (aborting, no partial changelog)`);
+  }
+  return data;
 }
 
-function fetchCommitPages(repo, base) {
-  const pages = [];
-  for (let page = 1; page <= MAX_COMMIT_PAGES; page++) {
-    let raw;
-    try {
-      raw = ghApi([
-        `repos/${repo}/commits?sha=${encodeURIComponent(base)}&per_page=${COMMITS_PER_PAGE}&page=${page}`,
-      ]);
-    } catch (err) {
-      throw new Error(`commit history page ${page} failed (aborting, no partial changelog): ${err.message}`);
+function fetchCompareRange(repo, prevTag, base) {
+  const first = fetchComparePage(repo, prevTag, base, 1);
+  const pages = [first.commits];
+  if (first.commits.length === COMPARE_PER_PAGE) {
+    for (let page = 2; page <= MAX_COMPARE_PAGES; page++) {
+      const data = fetchComparePage(repo, prevTag, base, page);
+      pages.push(data.commits);
+      if (data.commits.length < COMPARE_PER_PAGE) break;
+      if (page === MAX_COMPARE_PAGES) {
+        throw new Error(`compare range exceeded ${MAX_COMPARE_PAGES * COMPARE_PER_PAGE} commits — refusing to guess; split the release range`);
+      }
     }
-    const data = JSON.parse(raw);
-    if (!Array.isArray(data) || data.length === 0) break;
-    pages.push(data.map((c) => c?.sha).filter(Boolean));
-    if (data.length < COMMITS_PER_PAGE) break;
   }
-  if (pages.length >= MAX_COMMIT_PAGES) {
-    throw new Error(`commit history exceeded ${MAX_COMMIT_PAGES * COMMITS_PER_PAGE} commits — refusing to guess; split the release range`);
-  }
-  return pages;
+  const commits = selectCompareCommits({
+    status: first.status,
+    aheadBy: first.ahead_by,
+    behindBy: first.behind_by,
+    pages,
+  });
+  return { commits, status: first.status };
 }
 
 function associatedPrNumbers(repo, sha) {
@@ -179,15 +179,8 @@ function pullDetails(repo, n) {
 }
 
 function discoverPrsByAncestry({ repo, prevTag, base }) {
-  const { status, aheadBy, behindBy } = compareStatus(repo, prevTag, base);
-  if (status === "identical" || aheadBy === 0) return { prs: [], commitCount: 0 };
-  if (status !== "ahead" || behindBy !== 0) {
-    throw new Error(
-      `cannot determine a clean ${prevTag}..${base} range (compare status: ${status}) — refusing to guess; rebase the branch onto ${prevTag} or later`,
-    );
-  }
-  const tagSha = resolveCommitSha(repo, prevTag);
-  const commits = assembleRangeCommits(fetchCommitPages(repo, base), tagSha);
+  const { commits } = fetchCompareRange(repo, prevTag, base);
+  if (commits.length === 0) return { prs: [], commitCount: 0 };
   const associations = {};
   for (const sha of commits) {
     associations[sha] = associatedPrNumbers(repo, sha);
@@ -258,15 +251,21 @@ function main() {
   } else if (assocFile) {
     // Offline/deterministic seam for tests. Either a direct commit list:
     //   { commits, associations, details }
-    // or raw commit pages plus the tag SHA (exercises the production page
-    // assembly, including cross-page dedupe and the tag cut):
-    //   { pages, tagSha, associations, details }
+    // or raw paginated compare results (exercises the production range
+    // selection, including status checks, cross-page dedupe, and aborts):
+    //   { compareStatus: { status, aheadBy, behindBy }, comparePages, associations, details }
     const fixture = JSON.parse(readFileSync(resolve(process.cwd(), assocFile), "utf8"));
-    const commits = fixture.pages
-      ? assembleRangeCommits(fixture.pages, fixture.tagSha)
-      : (fixture.commits ?? []);
+    let commits;
+    try {
+      commits = fixture.comparePages
+        ? selectCompareCommits({ ...(fixture.compareStatus ?? {}), pages: fixture.comparePages })
+        : (fixture.commits ?? []);
+    } catch (err) {
+      console.error(`prepare-changelog: ${err.message}`);
+      process.exit(1);
+    }
     prs = selectPrsInRange({ commits, associations: fixture.associations ?? {}, details: fixture.details ?? {}, base });
-    boundaryDesc = `--assoc-file ${assocFile} (${prs.length} PRs by ancestry)`;
+    boundaryDesc = `--assoc-file ${assocFile} (${prs.length} PRs from ${commits.length} commits by ancestry)`;
   } else {
     let tags = [];
     try {

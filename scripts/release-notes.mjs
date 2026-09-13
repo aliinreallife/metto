@@ -216,39 +216,56 @@ export function validateReleaseNotes(body) {
 }
 
 /**
- * Assemble the in-range commit list from paginated commit pages.
+ * Select the in-range commit SHAs from paginated GitHub compare results.
  *
- * `pages` is an array of pages (newest first), each an array of commit SHAs,
- * as returned by the paginated commits listing of the release branch.
- * `tagSha` is the resolved SHA of the previous version tag.
+ * `pages` is an array of pages, each an array of compare `.commits` entries
+ * (`{ sha, ... }`), newest first. Status/count validation is strict:
+ *   - "identical" is valid only with ahead_by === 0 and behind_by === 0.
+ *   - "ahead" is valid only with ahead_by > 0 and behind_by === 0.
+ *   - "behind", "diverged", unknown statuses, or inconsistent counts throw.
+ *   - A missing/malformed first page throws — never read as an empty range.
+ *   - An "ahead" range that yields zero commits throws (truncated response).
  *
- * - Commit SHAs are deduplicated defensively (pages can overlap on retries).
- * - Everything at and after the tag commit is cut: only commits listed
- *   before the tag's first occurrence are in range.
- * - Throws when tagSha is provided but absent from the pages — that means the
- *   branch does not contain the tag, and guessing would risk a partial range.
+ * SHAs are deduplicated defensively. Throws on anything unexpected so the
+ * caller aborts instead of producing a partial changelog.
  */
-export function assembleRangeCommits(pages, tagSha) {
+export function selectCompareCommits({ status, aheadBy = 0, behindBy = 0, pages = [] }) {
+  const name = status === undefined || status === null ? "(missing)" : JSON.stringify(String(status));
+  const ahead = Number(aheadBy);
+  const behind = Number(behindBy);
+  if (status === "identical") {
+    if (ahead !== 0 || behind !== 0) {
+      throw new Error(
+        `inconsistent compare result (status identical with ahead_by=${aheadBy} behind_by=${behindBy}) — aborting, no partial changelog`,
+      );
+    }
+    return [];
+  }
+  if (status !== "ahead" || !(ahead > 0) || behind !== 0) {
+    throw new Error(
+      `cannot determine a clean compare range (status: ${name}, ahead_by=${aheadBy}, behind_by=${behindBy}) — aborting, no partial changelog`,
+    );
+  }
+  if (!Array.isArray(pages) || pages.length === 0 || !Array.isArray(pages[0])) {
+    throw new Error("missing first compare page — aborting rather than assuming an empty range");
+  }
   const seen = new Set();
   const ordered = [];
-  for (const page of pages ?? []) {
-    for (const raw of page ?? []) {
-      const sha = String(raw ?? "").trim();
+  for (const page of pages) {
+    if (!Array.isArray(page)) {
+      throw new Error("malformed compare page — aborting, no partial changelog");
+    }
+    for (const entry of page) {
+      const sha = String(entry?.sha ?? "").trim();
       if (!sha || seen.has(sha)) continue;
       seen.add(sha);
       ordered.push(sha);
     }
   }
-  if (tagSha === undefined || tagSha === null || String(tagSha).trim() === "") {
-    return ordered;
+  if (ordered.length === 0) {
+    throw new Error("compare reports ahead commits but returned none — aborting, no partial changelog");
   }
-  const idx = ordered.indexOf(String(tagSha).trim());
-  if (idx === -1) {
-    throw new Error(
-      "previous tag commit not found in the branch history — refusing to guess the range",
-    );
-  }
-  return ordered.slice(0, idx);
+  return ordered;
 }
 
 /**
