@@ -12,7 +12,8 @@ the `release notes (FA/EN)` CI check (`scripts/check-release-notes.mjs`).
 - `main` is the release branch. PRs merge to `main` with normal merge
   commits (squash/rebase also supported — the system does not depend on
   merge strategy).
-- Releases: prepare changelog → merge to `main` → `git tag vX.Y.Z` →
+- Releases: Actions → Prepare Release (`vX.Y.Z`) → review + merge the
+  `release/vX.Y.Z` PR → `git tag vX.Y.Z` →
   `.github/workflows/android-release.yml` builds the signed Android
   artifacts and publishes the GitHub Release.
 - Before submitting: `pnpm lint`, `pnpm typecheck`, `pnpm test`.
@@ -62,13 +63,27 @@ user-visible Android/TWA behavior.
 
 1. User-facing PRs carry bilingual snippets in the **PR body** (source of
    truth). Do NOT edit `CHANGELOG.md` in feature/fix PRs.
-2. At release time a maintainer runs
-   `node scripts/prepare-changelog.mjs --version vX.Y.Z`, which collects PRs
-   merged since the previous tag and drafts the new `CHANGELOG.md` section.
+2. At release time a maintainer runs **Actions → Prepare Release**
+   (`.github/workflows/prepare-release.yml`, input `vX.Y.Z`) — this is the
+   normal path, not a local script run. It collects PRs merged since the
+   previous tag, drafts the new `CHANGELOG.md` section on `release/vX.Y.Z`,
+   runs lint/typecheck/tests/extraction inline, opens (or updates) the
+   `chore(release): prepare vX.Y.Z` PR, then explicitly dispatches CI on the
+   release branch and waits for it. Preparation fails if any in-range PR
+   lacks usable notes and if that CI run fails.
 3. The generated section is **reviewed and merged to `main` before tagging**.
 4. Tagging triggers the Android release workflow, which takes the matching
    `## [vX.Y.Z]` section from `CHANGELOG.md` as the GitHub Release body and
    fails early if that section is missing.
+
+Notes on automation: PRs opened by `GITHUB_TOKEN` do not auto-trigger
+downstream workflows (their PR checks sit approval-gated), which is why
+Prepare Release validates everything inline and dispatches CI explicitly —
+no PAT is used. One-time manual prerequisite: repo Settings → Actions →
+General → Workflow permissions → **Allow GitHub Actions to create and
+approve pull requests** must be ON, otherwise PR creation fails with a 403
+(this setting is never changed by automation). Local fallback for debugging:
+`node scripts/prepare-changelog.mjs --version vX.Y.Z --dry-run`.
 
 ## Commands
 

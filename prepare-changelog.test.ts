@@ -277,6 +277,63 @@ describe("prepare-changelog.mjs", () => {
     expect(r.status).not.toBe(0);
   });
 
+  it("writes a structured summary file on success", () => {
+    const { dir, changelog, prsFile } = setup();
+    const summaryFile = join(dir, "summary.json");
+    const r = runPrepare(dir, [
+      "--version",
+      "v0.8.0",
+      "--date",
+      "2026-09-20",
+      "--changelog",
+      changelog,
+      "--prs-file",
+      prsFile,
+      "--summary-file",
+      summaryFile,
+    ]);
+    expect(r.status).toBe(0);
+    const summary = JSON.parse(readFileSync(summaryFile, "utf8"));
+    expect(summary.version).toBe("v0.8.0");
+    expect(summary.date).toBe("2026-09-20");
+    expect(summary.included).toEqual([
+      { number: 101, title: "Add night departures", group: "New" },
+      { number: 102, title: "Fix midnight crash", group: "Fix" },
+      { number: 103, title: "Faster search", group: "Uncategorized" },
+    ]);
+    expect(summary.skippedNone).toEqual([{ number: 104, title: "Bump CI action" }]);
+    expect(summary.missing).toEqual([]);
+    expect(summary.groupCounts).toEqual({ New: 1, Improvement: 0, Fix: 1, Uncategorized: 1 });
+    expect(summary.addedBullets).toBeGreaterThan(0);
+  });
+
+  it("writes no summary when blocked on missing notes", () => {
+    const dir = mkdtempSync(join(tmpdir(), "prepare-changelog-"));
+    const changelog = join(dir, "CHANGELOG.md");
+    const prsFile = join(dir, "prs.json");
+    const summaryFile = join(dir, "summary.json");
+    writeFileSync(changelog, BASE_CHANGELOG);
+    writeFileSync(
+      prsFile,
+      JSON.stringify([{ number: 105, title: "Forgot notes", body: "Oops, no section here.\n" }]),
+    );
+    const r = runPrepare(dir, [
+      "--version",
+      "v0.8.0",
+      "--date",
+      "2026-09-20",
+      "--changelog",
+      changelog,
+      "--prs-file",
+      prsFile,
+      "--summary-file",
+      summaryFile,
+    ]);
+    expect(r.status).not.toBe(0);
+    expect(() => readFileSync(summaryFile, "utf8")).toThrow();
+    expect(readFileSync(changelog, "utf8")).toBe(BASE_CHANGELOG);
+  });
+
   it("includes a PR that appears only on page 2, deduped across pages", () => {
     const dir = mkdtempSync(join(tmpdir(), "prepare-changelog-"));
     const changelog = join(dir, "CHANGELOG.md");

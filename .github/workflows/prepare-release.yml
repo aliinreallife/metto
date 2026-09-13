@@ -1,0 +1,138 @@
+# Prepare Release: the normal way to cut a Metto release.
+#
+# Flow: Actions -> Prepare Release -> enter vX.Y.Z
+#   -> collect merged PR notes since the previous tag (paginated compare)
+#   -> generate/update CHANGELOG.md on release/vX.Y.Z
+#   -> lint + typecheck + unit tests + changelog extraction, all inline
+#   -> open/update PR "chore(release): prepare vX.Y.Z"
+#   -> explicitly dispatch CI on the release branch and WAIT for it
+#   -> human reviews/edits bilingual notes -> merges PR -> tags vX.Y.Z
+#   -> android-release.yml publishes the GitHub Release.
+#
+# This workflow NEVER merges the prep PR, creates the version tag, creates a
+# GitHub Release, touches Android signing secrets / the android-release
+# environment, or publishes to any store.
+#
+# GITHUB_TOKEN behavior (no PAT is used, deliberately):
+# - Pushes/PRs made with GITHUB_TOKEN do not auto-trigger downstream runs,
+#   so all validation above runs INLINE here before anything is pushed.
+# - The pull_request runs the prep PR would normally get are created in an
+#   approval-required state; a maintainer may approve or ignore them.
+# - `workflow_dispatch` events always create runs, so the explicit CI
+#   dispatch at the end is synchronous and reliable — preparation fails if
+#   that CI run fails, is cancelled, or times out.
+#
+# Prerequisite (one-time, manual — this workflow never changes repo settings):
+# Settings -> Actions -> General -> Workflow permissions ->
+# "Allow GitHub Actions to create and approve pull requests" must be ON.
+# Without it, PR creation fails with a 403 and preparation aborts.
+#
+# Third-party Actions are pinned to immutable commit SHAs (comments show the
+# release version), matching the Android workflows.
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, e.g. v0.8.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write # dispatch CI on the release branch + watch that exact run
+
+concurrency:
+  group: prepare-release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: prepare release
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+      BRANCH: release/${{ inputs.version }}
+      SUMMARY: ${{ runner.temp }}/release-summary.json
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout main (full history + tags)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Strict version validation
+        # Reuses the tested semver gate (also bounds the Android versionCode).
+        # prepare-changelog re-validates; this fails fastest on typos.
+        run: node scripts/android-version.mjs "$VERSION"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate CHANGELOG section
+        # Single source of truth. No --allow-missing-notes: any in-range PR
+        # without usable notes (or explicit `Release notes: none`) fails here.
+        # The summary is ephemeral ($RUNNER_TEMP) and never committed.
+        run: pnpm changelog:prepare --version "$VERSION" --summary-file "$SUMMARY"
+
+      - name: Validate (lint / typecheck / test / extract)
+        run: |
+          set -euo pipefail
+          pnpm lint
+          pnpm typecheck
+          pnpm test
+          pnpm changelog:extract --version "$VERSION" > "$RUNNER_TEMP/notes-check.md"
+          test -s "$RUNNER_TEMP/notes-check.md"
+
+      - name: Create/update release branch + PR
+        # Commits ONLY CHANGELOG.md. First run creates release/vX.Y.Z; reruns
+        # rebuild it deterministically and push with --force-with-lease only
+        # while every unique commit is machine-generated — human commits abort.
+        # Reuses the existing PR when present instead of duplicating it.
+        id: release-pr
+        run: |
+          set -euo pipefail
+          OUT="$(node scripts/release-pr.mjs prepare --version "$VERSION" --summary-file "$SUMMARY")"
+          echo "$OUT"
+          echo "$OUT" > "$RUNNER_TEMP/release-pr.json"
+          node -e "const p = require('$RUNNER_TEMP/release-pr.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'pushed_sha=' + p.pushedSha + '\npr_url=' + p.prUrl + '\n')"
+
+      - name: Dispatch CI on the release branch and wait
+        # Synchronous: correlates the exact workflow_dispatch run for the
+        # pushed SHA, waits for it, and fails preparation on failure, cancel,
+        # or timeout. No fire-and-forget. Requires ci.yml's workflow_dispatch
+        # trigger (present on main).
+        run: |
+          set -euo pipefail
+          gh workflow run ci.yml --ref "$BRANCH"
+          node scripts/release-pr.mjs wait-for-ci \
+            --workflow ci.yml \
+            --branch "$BRANCH" \
+            --head-sha "${{ steps.release-pr.outputs.pushed_sha }}" \
+            --timeout-secs 1800 \
+            --appear-timeout-secs 300 \
+            --interval-secs 20
+
+      - name: Summarize
+        run: |
+          {
+            echo "## Prepared ${VERSION}"
+            echo ""
+            echo "- Branch: \`${BRANCH}\`"
+            echo "- PR: ${{ steps.release-pr.outputs.pr_url }}"
+            echo "- CI on the release branch: passed (synchronous)"
+            echo ""
+            echo "Next: review the bilingual notes, merge the PR, then tag ${VERSION}."
+          } >> "$GITHUB_STEP_SUMMARY"

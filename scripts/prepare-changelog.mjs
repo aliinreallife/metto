@@ -20,6 +20,11 @@
 // category go to "Uncategorized / بدون دسته‌بندی" for a human to sort.
 // The prose is never reinterpreted. The result MUST be reviewed and merged
 // before tagging. Re-running is safe (no duplicate entries).
+//
+// `--summary-file PATH` writes a machine-readable run summary (version,
+// previous tag, included/skipped PRs with titles, group counts) for the
+// release workflow's PR body. Written only on success; blocked runs (missing
+// notes without --allow-missing-notes) write neither CHANGELOG nor summary.
 import { execFileSync, execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -30,7 +35,7 @@ const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
 
 function usage() {
   console.log(
-    "Usage: prepare-changelog.mjs --version vMAJOR.MINOR.PATCH [--date YYYY-MM-DD] [--changelog PATH] [--base BRANCH] [--prs-file JSON] [--assoc-file JSON] [--dry-run] [--since YYYY-MM-DD] [--allow-missing-notes]",
+    "Usage: prepare-changelog.mjs --version vMAJOR.MINOR.PATCH [--date YYYY-MM-DD] [--changelog PATH] [--base BRANCH] [--prs-file JSON] [--assoc-file JSON] [--summary-file JSON] [--dry-run] [--since YYYY-MM-DD] [--allow-missing-notes]",
   );
 }
 
@@ -231,6 +236,8 @@ function main() {
   const base = flag(argv, "--base") ?? "main";
   const prsFile = flag(argv, "--prs-file");
   const assocFile = flag(argv, "--assoc-file");
+  const summaryFileRaw = flag(argv, "--summary-file");
+  const summaryPath = summaryFileRaw ? resolve(process.cwd(), summaryFileRaw) : null;
   const changelogPath = resolve(process.cwd(), flag(argv, "--changelog") ?? "CHANGELOG.md");
   let date = flag(argv, "--date") ?? new Date().toISOString().slice(0, 10);
   if (!DATE_RE.test(date)) {
@@ -245,6 +252,7 @@ function main() {
 
   let prs;
   let boundaryDesc;
+  let previousTagName = null;
   if (prsFile) {
     prs = JSON.parse(readFileSync(resolve(process.cwd(), prsFile), "utf8"));
     boundaryDesc = `--prs-file ${prsFile} (${prs.length} PRs)`;
@@ -275,6 +283,7 @@ function main() {
     }
     if (tags.length > 0) {
       const prev = tags[0];
+      previousTagName = prev;
       if (compareSemver([m[1], m[2], m[3]], TAG_RE.exec(prev).slice(1)) <= 0) {
         console.error(`prepare-changelog: ${version} must be newer than previous tag ${prev}.`);
         process.exit(1);
@@ -320,7 +329,7 @@ function main() {
   for (const pr of prs) {
     const parsed = parseReleaseNotes(pr.body ?? "");
     if (parsed.hasNoneMarker && (!parsed.section || parsed.section.english.length + parsed.section.persian.length === 0)) {
-      skippedNone.push(pr.number);
+      skippedNone.push({ number: pr.number, title: pr.title ?? "" });
       continue;
     }
     if (!parsed.section || parsed.section.english.length === 0 || parsed.section.persian.length === 0) {
@@ -336,8 +345,39 @@ function main() {
       en: parsed.section.english,
       fa: parsed.section.persian,
       pr: pr.number,
+      title: pr.title ?? "",
     });
   }
+
+  // Machine-readable run summary for the release workflow's PR body.
+  // Written only on success (exit 0); blocked runs write nothing.
+  const writeSummary = () => {
+    if (!summaryPath) return;
+    const groupCounts = { New: 0, Improvement: 0, Fix: 0, Uncategorized: 0 };
+    for (const item of items) {
+      if (item.group in groupCounts) groupCounts[item.group] += 1;
+    }
+    writeFileSync(
+      summaryPath,
+      JSON.stringify(
+        {
+          version,
+          date,
+          base,
+          previousTag: previousTagName,
+          boundary: boundaryDesc,
+          included: items.map((i) => ({ number: i.pr, title: i.title, group: i.group })),
+          skippedNone,
+          missing,
+          groupCounts,
+          addedBullets: added,
+          dryRun,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+  };
 
   let changelogText;
   try {
@@ -352,9 +392,10 @@ function main() {
   if (dryRun) {
     console.log(`prepare-changelog: DRY RUN for ${version} (${boundaryDesc})`);
     console.log(`included PRs: ${items.map((i) => `#${i.pr}`).join(", ") || "(none)"}`);
-    console.log(`skipped (Release notes: none): ${skippedNone.join(", ") || "(none)"}`);
+    console.log(`skipped (Release notes: none): ${skippedNone.map((s) => `#${s.number}`).join(", ") || "(none)"}`);
     console.log(`needs notes: ${missing.map((n) => `#${n}`).join(", ") || "(none)"}`);
     console.log(`bullets that would be added: ${added}`);
+    writeSummary();
     process.exit(0);
   }
 
@@ -370,9 +411,10 @@ function main() {
   }
 
   writeFileSync(changelogPath, text);
+  writeSummary();
   console.log(`prepare-changelog: ${version} <- ${boundaryDesc}`);
   console.log(`  PRs included (${items.length}): ${items.map((i) => `#${i.pr} [${i.group}]`).join(", ") || "(none)"}`);
-  console.log(`  skipped internal-only (${skippedNone.length}): ${skippedNone.map((n) => `#${n}`).join(", ") || "(none)"}`);
+  console.log(`  skipped internal-only (${skippedNone.length}): ${skippedNone.map((s) => `#${s.number}`).join(", ") || "(none)"}`);
   if (missing.length > 0) {
     console.log(`  OMITTED via --allow-missing-notes (${missing.length}): ${missing.map((n) => `#${n}`).join(", ")} — backfill their notes before the next release`);
   }
