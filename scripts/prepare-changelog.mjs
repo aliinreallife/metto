@@ -6,10 +6,12 @@
 //     [--changelog PATH] [--base main] [--prs-file FIXTURES.json] [--dry-run] [--since YYYY-MM-DD]
 //
 // Boundary (primary): the previous version tag. The PRs in scope are those
-// represented by commits in PREV_TAG..BASE, resolved via GitHub's compare API
-// plus per-commit associated pull requests (commit ancestry — not timestamps,
-// so normal merges, squash merges, and rebases all work). PR bodies are the
-// source of truth for notes.
+// represented by commits in PREV_TAG..BASE: the branch history is walked with
+// full pagination, cut at the previous tag's commit, and each commit is mapped
+// to its pull requests via GitHub's associated-PRs API (commit ancestry — not
+// timestamps, so normal merges, squash merges, and rebases all work).
+// PR bodies are the source of truth for notes. Any API failure aborts instead
+// of producing a partial changelog.
 // Date-based GitHub search is only a fallback when no previous tag exists
 // (then --since is required).
 //
@@ -21,7 +23,7 @@
 import { execFileSync, execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { mergeIntoChangelog, parseReleaseNotes, selectPrsInRange } from "./release-notes.mjs";
+import { assembleRangeCommits, mergeIntoChangelog, parseReleaseNotes, selectPrsInRange } from "./release-notes.mjs";
 
 const TAG_RE = /^v([0-9]+)\.([0-9]+)\.([0-9]+)$/;
 const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
@@ -83,7 +85,15 @@ function ghApi(args) {
 // Commits reachable from base but not from prevTag — real commit ancestry,
 // never timestamps. Works with normal merges, squash merges, and rebases:
 // GitHub associates each commit with its pull request regardless of strategy.
-function compareRange(repo, prevTag, base) {
+//
+// Retrieval is fully paginated: the branch commit history is walked page by
+// page (explicit loop — the compare endpoint caps at 250 commits and cannot
+// page), cut at the previous tag's commit, and SHAs are deduplicated. Any API
+// failure aborts with an error instead of producing a partial changelog.
+const COMMITS_PER_PAGE = 100;
+const MAX_COMMIT_PAGES = 100; // 10k commits ceiling per release range
+
+function compareStatus(repo, prevTag, base) {
   let raw;
   try {
     raw = ghApi([`repos/${repo}/compare/${prevTag}...${base}`]);
@@ -91,14 +101,70 @@ function compareRange(repo, prevTag, base) {
     throw new Error(`GitHub compare ${prevTag}...${base} failed: ${err.message}`);
   }
   const data = JSON.parse(raw);
-  if (data.status === "identical") return { commits: [], aheadBy: 0 };
-  const commits = (data.commits ?? []).map((c) => c.sha).filter(Boolean);
-  return { commits, aheadBy: data.ahead_by ?? commits.length };
+  return { status: data.status, aheadBy: data.ahead_by ?? 0, behindBy: data.behind_by ?? 0 };
+}
+
+function resolveCommitSha(repo, ref) {
+  let raw;
+  try {
+    raw = ghApi([`repos/${repo}/commits/${encodeURIComponent(ref)}`]);
+  } catch (err) {
+    throw new Error(`cannot resolve ${ref} via GitHub API: ${err.message}`);
+  }
+  const sha = JSON.parse(raw)?.sha;
+  if (!sha) throw new Error(`cannot resolve ${ref} to a commit SHA via GitHub API`);
+  return sha;
+}
+
+function fetchCommitPages(repo, base) {
+  const pages = [];
+  for (let page = 1; page <= MAX_COMMIT_PAGES; page++) {
+    let raw;
+    try {
+      raw = ghApi([
+        `repos/${repo}/commits?sha=${encodeURIComponent(base)}&per_page=${COMMITS_PER_PAGE}&page=${page}`,
+      ]);
+    } catch (err) {
+      throw new Error(`commit history page ${page} failed (aborting, no partial changelog): ${err.message}`);
+    }
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data) || data.length === 0) break;
+    pages.push(data.map((c) => c?.sha).filter(Boolean));
+    if (data.length < COMMITS_PER_PAGE) break;
+  }
+  if (pages.length >= MAX_COMMIT_PAGES) {
+    throw new Error(`commit history exceeded ${MAX_COMMIT_PAGES * COMMITS_PER_PAGE} commits — refusing to guess; split the release range`);
+  }
+  return pages;
 }
 
 function associatedPrNumbers(repo, sha) {
-  const raw = ghApi([`repos/${repo}/commits/${sha}/pulls`, "--jq", "[.[].number]"]);
-  return JSON.parse(raw).map(Number).filter(Number.isInteger);
+  // The pulls-for-commit endpoint returns an array; --paginate walks every
+  // page and applies the filter per page (one JSON array per output line).
+  // Small in practice, but a popular commit must not lose PRs — and any
+  // unexpected shape aborts instead of producing a partial changelog.
+  const raw = ghApi([
+    "--paginate",
+    `repos/${repo}/commits/${sha}/pulls?per_page=100`,
+    "--jq",
+    "[.[].number]",
+  ]);
+  const nums = [];
+  for (const line of raw.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    let page;
+    try {
+      page = JSON.parse(t);
+    } catch {
+      throw new Error(`unexpected associated-PRs response for commit ${sha} (aborting, no partial changelog)`);
+    }
+    if (!Array.isArray(page)) {
+      throw new Error(`unexpected associated-PRs response for commit ${sha} (aborting, no partial changelog)`);
+    }
+    nums.push(...page);
+  }
+  return [...new Set(nums.map(Number))].filter(Number.isInteger);
 }
 
 function pullDetails(repo, n) {
@@ -112,13 +178,16 @@ function pullDetails(repo, n) {
   };
 }
 
-function discoverPrsByAncestry({ repo, prevTag, base, onWarn }) {
-  const { commits, aheadBy } = compareRange(repo, prevTag, base);
-  if (aheadBy > commits.length) {
-    onWarn(
-      `compare ${prevTag}...${base} is ahead by ${aheadBy} but returned ${commits.length} commits (API cap) — the section may be incomplete; split the release range`,
+function discoverPrsByAncestry({ repo, prevTag, base }) {
+  const { status, aheadBy, behindBy } = compareStatus(repo, prevTag, base);
+  if (status === "identical" || aheadBy === 0) return { prs: [], commitCount: 0 };
+  if (status !== "ahead" || behindBy !== 0) {
+    throw new Error(
+      `cannot determine a clean ${prevTag}..${base} range (compare status: ${status}) — refusing to guess; rebase the branch onto ${prevTag} or later`,
     );
   }
+  const tagSha = resolveCommitSha(repo, prevTag);
+  const commits = assembleRangeCommits(fetchCommitPages(repo, base), tagSha);
   const associations = {};
   for (const sha of commits) {
     associations[sha] = associatedPrNumbers(repo, sha);
@@ -183,14 +252,20 @@ function main() {
 
   let prs;
   let boundaryDesc;
-  const warnings = [];
   if (prsFile) {
     prs = JSON.parse(readFileSync(resolve(process.cwd(), prsFile), "utf8"));
     boundaryDesc = `--prs-file ${prsFile} (${prs.length} PRs)`;
   } else if (assocFile) {
-    // Offline/deterministic seam for tests: { commits, associations, details }.
+    // Offline/deterministic seam for tests. Either a direct commit list:
+    //   { commits, associations, details }
+    // or raw commit pages plus the tag SHA (exercises the production page
+    // assembly, including cross-page dedupe and the tag cut):
+    //   { pages, tagSha, associations, details }
     const fixture = JSON.parse(readFileSync(resolve(process.cwd(), assocFile), "utf8"));
-    prs = selectPrsInRange({ ...fixture, base });
+    const commits = fixture.pages
+      ? assembleRangeCommits(fixture.pages, fixture.tagSha)
+      : (fixture.commits ?? []);
+    prs = selectPrsInRange({ commits, associations: fixture.associations ?? {}, details: fixture.details ?? {}, base });
     boundaryDesc = `--assoc-file ${assocFile} (${prs.length} PRs by ancestry)`;
   } else {
     let tags = [];
@@ -214,12 +289,7 @@ function main() {
       }
       let found;
       try {
-        found = discoverPrsByAncestry({
-          repo,
-          prevTag: prev,
-          base,
-          onWarn: (w) => warnings.push(w),
-        });
+        found = discoverPrsByAncestry({ repo, prevTag: prev, base });
       } catch (err) {
         console.error(`prepare-changelog: ${err.message}`);
         process.exit(1);
@@ -286,7 +356,6 @@ function main() {
     console.log(`skipped (Release notes: none): ${skippedNone.join(", ") || "(none)"}`);
     console.log(`needs notes: ${missing.map((n) => `#${n}`).join(", ") || "(none)"}`);
     console.log(`bullets that would be added: ${added}`);
-    for (const w of warnings) console.log(`WARNING: ${w}`);
     process.exit(0);
   }
 
@@ -308,7 +377,6 @@ function main() {
   if (missing.length > 0) {
     console.log(`  OMITTED via --allow-missing-notes (${missing.length}): ${missing.map((n) => `#${n}`).join(", ")} — backfill their notes before the next release`);
   }
-  for (const w of warnings) console.log(`  WARNING: ${w}`);
   console.log(`  bullets added: ${added} (re-runs add nothing new)`);
   console.log("  REVIEW the CHANGELOG.md diff, merge it to main, THEN tag.");
 }

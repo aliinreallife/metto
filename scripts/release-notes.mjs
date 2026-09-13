@@ -216,6 +216,42 @@ export function validateReleaseNotes(body) {
 }
 
 /**
+ * Assemble the in-range commit list from paginated commit pages.
+ *
+ * `pages` is an array of pages (newest first), each an array of commit SHAs,
+ * as returned by the paginated commits listing of the release branch.
+ * `tagSha` is the resolved SHA of the previous version tag.
+ *
+ * - Commit SHAs are deduplicated defensively (pages can overlap on retries).
+ * - Everything at and after the tag commit is cut: only commits listed
+ *   before the tag's first occurrence are in range.
+ * - Throws when tagSha is provided but absent from the pages — that means the
+ *   branch does not contain the tag, and guessing would risk a partial range.
+ */
+export function assembleRangeCommits(pages, tagSha) {
+  const seen = new Set();
+  const ordered = [];
+  for (const page of pages ?? []) {
+    for (const raw of page ?? []) {
+      const sha = String(raw ?? "").trim();
+      if (!sha || seen.has(sha)) continue;
+      seen.add(sha);
+      ordered.push(sha);
+    }
+  }
+  if (tagSha === undefined || tagSha === null || String(tagSha).trim() === "") {
+    return ordered;
+  }
+  const idx = ordered.indexOf(String(tagSha).trim());
+  if (idx === -1) {
+    throw new Error(
+      "previous tag commit not found in the branch history — refusing to guess the range",
+    );
+  }
+  return ordered.slice(0, idx);
+}
+
+/**
  * Select the merged PRs represented by commits in a PREV_TAG..BASE range.
  *
  * Pure ancestry-based selection — commit/PR timestamps are never consulted:

@@ -276,6 +276,116 @@ describe("prepare-changelog.mjs", () => {
     const r = runPrepare(dir, ["--version", "0.8", "--changelog", changelog, "--prs-file", prsFile]);
     expect(r.status).not.toBe(0);
   });
+
+  it("includes a PR that appears only on page 2, deduped across pages", () => {
+    const dir = mkdtempSync(join(tmpdir(), "prepare-changelog-"));
+    const changelog = join(dir, "CHANGELOG.md");
+    const assocFile = join(dir, "assoc.json");
+    writeFileSync(changelog, BASE_CHANGELOG);
+    writeFileSync(
+      assocFile,
+      JSON.stringify({
+        // Two pages; c1 is duplicated across the page boundary.
+        pages: [["c1"], ["c2", "c3", "c1"]],
+        associations: { c1: [101], c2: [102], c3: [106] },
+        details: {
+          101: assocFixture().details[101],
+          102: assocFixture().details[102],
+          106: {
+            number: 106,
+            title: "Page-two feature",
+            body: "## Release notes\nCategory: Improvement\n### English\n- Smoother scrolling.\n### فارسی\n- اسکرول نرم‌تر.\n",
+            base: "main",
+            merged: true,
+          },
+        },
+      }),
+    );
+    const r = runPrepare(dir, [
+      "--version",
+      "v0.8.0",
+      "--date",
+      "2026-09-20",
+      "--changelog",
+      changelog,
+      "--assoc-file",
+      assocFile,
+    ]);
+    expect(r.status).toBe(0);
+    const text = readFileSync(changelog, "utf8");
+    expect(text).toContain("Smoother scrolling. (#106)");
+    expect(text).toContain("### Improvements / بهبودها");
+    const occurrences = text.split("Night departures are now shown. (#101)").length - 1;
+    expect(occurrences).toBe(1);
+  });
+
+  it("cuts paginated history at the previous tag commit", () => {
+    const dir = mkdtempSync(join(tmpdir(), "prepare-changelog-"));
+    const changelog = join(dir, "CHANGELOG.md");
+    const assocFile = join(dir, "assoc.json");
+    writeFileSync(changelog, BASE_CHANGELOG);
+    writeFileSync(
+      assocFile,
+      JSON.stringify({
+        pages: [["c1"], ["t0"], ["cold"]],
+        tagSha: "t0",
+        associations: { c1: [101], cold: [107] },
+        details: {
+          101: assocFixture().details[101],
+          107: {
+            number: 107,
+            title: "Pre-tag work",
+            body: "## Release notes\n### English\n- Before the tag.\n### فارسی\n- قبل از تگ.\n",
+            base: "main",
+            merged: true,
+          },
+        },
+      }),
+    );
+    const r = runPrepare(dir, [
+      "--version",
+      "v0.8.0",
+      "--date",
+      "2026-09-20",
+      "--changelog",
+      changelog,
+      "--assoc-file",
+      assocFile,
+    ]);
+    expect(r.status).toBe(0);
+    const text = readFileSync(changelog, "utf8");
+    expect(text).toContain("Night departures are now shown. (#101)");
+    expect(text).not.toContain("Before the tag.");
+  });
+
+  it("fails instead of guessing when the tag commit is absent from history", () => {
+    const dir = mkdtempSync(join(tmpdir(), "prepare-changelog-"));
+    const changelog = join(dir, "CHANGELOG.md");
+    const assocFile = join(dir, "assoc.json");
+    writeFileSync(changelog, BASE_CHANGELOG);
+    writeFileSync(
+      assocFile,
+      JSON.stringify({
+        pages: [["c1"]],
+        tagSha: "missing-sha",
+        associations: { c1: [101] },
+        details: { 101: assocFixture().details[101] },
+      }),
+    );
+    const r = runPrepare(dir, [
+      "--version",
+      "v0.8.0",
+      "--date",
+      "2026-09-20",
+      "--changelog",
+      changelog,
+      "--assoc-file",
+      assocFile,
+    ]);
+    expect(r.status).not.toBe(0);
+    expect(r.out).toMatch(/previous tag commit not found/);
+    expect(readFileSync(changelog, "utf8")).toBe(BASE_CHANGELOG);
+  });
 });
 
 describe("extract-changelog-section.mjs", () => {
