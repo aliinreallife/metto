@@ -9,6 +9,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Manual dispatch so Prepare Release can run this exact suite against a
+  # release/vX.Y.Z branch and wait for it (GITHUB_TOKEN suffices for
+  # workflow_dispatch). On dispatch the release-notes job below skips —
+  # that check is PR-scoped; preparation already validated notes inline.
 
 jobs:
   ci:
@@ -38,3 +42,22 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
+
+  release-notes:
+    name: release notes (FA/EN)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Check bilingual release notes
+        # No dependencies needed: the script uses Node builtins only.
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/check-release-notes.mjs

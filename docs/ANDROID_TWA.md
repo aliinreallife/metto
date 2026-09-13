@@ -140,6 +140,14 @@ same rule as `/sw.js`).
   SDK; runs `check-android-config.mjs`, `validate-assetlinks.mjs`
   (pending-tolerant), `android-version.mjs v0.1.0` smoke, and
   `./gradlew -p android lint assembleDebug` on the committed project.
+- `prepare-release.yml` (Actions → Prepare Release, input `vX.Y.Z`): the
+  normal release path. Validates the version, drafts the bilingual
+  `CHANGELOG.md` section from merged-PR notes on `release/vX.Y.Z` (fails if
+  any in-range PR lacks usable notes), runs lint/typecheck/tests/extraction
+  inline, opens (or updates) the `chore(release): prepare vX.Y.Z` PR, then
+  dispatches CI on the release branch and waits for it. One-time manual
+  prerequisite: Settings → Actions → General → Workflow permissions →
+  **Allow GitHub Actions to create and approve pull requests** must be ON.
 - `android-release.yml` (tags `v*.*.*`): strict `^v(\d+)\.(\d+)\.(\d+)$`
   validation first, `origin/main` ancestry check
   (`merge-base --is-ancestor`), semver-derived
@@ -156,6 +164,8 @@ same rule as `/sw.js`).
 ## First release (after this PR merges)
 
 ```bash
+# 1. Draft + review the changelog (Actions → Prepare Release, input v0.1.0),
+#    then merge the resulting chore(release): prepare v0.1.0 PR to main.
 git fetch origin && git checkout main && git pull --ff-only
 git tag v0.1.0 && git push origin v0.1.0
 # -> release workflow validates, builds, and creates the GitHub Release.
