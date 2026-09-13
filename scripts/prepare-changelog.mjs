@@ -5,9 +5,11 @@
 //   node scripts/prepare-changelog.mjs --version v0.8.0 [--date YYYY-MM-DD]
 //     [--changelog PATH] [--base main] [--prs-file FIXTURES.json] [--dry-run] [--since YYYY-MM-DD]
 //
-// Boundary (primary): the previous version tag. PRs merged into <base> after
-// that tag's commit are collected via `gh`; their "## Release notes" sections
-// are the source of truth (works with merge commits, squash, or rebase).
+// Boundary (primary): the previous version tag. The PRs in scope are those
+// represented by commits in PREV_TAG..BASE, resolved via GitHub's compare API
+// plus per-commit associated pull requests (commit ancestry — not timestamps,
+// so normal merges, squash merges, and rebases all work). PR bodies are the
+// source of truth for notes.
 // Date-based GitHub search is only a fallback when no previous tag exists
 // (then --since is required).
 //
@@ -19,14 +21,14 @@
 import { execFileSync, execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { mergeIntoChangelog, parseReleaseNotes } from "./release-notes.mjs";
+import { mergeIntoChangelog, parseReleaseNotes, selectPrsInRange } from "./release-notes.mjs";
 
 const TAG_RE = /^v([0-9]+)\.([0-9]+)\.([0-9]+)$/;
 const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
 
 function usage() {
   console.log(
-    "Usage: prepare-changelog.mjs --version vMAJOR.MINOR.PATCH [--date YYYY-MM-DD] [--changelog PATH] [--base BRANCH] [--prs-file JSON] [--dry-run] [--since YYYY-MM-DD]",
+    "Usage: prepare-changelog.mjs --version vMAJOR.MINOR.PATCH [--date YYYY-MM-DD] [--changelog PATH] [--base BRANCH] [--prs-file JSON] [--assoc-file JSON] [--dry-run] [--since YYYY-MM-DD] [--allow-missing-notes]",
   );
 }
 
@@ -68,18 +70,65 @@ function tagExists(tag) {
   }
 }
 
-function tagCommitInstant(tag) {
-  // Seconds since epoch — timezone-safe comparison point for mergedAt.
-  return Number(git(`log -1 --format=%ct '${tag}'`));
+function repoNameWithOwner() {
+  return execSync("gh repo view --json nameWithOwner --jq .nameWithOwner", {
+    encoding: "utf8",
+  }).trim();
 }
 
-function listMergedPrs({ base, limit = 200 }) {
-  const out = execFileSync(
-    "gh",
-    ["pr", "list", "--state", "merged", "--base", base, "--limit", String(limit), "--json", "number,title,body,mergedAt,url"],
-    { encoding: "utf8" },
-  );
-  return JSON.parse(out);
+function ghApi(args) {
+  return execFileSync("gh", ["api", ...args], { encoding: "utf8" });
+}
+
+// Commits reachable from base but not from prevTag — real commit ancestry,
+// never timestamps. Works with normal merges, squash merges, and rebases:
+// GitHub associates each commit with its pull request regardless of strategy.
+function compareRange(repo, prevTag, base) {
+  let raw;
+  try {
+    raw = ghApi([`repos/${repo}/compare/${prevTag}...${base}`]);
+  } catch (err) {
+    throw new Error(`GitHub compare ${prevTag}...${base} failed: ${err.message}`);
+  }
+  const data = JSON.parse(raw);
+  if (data.status === "identical") return { commits: [], aheadBy: 0 };
+  const commits = (data.commits ?? []).map((c) => c.sha).filter(Boolean);
+  return { commits, aheadBy: data.ahead_by ?? commits.length };
+}
+
+function associatedPrNumbers(repo, sha) {
+  const raw = ghApi([`repos/${repo}/commits/${sha}/pulls`, "--jq", "[.[].number]"]);
+  return JSON.parse(raw).map(Number).filter(Number.isInteger);
+}
+
+function pullDetails(repo, n) {
+  const pr = JSON.parse(ghApi([`repos/${repo}/pulls/${n}`]));
+  return {
+    number: pr.number,
+    title: pr.title ?? "",
+    body: pr.body ?? "",
+    base: pr.base?.ref ?? "",
+    merged: pr.merged_at != null,
+  };
+}
+
+function discoverPrsByAncestry({ repo, prevTag, base, onWarn }) {
+  const { commits, aheadBy } = compareRange(repo, prevTag, base);
+  if (aheadBy > commits.length) {
+    onWarn(
+      `compare ${prevTag}...${base} is ahead by ${aheadBy} but returned ${commits.length} commits (API cap) — the section may be incomplete; split the release range`,
+    );
+  }
+  const associations = {};
+  for (const sha of commits) {
+    associations[sha] = associatedPrNumbers(repo, sha);
+  }
+  const nums = [...new Set(Object.values(associations).flat())].sort((a, b) => a - b);
+  const details = {};
+  for (const n of nums) {
+    details[String(n)] = pullDetails(repo, n);
+  }
+  return { prs: selectPrsInRange({ commits, associations, details, base }), commitCount: commits.length };
 }
 
 function searchMergedPrsSince({ since, base, limit = 200 }) {
@@ -116,8 +165,10 @@ function main() {
   }
 
   const dryRun = argv.includes("--dry-run");
+  const allowMissing = argv.includes("--allow-missing-notes");
   const base = flag(argv, "--base") ?? "main";
   const prsFile = flag(argv, "--prs-file");
+  const assocFile = flag(argv, "--assoc-file");
   const changelogPath = resolve(process.cwd(), flag(argv, "--changelog") ?? "CHANGELOG.md");
   let date = flag(argv, "--date") ?? new Date().toISOString().slice(0, 10);
   if (!DATE_RE.test(date)) {
@@ -132,9 +183,15 @@ function main() {
 
   let prs;
   let boundaryDesc;
+  const warnings = [];
   if (prsFile) {
     prs = JSON.parse(readFileSync(resolve(process.cwd(), prsFile), "utf8"));
     boundaryDesc = `--prs-file ${prsFile} (${prs.length} PRs)`;
+  } else if (assocFile) {
+    // Offline/deterministic seam for tests: { commits, associations, details }.
+    const fixture = JSON.parse(readFileSync(resolve(process.cwd(), assocFile), "utf8"));
+    prs = selectPrsInRange({ ...fixture, base });
+    boundaryDesc = `--assoc-file ${assocFile} (${prs.length} PRs by ancestry)`;
   } else {
     let tags = [];
     try {
@@ -148,18 +205,27 @@ function main() {
         console.error(`prepare-changelog: ${version} must be newer than previous tag ${prev}.`);
         process.exit(1);
       }
-      const prevInstant = tagCommitInstant(prev);
-      let all;
+      let repo;
       try {
-        all = listMergedPrs({ base });
+        repo = repoNameWithOwner();
       } catch (err) {
-        console.error(`prepare-changelog: failed to list merged PRs via gh: ${err.message}`);
+        console.error(`prepare-changelog: failed to determine repo via gh: ${err.message}`);
         process.exit(1);
       }
-      prs = all
-        .filter((pr) => Number.isFinite(Date.parse(pr.mergedAt)) && Date.parse(pr.mergedAt) / 1000 > prevInstant)
-        .sort((a, b) => a.number - b.number);
-      boundaryDesc = `merged into ${base} after ${prev}`;
+      let found;
+      try {
+        found = discoverPrsByAncestry({
+          repo,
+          prevTag: prev,
+          base,
+          onWarn: (w) => warnings.push(w),
+        });
+      } catch (err) {
+        console.error(`prepare-changelog: ${err.message}`);
+        process.exit(1);
+      }
+      prs = found.prs;
+      boundaryDesc = `${prs.length} PRs from ${found.commitCount} commits in ${prev}..${base} (ancestry)`;
     } else {
       // Fallback: no previous tag — date-based search only.
       const since = flag(argv, "--since");
@@ -220,7 +286,19 @@ function main() {
     console.log(`skipped (Release notes: none): ${skippedNone.join(", ") || "(none)"}`);
     console.log(`needs notes: ${missing.map((n) => `#${n}`).join(", ") || "(none)"}`);
     console.log(`bullets that would be added: ${added}`);
+    for (const w of warnings) console.log(`WARNING: ${w}`);
     process.exit(0);
+  }
+
+  if (missing.length > 0 && !allowMissing) {
+    console.error(
+      `prepare-changelog: refusing to write — ${missing.length} in-range PR(s) without usable notes: ${missing.map((n) => `#${n}`).join(", ")}`,
+    );
+    console.error(
+      "prepare-changelog: add bilingual notes (or explicit `Release notes: none`) to those PR bodies and re-run. " +
+        "Only as a one-time migration escape hatch, re-run with --allow-missing-notes to omit them explicitly.",
+    );
+    process.exit(1);
   }
 
   writeFileSync(changelogPath, text);
@@ -228,8 +306,9 @@ function main() {
   console.log(`  PRs included (${items.length}): ${items.map((i) => `#${i.pr} [${i.group}]`).join(", ") || "(none)"}`);
   console.log(`  skipped internal-only (${skippedNone.length}): ${skippedNone.map((n) => `#${n}`).join(", ") || "(none)"}`);
   if (missing.length > 0) {
-    console.log(`  WARNING — merged PRs without usable notes (add notes or mark none, then re-run): ${missing.map((n) => `#${n}`).join(", ")}`);
+    console.log(`  OMITTED via --allow-missing-notes (${missing.length}): ${missing.map((n) => `#${n}`).join(", ")} — backfill their notes before the next release`);
   }
+  for (const w of warnings) console.log(`  WARNING: ${w}`);
   console.log(`  bullets added: ${added} (re-runs add nothing new)`);
   console.log("  REVIEW the CHANGELOG.md diff, merge it to main, THEN tag.");
 }

@@ -215,6 +215,37 @@ export function validateReleaseNotes(body) {
   };
 }
 
+/**
+ * Select the merged PRs represented by commits in a PREV_TAG..BASE range.
+ *
+ * Pure ancestry-based selection — commit/PR timestamps are never consulted:
+ *   - commits: SHAs returned by the GitHub compare of PREV_TAG...BASE
+ *     (i.e. commits reachable from BASE but not from PREV_TAG).
+ *   - associations: map of commit SHA -> PR numbers associated with it
+ *     (GitHub's commit→pulls association, merge-strategy agnostic:
+ *     normal merges, squash merges, and rebases all associate).
+ *   - details: map of PR number -> { number, title, body, base, merged }.
+ *   - base: release branch name; only PRs merged into it are selected.
+ *
+ * Returns unique PR detail objects sorted by PR number.
+ */
+export function selectPrsInRange({ commits = [], associations = {}, details = {}, base = "main" }) {
+  const seen = new Map();
+  for (const sha of commits) {
+    const nums = associations[sha] ?? [];
+    for (const n of nums) {
+      const d = details[String(n)] ?? details[n];
+      if (!d) continue;
+      if (d.merged !== true) continue;
+      if ((d.base ?? "main") !== base) continue;
+      const number = Number(d.number ?? n);
+      if (!Number.isInteger(number)) continue;
+      if (!seen.has(number)) seen.set(number, { ...d, number });
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.number - b.number);
+}
+
 /** Append a "(#NN)" PR reference to a bullet unless already present. */
 export function withPrRef(bullet, prNumber) {
   const text = String(bullet).trim();
