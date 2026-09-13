@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { Lang } from "@/lib/i18n";
-import { loadScheduleData } from "@/lib/schedule-utils";
+import { loadScheduleData, refreshScheduleData } from "@/lib/schedule-utils";
 import { WebMcpRegistrar } from "@/components/web-mcp";
 
 type PlacePin = {
@@ -82,7 +82,15 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     if (savedOriginPlace) setOriginPlace((prev) => prev ?? savedOriginPlace);
     const savedDestPlace = readPlacePin("route.destPlace");
     if (savedDestPlace) setDestPlace((prev) => prev ?? savedDestPlace);
-    loadScheduleData();
+    loadScheduleData()
+      // Start from last-known-good/bundled immediately; adopt a newer
+      // validated timetable in the background without blocking first paint.
+      .then(
+        () => {
+          void refreshScheduleData();
+        },
+        () => {},
+      );
   }, []);
 
   // Persist route + place selections so they stick across reloads.

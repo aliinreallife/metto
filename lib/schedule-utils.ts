@@ -11,32 +11,51 @@ import {
   scheduleDayToDayType,
 } from "./holidays/schedule-day";
 import type { IsHolidayDate } from "./holidays/types";
+import {
+  ensureScheduleData,
+  refreshScheduleData as refreshScheduleDataRepo,
+} from "./schedule/repository";
 
-// Lazy-loaded schedule data cache with listener system
+// Lazy-loaded schedule data cache with listener system.
+// Source selection lives in lib/schedule/repository.ts: last-known-good
+// dynamic timetable (IndexedDB) → bundled precache fallback → silent
+// background refresh. This module owns the in-memory activation point so
+// every consumer (planner, departures, server loader) reads the same data.
 let _scheduleData: LineScheduleData[] | null = null;
 let _schedulePromise: Promise<LineScheduleData[]> | null = null;
 let _listeners: Array<() => void> = [];
+// Advertised manifest version of the active timetable. "" = bundled copy
+// of unknown vintage (sorts older than any manifest version).
+let _activeScheduleVersion = "";
+let _refreshPromise: Promise<boolean> | null = null;
 
 function notifyListeners() {
   for (const fn of _listeners) fn();
   _listeners = [];
 }
 
+/** Single activation point: normalize IDs, record version, wake listeners. */
+function activateScheduleData(data: LineScheduleData[], version: string): void {
+  _scheduleData = remapScheduleIds(data);
+  _activeScheduleVersion = version;
+  notifyListeners();
+}
+
 async function getScheduleData(): Promise<LineScheduleData[]> {
   if (_scheduleData) return _scheduleData;
   if (_schedulePromise) return _schedulePromise;
 
-  _schedulePromise = fetch("/schedule-data.json")
-    .then((r) => r.json())
-    .then((data) => {
-      _scheduleData = remapScheduleIds(data);
-      notifyListeners();
-      return _scheduleData;
-    })
-    .catch((err) => {
-      _schedulePromise = null;
-      throw err;
+  _schedulePromise = (async () => {
+    const ok = await ensureScheduleData({
+      isLoaded: () => _scheduleData !== null,
+      activate: activateScheduleData,
     });
+    if (!ok || !_scheduleData) {
+      _schedulePromise = null;
+      throw new Error("schedule data unavailable");
+    }
+    return _scheduleData;
+  })();
 
   return _schedulePromise;
 }
@@ -74,6 +93,8 @@ export function __setScheduleDataForTests(
   if (data === null) {
     _scheduleData = null;
     _schedulePromise = null;
+    _refreshPromise = null;
+    _activeScheduleVersion = "";
     return;
   }
   setServerScheduleData(data);
@@ -83,11 +104,33 @@ export function __setScheduleDataForTests(
  * Explicit production setter for server-side schedule loading
  * (see lib/schedule-server.ts). Normalizes IDs exactly like the
  * client fetch path. Notifies listeners, same as a completed fetch.
+ * Server/bundled vintage carries no advertised version ("").
  */
 export function setServerScheduleData(data: LineScheduleData[]): void {
-  _scheduleData = remapScheduleIds(data);
   _schedulePromise = null;
-  notifyListeners();
+  activateScheduleData(data, "");
+}
+
+/** Advertised manifest version of the active timetable ("" = bundled). */
+export function getActiveScheduleVersion(): string {
+  return _activeScheduleVersion;
+}
+
+/**
+ * Non-blocking background refresh: adopt a newer validated + persisted
+ * timetable when the manifest advertises one. Deduped across callers.
+ * Never throws; any failure leaves the active timetable untouched.
+ */
+export function refreshScheduleData(): Promise<boolean> {
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = refreshScheduleDataRepo(_activeScheduleVersion, {
+    activate: activateScheduleData,
+  })
+    .catch(() => false)
+    .finally(() => {
+      _refreshPromise = null;
+    });
+  return _refreshPromise;
 }
 
 export function onScheduleDataReady(callback: () => void): () => void {

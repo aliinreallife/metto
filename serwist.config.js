@@ -29,7 +29,13 @@ export default serwist({
   // holidays.version.json is intentionally NOT precached: the client polls
   // it at startup to discover dataset updates, so it must revalidate over
   // the network (runtime NetworkFirst) instead of serving a frozen copy.
-  globIgnores: ["public/google*.html", "public/holidays.version.json"],
+  // metro-data-manifest.json is the same kind of update pointer for the
+  // hot-updatable timetable — same treatment, same reason.
+  globIgnores: [
+    "public/google*.html",
+    "public/holidays.version.json",
+    "public/metro-data-manifest.json",
+  ],
   additionalPrecacheEntries: [
     { url: "/manifest.webmanifest", revision: manifestRevision },
   ],
