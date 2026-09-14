@@ -55,7 +55,6 @@ jobs:
     env:
       VERSION: ${{ inputs.version }}
       BRANCH: release/${{ inputs.version }}
-      SUMMARY: ${{ runner.temp }}/release-summary.json
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout main (full history + tags)
@@ -85,7 +84,10 @@ jobs:
         # Single source of truth. No --allow-missing-notes: any in-range PR
         # without usable notes (or explicit `Release notes: none`) fails here.
         # The summary is ephemeral ($RUNNER_TEMP) and never committed.
-        run: pnpm changelog:prepare --version "$VERSION" --summary-file "$SUMMARY"
+        # NOTE: $RUNNER_TEMP is used directly (not via job env) because the
+        # `runner` context is unavailable in jobs.<id>.env at dispatch parse
+        # time and breaks `gh workflow run` with HTTP 422.
+        run: pnpm changelog:prepare --version "$VERSION" --summary-file "$RUNNER_TEMP/release-summary.json"
 
       - name: Validate (lint / typecheck / test / extract)
         run: |
@@ -104,7 +106,7 @@ jobs:
         id: release-pr
         run: |
           set -euo pipefail
-          OUT="$(node scripts/release-pr.mjs prepare --version "$VERSION" --summary-file "$SUMMARY")"
+          OUT="$(node scripts/release-pr.mjs prepare --version "$VERSION" --summary-file "$RUNNER_TEMP/release-summary.json")"
           echo "$OUT"
           echo "$OUT" > "$RUNNER_TEMP/release-pr.json"
           node -e "const p = require('$RUNNER_TEMP/release-pr.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'pushed_sha=' + p.pushedSha + '\npr_url=' + p.prUrl + '\n')"
