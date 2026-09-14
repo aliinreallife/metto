@@ -243,11 +243,12 @@ function cmdPrepare(argv) {
     plan.prUrl = existing[0].url ?? "";
     plan.updatedExistingPr = true;
   } else {
-    const created = JSON.parse(
-      gh(["pr", "create", "--base", base, "--head", branch, "--title", `chore(release): prepare ${cleanVersion}`, "--body-file", tmpBody, "--json", "number,url"]),
-    );
-    plan.prNumber = created.number ?? null;
-    plan.prUrl = created.url ?? "";
+    // NOTE: `gh pr create` has no --json flag (only `pr list/view` do), so
+    // create first and then read back the new PR with `pr list`.
+    gh(["pr", "create", "--base", base, "--head", branch, "--title", `chore(release): prepare ${cleanVersion}`, "--body-file", tmpBody]);
+    const after = JSON.parse(gh(["pr", "list", "--head", branch, "--base", base, "--json", "number,url"]));
+    plan.prNumber = after[0]?.number ?? null;
+    plan.prUrl = after[0]?.url ?? "";
   }
   console.log(JSON.stringify(plan));
 }
