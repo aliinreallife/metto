@@ -46,6 +46,27 @@ ok(
   manifestXml.includes("com.google.androidbrowserhelper.locationdelegation.PermissionRequestActivity"),
   "AndroidManifest declares location PermissionRequestActivity",
 );
+ok(
+  manifestXml.includes("android.permission.ACCESS_COARSE_LOCATION"),
+  "AndroidManifest declares ACCESS_COARSE_LOCATION (location delegation prompt)",
+);
+ok(
+  manifestXml.includes("android.permission.ACCESS_FINE_LOCATION"),
+  "AndroidManifest declares ACCESS_FINE_LOCATION (location delegation prompt)",
+);
+// Location delegation rides on DelegationService — it must stay enabled even
+// when notifications are off. Bubblewrap templates tie this service to
+// @bool/enableNotification, which silently breaks TWA GPS.
+ok(
+  /<service[^>]*android:name="\.DelegationService"[^>]*android:enabled="true"/s.test(manifestXml) ||
+    /<service[^>]*android:enabled="true"[^>]*android:name="\.DelegationService"/s.test(manifestXml),
+  "AndroidManifest keeps DelegationService android:enabled=true (location delegation independent of notifications)",
+);
+ok(
+  /<service[^>]*android:name="\.DelegationService"[^>]*android:exported="true"/s.test(manifestXml) ||
+    /<service[^>]*android:exported="true"[^>]*android:name="\.DelegationService"/s.test(manifestXml),
+  "AndroidManifest keeps DelegationService android:exported=true (Chrome must bind to it)",
+);
 
 const pinned = readFileSync(resolve(repoRoot, "android/.bubblewrap-version"), "utf8").trim();
 ok(pinned === "1.25.0", `android/.bubblewrap-version pins 1.25.0 (got ${pinned})`);

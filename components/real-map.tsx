@@ -21,6 +21,7 @@ import {
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
 import { type Lang } from "@/lib/i18n"
+import { getCurrentPositionTolerant } from "@/lib/geolocation"
 import { useConnectivity, type ConnectivityState } from "@/lib/offline/use-connectivity"
 import { cn } from "@/lib/utils"
 
@@ -655,61 +656,61 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     }
   }, [placeMarkers, route])
 
-  function locateMe() {
+  async function locateMe() {
     if (!mapRef.current || !navigator.geolocation) {
       setGpsError(isFa ? "موقعیت شما به‌دست نیامد." : "Couldn't get your location.")
       return
     }
     setLocating(true)
     setGpsError(null)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const map = mapRef.current
-        if (!map) return
-        const lat = pos.coords.latitude
-        const lng = pos.coords.longitude
+    try {
+      const { lat, lng } = await getCurrentPositionTolerant()
+      const map = mapRef.current
+      if (!map) return
 
-        // Remove old GPS marker
-        if (gpsMarkerRef.current) {
-          gpsMarkerRef.current.remove()
-          gpsMarkerRef.current = null
-        }
+      // Remove old GPS marker
+      if (gpsMarkerRef.current) {
+        gpsMarkerRef.current.remove()
+        gpsMarkerRef.current = null
+      }
 
-        // Create pulsing GPS marker
-        const marker = L.circleMarker([lat, lng], {
-          radius: 8,
-          color: "#3b82f6",
-          weight: 3,
-          fillColor: "#60a5fa",
-          fillOpacity: 0.9,
-          opacity: 1,
-        }).addTo(map)
-        // No hover tooltip: the always-visible engine label (via gpsPos)
-        // is the single label for the dot.
-        gpsMarkerRef.current = marker
-        setHasGps(true)
-        setGpsPos([lat, lng])
+      // Create pulsing GPS marker
+      const marker = L.circleMarker([lat, lng], {
+        radius: 8,
+        color: "#3b82f6",
+        weight: 3,
+        fillColor: "#60a5fa",
+        fillOpacity: 0.9,
+        opacity: 1,
+      }).addTo(map)
+      // No hover tooltip: the always-visible engine label (via gpsPos)
+      // is the single label for the dot.
+      gpsMarkerRef.current = marker
+      setHasGps(true)
+      setGpsPos([lat, lng])
 
-        // Pan to location
-        map.setView([lat, lng], 14)
-        setLocating(false)
-      },
-      (err) => {
-        setLocating(false)
-        // Offline with a cached fix still succeeds above; only genuine
-        // failures land here (denied/unavailable/timeout).
-        setGpsError(
-          err.code === err.PERMISSION_DENIED
-            ? isFa
-              ? "دسترسی به موقعیت رد شد."
-              : "Location access denied."
-            : isFa
-              ? "موقعیت شما به‌دست نیامد."
-              : "Couldn't get your location.",
-        )
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    )
+      // Pan to location
+      map.setView([lat, lng], 14)
+      setLocating(false)
+    } catch (err) {
+      setLocating(false)
+      // Offline with a cached fix still succeeds above; only genuine
+      // failures land here (denied/unavailable/timeout).
+      const denied =
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code?: unknown }).code === 1
+      setGpsError(
+        denied
+          ? isFa
+            ? "دسترسی به موقعیت رد شد."
+            : "Location access denied."
+          : isFa
+            ? "موقعیت شما به‌دست نیامد."
+            : "Couldn't get your location.",
+      )
+    }
   }
 
   return (

@@ -19,11 +19,14 @@
      removed; AGP derives component paths from the Gradle namespace. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    
-
-    
-
-    
+    <!-- Metto: location delegation needs runtime location permissions.
+         Without these the TWA never shows the Android location prompt and
+         navigator.geolocation fails with PERMISSION_DENIED while the PWA
+         in Chrome works. Both COARSE (approximate) and FINE (precise) are
+         required for Android 12+ precise/approximate handling.
+         Re-apply after any `bubblewrap update` (it regenerates this file). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     
 
@@ -169,10 +172,14 @@
                 android:resource="@xml/filepaths" />
         </provider>
 
+        <!-- Metto: must stay enabled/exported for location delegation even
+             though enableNotifications=false. Bubblewrap ties this service to
+             @bool/enableNotification, which disables LocationDelegationExtraCommandHandler
+             and breaks GPS in the TWA (PWA keeps working). Re-apply after `bubblewrap update`. -->
         <service
             android:name=".DelegationService"
-            android:enabled="@bool/enableNotification"
-            android:exported="@bool/enableNotification">
+            android:enabled="true"
+            android:exported="true">
 
             
 
