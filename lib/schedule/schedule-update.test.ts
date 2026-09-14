@@ -609,6 +609,68 @@ describe("schedule rotation and rollback", () => {
   });
 });
 
+describe("fresh-launch network behavior", () => {
+  it("matching bundled baseline performs zero timetable downloads", async () => {
+    const rows = [...deepClone(validDataset()), ...deepClone(secondDataset())];
+    // Manifest advertises exactly the bundled content: same version, same
+    // per-chunk hashes.
+    const chunks: Record<string, { url: string; sha256: string; size: number }> = {};
+    for (const [key, keyRows] of groupRowsByKey(rows)) {
+      const text = JSON.stringify(keyRows);
+      chunks[key] = {
+        url: `/data/schedule-${key}.abc123def456.json`,
+        sha256: hashOf(text),
+        size: Buffer.byteLength(text, "utf8"),
+      };
+    }
+    const manifest = {
+      schemaVersion: 2,
+      dataVersion: BUNDLED_SCHEDULE_VERSION,
+      schedule: { version: BUNDLED_SCHEDULE_VERSION, chunks },
+    };
+    const jsonCalls: string[] = [];
+    const textCalls: string[] = [];
+    const fetchJson = async (url: string) => {
+      jsonCalls.push(url);
+      if (url === "/schedule-data.json") return deepClone(rows);
+      if (url === "/metro-data-manifest.json") return deepClone(manifest);
+      throw new Error(`unexpected timetable fetch: ${url}`);
+    };
+    // 1. Boot from the bundled local copy (no IDB yet: nothing to promote,
+    //    nothing written — activation is in-memory only).
+    const activated: { version: string }[] = [];
+    const ok = await ensureScheduleData({
+      isLoaded: () => false,
+      activate: (data, version) => {
+        activated.push({ version });
+      },
+      fetchJson,
+      readStored: async () => null,
+      readPrevious: async () => null,
+    });
+    expect(ok).toBe(true);
+    expect(activated).toEqual([{ version: BUNDLED_SCHEDULE_VERSION }]);
+    // 2. Background refresh: manifest revalidates, hashes match, done.
+    const refreshed = await refreshScheduleData(BUNDLED_SCHEDULE_VERSION, {
+      fetchJson,
+      fetchText: async (url: string) => {
+        textCalls.push(url);
+        throw new Error(`must not fetch chunks when hashes match: ${url}`);
+      },
+      readStored: async () => null,
+      readActiveData: () => rows,
+      activate: () => {
+        throw new Error("must not activate when nothing changed");
+      },
+    });
+    expect(refreshed).toBe(false);
+    // Exactly one bundled bootstrap read + one manifest revalidation.
+    // Zero chunk requests, zero versioned/pinned full-schedule requests.
+    expect(jsonCalls).toEqual(["/schedule-data.json", "/metro-data-manifest.json"]);
+    expect(textCalls).toEqual([]);
+  });
+});
+
 describe("repository lifecycle", () => {
   const dataset = () => deepClone(validDataset());
 
