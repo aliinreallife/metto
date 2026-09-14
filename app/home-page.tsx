@@ -33,6 +33,10 @@ import {
   parsePlaceParam,
 } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
+import {
+  getCurrentPositionTolerant,
+  isPermissionDenied,
+} from "@/lib/geolocation";
 
 export type PlaceInfo = {
   placeName: string;
@@ -326,61 +330,56 @@ function RouteView({
   const gpsLangRef = useRef(lang);
   gpsLangRef.current = lang;
 
-  function locateOrigin() {
+  async function locateOrigin() {
     if (!navigator.geolocation) {
       setGpsError(STRINGS[gpsLangRef.current].gpsUnavailable);
       return;
     }
     setLocating(true);
     setGpsError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const nearest = nearestStations(latitude, longitude, { limit: 1 });
-        if (nearest.length === 0) {
-          setLocating(false);
-          return;
-        }
-        const station = nearest[0].station;
-        // GPS origin becomes a place-style card (like Iran Mall) so it
-        // sticks across tabs/reloads via the same place persistence.
-        onGpsOrigin({
-          placeName: t.yourLocation,
-          stationId: station.id,
-          distanceKm: haversineKm(latitude, longitude, station.location.lat, station.location.lng),
-          lat: latitude,
-          lng: longitude,
-        });
-        setOriginId(station.id);
+    try {
+      const { lat: latitude, lng: longitude } =
+        await getCurrentPositionTolerant();
+      const nearest = nearestStations(latitude, longitude, { limit: 1 });
+      if (nearest.length === 0) {
         setLocating(false);
-        // Upgrade the generic label to the neighborhood name when available.
-        // Guarded by coords so a newer selection is never overwritten.
-        const requestLang = gpsLangRef.current;
-        reverseGeocode(latitude, longitude, requestLang).then((name) => {
-          if (!name) return;
-          onGpsOrigin(
-            {
-              placeName: name,
-              stationId: station.id,
-              distanceKm: haversineKm(latitude, longitude, station.location.lat, station.location.lng),
-              lat: latitude,
-              lng: longitude,
-            },
-            true,
-          );
-        });
-      },
-      (err) => {
-        const strings = STRINGS[gpsLangRef.current];
-        setGpsError(
-          err.code === err.PERMISSION_DENIED
-            ? strings.gpsDenied
-            : strings.gpsUnavailable,
+        return;
+      }
+      const station = nearest[0].station;
+      // GPS origin becomes a place-style card (like Iran Mall) so it
+      // sticks across tabs/reloads via the same place persistence.
+      onGpsOrigin({
+        placeName: t.yourLocation,
+        stationId: station.id,
+        distanceKm: haversineKm(latitude, longitude, station.location.lat, station.location.lng),
+        lat: latitude,
+        lng: longitude,
+      });
+      setOriginId(station.id);
+      setLocating(false);
+      // Upgrade the generic label to the neighborhood name when available.
+      // Guarded by coords so a newer selection is never overwritten.
+      const requestLang = gpsLangRef.current;
+      reverseGeocode(latitude, longitude, requestLang).then((name) => {
+        if (!name) return;
+        onGpsOrigin(
+          {
+            placeName: name,
+            stationId: station.id,
+            distanceKm: haversineKm(latitude, longitude, station.location.lat, station.location.lng),
+            lat: latitude,
+            lng: longitude,
+          },
+          true,
         );
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+      });
+    } catch (err) {
+      const strings = STRINGS[gpsLangRef.current];
+      setGpsError(
+        isPermissionDenied(err) ? strings.gpsDenied : strings.gpsUnavailable,
+      );
+      setLocating(false);
+    }
   }
 
   const mapHref = buildMapHref({

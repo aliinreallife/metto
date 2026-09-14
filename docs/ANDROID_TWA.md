@@ -47,6 +47,11 @@ npx -y @bubblewrap/cli@1.25.0 init --manifest https://metto.ir/manifest.webmanif
 npx -y @bubblewrap/cli@1.25.0 update --manifest android
 # re-apply the "Metto:" blocks in android/app/build.gradle (signing + version
 # overrides) — `update` regenerates that file from the template.
+# re-apply the "Metto:" blocks in android/app/src/main/AndroidManifest.xml:
+# ACCESS_COARSE_LOCATION + ACCESS_FINE_LOCATION uses-permissions plus
+# DelegationService android:enabled/exported=true (location delegation must
+# stay enabled even when enableNotifications=false, otherwise TWA GPS fails
+# with PERMISSION_DENIED while the PWA works).
 node scripts/check-android-config.mjs
 ```
 

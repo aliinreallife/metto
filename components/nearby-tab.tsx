@@ -16,6 +16,10 @@ import { AMENITY_LABELS, STRINGS, type Lang } from "@/lib/i18n";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { cn } from "@/lib/utils";
 import { StationCard } from "@/components/station-card";
+import {
+  getCurrentPositionTolerant,
+  isPermissionDenied,
+} from "@/lib/geolocation";
 
 type Props = {
   lang: Lang;
@@ -59,27 +63,23 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
 
   // Plain event handler (calls no hooks) — intentionally NOT named `use*`,
   // so the rules-of-hooks lint rule does not mistake it for a hook.
-  function requestGps() {
+  // Tolerant helper: high accuracy first, one low-accuracy retry on timeout
+  // (cold TWA fixes often exceed short timeouts).
+  async function requestGps() {
     if (!("geolocation" in navigator)) {
       setLoc({ kind: "error", message: t.gpsUnavailable });
       return;
     }
     setLoc({ kind: "locating" });
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setLoc({
-          kind: "gps",
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        }),
-      (err) =>
-        setLoc({
-          kind: "error",
-          message:
-            err.code === err.PERMISSION_DENIED ? t.gpsDenied : t.gpsUnavailable,
-        }),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+    try {
+      const { lat, lng } = await getCurrentPositionTolerant();
+      setLoc({ kind: "gps", lat, lng });
+    } catch (err) {
+      setLoc({
+        kind: "error",
+        message: isPermissionDenied(err) ? t.gpsDenied : t.gpsUnavailable,
+      });
+    }
   }
 
   function pickStation(id: string | null) {
