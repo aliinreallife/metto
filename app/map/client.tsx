@@ -30,7 +30,11 @@ const RealMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex size-full items-center justify-center text-muted-foreground">
+      // Matches MINIMALIST_BG in real-map (literal to avoid importing leaflet on SSR).
+      <div
+        className="flex size-full items-center justify-center text-muted-foreground"
+        style={{ backgroundColor: "#151515" }}
+      >
         <Loader2 className="size-6 animate-spin" />
       </div>
     ),

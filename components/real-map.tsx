@@ -54,6 +54,11 @@ const MINIMALIST_URL = CARTO_KEY
 const MINIMALIST_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
+// Fallback behind the tiles while they load (or when offline/blocked).
+// Must match the CARTO dark_matter base so minimalist mode never flashes
+// the pale Leaflet/page background through tile gaps.
+export const MINIMALIST_BG = "#151515"
+
 // ---- Station label layer (screen-space placement, no Leaflet tooltips) ----
 
 // Priority: selected > hovered > origin/destination > route > interchange >
@@ -399,8 +404,10 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (initialMapModeRef.current === "satellite") {
       tileLayer.addTo(map)
       labelsLayer.addTo(map)
+      map.getContainer().style.backgroundColor = ""
     } else {
       minimalistLayer.addTo(map)
+      map.getContainer().style.backgroundColor = MINIMALIST_BG
     }
 
     overlayRef.current = L.layerGroup().addTo(map)
@@ -476,7 +483,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       if (tileLayerRef.current && map.hasLayer(tileLayerRef.current)) map.removeLayer(tileLayerRef.current)
       if (labelsLayerRef.current && map.hasLayer(labelsLayerRef.current)) map.removeLayer(labelsLayerRef.current)
       if (minimalistLayerRef.current && !map.hasLayer(minimalistLayerRef.current)) minimalistLayerRef.current.addTo(map)
-      container.style.backgroundColor = ""
+      container.style.backgroundColor = MINIMALIST_BG
     }
   }, [mapMode])
 
@@ -706,8 +713,16 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   }
 
   return (
-    <div className="relative z-0 h-full w-full overflow-hidden">
-      <div ref={containerRef} className="h-full w-full" aria-label="Tehran metro on real map" />
+    <div
+      className="relative z-0 h-full w-full overflow-hidden"
+      style={mapMode === "minimalist" ? { backgroundColor: MINIMALIST_BG } : undefined}
+    >
+      <div
+        ref={containerRef}
+        className="h-full w-full"
+        aria-label="Tehran metro on real map"
+        style={mapMode === "minimalist" ? { backgroundColor: MINIMALIST_BG } : undefined}
+      />
       {gpsError && (
         <div className="absolute bottom-3 left-3 z-[1000] max-w-[70%] rounded-lg border border-border bg-background/95 px-3 py-1.5 text-xs text-destructive shadow-sm backdrop-blur">
           {gpsError}
