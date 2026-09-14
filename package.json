@@ -9,7 +9,9 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build && serwist build",
+    "build": "node scripts/generate-metro-data.mjs && next build && serwist build",
+    "metro-data:generate": "node scripts/generate-metro-data.mjs",
+    "metro-data:validate": "node scripts/generate-metro-data.mjs --check",
     "build:next": "next build",
     "start": "next start",
     "lint": "eslint .",

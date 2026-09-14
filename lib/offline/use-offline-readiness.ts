@@ -4,13 +4,20 @@
 // 1. "preparing": online-but-incomplete, OR offline with verification still
 //    pending (UNKNOWN — must never warn).
 // 2. "ready": online + SW controlling + schedule + holiday dataset present.
-// 3. "offline-ready": offline + verified + core data available from the
-//    durable SW precache guarantee (Cache Storage — never incidental
-//    HTTP-cache availability).
+// 3. "offline-ready": offline + verified + core data available from a
+//    DURABLE guarantee — Cache Storage precache OR the IndexedDB
+//    last-known-good timetable (never incidental HTTP-cache availability).
 // 4. "offline-incomplete": offline + VERIFIED missing core (the only warning).
 //
-// "Core ready" NEVER claims readiness from SW install alone — the timetable
-// (`schedule-data.json`) and the holiday dataset must both be loaded.
+// "Core ready" NEVER claims readiness from SW install alone — a validated
+// timetable must be active in memory (loaded from IDB or precache) and the
+// holiday dataset must be present.
+//
+// Source of truth division: Cache Storage owns the app shell + bootstrap
+// monolith; IndexedDB owns the structured active timetable + metadata. A
+// valid IDB entry is real usable capability (planner runs against it), so
+// IDB-active + shell counts as offline-ready even if the precache datasets
+// were evicted — while missing everything still warns.
 //
 // Update lifecycle is intentionally silent: a newer worker installs in the
 // background and waits (skipWaiting: false) without interrupting the
@@ -23,6 +30,7 @@ import {
   loadScheduleData,
   onScheduleDataReady,
 } from "../schedule-utils";
+import { readActiveSchedule } from "../schedule/store";
 import { getLocalHolidayDataset } from "../holidays/use-holiday-data";
 import { useConnectivity } from "./use-connectivity";
 
@@ -40,6 +48,8 @@ export type OfflineReadiness = {
   scheduleLoaded: boolean;
   holidayLoaded: boolean;
   precacheReady: boolean;
+  /** True when a valid IndexedDB timetable exists (usable without precache). */
+  idbScheduleReady: boolean;
   coreReady: boolean;
   /**
    * True once the initial schedule + holiday + precache checks have EACH
@@ -78,15 +88,17 @@ export function useOfflineReadiness(): OfflineReadiness {
   // never merely because a worker is installed. This is what makes the
   // "ready" claim survive a cold restart without HTTP-cache luck.
   const [precacheReady, setPrecacheReady] = useState(false);
+  const [idbScheduleReady, setIdbScheduleReady] = useState(false);
   const [holidayLoaded, setHolidayLoaded] = useState(
     () => getLocalHolidayDataset() !== null,
   );
   // Completion flags: each initial check settling (found, missing, or
-  // thrown) marks its flag. All three must be true before an offline
+  // thrown) marks its flag. All four must be true before an offline
   // document may claim anything about missing core data.
   const [scheduleChecked, setScheduleChecked] = useState(false);
   const [holidayChecked, setHolidayChecked] = useState(false);
   const [precacheChecked, setPrecacheChecked] = useState(false);
+  const [idbChecked, setIdbChecked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,6 +182,26 @@ export function useOfflineReadiness(): OfflineReadiness {
     return () => {
       cancelled = true;
       if (timer !== null) window.clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    // IndexedDB probe: a valid durable timetable is real offline capability
+    // (the repository boots from it without any network). Settles once —
+    // found, missing, or thrown all complete the check, never hang it.
+    let cancelled = false;
+    readActiveSchedule()
+      .then((entry) => {
+        if (!cancelled && entry && entry.version.length > 0 && entry.data.length > 0) {
+          setIdbScheduleReady(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIdbChecked(true);
+      });
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -281,19 +313,21 @@ export function useOfflineReadiness(): OfflineReadiness {
   const coreReady = scheduleLoaded && holidayLoaded;
 
   // Verified-readiness gate (UNKNOWN vs MISSING): an offline document whose
-  // three initial checks have not all settled yet reports "preparing", never
+  // four initial checks have not all settled yet reports "preparing", never
   // "offline-incomplete". Only a settled check run with missing core data
   // may show the amber warning — a slow phone/cache must never warn merely
   // because verification took longer than the UI grace period.
   // Tri-state aware: "checking" connectivity is neither online nor offline —
   // it follows the online path (preparing/ready) so nothing offline is ever
-  // claimed before reachability resolves. Offline "ready" additionally
-  // requires precacheReady: scheduleLoaded may be true from the incidental
-  // browser HTTP cache while the durable Cache Storage guarantee is gone —
+  // claimed before reachability resolves. Offline "ready" requires a DURABLE
+  // guarantee behind the in-memory data: precacheReady (bootstrap monolith
+  // in Cache Storage) OR idbScheduleReady (validated IndexedDB timetable).
+  // scheduleLoaded alone may come from the incidental browser HTTP cache —
   // that must report offline-incomplete, never offline-ready.
   const readinessVerified =
-    scheduleChecked && holidayChecked && precacheChecked;
+    scheduleChecked && holidayChecked && precacheChecked && idbChecked;
   const confirmedOffline = connectivity.state === "offline";
+  const durableScheduleReady = precacheReady || idbScheduleReady;
 
   let phase: OfflinePhase;
   if (!confirmedOffline) {
@@ -302,7 +336,8 @@ export function useOfflineReadiness(): OfflineReadiness {
   } else if (!readinessVerified) {
     phase = "preparing";
   } else {
-    phase = coreReady && precacheReady ? "offline-ready" : "offline-incomplete";
+    phase =
+      coreReady && durableScheduleReady ? "offline-ready" : "offline-incomplete";
   }
 
   return {
@@ -313,6 +348,7 @@ export function useOfflineReadiness(): OfflineReadiness {
     scheduleLoaded,
     holidayLoaded,
     precacheReady,
+    idbScheduleReady,
     coreReady,
     readinessVerified,
   };

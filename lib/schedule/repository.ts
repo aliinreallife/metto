@@ -5,8 +5,10 @@
 // Startup order (all steps fail-soft to the next):
 //  1. memory already active → done (fast in-session revisit);
 //  2. IndexedDB `active` entry (last valid dynamic timetable) → activate;
-//  3. bundled precached `/schedule-data.json` (offline bootstrap) → activate;
-//  4. background (when online): manifest → pinned download → validate →
+//  3. IndexedDB `previous` entry (rollback after a bad rotation) → activate;
+//  4. bundled precached `/schedule-data.json` (offline bootstrap, content-
+//     identified via generated bundled-meta — NOT unknown vintage) → activate;
+//  5. background (when online): manifest → changed chunks only → verify →
 //     persist → atomically activate for this session.
 //
 // Activation itself is always delegated to the caller's `activate`
@@ -14,8 +16,9 @@
 // every consumer reads the dynamically selected timetable). This module
 // never touches component state and never throws.
 import type { LineScheduleData } from "../schedule-data";
+import { BUNDLED_SCHEDULE_VERSION } from "./bundled-meta";
 import { parseScheduleDataset } from "./validate";
-import { readActiveSchedule } from "./store";
+import { readActiveSchedule, readPreviousSchedule } from "./store";
 import { checkForScheduleUpdate, type ScheduleUpdaterDeps } from "./updater";
 
 export const BUNDLED_SCHEDULE_URL = "/schedule-data.json";
@@ -25,6 +28,7 @@ export interface RepositoryDeps {
   activate: (data: LineScheduleData[], version: string) => void;
   fetchJson?: (url: string) => Promise<unknown>;
   readStored?: () => Promise<{ version: string; data: LineScheduleData[] } | null>;
+  readPrevious?: () => Promise<{ version: string; data: LineScheduleData[] } | null>;
 }
 
 async function defaultFetchJson(url: string): Promise<unknown> {
@@ -35,8 +39,8 @@ async function defaultFetchJson(url: string): Promise<unknown> {
 
 /**
  * Blocking startup load. Resolves true when any timetable is active
- * (dynamic → bundled), false when nothing could be loaded (caller falls
- * back to geometric estimates). Never throws.
+ * (dynamic → rollback → bundled), false when nothing could be loaded
+ * (caller falls back to geometric estimates). Never throws.
  */
 export async function ensureScheduleData(deps: RepositoryDeps): Promise<boolean> {
   try {
@@ -52,20 +56,35 @@ export async function ensureScheduleData(deps: RepositoryDeps): Promise<boolean>
           deps.activate(data, stored.version);
           return true;
         }
-        // Corrupt durable entry: ignore it and fall through to bundled.
+        // Corrupt durable entry: fall through to rollback, then bundled.
+      }
+    } catch {
+      // Storage unreadable — fall through.
+    }
+
+    // 2. Rollback entry (previous known-good, kept across one rotation).
+    try {
+      const readPrevious = deps.readPrevious ?? readPreviousSchedule;
+      const previous = await readPrevious();
+      if (previous) {
+        const data = parseScheduleDataset(previous.data);
+        if (data) {
+          deps.activate(data, previous.version);
+          return true;
+        }
       }
     } catch {
       // Storage unreadable — fall through to bundled.
     }
 
-    // 2. Bundled/precache offline bootstrap.
+    // 3. Bundled/precache offline bootstrap. Content-identified at build
+    // time, so the first online refresh compares versions instead of
+    // blindly redownloading the ~5MB monolith.
     const fetchJson = deps.fetchJson ?? defaultFetchJson;
     const bundledRaw = await fetchJson(BUNDLED_SCHEDULE_URL);
     const bundled = parseScheduleDataset(bundledRaw);
     if (!bundled) return false;
-    // Bundled copy has no advertised version: "" sorts older than any
-    // manifest version, so the first online refresh adopts the pinned copy.
-    deps.activate(bundled, "");
+    deps.activate(bundled, BUNDLED_SCHEDULE_VERSION);
     return true;
   } catch {
     return false;

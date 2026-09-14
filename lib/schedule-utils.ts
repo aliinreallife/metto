@@ -15,18 +15,22 @@ import {
   ensureScheduleData,
   refreshScheduleData as refreshScheduleDataRepo,
 } from "./schedule/repository";
+import { BUNDLED_SCHEDULE_VERSION } from "./schedule/bundled-meta";
 
 // Lazy-loaded schedule data cache with listener system.
 // Source selection lives in lib/schedule/repository.ts: last-known-good
-// dynamic timetable (IndexedDB) → bundled precache fallback → silent
-// background refresh. This module owns the in-memory activation point so
-// every consumer (planner, departures, server loader) reads the same data.
+// dynamic timetable (IndexedDB) → rollback entry → bundled precache
+// fallback (content-identified at build time) → silent background refresh.
+// This module owns the in-memory activation point so every consumer
+// (planner, departures, server loader) reads the same data. Expensive
+// normalization runs once per activation — never per screen render.
 let _scheduleData: LineScheduleData[] | null = null;
 let _schedulePromise: Promise<LineScheduleData[]> | null = null;
 let _listeners: Array<() => void> = [];
-// Advertised manifest version of the active timetable. "" = bundled copy
-// of unknown vintage (sorts older than any manifest version).
-let _activeScheduleVersion = "";
+// Advertised manifest version of the active timetable. Starts at the
+// generated bundled baseline so a fresh online launch compares versions
+// instead of blindly redownloading the ~5MB monolith.
+let _activeScheduleVersion = BUNDLED_SCHEDULE_VERSION;
 let _refreshPromise: Promise<boolean> | null = null;
 
 function notifyListeners() {
@@ -61,19 +65,22 @@ async function getScheduleData(): Promise<LineScheduleData[]> {
 }
 
 // schedule-data.json may still use legacy English-name IDs; normalize every
-// id to the stable slug once at load so the rest of the code only sees slugs.
+// id to the stable slug once at activation so the rest of the code only sees
+// slugs. Copies instead of mutating: the input may be the durable IndexedDB
+// object or a shared test fixture, and repeated activation must be idempotent.
 // Exported for the server-side loader (lib/schedule-server.ts).
 export function remapScheduleIds(data: LineScheduleData[]): LineScheduleData[] {
   const mapId = (id: string) => resolveStationId(id) ?? id;
-  for (const ls of data) {
-    ls.terminalA = mapId(ls.terminalA);
-    ls.terminalB = mapId(ls.terminalB);
-    for (const train of ls.trains) {
-      train.direction = mapId(train.direction);
-      for (const stop of train.stops) stop.stationId = mapId(stop.stationId);
-    }
-  }
-  return data;
+  return data.map((ls) => ({
+    ...ls,
+    terminalA: mapId(ls.terminalA),
+    terminalB: mapId(ls.terminalB),
+    trains: ls.trains.map((train) => ({
+      ...train,
+      direction: mapId(train.direction),
+      stops: train.stops.map((stop) => ({ ...stop, stationId: mapId(stop.stationId) })),
+    })),
+  }));
 }
 
 // Normalize legacy English-name IDs at the entry of every public helper so
@@ -94,7 +101,7 @@ export function __setScheduleDataForTests(
     _scheduleData = null;
     _schedulePromise = null;
     _refreshPromise = null;
-    _activeScheduleVersion = "";
+    _activeScheduleVersion = BUNDLED_SCHEDULE_VERSION;
     return;
   }
   setServerScheduleData(data);
@@ -104,14 +111,14 @@ export function __setScheduleDataForTests(
  * Explicit production setter for server-side schedule loading
  * (see lib/schedule-server.ts). Normalizes IDs exactly like the
  * client fetch path. Notifies listeners, same as a completed fetch.
- * Server/bundled vintage carries no advertised version ("").
+ * Server/bundled data carries the generated baseline version.
  */
 export function setServerScheduleData(data: LineScheduleData[]): void {
   _schedulePromise = null;
-  activateScheduleData(data, "");
+  activateScheduleData(data, BUNDLED_SCHEDULE_VERSION);
 }
 
-/** Advertised manifest version of the active timetable ("" = bundled). */
+/** Advertised manifest version of the active timetable. */
 export function getActiveScheduleVersion(): string {
   return _activeScheduleVersion;
 }
@@ -125,6 +132,9 @@ export function refreshScheduleData(): Promise<boolean> {
   if (_refreshPromise) return _refreshPromise;
   _refreshPromise = refreshScheduleDataRepo(_activeScheduleVersion, {
     activate: activateScheduleData,
+    // Unchanged chunks reuse the in-memory dataset — no IndexedDB re-read,
+    // no repeated parse, no redundant download.
+    readActiveData: () => _scheduleData,
   })
     .catch(() => false)
     .finally(() => {

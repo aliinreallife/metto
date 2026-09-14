@@ -13,8 +13,10 @@
 //   navigations/RSC — a failed `/map?...` serves precached `/map`, never `/`
 // - NetworkFirst: /holidays.version.json + /metro-data-manifest.json
 //   update pointers (not precached)
+// - CacheFirst: immutable content-addressed metro-data chunks
+//   (/data/schedule-<key>.<hash>.json, /data/stations.<hash>.json)
 // - NetworkOnly: same-origin /api/* and version-pinned dataset downloads
-//   (/holidays.json?v=…, /schedule-data.json?v=…)
+//   (/holidays.json?v=…, /schedule-data.json?v=… legacy)
 // - Cross-origin: NO blanket route — unmatched requests (Nominatim,
 //   Esri, timestamp.ir, fonts, …) are handled directly by the
 //   browser, never cached. Sole exception: the narrow opportunistic CARTO
@@ -40,6 +42,7 @@ import {
 } from "../lib/map/carto-tiles";
 import {
   isDataManifestRequest,
+  isScheduleChunkRequest,
   isVersionedScheduleRequest,
 } from "../lib/schedule/sw-routes";
 import {
@@ -203,11 +206,32 @@ const serwist = new Serwist({
       }),
     },
     {
-      // Version-pinned timetable downloads (`/schedule-data.json?v=…`)
-      // intentionally bypass the precached bare `/schedule-data.json` key
-      // and always go to the network when online. The bare precached entry
-      // stays the offline bootstrap fallback. Offline the pinned request
-      // just fails and the caller keeps last-known-good.
+      // Immutable metro-data chunks: the content hash in the filename
+      // guarantees a different URL whenever content changes, so CacheFirst
+      // with a bounded LRU is safe. Old hashes stay cached until evicted —
+      // existing clients keep working across deploys. The updater still
+      // SHA-256-verifies every chunk before activation (never trust cache).
+      matcher: ({ url, sameOrigin }) =>
+        sameOrigin && isScheduleChunkRequest(url.pathname),
+      handler: new CacheFirst({
+        cacheName: "metto-data-chunks",
+        plugins: [
+          new CacheableResponsePlugin({ statuses: [200] }),
+          new ExpirationPlugin({
+            maxEntries: 32,
+            maxAgeSeconds: 90 * 24 * 60 * 60,
+            maxAgeFrom: "last-used",
+          }),
+        ],
+      }),
+    },
+    {
+      // Version-pinned timetable downloads (`/schedule-data.json?v=…`,
+      // legacy v1 manifests) intentionally bypass the precached bare
+      // `/schedule-data.json` key and always go to the network when online.
+      // The bare precached entry stays the offline bootstrap fallback.
+      // Offline the pinned request just fails and the caller keeps
+      // last-known-good.
       matcher: ({ url, sameOrigin }) =>
         sameOrigin && isVersionedScheduleRequest(url.pathname, url.search),
       handler: new NetworkOnly(),
