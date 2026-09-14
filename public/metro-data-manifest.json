@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 2,
+  "dataVersion": "46fb0992aebd",
+  "schedule": {
+    "version": "46fb0992aebd",
+    "sha256": "46fb0992aebd9fa266a44651fc60c93eb8d935d617144df1e1502ffb0f258f2c",
+    "size": 5404211,
+    "chunks": {
+      "1": {
+        "url": "/data/schedule-1.0d3199649e75.json",
+        "sha256": "0d3199649e75dc1c6f14f624b593f9fcdf6c094b02947025e2e390e4a1ad1752",
+        "size": 1252889
+      },
+      "2": {
+        "url": "/data/schedule-2.44a07ec8ef37.json",
+        "sha256": "44a07ec8ef37bc8fca89e58e40ba65cc75765e6589c560037cf2496359ebbc89",
+        "size": 979646
+      },
+      "3": {
+        "url": "/data/schedule-3.34be32fa5550.json",
+        "sha256": "34be32fa5550bc7ba7c67f8a3b5adc433b1fb175c8788fb440399abf3a6e5d42",
+        "size": 843700
+      },
+      "4": {
+        "url": "/data/schedule-4.f250286c4ed0.json",
+        "sha256": "f250286c4ed0b92435c4768ce215a67829c83eda3c2024e17871b4237b294aaf",
+        "size": 899582
+      },
+      "5": {
+        "url": "/data/schedule-5.0ff2d2458f2b.json",
+        "sha256": "0ff2d2458f2b56f3aa55d2dd8545aeb146051add634ccb8399a33ab7729d899f",
+        "size": 222010
+      },
+      "6": {
+        "url": "/data/schedule-6.c221d8e9b153.json",
+        "sha256": "c221d8e9b153faa3bc6f60f901fb6bdc7d56427b73b413443ea40ce43863523f",
+        "size": 596625
+      },
+      "7": {
+        "url": "/data/schedule-7.9972f6871c82.json",
+        "sha256": "9972f6871c82ae8ba44befc2ed11643b5f3043305811895a05c4bd37249ae33b",
+        "size": 491436
+      },
+      "1w": {
+        "url": "/data/schedule-1w.eeb827aed3a3.json",
+        "sha256": "eeb827aed3a3b861ebe3c779e4a5e0845d58be88d2f8c234de1fef906dfd6462",
+        "size": 12649
+      },
+      "4w": {
+        "url": "/data/schedule-4w.131a4ac75bd9.json",
+        "sha256": "131a4ac75bd920bd38fd6d1fbc6c8e6445887a1ec6cea09e94b44959c5db322c",
+        "size": 99396
+      },
+      "5w": {
+        "url": "/data/schedule-5w.368c31ece4c2.json",
+        "sha256": "368c31ece4c28cfd4d45e910b6162e6690f16e80912896cc6bf103e766aa619d",
+        "size": 6287
+      }
+    }
+  },
+  "stations": {
+    "version": "587df666a707",
+    "url": "/data/stations.587df666a707.json",
+    "sha256": "587df666a707c104d321dbc031e74eae5feb2a31dc1d9ee0f9263a0ca0dbb231",
+    "size": 154633
+  }
+}

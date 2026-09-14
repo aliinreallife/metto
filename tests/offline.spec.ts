@@ -397,7 +397,9 @@ test.describe("Metto offline PWA", () => {
     await waitForOfflineReady(page);
 
     // Simulate a device whose offline download never finished: evict the
-    // datasets from every cache while keeping the app shell.
+    // datasets from every cache while keeping the app shell. Includes the
+    // IndexedDB last-known-good timetable (lib/schedule/store.ts) so the
+    // dynamic update layer cannot mask missing precache core data.
     await page.evaluate(async () => {
       for (const name of await caches.keys()) {
         const cache = await caches.open(name);
@@ -410,6 +412,20 @@ test.describe("Metto offline PWA", () => {
             await cache.delete(req);
           }
         }
+      }
+      try {
+        await new Promise<void>((resolve) => {
+          try {
+            const del = indexedDB.deleteDatabase("metto-schedule");
+            del.onsuccess = () => resolve();
+            del.onerror = () => resolve();
+            del.onblocked = () => resolve();
+          } catch {
+            resolve();
+          }
+        });
+      } catch {
+        // IndexedDB unavailable — Cache Storage eviction alone suffices.
       }
     });
 

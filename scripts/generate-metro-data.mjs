@@ -1,0 +1,261 @@
+#!/usr/bin/env node
+// Deterministic metro-data pipeline: split the monolithic timetable into
+// independently updateable content-addressed chunks + emit the manifest and
+// the bundled baseline metadata from the SAME content hashes.
+//
+// Source of truth: public/schedule-data.json (19 direction groups) and
+// data/tehran-metro-stations.json. Everything else is derived — developers
+// never hand-edit hashes, URLs, sizes, or versions.
+//
+// Outputs (all deterministic, no timestamps):
+// - public/data/schedule-<key>.<shorthash>.json (10 chunks, one per
+//   scheduleKey: 1, 1w, 2, 3, 4, 4w, 5, 5w, 6, 7)
+// - public/data/stations.<shorthash>.json (verbatim copy of upstream bytes)
+// - public/metro-data-manifest.json (schemaVersion 2)
+// - lib/schedule/bundled-meta.ts (bundled baseline version + chunk hashes)
+//
+// Chunk boundary rationale: timetable edits land per metro line/branch;
+// validation is per line-group; 10 chunks keep update downloads small
+// (~7KB-1.4MB vs 5.2MB monolith) without request explosion. dayType splits
+// (30 chunks) remain a future option if line chunks prove too coarse.
+//
+// Release integrity: --check mode fails when the manifest points to a
+// missing file, a SHA-256/size disagrees, bundled metadata disagrees with
+// the manifest, chunk ids duplicate, or required chunks are missing.
+//
+// Deploy order this enables: upload immutable public/data/* first, verify,
+// publish the manifest last. Old immutable URLs keep old clients working.
+import { createHash } from "node:crypto";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, "..");
+const SCHEDULE_PATH = path.join(ROOT, "public", "schedule-data.json");
+const STATIONS_PATH = path.join(ROOT, "data", "tehran-metro-stations.json");
+const DATA_DIR = path.join(ROOT, "public", "data");
+const MANIFEST_PATH = path.join(ROOT, "public", "metro-data-manifest.json");
+const BUNDLED_META_PATH = path.join(ROOT, "lib", "schedule", "bundled-meta.ts");
+
+export const METRO_DATA_SCHEMA_VERSION = 2;
+
+function sha256Hex(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function shortHash(full) {
+  return full.slice(0, 12);
+}
+
+/** Group timetable rows by scheduleKey, preserving source order. */
+function chunkByScheduleKey(groups) {
+  const order = [];
+  const map = new Map();
+  for (const g of groups) {
+    const key = g?.scheduleKey;
+    if (typeof key !== "string" || key.length === 0) {
+      throw new Error("generate-metro-data: timetable group missing scheduleKey");
+    }
+    if (!map.has(key)) {
+      map.set(key, []);
+      order.push(key);
+    }
+    map.get(key).push(g);
+  }
+  return { order, map };
+}
+
+function buildAll() {
+  const scheduleRaw = readFileSync(SCHEDULE_PATH);
+  const stationsRaw = readFileSync(STATIONS_PATH);
+
+  /** @type {unknown} */
+  const scheduleJson = JSON.parse(scheduleRaw.toString("utf8"));
+  if (!Array.isArray(scheduleJson) || scheduleJson.length === 0) {
+    throw new Error("generate-metro-data: schedule-data.json must be a non-empty array");
+  }
+  // Canonical content identity: compact JSON of the parsed dataset, so the
+  // version is formatting-independent and reproducible across machines.
+  const canonicalFull = Buffer.from(JSON.stringify(scheduleJson), "utf8");
+  const fullHash = sha256Hex(canonicalFull);
+  const version = shortHash(fullHash);
+
+  const { order, map } = chunkByScheduleKey(scheduleJson);
+  const seen = new Set();
+  for (const key of order) {
+    if (seen.has(key)) {
+      throw new Error(`generate-metro-data: duplicate chunk id ${key}`);
+    }
+    seen.add(key);
+  }
+
+  const chunks = {};
+  const files = new Map(); // filename -> bytes
+  for (const key of order) {
+    const rows = map.get(key);
+    const bytes = Buffer.from(JSON.stringify(rows), "utf8");
+    const hash = sha256Hex(bytes);
+    const filename = `schedule-${key}.${shortHash(hash)}.json`;
+    files.set(filename, bytes);
+    chunks[key] = {
+      url: `/data/${filename}`,
+      sha256: hash,
+      size: bytes.length,
+    };
+  }
+
+  const stationsHash = sha256Hex(stationsRaw);
+  const stationsFile = `stations.${shortHash(stationsHash)}.json`;
+  files.set(stationsFile, stationsRaw);
+  const stations = {
+    version: shortHash(stationsHash),
+    url: `/data/${stationsFile}`,
+    sha256: stationsHash,
+    size: stationsRaw.length,
+  };
+
+  const manifest = {
+    schemaVersion: METRO_DATA_SCHEMA_VERSION,
+    dataVersion: version,
+    schedule: {
+      version,
+      sha256: fullHash,
+      size: scheduleRaw.length,
+      chunks,
+    },
+    stations,
+  };
+
+  const manifestJson = `${JSON.stringify(manifest, null, 2)}\n`;
+
+  const bundledMeta = `// Auto-generated by scripts/generate-metro-data.mjs. Do not edit by hand.
+// Content-derived baseline: agrees byte-for-byte with public/schedule-data.json
+// and public/metro-data-manifest.json at build time. Reproducible (no timestamps).
+export const BUNDLED_SCHEDULE_VERSION = ${JSON.stringify(version)};
+export const BUNDLED_SCHEDULE_SHA256 = ${JSON.stringify(fullHash)};
+export const BUNDLED_SCHEDULE_SIZE = ${scheduleRaw.length};
+export const BUNDLED_CHUNKS: Record<string, { url: string; sha256: string; size: number }> =
+  ${JSON.stringify(chunks, null, 2)};
+export const BUNDLED_STATIONS_VERSION = ${JSON.stringify(stations.version)};
+export const BUNDLED_STATIONS_SHA256 = ${JSON.stringify(stationsHash)};
+export const BUNDLED_DATA_VERSION = ${JSON.stringify(version)};
+export const BUNDLED_MANIFEST_SCHEMA_VERSION = ${METRO_DATA_SCHEMA_VERSION};
+`;
+
+  return { manifest, manifestJson, bundledMeta, files, version };
+}
+
+function writeAll({ manifestJson, bundledMeta, files }) {
+  mkdirSync(DATA_DIR, { recursive: true });
+  // Remove stale content-addressed outputs so old hashes never linger.
+  if (existsSync(DATA_DIR)) {
+    for (const name of readdirSync(DATA_DIR)) {
+      if (
+        (/^schedule-.+\.[0-9a-f]{12}\.json$/.test(name) ||
+          /^stations\.[0-9a-f]{12}\.json$/.test(name)) &&
+        !files.has(name)
+      ) {
+        rmSync(path.join(DATA_DIR, name));
+      }
+    }
+  }
+  for (const [name, bytes] of files) {
+    writeFileSync(path.join(DATA_DIR, name), bytes);
+  }
+  writeFileSync(MANIFEST_PATH, manifestJson);
+  writeFileSync(BUNDLED_META_PATH, bundledMeta);
+}
+
+function checkAll() {
+  const built = buildAll();
+  const problems = [];
+  // Manifest must match byte-for-byte (key order + formatting included).
+  let onDiskManifest = null;
+  try {
+    onDiskManifest = readFileSync(MANIFEST_PATH, "utf8");
+  } catch {
+    problems.push("public/metro-data-manifest.json is missing");
+  }
+  if (onDiskManifest !== null && onDiskManifest !== built.manifestJson) {
+    problems.push("public/metro-data-manifest.json disagrees with generated content");
+  }
+  // Every referenced chunk must exist with matching hash + size.
+  for (const [key, entry] of Object.entries(built.manifest.schedule.chunks)) {
+    const filename = entry.url.split("/").pop();
+    const diskPath = path.join(DATA_DIR, filename ?? "");
+    let bytes = null;
+    try {
+      bytes = readFileSync(diskPath);
+    } catch {
+      problems.push(`chunk ${key}: missing file ${entry.url}`);
+      continue;
+    }
+    if (bytes.length !== entry.size) {
+      problems.push(`chunk ${key}: size mismatch (${bytes.length} != ${entry.size})`);
+    }
+    if (sha256Hex(bytes) !== entry.sha256) {
+      problems.push(`chunk ${key}: sha256 mismatch`);
+    }
+  }
+  const stationsFile = built.manifest.stations.url.split("/").pop();
+  try {
+    const bytes = readFileSync(path.join(DATA_DIR, stationsFile ?? ""));
+    if (bytes.length !== built.manifest.stations.size) {
+      problems.push("stations: size mismatch");
+    }
+    if (sha256Hex(bytes) !== built.manifest.stations.sha256) {
+      problems.push("stations: sha256 mismatch");
+    }
+  } catch {
+    problems.push(`stations: missing file ${built.manifest.stations.url}`);
+  }
+  try {
+    const onDiskMeta = readFileSync(BUNDLED_META_PATH, "utf8");
+    if (onDiskMeta !== built.bundledMeta) {
+      problems.push("lib/schedule/bundled-meta.ts disagrees with generated content");
+    }
+  } catch {
+    problems.push("lib/schedule/bundled-meta.ts is missing");
+  }
+  // Required-chunk coverage: every scheduleKey in the source must be present.
+  const scheduleJson = JSON.parse(readFileSync(SCHEDULE_PATH, "utf8"));
+  const keys = new Set(scheduleJson.map((g) => g?.scheduleKey));
+  for (const key of keys) {
+    if (!built.manifest.schedule.chunks[key]) {
+      problems.push(`required chunk missing from manifest: ${key}`);
+    }
+  }
+  return problems;
+}
+
+const args = new Set(process.argv.slice(2));
+try {
+  if (args.has("--check")) {
+    const problems = checkAll();
+    if (problems.length > 0) {
+      console.error(`generate-metro-data: integrity check failed\n- ${problems.join("\n- ")}`);
+      process.exit(1);
+    }
+    console.log("generate-metro-data: integrity check passed");
+  } else {
+    const built = buildAll();
+    writeAll(built);
+    const chunkSizes = Object.entries(built.manifest.schedule.chunks)
+      .map(([k, v]) => `${k}=${(v.size / 1024).toFixed(0)}KB`)
+      .join(" ");
+    console.log(
+      `generate-metro-data: version ${built.version} — ${Object.keys(built.manifest.schedule.chunks).length} schedule chunks (${chunkSizes}), stations ${(built.manifest.stations.size / 1024).toFixed(0)}KB`,
+    );
+  }
+} catch (err) {
+  console.error(`generate-metro-data: fatal: ${err instanceof Error ? err.message : err}`);
+  process.exit(1);
+}

@@ -152,10 +152,10 @@ export function AppNav() {
                 href={href}
                 connectivity={connectivity}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors md:gap-2 md:px-4 md:py-2.5 md:text-base",
+                  "flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors touch-manipulation active:scale-[0.98] md:gap-2 md:px-4 md:py-2.5 md:text-base",
                   active
                     ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground active:bg-accent",
                 )}
               >
                 <item.icon className="size-5" />
@@ -226,7 +226,7 @@ export function AppNav() {
                 href={href}
                 connectivity={connectivity}
                 className={cn(
-                  "flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors",
+                  "flex min-h-[56px] flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium transition-colors touch-manipulation active:scale-[0.97] active:bg-accent/60",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
                 ariaCurrent={active ? "page" : undefined}
