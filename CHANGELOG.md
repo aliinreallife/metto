@@ -8,6 +8,24 @@ PR body instead (see AGENTS.md).
 
 ## [Unreleased]
 
+## [v0.7.1] - 2026-09-14
+
+### New / جدید
+
+- Timetables can now update in the background without an app release; offline keeps working from the last good copy. (#68)
+
+#### فارسی
+
+- برنامه حرکت قطارها از این پس در پس‌زمینه به‌روز می‌شود؛ استفاده آفلاین با آخرین نسخه سالم ادامه پیدا می‌کند. (#68)
+
+### Fixes / رفع مشکلات
+
+- Fixed an issue where map tiles could appear over the bottom tabs after panning the map while offline. (#66)
+
+#### فارسی
+
+- مشکلی برطرف شد که در حالت آفلاین، پس از جابه‌جایی روی نقشه، بخش‌هایی از نقشه ممکن بود روی تب‌های پایین صفحه نمایش داده شوند. (#66)
+
 ## [v0.7.0] - 2026-09-13
 
 First installable Android release of Metto.
