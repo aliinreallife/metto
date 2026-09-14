@@ -8,6 +8,18 @@ PR body instead (see AGENTS.md).
 
 ## [Unreleased]
 
+## [v0.7.2] - 2026-09-14
+
+### Fixes / رفع مشکلات
+
+- Minimal map shows a dark background while tiles load or are offline, no more pale flash. (#75)
+- Fixed GPS in the installed Android app: it now asks for location permission and finds your location and nearby stations. (#76)
+
+#### فارسی
+
+- در حالت مینیمال، پس‌زمینه نقشه هنگام بارگذاری یا آفلاین تیره می‌ماند و سفیدی آزاردهنده دیده نمی‌شود. (#75)
+- مشکل مکان‌یابی در اپلیکیشن اندروید برطرف شد: برنامه حالا اجازه دسترسی به موقعیت را می‌پرسد و موقعیت شما و ایستگاه‌های نزدیک را پیدا می‌کند. (#76)
+
 ## [v0.7.1] - 2026-09-14
 
 ### New / جدید
