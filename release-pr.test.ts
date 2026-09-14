@@ -98,7 +98,8 @@ describe("release-pr.mjs prepare", () => {
     writeFileSync(join(work, "CHANGELOG.md"), "# Changelog\n\n## [Unreleased]\n\n## [v0.8.0] - 2026-09-20\n");
     const summary = writeSummary(work);
     respond("pr-list", 0, "[]");
-    respond("pr-create", 0, JSON.stringify({ number: 77, url: "https://example/pr/77" }));
+    respond("pr-create", 0, "");
+    respond("pr-list", 1, JSON.stringify([{ number: 77, url: "https://example/pr/77" }]));
 
     const r = runScript(prepareArgs(work, summary), work, bin, stub);
     expect(r.status).toBe(0);
@@ -124,14 +125,15 @@ describe("release-pr.mjs prepare", () => {
     writeFileSync(join(work, "CHANGELOG.md"), "# Changelog\n\n## [Unreleased]\n\n## [v0.8.0] - 2026-09-20\n");
     const summary = writeSummary(work);
     respond("pr-list", 0, "[]");
-    respond("pr-create", 0, JSON.stringify({ number: 77, url: "https://example/pr/77" }));
+    respond("pr-create", 0, "");
+    respond("pr-list", 1, JSON.stringify([{ number: 77, url: "https://example/pr/77" }]));
     const first = runScript(prepareArgs(work, summary), work, bin, stub);
     expect(first.status).toBe(0);
     const sha1 = JSON.parse(first.out).pushedSha;
 
     // New changelog content -> second machine commit on top, lease push, PR edit.
     writeFileSync(join(work, "CHANGELOG.md"), readFileSync(join(work, "CHANGELOG.md"), "utf8") + "\nTweak.\n");
-    respond("pr-list", 1, JSON.stringify([{ number: 77, url: "https://example/pr/77" }]));
+    respond("pr-list", 2, JSON.stringify([{ number: 77, url: "https://example/pr/77" }]));
     respond("pr-edit", 0, "");
     const second = runScript(prepareArgs(work, summary), work, bin, stub);
     expect(second.status).toBe(0);
@@ -155,7 +157,8 @@ describe("release-pr.mjs prepare", () => {
     writeFileSync(join(work, "CHANGELOG.md"), "# Changelog\n\n## [Unreleased]\n\n## [v0.8.0] - 2026-09-20\n");
     const summary = writeSummary(work);
     respond("pr-list", 0, "[]");
-    respond("pr-create", 0, JSON.stringify({ number: 77, url: "https://example/pr/77" }));
+    respond("pr-create", 0, "");
+    respond("pr-list", 1, JSON.stringify([{ number: 77, url: "https://example/pr/77" }]));
     expect(runScript(prepareArgs(work, summary), work, bin, stub).status).toBe(0);
     const before = sh(`git rev-parse origin/release/v0.8.0`, work).trim();
 
