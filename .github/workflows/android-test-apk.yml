@@ -66,7 +66,7 @@ jobs:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
 
       - name: Setup Gradle cache
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30cc455b5382be2fdbfb # v6.3.0
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
       - name: Restore release keystore to runner temp
         # Same identity as v0.7.2 (ANDROID_KEYSTORE_BASE64 in the
