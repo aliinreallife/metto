@@ -90,7 +90,7 @@ ok(
   "AndroidManifest routes metto://open-location-settings to LocationSettingsActivity",
 );
 ok(
-  manifestXml.includes("Theme.Translucent.NoDisplay"),
+  manifestXml.includes("Theme.NoDisplay"),
   "AndroidManifest keeps LocationSettingsActivity UI-less (forward to Settings, then finish)",
 );
 const launcherJava = readFileSync(

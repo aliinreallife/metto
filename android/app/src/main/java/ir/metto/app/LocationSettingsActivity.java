@@ -39,7 +39,7 @@ import android.provider.Settings;
  * Google Play Services dependency are needed (important: Metto also ships
  * outside Google Play, where GMS may be absent).
  *
- * <p>No UI (Translucent.NoDisplay + noHistory): it forwards to Settings and
+  * <p>No UI (Theme.NoDisplay + noHistory): it forwards to Settings and
  * finishes, so Back from Settings returns straight to the TWA.
  */
 public class LocationSettingsActivity extends Activity {
