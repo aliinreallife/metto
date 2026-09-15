@@ -67,8 +67,10 @@ on" guidance with a Retry action — and, only inside the TWA (`lib/twa.ts`
 detection: `android-app://ir.metto.app` referrer, `?twa=android` launcher
 param, or `getInstalledRelatedApps`), a native **Turn on location** action.
 
-That action is a plain custom-scheme deep link
-(`metto://open-location-settings`) to `LocationSettingsActivity`, which
+That action is a package-targeted Android intent URI
+(`intent://open-location-settings#Intent;scheme=metto;package=ir.metto.app;end`;
+a plain `metto://` navigation is swallowed by Chrome Custom Tabs, verified
+on-device) resolving to `LocationSettingsActivity`, which
 checks `LocationManager.isLocationEnabled()` (pre-28 fallback included) and
 opens `Settings.ACTION_LOCATION_SOURCE_SETTINGS` only when Location is
 really disabled — then finishes, so Back returns to the TWA. Deliberately
