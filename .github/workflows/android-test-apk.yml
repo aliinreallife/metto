@@ -1,0 +1,180 @@
+# Android signed TEST APK (manual only): release-signed test build for
+# real-device update testing of unmerged branches (first use: PR #81).
+#
+# TEST-ONLY. This workflow NEVER publishes anything: no tag, no GitHub
+# Release, no Play/Bazaar/Myket submission. It uploads the signed APK as a
+# run artifact only. The APK carries the REAL production certificate (same
+# signing identity as v0.7.2), so install it only on test devices — and it
+# can only update installs whose versionCode is lower (that is the point:
+# versionCode 7003 > v0.7.2's 7002).
+#
+# It builds WHATEVER ref it is manually run against (Actions → Run
+# workflow → select branch, e.g. fix/twa-location-settings). Nothing is
+# merged, tagged, or released as a side effect.
+#
+# Third-party Actions are pinned to immutable commit SHAs, mirroring
+# android-ci.yml / android-release.yml (see version comments).
+name: Android Signed Test APK
+
+run-name: "signed test APK from ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signed-test-apk:
+    name: signed test APK (no publish)
+    runs-on: ubuntu-latest
+    # Same protected environment + signing secrets as the release workflow.
+    environment: android-release
+    permissions:
+      contents: read
+    env:
+      # TEST-ONLY version: versionCode MUST stay > 7002 (v0.7.2) so the APK
+      # offers Update over the installed release. versionName is free-form
+      # for Gradle (strict semver applies only to release tags).
+      VERSION_NAME: 0.7.3-test-pr81
+      VERSION_CODE: "7003"
+    steps:
+      - name: Checkout (selected ref, no merge)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Assert committed TWA config
+        # Same drift gate as android-ci.yml / android-release.yml.
+        run: node scripts/check-android-config.mjs
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        # Same pin as android-ci.yml / android-release.yml: the action
+        # default (tools platform-tools) fails because the obsolete `tools`
+        # package no longer exists (sdkmanager exit 1).
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30cc455b5382be2fdbfb # v6.3.0
+
+      - name: Restore release keystore to runner temp
+        # Same identity as v0.7.2 (ANDROID_KEYSTORE_BASE64 in the
+        # android-release environment). Keystore exists only in $RUNNER_TEMP
+        # for this job; secrets are never printed; the ephemeral runner
+        # discards the file afterwards.
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is empty. Configure the android-release environment first (see docs/ANDROID_TWA.md)."
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/metto-release.jks"
+          echo "keystore restored (contents never printed)"
+
+      - name: Signing preflight (keystore + key recoverability)
+        # Mirrors android-release.yml: fails fast before the slower Gradle
+        # build when the restored keystore, alias, or key password is wrong.
+        # Passwords travel via env only (never echoed); just pass/fail is
+        # printed. Temp files are removed.
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/metto-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::signing preflight: $1"; exit 1; }
+          [ -s "${ANDROID_KEYSTORE_PATH:-}" ] || fail "keystore file missing or empty"
+          [ -n "${ANDROID_KEY_ALIAS:-}" ] || fail "ANDROID_KEY_ALIAS is empty"
+          keytool -list -keystore "$ANDROID_KEYSTORE_PATH" \
+            -storepass:env ANDROID_KEYSTORE_PASSWORD \
+            -alias "$ANDROID_KEY_ALIAS" >/dev/null 2>&1 \
+            || fail "alias not found or keystore password rejected"
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          printf 'preflight' > "$work/p.txt"
+          (cd "$work" && jar cf preflight.jar p.txt)
+          jarsigner -keystore "$ANDROID_KEYSTORE_PATH" \
+            -storepass:env ANDROID_KEYSTORE_PASSWORD \
+            -keypass:env ANDROID_KEY_PASSWORD \
+            "$work/preflight.jar" "$ANDROID_KEY_ALIAS" >/dev/null 2>&1 \
+            || fail "private key is not recoverable (key password rejected)"
+          jarsigner -verify "$work/preflight.jar" >/dev/null 2>&1 \
+            || fail "preflight signature did not verify"
+          rm -rf "$work"
+          trap - EXIT
+          echo "signing preflight: PASS (keystore present, alias exists, key recoverable)"
+
+      - name: Signed test APK (release config, test version)
+        # assembleRelease + mettoRelease signing (active because
+        # ANDROID_KEYSTORE_PATH is set; see android/app/build.gradle).
+        # Application ID is untouched (ir.metto.app).
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/metto-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          ./android/gradlew -p android assembleRelease --no-daemon --stacktrace \
+            "-PmettoVersionCode=$VERSION_CODE" \
+            "-PmettoVersionName=$VERSION_NAME"
+          ls -l android/app/build/outputs/apk/release/
+
+      - name: Verify test APK (signature + identity + versions)
+        # Fails the run unless ALL of these hold (prints only public
+        # certificate fingerprints — never secrets):
+        # - apksigner: signature verifies
+        # - package: ir.metto.app (application ID untouched)
+        # - versionCode: 7003 (> v0.7.2's 7002, so it offers Update)
+        # - versionName: 0.7.3-test-pr81
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          BUILD_TOOLS="$SDK_ROOT/build-tools/36.0.0"
+          [ -s "$APK" ] || { echo "::error::APK missing: $APK"; exit 1; }
+          echo "== apksigner verify --print-certs =="
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK"
+          echo "== aapt dump badging =="
+          BADGING="$("$BUILD_TOOLS/aapt" dump badging "$APK" | head -n 1)"
+          echo "$BADGING"
+          fail() { echo "::error::$1"; exit 1; }
+          echo "$BADGING" | grep -q "package: name='ir.metto.app'" \
+            || fail "package name is not ir.metto.app"
+          echo "$BADGING" | grep -q "versionCode='7003'" \
+            || fail "versionCode is not 7003"
+          echo "$BADGING" | grep -q "versionName='0.7.3-test-pr81'" \
+            || fail "versionName is not 0.7.3-test-pr81"
+          echo "APK verification: PASS (signed, ir.metto.app, versionCode 7003, versionName 0.7.3-test-pr81)"
+
+      - name: Stage TEST-ONLY APK
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk dist/metto-pr81-test-7003.apk
+          ls -l dist/
+
+      - name: Upload signed TEST APK (artifact only, no publish)
+        # TEST-ONLY artifact carrying the real production certificate.
+        # No GitHub Release, no tag, no store step exists in this workflow.
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: metto-pr81-signed-test
+          if-no-files-found: error
+          retention-days: 14
+          path: dist/metto-pr81-test-7003.apk
