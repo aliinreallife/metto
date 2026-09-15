@@ -34,9 +34,11 @@ import {
 } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import {
+  classifyGeoError,
   getCurrentPositionTolerant,
-  isPermissionDenied,
+  type GeoErrorKind,
 } from "@/lib/geolocation";
+import { LocationErrorActions } from "@/components/location-error";
 
 export type PlaceInfo = {
   placeName: string;
@@ -326,13 +328,13 @@ function RouteView({
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
   const [locating, setLocating] = useState(false);
-  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null);
   const gpsLangRef = useRef(lang);
   gpsLangRef.current = lang;
 
   async function locateOrigin() {
     if (!navigator.geolocation) {
-      setGpsError(STRINGS[gpsLangRef.current].gpsUnavailable);
+      setGpsError("unsupported");
       return;
     }
     setLocating(true);
@@ -374,10 +376,7 @@ function RouteView({
         );
       });
     } catch (err) {
-      const strings = STRINGS[gpsLangRef.current];
-      setGpsError(
-        isPermissionDenied(err) ? strings.gpsDenied : strings.gpsUnavailable,
-      );
+      setGpsError(classifyGeoError(err));
       setLocating(false);
     }
   }
@@ -438,12 +437,11 @@ function RouteView({
             />
           )}
           {gpsError && (
-            <p
-              role="alert"
-              className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive md:text-sm"
-            >
-              {gpsError}
-            </p>
+            <LocationErrorActions
+              lang={lang}
+              kind={gpsError}
+              onRetry={locateOrigin}
+            />
           )}
           <label htmlFor="dest-combobox" className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
             {t.to}

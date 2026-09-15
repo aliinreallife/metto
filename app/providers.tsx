@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { Lang } from "@/lib/i18n";
 import { loadScheduleData, refreshScheduleData } from "@/lib/schedule-utils";
+import { isAndroidTwa } from "@/lib/twa";
 import { WebMcpRegistrar } from "@/components/web-mcp";
 
 type PlacePin = {
@@ -69,6 +70,10 @@ export function MetroProvider({ children }: { children: ReactNode }) {
   // localStorage additionally survives full reloads (URL params win when
   // present — each page applies them over this on mount).
   useEffect(() => {
+    // Warm the Android-TWA signal early: consumes the ?twa=android launcher
+    // param (remember + strip) so location errors can offer the native
+    // "Turn on location" action without waiting on first failure.
+    void isAndroidTwa();
     const saved = localStorage.getItem("lang");
     if (saved === "en" || saved === "fa") setLangState(saved);
     const savedMode = localStorage.getItem("mapMode");

@@ -21,7 +21,8 @@ import {
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
 import { type Lang } from "@/lib/i18n"
-import { getCurrentPositionTolerant } from "@/lib/geolocation"
+import { classifyGeoError, getCurrentPositionTolerant, type GeoErrorKind } from "@/lib/geolocation"
+import { LocationErrorActions } from "@/components/location-error"
 import { useConnectivity, type ConnectivityState } from "@/lib/offline/use-connectivity"
 import { cn } from "@/lib/utils"
 
@@ -156,7 +157,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const [hasGps, setHasGps] = useState(false)
   const [gpsPos, setGpsPos] = useState<[number, number] | null>(null)
   const [locating, setLocating] = useState(false)
-  const [gpsError, setGpsError] = useState<string | null>(null)
+  const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null)
   const isFa = lang === "fa"
   const { state: connectivity } = useConnectivity()
   // Tracks the previous SETTLED connectivity state so only a real
@@ -658,7 +659,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
   async function locateMe() {
     if (!mapRef.current || !navigator.geolocation) {
-      setGpsError(isFa ? "موقعیت شما به‌دست نیامد." : "Couldn't get your location.")
+      setGpsError("unsupported")
       return
     }
     setLocating(true)
@@ -696,20 +697,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       setLocating(false)
       // Offline with a cached fix still succeeds above; only genuine
       // failures land here (denied/unavailable/timeout).
-      const denied =
-        typeof err === "object" &&
-        err !== null &&
-        "code" in err &&
-        (err as { code?: unknown }).code === 1
-      setGpsError(
-        denied
-          ? isFa
-            ? "دسترسی به موقعیت رد شد."
-            : "Location access denied."
-          : isFa
-            ? "موقعیت شما به‌دست نیامد."
-            : "Couldn't get your location.",
-      )
+      setGpsError(classifyGeoError(err))
     }
   }
 
@@ -725,8 +713,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         style={mapMode === "minimalist" ? { backgroundColor: MINIMALIST_BG } : undefined}
       />
       {gpsError && (
-        <div className="absolute bottom-3 left-3 z-[1000] max-w-[70%] rounded-lg border border-border bg-background/95 px-3 py-1.5 text-xs text-destructive shadow-sm backdrop-blur">
-          {gpsError}
+        <div className="absolute bottom-3 left-3 z-[1000] max-w-[70%] shadow-sm">
+          <LocationErrorActions lang={lang} kind={gpsError} onRetry={locateMe} />
         </div>
       )}
       <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-1.5">

@@ -17,9 +17,11 @@ import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { cn } from "@/lib/utils";
 import { StationCard } from "@/components/station-card";
 import {
+  classifyGeoError,
   getCurrentPositionTolerant,
-  isPermissionDenied,
+  type GeoErrorKind,
 } from "@/lib/geolocation";
+import { LocationErrorActions } from "@/components/location-error";
 
 type Props = {
   lang: Lang;
@@ -32,7 +34,7 @@ type LocState =
   | { kind: "locating" }
   | { kind: "gps"; lat: number; lng: number }
   | { kind: "station"; lat: number; lng: number; stationId: string }
-  | { kind: "error"; message: string };
+  | { kind: "error"; errorKind: GeoErrorKind };
 
 const AMENITY_KEYS = Object.keys(AMENITY_LABELS) as AmenityKey[];
 
@@ -67,7 +69,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
   // (cold TWA fixes often exceed short timeouts).
   async function requestGps() {
     if (!("geolocation" in navigator)) {
-      setLoc({ kind: "error", message: t.gpsUnavailable });
+      setLoc({ kind: "error", errorKind: "unsupported" });
       return;
     }
     setLoc({ kind: "locating" });
@@ -77,7 +79,7 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
     } catch (err) {
       setLoc({
         kind: "error",
-        message: isPermissionDenied(err) ? t.gpsDenied : t.gpsUnavailable,
+        errorKind: classifyGeoError(err),
       });
     }
   }
@@ -150,9 +152,11 @@ export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
           />
 
           {loc.kind === "error" && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {loc.message}
-            </p>
+            <LocationErrorActions
+              lang={lang}
+              kind={loc.errorKind}
+              onRetry={requestGps}
+            />
           )}
         </section>
 

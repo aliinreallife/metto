@@ -71,6 +71,41 @@ ok(
 const pinned = readFileSync(resolve(repoRoot, "android/.bubblewrap-version"), "utf8").trim();
 ok(pinned === "1.25.0", `android/.bubblewrap-version pins 1.25.0 (got ${pinned})`);
 
+// "Turn on location" helper (LocationSettingsActivity): native certainty for
+// the device-Location-OFF state via LocationManager.isLocationEnabled(),
+// reached from web content through metto://open-location-settings.
+// Deliberately GMS-free (Metto also ships outside Google Play).
+ok(
+  manifestXml.includes('android:name=".LocationSettingsActivity"'),
+  "AndroidManifest declares .LocationSettingsActivity (Turn on location target)",
+);
+ok(
+  /<activity[^>]*android:name="\.LocationSettingsActivity"[^>]*android:exported="true"/s.test(manifestXml) ||
+    /<activity[^>]*android:exported="true"[^>]*android:name="\.LocationSettingsActivity"/s.test(manifestXml),
+  "AndroidManifest keeps LocationSettingsActivity android:exported=true (Chrome must fire the deep link)",
+);
+ok(
+  manifestXml.includes('android:scheme="metto"') &&
+    manifestXml.includes('android:host="open-location-settings"'),
+  "AndroidManifest routes metto://open-location-settings to LocationSettingsActivity",
+);
+ok(
+  manifestXml.includes("Theme.Translucent.NoDisplay"),
+  "AndroidManifest keeps LocationSettingsActivity UI-less (forward to Settings, then finish)",
+);
+const launcherJava = readFileSync(
+  resolve(repoRoot, "android/app/src/main/java/ir/metto/app/LauncherActivity.java"),
+  "utf8",
+);
+ok(
+  launcherJava.includes('appendQueryParameter("twa", "android")'),
+  "LauncherActivity tags TWA launches with ?twa=android (web-side wrapper detection)",
+);
+ok(
+  !gradle.includes("play-services"),
+  "app/build.gradle adds no Play Services dependency (Location settings via platform Settings intent)",
+);
+
 if (fail.length) {
   console.error("\ncheck-android-config: FAILED");
   for (const m of fail) console.error(`  missing: ${m}`);
