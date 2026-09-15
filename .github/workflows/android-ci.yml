@@ -69,7 +69,13 @@ jobs:
           java-version: "17"
 
       - name: Setup Android SDK
+        # Pin installable packages: the action default (tools platform-tools)
+        # fails because the obsolete `tools` package no longer exists in the
+        # SDK repository (sdkmanager exit 1). Request exactly what the build
+        # needs (compileSdk 36).
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
 
       - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0

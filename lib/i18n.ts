@@ -59,7 +59,11 @@ export const STRINGS = {
     orPickStation: "or pick a station as your location",
     yourLocation: "Your location",
     gpsDenied: "Location access denied. Pick a station instead.",
-    gpsUnavailable: "Couldn't get your location. Pick a station instead.",
+    gpsUnavailable:
+      "Couldn't get your location. Make sure device Location is turned on and try again.",
+    gpsTimeout: "Location request timed out. Try again.",
+    turnOnLocation: "Turn on location",
+    retry: "Retry",
     setLocation:
       "Set your location to find nearby stations",
     nearestStations: "Nearest stations",
@@ -180,7 +184,11 @@ export const STRINGS = {
     orPickStation: "یا یک ایستگاه را به‌عنوان موقعیت خود انتخاب کنید",
     yourLocation: "موقعیت شما",
     gpsDenied: "دسترسی به موقعیت رد شد. یک ایستگاه انتخاب کنید.",
-    gpsUnavailable: "موقعیت شما به‌دست نیامد. یک ایستگاه انتخاب کنید.",
+    gpsUnavailable:
+      "موقعیت شما به‌دست نیامد. مطمئن شوید موقعیت دستگاه روشن است و دوباره تلاش کنید.",
+    gpsTimeout: "دریافت موقعیت زمان‌بر شد. دوباره تلاش کنید.",
+    turnOnLocation: "روشن کردن موقعیت",
+    retry: "تلاش مجدد",
     setLocation:
       "موقعیت خود را تعیین کنید",
     nearestStations: "نزدیک‌ترین ایستگاه‌ها",

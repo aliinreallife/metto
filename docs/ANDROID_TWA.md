@@ -52,8 +52,30 @@ npx -y @bubblewrap/cli@1.25.0 update --manifest android
 # DelegationService android:enabled/exported=true (location delegation must
 # stay enabled even when enableNotifications=false, otherwise TWA GPS fails
 # with PERMISSION_DENIED while the PWA works).
+# Also re-apply the LocationSettingsActivity block ("Turn on location"
+# deep link) and the ?twa=android line in LauncherActivity.getLaunchingUrl.
 node scripts/check-android-config.mjs
 ```
+
+## Location-services-OFF UX (no GMS)
+
+Web geolocation cannot prove the device Location master switch is OFF
+(`POSITION_UNAVAILABLE` also means "no fix", e.g. underground), so the web
+UI (`lib/geolocation.ts` → `classifyGeoError`, `components/location-error.tsx`)
+words unavailable/timeout failures as "make sure device Location is turned
+on" guidance with a Retry action — and, only inside the TWA (`lib/twa.ts`
+detection: `android-app://ir.metto.app` referrer, `?twa=android` launcher
+param, or `getInstalledRelatedApps`), a native **Turn on location** action.
+
+That action is a plain custom-scheme deep link
+(`metto://open-location-settings`) to `LocationSettingsActivity`, which
+checks `LocationManager.isLocationEnabled()` (pre-28 fallback included) and
+opens `Settings.ACTION_LOCATION_SOURCE_SETTINGS` only when Location is
+really disabled — then finishes, so Back returns to the TWA. Deliberately
+**no Google Play Services dependency**: a `SettingsClient` resolution dialog
+would keep the user in-app, but it needs `play-services-location` + GMS on
+the device, and Metto also ships via Iranian marketplaces / direct APK where
+GMS may be absent. Opening system settings covers every device.
 
 Note: the CLI's first-run JDK/SDK prompts are interactive; generation
 itself needs neither. The project in this PR was generated

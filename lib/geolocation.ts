@@ -62,3 +62,23 @@ export async function getCurrentPositionTolerant(): Promise<GeoFix> {
 export function isPermissionDenied(err: unknown): boolean {
   return errorCode(err) === 1;
 }
+
+// Classified geolocation failure. The web API cannot prove *why* a fix is
+// unavailable (in particular it cannot prove the device Location master
+// switch is OFF — POSITION_UNAVAILABLE also covers no-fix situations like
+// being underground). Callers must word "unavailable"/"timeout" messages as
+// *possible* Location-off guidance, never as a certainty, and only the
+// native wrapper (LocationManager.isLocationEnabled) may claim certainty.
+export type GeoErrorKind = "denied" | "unavailable" | "timeout" | "unsupported";
+
+export function classifyGeoError(err: unknown): GeoErrorKind {
+  if (err instanceof Error && err.message === "geolocation-unsupported") {
+    return "unsupported";
+  }
+  const code = errorCode(err);
+  if (code === 1) return "denied";
+  if (code === 3) return "timeout";
+  // code === 2, or anything unrecognized: generic "couldn't get a fix"
+  // guidance. Never claim "GPS is off" here — see the note above.
+  return "unavailable";
+}

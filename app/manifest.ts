@@ -14,6 +14,17 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#cc0e2d",
     orientation: "any",
     categories: ["travel", "navigation", "maps"],
+    // Lets the web UI detect the installed Android wrapper via
+    // navigator.getInstalledRelatedApps() (see lib/twa.ts) so the native
+    // "Turn on location" action only appears inside the TWA.
+    // prefer_related_applications stays false: no install-prompt change.
+    related_applications: [
+      {
+        platform: "play",
+        url: "https://metto.ir/",
+        id: "ir.metto.app",
+      },
+    ],
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
       {
