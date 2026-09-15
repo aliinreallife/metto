@@ -3,10 +3,30 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "متو — نقشه مترو تهران، مسیریابی و زمانبندی",
-    short_name: "متو",
-    description:
-      "متو | نقشه مترو تهران با امکان مسیریابی هوشمند، مشاهده زمانبندی و تمام ایستگاه‌ها و خطوط متروی تهران.",
+    name: "Metto",
+    short_name: "Metto",
+    description: "Metto, Tehran Metro map with smart route planning, schedules, and all Tehran Metro stations and lines.",
+    name_localized: {
+        fa: {
+            value: "متو",
+            lang: "fa",
+            dir: "rtl"
+        }
+    },
+    short_name_localized: {
+        fa: {
+            value: "متو",
+            lang: "fa",
+            dir: "rtl"
+        }
+    },
+    description_localized: {
+        fa: {
+            value: "متو، نقشه مترو تهران با امکان مسیریابی هوشمند، مشاهده زمانبندی و تمام ایستگاه‌ها و خطوط متروی تهران.",
+            lang: "fa",
+            dir: "rtl"
+        }
+    },
     start_url: "/",
     scope: "/",
     display: "standalone",
