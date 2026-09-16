@@ -83,7 +83,19 @@ describe("TWA wrapper detection", () => {
 });
 
 describe("LOCATION_SETTINGS_URI", () => {
-  it("targets the native LocationSettingsActivity deep link", () => {
-    expect(LOCATION_SETTINGS_URI).toBe("metto://open-location-settings");
+  it("targets LocationSettingsActivity via a package-targeted intent URI", () => {
+    expect(LOCATION_SETTINGS_URI).toBe(
+      `intent://open-location-settings#Intent;scheme=metto;package=${TWA_PACKAGE};end`,
+    );
+  });
+
+  it("carries the wrapper package and the metto scheme", () => {
+    expect(LOCATION_SETTINGS_URI).toContain(`package=${TWA_PACKAGE}`);
+    expect(LOCATION_SETTINGS_URI).toContain("scheme=metto");
+    expect(
+      LOCATION_SETTINGS_URI.startsWith(
+        "intent://open-location-settings#Intent;",
+      ),
+    ).toBe(true);
   });
 });

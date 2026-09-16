@@ -21,11 +21,13 @@ export const TWA_PACKAGE = "ir.metto.app";
 export const TWA_LAUNCH_PARAM = "twa";
 export const TWA_LAUNCH_VALUE = "android";
 
-// Custom-scheme deep link handled by LocationSettingsActivity (exported,
-// no UI): verifies Location is really off, then opens Android Location
-// settings. Plain-Chrome navigation to a custom scheme resolves to the
-// installed app — no intent: URL hacks, no JavaScript bridge, no GMS.
-export const LOCATION_SETTINGS_URI = "metto://open-location-settings";
+// Package-targeted Android intent URI handled by LocationSettingsActivity
+// (exported, no UI): verifies Location is really off, then opens Android
+// Location settings. A plain metto:// navigation is swallowed by Chrome
+// Custom Tabs inside the TWA (verified on-device: the tap did nothing),
+// while the explicit intent:// form with package= resolves to the installed
+// wrapper — still no JavaScript bridge and no GMS.
+export const LOCATION_SETTINGS_URI = `intent://open-location-settings#Intent;scheme=metto;package=${TWA_PACKAGE};end`;
 
 const SESSION_KEY = "metto.twa";
 
@@ -111,7 +113,8 @@ export async function isAndroidTwa(): Promise<boolean> {
   }
 }
 
-// Fire-and-forget: navigates to the native Location settings helper.
+// Fire-and-forget: navigates to the native Location settings helper via the
+// package-targeted intent URI above.
 // Only call when isAndroidTwa() is true.
 export function openAndroidLocationSettings(): void {
   window.location.href = LOCATION_SETTINGS_URI;
