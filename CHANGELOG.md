@@ -8,6 +8,32 @@ PR body instead (see AGENTS.md).
 
 ## [Unreleased]
 
+## [v0.7.3] - 2026-09-23
+
+### Improvements / بهبودها
+
+- Clearer guidance with a Retry option when your location can't be found or times out. (#81)
+- Inside the Android app only, a "Turn on location" button opens Android Location settings when device Location is off. (#81)
+- App name is now lowercase metto everywhere, with Persian متو on fa devices. (#84)
+- Footer credit now links to the metto repo. (#84)
+- Fixes the manifest type error that broke the production build. (#84)
+
+#### فارسی
+
+- راهنمای واضح‌تر به‌همراه دکمه تلاش مجدد وقتی موقعیت شما پیدا نشود یا زمان ببرد. (#81)
+- فقط داخل اپ اندروید، دکمه «روشن کردن موقعیت» هنگام خاموش بودن موقعیت دستگاه، تنظیمات موقعیت اندروید را باز می‌کند. (#81)
+- نام اپ همه‌جا با حروف کوچک metto شد و در دستگاه‌های فارسی متو می‌ماند. (#84)
+- پیوند سازنده در پاورقی به ریپازیتوری metto می‌رود. (#84)
+- خطای تایپ منیفست که بیلد پروداکشن را خراب کرده بود رفع شد. (#84)
+
+### Fixes / رفع مشکلات
+
+- Fixed the Android app's Turn on location button, which previously did nothing when tapped — it now opens the system Location settings. (#83)
+
+#### فارسی
+
+- دکمه «روشن کردن موقعیت» در اپ اندروید که قبلاً کار نمی‌کرد اصلاح شد و اکنون تنظیمات موقعیت سیستم را باز می‌کند. (#83)
+
 ## [v0.7.2] - 2026-09-14
 
 ### Fixes / رفع مشکلات
