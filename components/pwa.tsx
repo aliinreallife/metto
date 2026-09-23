@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Download, Share } from "lucide-react"
+import { isTwaPackageInstalled } from "../lib/twa"
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -59,6 +60,20 @@ export function shouldShowIosInstallHint(opts: {
     opts.isIos &&
     !opts.isStandalone
   )
+}
+
+/**
+ * Pure render gate for the install slot. True when the button must collapse:
+ * already installed, running as an installed PWA, or the Android wrapper
+ * (TWA) is installed — the last case avoids nudging TWA users toward a
+ * duplicate second launcher icon.
+ */
+export function shouldHideInstallButton(opts: {
+  installed: boolean
+  isStandalone: boolean
+  twaInstalled: boolean
+}): boolean {
+  return opts.installed || opts.isStandalone || opts.twaInstalled
 }
 
 /**
@@ -134,6 +149,10 @@ export function InstallButton({
   const [installed, setInstalled] = useState(false)
   const [isIosStandaloneHint, setIsIosStandaloneHint] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
+  // True when the Android wrapper (TWA) is installed: the PWA install nudge
+  // is then hidden so users don't end up with two launcher icons. Detected
+  // silently via getInstalledRelatedApps — no permission, no prompt.
+  const [twaInstalled, setTwaInstalled] = useState(false)
   // True until proven otherwise: reserve the install slot on first paint so
   // a late beforeinstallprompt does not shift the header tabs. Collapsed in
   // the mount effect where install can never appear (standalone or no
@@ -155,6 +174,12 @@ export function InstallButton({
     }
     window.addEventListener("beforeinstallprompt", onPrompt)
     window.addEventListener("appinstalled", onInstalled)
+    // Silent TWA check (permission-free, never throws): hide the install
+    // nudge when the Android wrapper is already installed.
+    let cancelled = false
+    void isTwaPackageInstalled().then((hit) => {
+      if (!cancelled && hit) setTwaInstalled(true)
+    })
     // iOS Safari never fires beforeinstallprompt — detect a non-standalone
     // iOS/iPadOS environment once on mount for the manual hint. Also record
     // general standalone (any platform) so an installed PWA collapses the
@@ -196,14 +221,17 @@ export function InstallButton({
       setIsHintPreviewForced(false)
     }
     return () => {
+      cancelled = true
       window.removeEventListener("beforeinstallprompt", onPrompt)
       window.removeEventListener("appinstalled", onInstalled)
     }
   }, [])
 
-  // Installed (this session via appinstalled, or opened as a standalone
-  // PWA): terminal state, collapse the slot — no future button will appear.
-  if (installed || isStandalone) return null
+  // Installed (this session via appinstalled, opened as a standalone PWA,
+  // or Android wrapper present): terminal state, collapse the slot — no
+  // future button will appear.
+  if (shouldHideInstallButton({ installed, isStandalone, twaInstalled }))
+    return null
 
   // TEMPORARY preview rendering only (delete this branch to remove): when the
   // session flag is set, the iOS hint wins over a deferred Chromium prompt

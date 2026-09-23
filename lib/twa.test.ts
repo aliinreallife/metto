@@ -4,6 +4,7 @@ import {
   TWA_PACKAGE,
   isAndroidTwa,
   isAndroidTwaSync,
+  isTwaPackageInstalled,
 } from "./twa";
 
 function memStorage(initial: Record<string, string> = {}) {
@@ -79,6 +80,32 @@ describe("TWA wrapper detection", () => {
   it("stays negative when related apps list something else", async () => {
     stubBrowser({ relatedApps: [{ id: "com.example.other" }] });
     await expect(isAndroidTwa()).resolves.toBe(false);
+  });
+});
+
+describe("isTwaPackageInstalled", () => {
+  it("is true when the wrapper package is listed", async () => {
+    stubBrowser({ relatedApps: [{ id: TWA_PACKAGE }] });
+    await expect(isTwaPackageInstalled()).resolves.toBe(true);
+  });
+
+  it("is false when only other apps are listed", async () => {
+    stubBrowser({ relatedApps: [{ id: "com.example.other" }] });
+    await expect(isTwaPackageInstalled()).resolves.toBe(false);
+  });
+
+  it("is false when the API is missing (Firefox/Safari)", async () => {
+    stubBrowser({ relatedApps: null });
+    await expect(isTwaPackageInstalled()).resolves.toBe(false);
+  });
+
+  it("is false instead of throwing when the API rejects", async () => {
+    vi.stubGlobal("navigator", {
+      getInstalledRelatedApps: async () => {
+        throw new Error("denied");
+      },
+    });
+    await expect(isTwaPackageInstalled()).resolves.toBe(false);
   });
 });
 

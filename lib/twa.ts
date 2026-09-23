@@ -76,6 +76,28 @@ export function isAndroidTwaSync(): boolean {
 
 type RelatedApp = { platform?: string; id?: string | null };
 
+/**
+ * Permission-free related-app check: reports whether the Android wrapper
+ * (`ir.metto.app`, declared in app/manifest.ts `related_applications`) is
+ * installed. Shows no prompt and reveals nothing else about the device —
+ * the API only answers for apps our own manifest declares. Never throws:
+ * missing API, rejection, or non-array results all mean "not installed".
+ * No URL side effects (unlike isAndroidTwa, it never consumes ?twa=android).
+ */
+export async function isTwaPackageInstalled(): Promise<boolean> {
+  try {
+    if (typeof navigator === "undefined") return false;
+    const nav = navigator as Navigator & {
+      getInstalledRelatedApps?: () => Promise<RelatedApp[]>;
+    };
+    if (typeof nav.getInstalledRelatedApps !== "function") return false;
+    const apps = await nav.getInstalledRelatedApps();
+    return Array.isArray(apps) && apps.some((a) => a?.id === TWA_PACKAGE);
+  } catch {
+    return false;
+  }
+}
+
 export async function isAndroidTwa(): Promise<boolean> {
   // Consume the launcher param (?twa=android) first: remember it for this
   // tab, then strip it so shared links and history stay clean.
@@ -98,19 +120,9 @@ export async function isAndroidTwa(): Promise<boolean> {
     // Malformed URL — fall through to the other signals.
   }
   if (isAndroidTwaSync()) return true;
-  try {
-    const nav = navigator as Navigator & {
-      getInstalledRelatedApps?: () => Promise<RelatedApp[]>;
-    };
-    if (typeof nav.getInstalledRelatedApps !== "function") return false;
-    const apps = await nav.getInstalledRelatedApps();
-    const hit =
-      Array.isArray(apps) && apps.some((a) => a?.id === TWA_PACKAGE);
-    if (hit) rememberTwa();
-    return hit;
-  } catch {
-    return false;
-  }
+  const relatedHit = await isTwaPackageInstalled();
+  if (relatedHit) rememberTwa();
+  return relatedHit;
 }
 
 // Fire-and-forget: navigates to the native Location settings helper via the
