@@ -3,24 +3,24 @@
 This is a multi-license repository. Different contents are covered by
 different licenses:
 
-* Metto original source code and data → `AGPL-3.0-only` (see `LICENSE`).
+* metto original source code and data → `AGPL-3.0-only` (see `LICENSE`).
 * Tehran Metro station/network database derived from
   `mostafa-kheibary/tehran-metro-data` → `ODbL-1.0`
   (see `DATA_LICENSE.md` and `LICENSES/ODbL-1.0.txt`).
 * Third-party software and assets → their respective licenses and terms
-  (see below). The AGPL covering Metto's original code does not
+  (see below). The AGPL covering metto's original code does not
   override those licenses.
 
-## Metto source code and data
+## metto source code and data
 
-Original Metto source code and data is licensed under the GNU Affero
+Original metto source code and data is licensed under the GNU Affero
 General Public License version 3 only (`AGPL-3.0-only`).
 
 See `LICENSE`.
 
 Copyright identity follows the repository history (`aliinreallife`).
 No per-file AGPL markers are used: the root `LICENSE` together with
-this notice establishes the AGPL default for original Metto code.
+this notice establishes the AGPL default for original metto code.
 Per-file markers appear only on the ODbL-1.0 adapted-database data
 files listed in `DATA_LICENSE.md`, where they clarify an exception to
 that default.
@@ -69,7 +69,7 @@ license notices (a deliberate choice; see the gap noted below).
 Anyone deploying a modified version must still provide a prominent
 offer of the Corresponding Source of the version they are actually
 running, as the AGPL requires for network interaction — linking to
-the original Metto repository
+the original metto repository
 (<https://github.com/aliinreallife/metto>) does not satisfy the AGPL
 for a modified fork.
 
@@ -81,7 +81,7 @@ wanted in the future.
 
 ## Branding
 
-The Metto name and original branding elements (subject to third-party
+The metto name and original branding elements (subject to third-party
 components incorporated in them, e.g. the Lucide-derived glyph in
 `public/icon.svg`, which retains its ISC attribution) are not covered
 by the AGPL copyright grant. No trademark rights are granted, and no

@@ -1,6 +1,6 @@
 # Tehran Metro data license
 
-Tehran Metro station/network data used by Metto is based on the
+Tehran Metro station/network data used by metto is based on the
 Tehran Metro Data project by mostafa-kheibary and is made available
 under the Open Database License (ODbL) v1.0.
 
@@ -12,7 +12,7 @@ under the Open Database License (ODbL) v1.0.
 
 The following files contain, or are substantially derived from, that
 metro database (the adapted database), and are licensed under
-`ODbL-1.0` — not under the AGPL license that covers Metto's original
+`ODbL-1.0` — not under the AGPL license that covers metto's original
 source code:
 
 * `data/tehran-metro-stations.json` — canonical upstream copy
@@ -28,7 +28,7 @@ source code:
   legacy-name map in `lib/metro/aliases.ts`, the line table in
   `lib/metro/lines.ts`, and the `TRANSFER_RULES` data table in
   `lib/metro/transfers.ts`.
-* `scripts/metto-overrides.json` — Metto-maintained corrections layered
+* `scripts/metto-overrides.json` — metto-maintained corrections layered
   on the adapted database (documented here because strict JSON files
   cannot carry license comments).
 * `lib/metro/NOTES.md` — topology documentation for the adapted database.
@@ -38,19 +38,19 @@ source code:
 `lib/metro/transfers.ts` mixes both scopes and therefore carries no
 per-file license marker: the `TRANSFER_RULES` data table is part of
 the ODbL-1.0 adapted database described above, while the surrounding
-functions are original Metto logic covered by the root `AGPL-3.0-only`
+functions are original metto logic covered by the root `AGPL-3.0-only`
 license. See `NOTICE.md` for the overall structure.
 
 The generator program itself (`scripts/generate-stations.ts`) is
-original Metto software under `AGPL-3.0-only`; only its database
+original metto software under `AGPL-3.0-only`; only its database
 output is covered by this document.
 
 ## Upstream license note
 
 The upstream repository's LICENSE/README identify the database as
-ODbL-1.0, while its `package.json` says `ISC`. Metto does not attempt
+ODbL-1.0, while its `package.json` says `ISC`. metto does not attempt
 to resolve that inconsistency by relicensing the data. As a
-conservative approach, Metto treats data copied from or substantially
+conservative approach, metto treats data copied from or substantially
 derived from that metro database as `ODbL-1.0`.
 
 ## Your obligations (summary, not legal advice)
@@ -61,13 +61,13 @@ that the derivative database (or the alterations) be offered in
 machine-readable form (see ODbL §§ 4.2–4.6). Read the full license
 text in `LICENSES/ODbL-1.0.txt`.
 
-Metto keeps the machine-readable adapted database in this public
+metto keeps the machine-readable adapted database in this public
 repository (`data/tehran-metro-stations.json` and
 `lib/metro/stations.ts`).
 
 ## Not covered by this document
 
-* Metto's original source code and data: `AGPL-3.0-only` by default,
+* metto's original source code and data: `AGPL-3.0-only` by default,
   see `LICENSE` and `NOTICE.md`. (Strict JSON files cannot carry
   license comments; the root `LICENSE` together with these notices is
   the marker.)

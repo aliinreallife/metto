@@ -2,7 +2,7 @@ export type Lang = "en" | "fa";
 
 export const STRINGS = {
   en: {
-    appTitle: "Metto",
+    appTitle: "metto",
     appSubtitle: "Tehran Metro route planner & map",
     from: "From",
     to: "To",
@@ -84,7 +84,7 @@ export const STRINGS = {
     searchingPlaces: "Searching places…",
     placeSearchOffline: "Internet is required to search for places.",
     offlineNotPrepared:
-      "Offline data hasn't finished downloading on this device. Connect to the Internet once to prepare Metto for offline use.",
+      "Offline data hasn't finished downloading on this device. Connect to the Internet once to prepare metto for offline use.",
     mapOfflineTitle: "You're offline",
     mapOfflineBody:
       "Areas you've viewed before may still be available. Connect to the internet to load new areas of the map.",

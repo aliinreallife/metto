@@ -1,7 +1,7 @@
 <!--
-Metto bilingual changelog: keep ONE of the two options below and delete the other.
+metto bilingual changelog: keep ONE of the two options below and delete the other.
 
-OPTION A — user-facing change (the change is visible to a normal Metto user):
+OPTION A — user-facing change (the change is visible to a normal metto user):
   fill in 1–3 short plain-language bullets per language (roughly ≤ 60 words each),
   keep the Category line only if it clearly fits (New | Improvement | Fix),
   and replace every "- ..." placeholder (placeholders fail CI).

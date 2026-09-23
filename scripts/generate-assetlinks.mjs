@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generates a Digital Asset Links file for the Metto TWA.
+// Generates a Digital Asset Links file for the metto TWA.
 // Public fingerprints are safe to commit; private keys/passwords never are.
 //
 // Usage:

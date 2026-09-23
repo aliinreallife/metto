@@ -36,7 +36,7 @@ const CARTO_TILE_HOSTS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The only basemap path pattern Metto uses:
+ * The only basemap path pattern metto uses:
  * `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}[@2x].png[?key=…]`
  * (Leaflet `{r}` renders as `@2x` on retina displays; `?key=` stays part of
  * the cache key and is never logged or surfaced anywhere.)
@@ -114,7 +114,7 @@ export interface TileResponseShape {
  * A regression to no-cors must never silently refill this cache with
  * Chromium-padded (~7MB each) opaque responses — such tiles fail to cache
  * and the map falls back to its normal offline-basemap UX instead.
- * (If Metto ever intentionally reverts to no-cors/opaque caching, that
+ * (If metto ever intentionally reverts to no-cors/opaque caching, that
  * change must shrink MAX_CARTO_TILES to ~20 AND re-enable opaque here.)
  */
 export function isCacheableTileResponse(res: TileResponseShape): boolean {
@@ -132,7 +132,7 @@ export function isCacheableTileResponse(res: TileResponseShape): boolean {
 }
 
 /**
- * Provider-removal cleanup. If Metto ever stops using CARTO, switches
+ * Provider-removal cleanup. If metto ever stops using CARTO, switches
  * basemap providers, or otherwise ceases using the CARTO basemap service,
  * the release that makes that change MUST call this (e.g. from service-
  * worker activation or first app startup) so no CARTO content is retained

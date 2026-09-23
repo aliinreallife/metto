@@ -1,7 +1,7 @@
 "use client";
 
 // Progressive-enhancement WebMCP registration. Renders nothing. If the
-// browser lacks `document.modelContext`, this is a no-op and Metto works
+// browser lacks `document.modelContext`, this is a no-op and metto works
 // exactly as before. Tools execute via client-safe domain functions
 // (lib/mcp/client-executors.ts) — no network, offline-capable.
 

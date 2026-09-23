@@ -200,7 +200,7 @@ jobs:
             echo ""
             echo "---"
             echo ""
-            echo "Metto Android $GITHUB_REF_NAME (versionCode $VERSION_CODE)."
+            echo "metto Android $GITHUB_REF_NAME (versionCode $VERSION_CODE)."
             echo ""
             echo "Artifacts: signed .apk (release certificate) for direct testing and Bazaar/Myket submission + signed .aab for future store needs, with SHA256SUMS.txt."
             echo ""

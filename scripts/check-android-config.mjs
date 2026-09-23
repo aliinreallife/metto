@@ -16,8 +16,8 @@ const ok = (cond, msg) => {
 const twa = JSON.parse(readFileSync(resolve(repoRoot, "android/twa-manifest.json"), "utf8"));
 ok(twa.packageId === "ir.metto.app", `twa-manifest packageId == ir.metto.app (got ${twa.packageId})`);
 ok(twa.host === "metto.ir", `twa-manifest host == metto.ir (got ${twa.host})`);
-ok(twa.name === "Metto", `twa-manifest name == Metto (got ${twa.name})`);
-ok(twa.launcherName === "Metto", `twa-manifest launcherName == Metto (got ${twa.launcherName})`);
+ok(twa.name === "metto", `twa-manifest name == metto (got ${twa.name})`);
+ok(twa.launcherName === "metto", `twa-manifest launcherName == metto (got ${twa.launcherName})`);
 ok(twa.startUrl === "/", `twa-manifest startUrl == / (got ${twa.startUrl})`);
 ok(twa.display === "standalone", `twa-manifest display == standalone (got ${twa.display})`);
 ok(twa.appVersionName === "0.1.0" || twa.appVersion === "0.1.0", "twa-manifest default version 0.1.0");
@@ -74,7 +74,7 @@ ok(pinned === "1.25.0", `android/.bubblewrap-version pins 1.25.0 (got ${pinned})
 // "Turn on location" helper (LocationSettingsActivity): native certainty for
 // the device-Location-OFF state via LocationManager.isLocationEnabled(),
 // reached from web content through metto://open-location-settings.
-// Deliberately GMS-free (Metto also ships outside Google Play).
+// Deliberately GMS-free (metto also ships outside Google Play).
 ok(
   manifestXml.includes('android:name=".LocationSettingsActivity"'),
   "AndroidManifest declares .LocationSettingsActivity (Turn on location target)",

@@ -10,7 +10,7 @@ async function main() {
   const server = createMettoMcpServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Metto MCP Server running on stdio");
+  console.error("metto MCP Server running on stdio");
 }
 
 main().catch(console.error);

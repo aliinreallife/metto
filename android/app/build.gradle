@@ -24,8 +24,8 @@ def twaManifest = [
     applicationId: 'ir.metto.app',
     hostName: 'metto.ir', // The domain being opened in the TWA.
     launchUrl: '/', // The start path for the TWA. Must be relative to the domain.
-    name: 'Metto', // The application name.
-    launcherName: 'Metto', // The name shown on the Android Launcher.
+    name: 'metto', // The application name.
+    launcherName: 'metto', // The name shown on the Android Launcher.
     themeColor: '#CC0E2D', // The color used for the status bar.
     themeColorDark: '#0A0A0A', // The color used for the dark status bar.
     navigationColor: '#0A0A0A', // The color used for the navigation bar.
@@ -53,7 +53,7 @@ def twaManifest = [
 android {
     compileSdkVersion 36
     namespace "ir.metto.app"
-    // === Metto: env-based release signing (maintained manually).
+    // === metto: env-based release signing (maintained manually).
     // Bubblewrap `update` regenerates this file from its template, so after
     // any regeneration re-apply this block (see docs/ANDROID_TWA.md).
     // Local builds work without secrets (unsigned). Release CI provides:
@@ -76,7 +76,7 @@ android {
         targetSdkVersion 36
         versionCode 1000
         versionName "0.1.0"
-        // === Metto: CI release overrides (authoritative version comes from the
+        // === metto: CI release overrides (authoritative version comes from the
         // git tag via -PmettoVersionCode/-PmettoVersionName; committed defaults
         // above stay at 0.1.0/1000 for local builds). ===
         if (project.hasProperty('mettoVersionCode')) {

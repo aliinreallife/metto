@@ -12,7 +12,7 @@ export function NearbyPage() {
 
   useEffect(() => {
     const title = isFa ? "نزدیک‌ترین ایستگاه مترو" : "Nearby Metro Stations";
-    const suffix = isFa ? " | متو" : " | Metto";
+    const suffix = isFa ? " | متو" : " | metto";
     document.title = title + suffix;
   }, [isFa]);
 

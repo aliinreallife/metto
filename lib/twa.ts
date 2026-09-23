@@ -7,7 +7,7 @@
 // underground). Certainty lives only in native code
 // (LocationSettingsActivity checks LocationManager.isLocationEnabled()
 // before opening system settings). This module only answers "are we inside
-// the Metto Android wrapper?" so the web UI can offer that native action
+// the metto Android wrapper?" so the web UI can offer that native action
 // there — and hide it in plain browsers/PWAs where it could not work.
 //
 // Detection signals (any one is enough; all are cheap and offline-safe):

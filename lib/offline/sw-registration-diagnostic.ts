@@ -53,7 +53,7 @@ async function runProbe(): Promise<void> {
     // redirected /sw.js. A resolving registration without a controller yet
     // (large precache still installing) is normal — stay silent.
     if (!registrationError && redirect !== "redirected") return;
-    console.debug("[Metto Offline] service worker registration failed", {
+    console.debug("[metto Offline] service worker registration failed", {
       error:
         registrationError instanceof Error
           ? `${registrationError.name}: ${registrationError.message}`

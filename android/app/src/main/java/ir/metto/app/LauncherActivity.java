@@ -47,7 +47,7 @@ public class LauncherActivity
         // Get the original launch Url.
         Uri uri = super.getLaunchingUrl();
 
-        // Metto: tag TWA launches so the web UI can offer the native
+        // metto: tag TWA launches so the web UI can offer the native
         // "Turn on location" action only inside the wrapper (see lib/twa.ts).
         // The param is consumed client-side on first load (remembered in
         // sessionStorage, stripped from the URL) and never affects routing.

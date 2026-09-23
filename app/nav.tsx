@@ -191,7 +191,7 @@ export function AppNav() {
         {isMainTab && (
         <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-0.5 px-4 py-1.5">
           <a
-            href="https://github.com/aliinreallife"
+            href="https://github.com/aliinreallife/metto"
             target="_blank"
             rel="noopener noreferrer"
             className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"

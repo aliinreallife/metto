@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Metto — Tehran Metro API",
+    "title": "metto — Tehran Metro API",
     "description": "Free API for Tehran Metro route planning, station data, and nearby station lookup.",
     "version": "1.0.0",
     "contact": {
@@ -63,7 +63,7 @@
           {
             "name": "departAt",
             "in": "query",
-            "description": "Optional ISO-8601 departure datetime with explicit timezone offset or Z (e.g. 2026-09-07T14:00:00+03:30). Defaults to now. Metto automatically derives the Tehran weekday/Thursday/Friday-or-official-holiday timetable from this instant.",
+            "description": "Optional ISO-8601 departure datetime with explicit timezone offset or Z (e.g. 2026-09-07T14:00:00+03:30). Defaults to now. metto automatically derives the Tehran weekday/Thursday/Friday-or-official-holiday timetable from this instant.",
             "schema": { "type": "string" },
             "example": "2026-09-07T14:00:00+03:30"
           }

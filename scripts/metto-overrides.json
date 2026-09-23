@@ -1,5 +1,5 @@
 {
-  "$comment": "Hand-maintained Metto-only overrides. Canonical coordinates and amenities always come from data/tehran-metro-stations.json (upstream: tehran-metro-data, mostafa-kheibary). Do NOT add canonical coordinate overrides here except Soleimani (intentional Metto pin).",
+  "$comment": "Hand-maintained metto-only overrides. Canonical coordinates and amenities always come from data/tehran-metro-stations.json (upstream: tehran-metro-data, mostafa-kheibary). Do NOT add canonical coordinate overrides here except Soleimani (intentional metto pin).",
   "soleimaniOverride": {
     "en": "Shahid Sepahbod Qasem Soleimani",
     "location": { "lat": 35.95882966952798, "lng": 50.71920151458703 }
