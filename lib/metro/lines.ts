@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: ODbL-1.0 — part of Metto's ODbL-1.0 adapted metro database. See DATA_LICENSE.md.
+// SPDX-License-Identifier: ODbL-1.0 — part of metto's ODbL-1.0 adapted metro database. See DATA_LICENSE.md.
 import type { MetroLine } from "./types";
 
 // Line metadata. Colors preserved from the legacy LINE_COLORS map.

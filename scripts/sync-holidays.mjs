@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Server-only daily holiday refresh for Metto's offline dataset.
+// Server-only daily holiday refresh for metto's offline dataset.
 //
 // Normal mode (default): checks today + next 7 Tehran dates (8 upstream
 // requests/day total, regardless of user count). Compares against

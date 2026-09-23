@@ -67,7 +67,7 @@ let lastSwLifecycleLog = "";
 function logSwLifecycle(message: string): void {
   if (lastSwLifecycleLog === message) return;
   lastSwLifecycleLog = message;
-  console.debug("[Metto Offline]", message);
+  console.debug("[metto Offline]", message);
 }
 
 export function useOfflineReadiness(): OfflineReadiness {

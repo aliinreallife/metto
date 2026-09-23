@@ -99,7 +99,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     const page = await context.newPage();
     page.on("console", (msg) => {
       const text = msg.text();
-      if (/no-response|workbox/i.test(text) && !text.includes("[Metto Offline]")) {
+      if (/no-response|workbox/i.test(text) && !text.includes("[metto Offline]")) {
         swErrors.push(`${msg.type()}: ${text.slice(0, 220)}`);
       }
     });
@@ -179,7 +179,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     const offlinePage = await context.newPage();
     offlinePage.on("console", (msg) => {
       const text = msg.text();
-      if (/no-response|workbox/i.test(text) && !text.includes("[Metto Offline]")) {
+      if (/no-response|workbox/i.test(text) && !text.includes("[metto Offline]")) {
         swErrors.push(`offline:${msg.type()}: ${text.slice(0, 220)}`);
       }
     });

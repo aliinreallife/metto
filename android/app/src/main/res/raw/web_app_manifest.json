@@ -1,8 +1,8 @@
 {
     "id": "/",
-    "name": "Metto",
-    "short_name": "Metto",
-    "description": "Metto, Tehran Metro map with smart route planning, schedules, and all Tehran Metro stations and lines.",
+    "name": "metto",
+    "short_name": "metto",
+    "description": "metto, Tehran Metro map with smart route planning, schedules, and all Tehran Metro stations and lines.",
     "name_localized": {
         "fa": {
             "value": "متو",

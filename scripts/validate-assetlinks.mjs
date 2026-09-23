@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Validates a Digital Asset Links file for the Metto TWA.
+// Validates a Digital Asset Links file for the metto TWA.
 //
 // Behavior (per plan correction #4):
 // - If the production file is absent, this is NOT a failure: print a

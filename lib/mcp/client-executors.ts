@@ -126,7 +126,7 @@ function executeGetRoute(
     path: route.path,
     scheduleNote,
   });
-  return textResult(`${summary}\nOpen in Metto: ${canonicalUrl}`, {
+  return textResult(`${summary}\nOpen in metto: ${canonicalUrl}`, {
     route: `${origin.name.fa} (${origin.name.en}) → ${dest.name.fa} (${dest.name.en})`,
     stops: route.numStops,
     transfers: route.numTransfers,

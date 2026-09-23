@@ -1,6 +1,6 @@
-# Metto — متو | Tehran Metro Route Planner
+# metto — متو | Tehran Metro Route Planner
 
-Metto (متو) is a free, fast, bilingual (فارسی / English) web app for navigating the Tehran Metro — live at **[metto.ir](https://metto.ir)**.
+metto (متو) is a free, fast, bilingual (فارسی / English) web app for navigating the Tehran Metro — live at **[metto.ir](https://metto.ir)**.
 
 Find the fastest route between any two stations with timetable-aware ETAs, browse all stations across 7 lines, find the nearest station by GPS or amenity, and share routes via link.
 
@@ -89,7 +89,7 @@ Machine-readable docs: [`/openapi.json`](https://metto.ir/openapi.json) · AI gu
 
 ## MCP (AI assistants)
 
-Metto exposes a Model Context Protocol server for Claude/AI agents:
+metto exposes a Model Context Protocol server for Claude/AI agents:
 
 - **Smithery**: [smithery.ai/servers/aliinreallifee/metto](https://smithery.ai/servers/aliinreallifee/metto) — one-click install for Claude Code, Cursor, Windsurf and other MCP clients
 - **HTTP**: `POST /mcp` (streamable) — live at [metto.ir/mcp](https://metto.ir/mcp), see `app/api/mcp/route.ts`. `POST /api/mcp` ([metto.ir/api/mcp](https://metto.ir/api/mcp)) works identically as a backwards-compatible alias.
@@ -122,7 +122,7 @@ PRs welcome — especially timetable corrections, station coordinates/amenities,
 
 This is a multi-license repository, not a single-license one:
 
-* **Metto original code and data** is licensed under the GNU Affero
+* **metto original code and data** is licensed under the GNU Affero
   General Public License version 3 only (`AGPL-3.0-only`) — see `LICENSE`.
 * **Tehran Metro station/network data** derived from
   [tehran-metro-data](https://github.com/mostafa-kheibary/tehran-metro-data)

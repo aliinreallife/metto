@@ -1,8 +1,8 @@
 {
   "packageId": "ir.metto.app",
   "host": "metto.ir",
-  "name": "Metto",
-  "launcherName": "Metto",
+  "name": "metto",
+  "launcherName": "metto",
   "display": "standalone",
   "themeColor": "#CC0E2D",
   "themeColorDark": "#0A0A0A",

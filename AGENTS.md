@@ -1,7 +1,7 @@
-# AGENTS.md — instructions for coding agents (Metto)
+# AGENTS.md — instructions for coding agents (metto)
 
 This file is the canonical repository instruction file for coding agents
-working on Metto. Enforcement of the changelog contract below comes from
+working on metto. Enforcement of the changelog contract below comes from
 three things together: this file, `.github/pull_request_template.md`, and
 the `release notes (FA/EN)` CI check (`scripts/check-release-notes.mjs`).
 
@@ -22,7 +22,7 @@ the `release notes (FA/EN)` CI check (`scripts/check-release-notes.mjs`).
 
 Every PR must answer one question:
 
-> “Would a normal Metto user notice or care about this change?”
+> “Would a normal metto user notice or care about this change?”
 
 - **Yes → bilingual release notes are required** in the PR body, exactly in
   this shape (keep each language to 1–3 short bullets, roughly ≤ 60 words):

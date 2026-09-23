@@ -1,11 +1,20 @@
 import type { MetadataRoute } from "next";
 
-export default function manifest(): MetadataRoute.Manifest {
+// `*_localized` follows the Web App Manifest localization proposal and is
+// not yet in Next's `MetadataRoute.Manifest` type — keep it via an
+// intersection so typecheck passes while the fields are still serialized.
+interface LocalizedManifest extends MetadataRoute.Manifest {
+  name_localized?: Record<string, { value: string; lang: string; dir: string }>;
+  short_name_localized?: Record<string, { value: string; lang: string; dir: string }>;
+  description_localized?: Record<string, { value: string; lang: string; dir: string }>;
+}
+
+export default function manifest(): LocalizedManifest {
   return {
     id: "/",
-    name: "Metto",
-    short_name: "Metto",
-    description: "Metto, Tehran Metro map with smart route planning, schedules, and all Tehran Metro stations and lines.",
+    name: "metto",
+    short_name: "metto",
+    description: "metto, Tehran Metro map with smart route planning, schedules, and all Tehran Metro stations and lines.",
     name_localized: {
         fa: {
             value: "متو",

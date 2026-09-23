@@ -19,7 +19,7 @@
      removed; AGP derives component paths from the Gradle namespace. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Metto: location delegation needs runtime location permissions.
+    <!-- metto: location delegation needs runtime location permissions.
          Without these the TWA never shows the Android location prompt and
          navigator.geolocation fails with PERMISSION_DENIED while the PWA
          in Chrome works. Both COARSE (approximate) and FINE (precise) are
@@ -159,7 +159,7 @@
 
         <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity" />
 
-        <!-- Metto: "Turn on location" target for the TWA web UI
+        <!-- metto: "Turn on location" target for the TWA web UI
              (metto://open-location-settings, see LocationSettingsActivity).
              Checks LocationManager.isLocationEnabled() and opens system
              Location settings only when really disabled — no GMS needed.
@@ -193,7 +193,7 @@
                 android:resource="@xml/filepaths" />
         </provider>
 
-        <!-- Metto: must stay enabled/exported for location delegation even
+        <!-- metto: must stay enabled/exported for location delegation even
              though enableNotifications=false. Bubblewrap ties this service to
              @bool/enableNotification, which disables LocationDelegationExtraCommandHandler
              and breaks GPS in the TWA (PWA keeps working). Re-apply after `bubblewrap update`. -->

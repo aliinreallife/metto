@@ -1,6 +1,6 @@
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
-// Metto offline service worker (Serwist Configurator mode).
+// metto offline service worker (Serwist Configurator mode).
 //
 // Deterministic precaching: `serwist build` injects the real production
 // manifest (hashed _next/static, prerendered HTML, public/ assets) into

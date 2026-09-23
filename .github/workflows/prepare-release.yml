@@ -1,4 +1,4 @@
-# Prepare Release: the normal way to cut a Metto release.
+# Prepare Release: the normal way to cut a metto release.
 #
 # Flow: Actions -> Prepare Release -> enter vX.Y.Z
 #   -> collect merged PR notes since the previous tag (paginated compare)

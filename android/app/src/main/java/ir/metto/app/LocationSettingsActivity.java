@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Metto contributors.
+ * Copyright 2026 metto contributors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import android.provider.Settings;
  * <p>Launched via the {@code metto://open-location-settings} deep link from
  * web content — plain-Chrome navigation to a custom scheme resolves to this
  * exported activity, so no JavaScript bridge, no intent: hacks, and no
- * Google Play Services dependency are needed (important: Metto also ships
+ * Google Play Services dependency are needed (important: metto also ships
  * outside Google Play, where GMS may be absent).
  *
   * <p>No UI (Theme.NoDisplay + noHistory): it forwards to Settings and

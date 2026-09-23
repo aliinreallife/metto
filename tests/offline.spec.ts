@@ -56,7 +56,7 @@ async function expectRouteResult(page: Page) {
   await expect(page.getByText("خط", { exact: false }).first()).toBeVisible();
 }
 
-test.describe("Metto offline PWA", () => {
+test.describe("metto offline PWA", () => {
   test.beforeEach(async ({ context }) => {
     // Tehran coordinate for geolocation-dependent paths.
     await context.grantPermissions(["geolocation"]);
@@ -73,7 +73,7 @@ test.describe("Metto offline PWA", () => {
     let page = await context.newPage();
     const offlineLogs: string[] = [];
     page.on("console", (msg) => {
-      if (msg.type() === "debug" && msg.text().includes("[Metto Offline]")) {
+      if (msg.type() === "debug" && msg.text().includes("[metto Offline]")) {
         offlineLogs.push(msg.text());
       }
     });
@@ -87,7 +87,7 @@ test.describe("Metto offline PWA", () => {
     ).toHaveCount(0);
     await expect(page.getByText("Preparing offline")).toHaveCount(0);
     await expect(
-      page.getByText("Metto is ready for offline use"),
+      page.getByText("metto is ready for offline use"),
     ).toHaveCount(0);
     expect(offlineLogs.length).toBeGreaterThan(0);
     // Healthy run: the registration-failure probe must stay silent.
@@ -299,7 +299,7 @@ test.describe("Metto offline PWA", () => {
     const page = await context.newPage();
     const swLogs: string[] = [];
     page.on("console", (msg) => {
-      if (msg.type() === "debug" && msg.text().includes("[Metto Offline]")) {
+      if (msg.type() === "debug" && msg.text().includes("[metto Offline]")) {
         swLogs.push(msg.text());
       }
     });

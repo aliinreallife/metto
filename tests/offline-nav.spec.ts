@@ -100,7 +100,7 @@ test.describe("Offline bottom navigation", () => {
     // offline. No document in this cycle may ever report offline-incomplete.
     const offlineLogs: string[] = [];
     page.on("console", (msg) => {
-      if (msg.type() === "debug" && msg.text().includes("[Metto Offline]")) {
+      if (msg.type() === "debug" && msg.text().includes("[metto Offline]")) {
         offlineLogs.push(msg.text());
       }
     });

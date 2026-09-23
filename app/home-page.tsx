@@ -169,7 +169,7 @@ export function HomePage() {
 
   useEffect(() => {
     const title = isFa ? "مسیریابی مترو تهران" : "Tehran Metro Route Planner";
-    const suffix = isFa ? " | متو" : " | Metto";
+    const suffix = isFa ? " | متو" : " | metto";
     document.title = title + suffix;
   }, [isFa]);
 
@@ -263,7 +263,7 @@ export function HomePage() {
 
       <div className="z-20 hidden flex-wrap items-center justify-start gap-x-4 gap-y-1 border-t border-border bg-card/90 px-4 py-2 backdrop-blur md:flex">
         <a
-          href="https://github.com/aliinreallife"
+          href="https://github.com/aliinreallife/metto"
           target="_blank"
           rel="noopener noreferrer"
           className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"

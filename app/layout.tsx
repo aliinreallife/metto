@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   authors: [{ name: "aliinreallife" }],
   creator: "aliinreallife",
   publisher: "aliinreallife",
-  applicationName: "متو — Metto",
+  applicationName: "متو — metto",
   referrer: "origin-when-cross-origin",
   openGraph: {
     type: "website",
@@ -98,7 +98,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "متو | Metto",
+    title: "متو | metto",
   },
   manifest: "/manifest.webmanifest",
   icons: {
@@ -136,7 +136,7 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   name: "متو",
-  alternateName: ["Metto", "مترو تهران", "نقشه مترو تهران", "نقشه مترو"],
+  alternateName: ["metto", "مترو تهران", "نقشه مترو تهران", "نقشه مترو"],
   url: siteUrl,
   description:
     "متو — نقشه مترو تهران با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها.",

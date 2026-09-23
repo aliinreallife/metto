@@ -99,7 +99,7 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
     const key = JSON.stringify(snapshot);
     if (lastLoggedRef.current === key) return;
     lastLoggedRef.current = key;
-    console.debug("[Metto Offline]", snapshot);
+    console.debug("[metto Offline]", snapshot);
     try {
       window.__mettoOffline = { ...snapshot, at: new Date().toISOString() };
     } catch {
@@ -120,7 +120,7 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
           <span className="min-w-0 flex-1">
             {isFa
               ? "این دستگاه هنوز برای استفاده آفلاین آماده نشده است. برای دریافت اطلاعات لازم یک‌بار به اینترنت متصل شوید."
-              : "Offline data hasn't finished downloading on this device. Connect to the Internet once to prepare Metto for offline use."}
+              : "Offline data hasn't finished downloading on this device. Connect to the Internet once to prepare metto for offline use."}
           </span>
         </StatusRow>
       )}

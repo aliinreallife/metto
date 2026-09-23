@@ -50,7 +50,7 @@ export function MapPage() {
 
   useEffect(() => {
     const title = isFa ? "نقشه مترو تهران" : "Tehran Metro Map";
-    const suffix = isFa ? " | متو" : " | Metto";
+    const suffix = isFa ? " | متو" : " | metto";
     document.title = title + suffix;
   }, [isFa]);
 

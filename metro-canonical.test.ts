@@ -33,7 +33,7 @@ const AMENITY_MAPPING = [
   ["police", "metroPolice"],
 ] as const;
 
-// Intentional Metto coordinate override (see scripts/metto-overrides.json).
+// Intentional metto coordinate override (see scripts/metto-overrides.json).
 const SOLEIMANI_EN = "Shahid Sepahbod Qasem Soleimani";
 const SOLEIMANI_LOCATION = { lat: 35.95882966952798, lng: 50.71920151458703 };
 const FAKHRIZADEH_EN = "Shahid Fakhrizadeh";
@@ -63,7 +63,7 @@ describe("canonical upstream comparison (data/tehran-metro-stations.json)", () =
     for (const en of upstreamNames) {
       const src = upstream[en];
       const gen = byEn.get(src.name ?? en);
-      expect(gen, `canonical station missing in Metto: ${en}`).toBeDefined();
+      expect(gen, `canonical station missing in metto: ${en}`).toBeDefined();
       canonicalFound++;
 
       if ((src.name ?? en) === SOLEIMANI_EN) {

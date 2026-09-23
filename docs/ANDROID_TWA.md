@@ -1,11 +1,11 @@
-# Metto Android TWA
+# metto Android TWA
 
-The Metto PWA (`https://metto.ir`) ships on Android as a Trusted Web
+The metto PWA (`https://metto.ir`) ships on Android as a Trusted Web
 Activity. The wrapper lives in `android/` in this repo; the Next.js app
 remains the main application and Vercel remains the web build authority.
 
 - Package / application ID (permanent): `ir.metto.app`
-- Launcher / app name: `Metto`
+- Launcher / app name: `metto`
 - Origin: `https://metto.ir`, start URL `/`, display `standalone`
 - Location delegation: enabled (`features.locationDelegation.enabled=true`
   in `android/twa-manifest.json` → `locationdelegation:1.1.2` +
@@ -25,7 +25,7 @@ remains the main application and Vercel remains the web build authority.
 android/                  # committed Bubblewrap output (source of truth)
   twa-manifest.json       # Bubblewrap config (package, host, colors, features)
   .bubblewrap-version     # pinned generator version (1.25.0)
-  app/build.gradle        # includes the manually maintained Metto signing block
+  app/build.gradle        # includes the manually maintained metto signing block
   ...                     # Gradle wrapper, AndroidManifest, java, res/
 scripts/
   generate-assetlinks.mjs # builds public/.well-known/assetlinks.json from fingerprints
@@ -42,12 +42,12 @@ committed Gradle project directly and never runs `bubblewrap update`.
 
 ```bash
 npx -y @bubblewrap/cli@1.25.0 init --manifest https://metto.ir/manifest.webmanifest --directory android
-# re-apply Metto overrides in android/twa-manifest.json
-# (packageId ir.metto.app, names Metto, 0.1.0/1000, locationDelegation.enabled=true)
+# re-apply metto overrides in android/twa-manifest.json
+# (packageId ir.metto.app, names metto, 0.1.0/1000, locationDelegation.enabled=true)
 npx -y @bubblewrap/cli@1.25.0 update --manifest android
-# re-apply the "Metto:" blocks in android/app/build.gradle (signing + version
+# re-apply the "metto:" blocks in android/app/build.gradle (signing + version
 # overrides) — `update` regenerates that file from the template.
-# re-apply the "Metto:" blocks in android/app/src/main/AndroidManifest.xml:
+# re-apply the "metto:" blocks in android/app/src/main/AndroidManifest.xml:
 # ACCESS_COARSE_LOCATION + ACCESS_FINE_LOCATION uses-permissions plus
 # DelegationService android:enabled/exported=true (location delegation must
 # stay enabled even when enableNotifications=false, otherwise TWA GPS fails
@@ -76,7 +76,7 @@ opens `Settings.ACTION_LOCATION_SOURCE_SETTINGS` only when Location is
 really disabled — then finishes, so Back returns to the TWA. Deliberately
 **no Google Play Services dependency**: a `SettingsClient` resolution dialog
 would keep the user in-app, but it needs `play-services-location` + GMS on
-the device, and Metto also ships via Iranian marketplaces / direct APK where
+the device, and metto also ships via Iranian marketplaces / direct APK where
 GMS may be absent. Opening system settings covers every device.
 
 Note: the CLI's first-run JDK/SDK prompts are interactive; generation
@@ -85,8 +85,8 @@ programmatically with `@bubblewrap/core@1.25.0` (same code, no prompts).
 
 ## Signing (one release key, GitHub-hosted secrets only)
 
-Metto has a single long-term Android release signing key
-(`metto-release.jks`, alias `metto-release`, RSA-4096). It is Metto's
+metto has a single long-term Android release signing key
+(`metto-release.jks`, alias `metto-release`, RSA-4096). It is metto's
 signing identity for Bazaar/Myket/direct APK releases (and possibly
 F-Droid later). No Google-Play-specific setup exists yet — if Play
 publishing happens later, a separate decision will cover whether this key
@@ -117,7 +117,7 @@ read -s -p "key password: " KEY_PASS; echo
 keytool -genkeypair -v -keystore metto-release.jks -alias metto-release \
   -storetype JKS -keyalg RSA -keysize 4096 -validity 10950 \
   -storepass "$KS_PASS" -keypass "$KEY_PASS" \
-  -dname "CN=Ali Rashidi, OU=Metto, O=aliinreallife"
+  -dname "CN=Ali Rashidi, OU=metto, O=aliinreallife"
 # validity 10950 days = 30 years (long-term signing identity)
 unset KS_PASS KEY_PASS
 

@@ -1,7 +1,7 @@
 // Timetable service-day boundary regressions.
 //
 // Proves the design principle: the caller supplies an absolute departure
-// instant (`depart_at`); Metto derives the Tehran service-day timetable
+// instant (`depart_at`); metto derives the Tehran service-day timetable
 // internally — per routing leg, from the propagated absolute instant, never
 // frozen from the departure date and never caller-supplied.
 //

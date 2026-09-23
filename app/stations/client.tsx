@@ -12,7 +12,7 @@ export function StationsPage() {
 
   useEffect(() => {
     const title = isFa ? "ایستگاه‌های مترو تهران" : "Tehran Metro Stations";
-    const suffix = isFa ? " | متو" : " | Metto";
+    const suffix = isFa ? " | متو" : " | metto";
     document.title = title + suffix;
   }, [isFa]);
 

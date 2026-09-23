@@ -1,6 +1,6 @@
-# Metto TWA Readiness
+# metto TWA Readiness
 
-Metto (`https://metto.ir`) is a Next.js/React/TypeScript Tehran Metro
+metto (`https://metto.ir`) is a Next.js/React/TypeScript Tehran Metro
 route-planning PWA. This document describes its offline/TWA-ready state:
 what works offline, what still needs Internet, how the service-worker cache
 and holiday dataset behave, how to test manually, and what remains before a
@@ -15,7 +15,7 @@ Café Bazaar / Myket Trusted Web Activity (TWA) release.
 
 ## 1. Offline functionality (after one online initialization)
 
-After opening Metto online once (offline caching runs silently in the
+After opening metto online once (offline caching runs silently in the
 background — normal usage shows no preparation text), fully closing the
 app, going offline, and reopening it, all of the following work without
 Internet:
@@ -39,7 +39,7 @@ Internet:
 
 “Offline ready” is only claimed when **all** of these hold
 (tracked silently by `lib/offline/use-offline-readiness.ts`; transitions
-are logged as `console.debug("[Metto Offline]", …)` and mirrored to
+are logged as `console.debug("[metto Offline]", …)` and mirrored to
 `window.__mettoOffline` — no user-facing preparation text):
 
 1. A service worker controls the page.
@@ -53,7 +53,7 @@ are logged as `console.debug("[Metto Offline]", …)` and mirrored to
 
 `navigator.onLine` only reflects link state: with Wi-Fi/cellular off but an
 Android VPN virtual interface up, it stays `true` with no usable Internet.
-Metto therefore tracks *effective* reachability (`lib/offline/`):
+metto therefore tracks *effective* reachability (`lib/offline/`):
 
 - States: `checking` → `online` (only after `GET /api/connectivity`
   returns 204) or `offline` (link down, or probe failed/timed out at ~3 s).
@@ -128,7 +128,7 @@ hang, never a misleading empty state):
 - **Not part of offline readiness**: an empty tile cache changes nothing
   about the ready state, which depends only on app shell + metro data +
   schedule + holidays.
-- **Provider-removal cleanup rule**: if Metto ever stops using CARTO,
+- **Provider-removal cleanup rule**: if metto ever stops using CARTO,
   switches providers, or otherwise ceases using the CARTO basemap service,
   that release MUST explicitly delete the `metto-carto-tiles` cache
   (helper: `purgeCartoTileCache()` in `lib/map/carto-tiles.ts` — e.g. from
@@ -176,7 +176,7 @@ hang, never a misleading empty state):
   gone; the next launch is then controlled by it. This keeps route
   planning uninterrupted (no old-HTML + new-chunks breakage, no mid-
   journey reloads). Update transitions are console-only diagnostics
-  (`[Metto Offline] service worker …`). The worker keeps a `SKIP_WAITING`
+  (`[metto Offline] service worker …`). The worker keeps a `SKIP_WAITING`
   message handler solely for development/testing and explicit future
   recovery flows — normal releases must never depend on it.
 - **Clearing data:** clearing site data in the browser removes everything
@@ -311,8 +311,8 @@ hang, never a misleading empty state):
 ```text
 clear all metto.ir site data
 ↓
-open Metto online (open DevTools console: watch for
-"[Metto Offline]" { state: "ready", ... })
+open metto online (open DevTools console: watch for
+"[metto Offline]" { state: "ready", ... })
 ↓
 calculate a station-to-station route
 ↓
@@ -320,7 +320,7 @@ close app/browser completely
 ↓
 enable airplane mode
 ↓
-reopen Metto (cold start)
+reopen metto (cold start)
 ↓
 calculate a station-to-station route
 ↓
@@ -344,7 +344,7 @@ verify recovery + update banner behavior if a deploy happened
 Map reconnect + offline tabs (also on real Android Chrome / installed PWA):
 
 ```text
-install/open Metto online
+install/open metto online
 ↓
 open Map (note the one-time save notice on first visit)
 ↓
@@ -370,13 +370,13 @@ every static tab opens offline with route state intact
 VPN false-online case (real Android, installed PWA):
 
 ```text
-open installed Metto PWA online, confirm ready
+open installed metto PWA online, confirm ready
 ↓
 leave VPN connected; turn Wi-Fi OFF and cellular data OFF
 ↓
 wait for reachability verification (no browser event needed)
 ↓
-Metto shows the normal offline state even if the OS still claims online
+metto shows the normal offline state even if the OS still claims online
 ↓
 cycle Route → Map → Stations → Nearby → Route (all precached tabs work)
 ↓
@@ -399,7 +399,7 @@ intercepted and never called).
 
 If the console never leaves `{ state: "preparing", … }`, inspect which flag
 is stuck. A dedicated one-shot probe also logs
-`[Metto Offline] service worker registration failed` with the real error
+`[metto Offline] service worker registration failed` with the real error
 (console only, never UI) when registration definitively fails:
 
 - `serviceWorkerControlled: false` + registration failure naming a
