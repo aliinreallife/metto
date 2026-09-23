@@ -5,6 +5,7 @@ import {
   isIosInstallHintPreviewForced,
   isStandaloneDisplay,
   shouldForceIosHintPreview,
+  shouldHideInstallButton,
   shouldShowIosInstallHint,
   supportsInstallPromptEvent,
   triggerDeferredInstall,
@@ -238,5 +239,44 @@ describe("supportsInstallPromptEvent", () => {
     expect(supportsInstallPromptEvent({})).toBe(false)
     expect(supportsInstallPromptEvent(null)).toBe(false)
     expect(supportsInstallPromptEvent(undefined)).toBe(false)
+  })
+})
+
+describe("shouldHideInstallButton", () => {
+  it("collapses when the Android wrapper (TWA) is installed", () => {
+    expect(
+      shouldHideInstallButton({
+        installed: false,
+        isStandalone: false,
+        twaInstalled: true,
+      }),
+    ).toBe(true)
+  })
+
+  it("collapses when installed or standalone, as before", () => {
+    expect(
+      shouldHideInstallButton({
+        installed: true,
+        isStandalone: false,
+        twaInstalled: false,
+      }),
+    ).toBe(true)
+    expect(
+      shouldHideInstallButton({
+        installed: false,
+        isStandalone: true,
+        twaInstalled: false,
+      }),
+    ).toBe(true)
+  })
+
+  it("keeps the slot when nothing is installed anywhere", () => {
+    expect(
+      shouldHideInstallButton({
+        installed: false,
+        isStandalone: false,
+        twaInstalled: false,
+      }),
+    ).toBe(false)
   })
 })
