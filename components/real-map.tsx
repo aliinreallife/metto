@@ -709,7 +709,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       <div
         ref={containerRef}
         className="h-full w-full"
-        aria-label="Tehran metro on real map"
+        aria-label="Metro on real map"
         style={mapMode === "minimalist" ? { backgroundColor: MINIMALIST_BG } : undefined}
       />
       {gpsError && (

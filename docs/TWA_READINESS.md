@@ -1,7 +1,7 @@
 # metto TWA Readiness
 
-metto (`https://metto.ir`) is a Next.js/React/TypeScript Tehran Metro
-route-planning PWA. This document describes its offline/TWA-ready state:
+metto (`https://metto.ir`) is a Next.js/React/TypeScript metro
+route-planning PWA (currently Tehran). This document describes its offline/TWA-ready state:
 what works offline, what still needs Internet, how the service-worker cache
 and holiday dataset behave, how to test manually, and what remains before a
 Café Bazaar / Myket Trusted Web Activity (TWA) release.

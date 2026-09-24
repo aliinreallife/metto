@@ -168,7 +168,7 @@ export function HomePage() {
   }, [isFa]);
 
   useEffect(() => {
-    const title = isFa ? "مسیریابی مترو تهران" : "Tehran Metro Route Planner";
+    const title = isFa ? "مسیریابی مترو" : "Metro Route Planner";
     const suffix = isFa ? " | متو" : " | metto";
     document.title = title + suffix;
   }, [isFa]);

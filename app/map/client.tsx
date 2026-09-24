@@ -49,7 +49,7 @@ export function MapPage() {
   const isFa = lang === "fa";
 
   useEffect(() => {
-    const title = isFa ? "نقشه مترو تهران" : "Tehran Metro Map";
+    const title = isFa ? "نقشه مترو" : "Metro Map";
     const suffix = isFa ? " | متو" : " | metto";
     document.title = title + suffix;
   }, [isFa]);

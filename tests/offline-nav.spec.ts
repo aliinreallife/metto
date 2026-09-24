@@ -126,7 +126,7 @@ test.describe("Offline bottom navigation", () => {
     await tabLink(page, "نقشه").click();
     await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe("/map");
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expectOfflineReadyWithoutIncompleteFlash(page);
 
@@ -279,7 +279,7 @@ test.describe("Offline bottom navigation", () => {
       "tehran-sadeghiyeh",
     );
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
 
     // Stations with query → Stations HTML.

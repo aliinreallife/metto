@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { StationsPage } from "./client";
 
 export const metadata: Metadata = {
+  // TODO(multi-city): Tehran-scoped until /[city]/stations lands.
   title: "ایستگاه‌های مترو تهران",
   description:
     "لیست کامل ایستگاه‌های مترو تهران با اطلاعات خطوط، امکانات و زمان‌بندی حرکت قطارها.",
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
         url: "/socialprev.png",
         width: 1731,
         height: 909,
-        alt: "متو - مسیریاب مترو تهران",
+        alt: "متو - مسیریاب مترو",
         type: "image/png",
       },
     ],

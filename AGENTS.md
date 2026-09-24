@@ -7,7 +7,7 @@ the `release notes (FA/EN)` CI check (`scripts/check-release-notes.mjs`).
 
 ## Project essentials
 
-- Bilingual (English / فارسی) Tehran Metro app. User-facing prose must read
+- Bilingual (English / فارسی) metro app (currently Tehran — copy stays city-neutral for multi-city). User-facing prose must read
   naturally in both languages — plain words, no jargon.
 - `main` is the release branch. PRs merge to `main` with normal merge
   commits (squash/rebase also supported — the system does not depend on

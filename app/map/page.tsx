@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { MapPage } from "./client";
 
 export const metadata: Metadata = {
+  // TODO(multi-city): Tehran-scoped until /[city]/map lands.
   title: "نقشه مترو تهران",
   description:
     "نقشه تعاملی مترو تهران با نمای ماهواره‌ای و نقشه خطوط. تمام ایستگاه‌ها، خطوط و اطلاعات مسیریابی.",
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
         url: "/socialprev.png",
         width: 1731,
         height: 909,
-        alt: "متو - مسیریاب مترو تهران",
+        alt: "متو - مسیریاب مترو",
         type: "image/png",
       },
     ],

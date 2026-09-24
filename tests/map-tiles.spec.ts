@@ -107,7 +107,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     const before = await storageUsage(page);
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await waitForSWControl(page);
 
@@ -185,7 +185,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     });
     await offlinePage.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
-      offlinePage.locator('[aria-label="Tehran metro on real map"]'),
+      offlinePage.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
       offlinePage.getByText("بدون اینترنت", { exact: true }),

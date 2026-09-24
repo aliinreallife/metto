@@ -14,7 +14,7 @@ export default function manifest(): LocalizedManifest {
     id: "/",
     name: "metto",
     short_name: "metto",
-    description: "metto, Tehran Metro map with smart route planning, schedules, and all Tehran Metro stations and lines.",
+    description: "metto, metro map with smart route planning, schedules, and all metro stations and lines.",
     name_localized: {
         fa: {
             value: "متو",
@@ -31,7 +31,7 @@ export default function manifest(): LocalizedManifest {
     },
     description_localized: {
         fa: {
-            value: "متو، نقشه مترو تهران با امکان مسیریابی هوشمند، مشاهده زمانبندی و تمام ایستگاه‌ها و خطوط متروی تهران.",
+            value: "متو، نقشه مترو با امکان مسیریابی هوشمند، مشاهده زمانبندی و تمام ایستگاه‌ها و خطوط مترو.",
             lang: "fa",
             dir: "rtl"
         }

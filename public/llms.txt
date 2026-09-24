@@ -1,17 +1,17 @@
-# metto - Tehran Metro Route Planner & Map
+# metto - Metro Route Planner & Map
 
-metto (متو) is a free, fast, and offline-capable web app for navigating the Tehran Metro system.
+metto (متو) is a free, fast, and offline-capable web app for navigating metro systems (currently Tehran).
 
 ## Features
 
 - **Route Planner**: Find the fastest route between any two metro stations with transfer info, travel time, and stop count
 - **Station List**: Browse all 100+ stations across 7 metro lines with schedules, amenities, and maps
 - **Nearby Stations**: Find the nearest metro station using GPS, filter by amenities (WiFi, elevator, parking, etc.)
-- **Interactive Map**: Satellite and minimalist views of the full Tehran Metro network
+- **Interactive Map**: Satellite and minimalist views of the full metro network
 
 ## API Endpoints
 
-- [Route Planner](https://metto.ir/api/route?from=Tajrish&to=Darvazeh Sharq) - Plan a route between two stations by name or GPS coordinates. Time-aware: pass `departAt` as ISO-8601 with an explicit timezone offset or Z (e.g. `?from=tajrish&to=tehran-sadeghiyeh&departAt=2026-09-07T14:00:00+03:30`); metto automatically derives the Tehran weekday/Thursday/Friday-or-official-holiday timetable from the departure instant. Omit `departAt` to route from now.
+- [Route Planner](https://metto.ir/api/route?from=Tajrish&to=Darvazeh Sharq) - Plan a route between two stations by name or GPS coordinates. Time-aware: pass `departAt` as ISO-8601 with an explicit timezone offset or Z (e.g. `?from=tajrish&to=tehran-sadeghiyeh&departAt=2026-09-07T14:00:00+03:30`); metto automatically derives the Iran (Asia/Tehran) weekday/Thursday/Friday-or-official-holiday timetable from the departure instant. Omit `departAt` to route from now.
 - [Station List](https://metto.ir/api/stations) - List all stations, filterable by line or search query
 - [Station Details](https://metto.ir/api/station/Tajrish) - Get full details for a single station
 - [Nearby Stations](https://metto.ir/api/nearby?lat=35.804&lng=51.433) - Find nearest stations to GPS coordinates

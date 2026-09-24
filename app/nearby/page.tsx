@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { NearbyPage } from "./client";
 
 export const metadata: Metadata = {
+  // TODO(multi-city): Tehran-scoped until /[city]/nearby lands.
   title: "نزدیک‌ترین ایستگاه مترو تهران",
   description:
     "نزدیک‌ترین ایستگاه مترو تهران را با GPS پیدا کنید. فیلتر امکانات ایستگاه‌ها شامل سرویس بهداشتی، آسانسور، پارکینگ و بیشتر.",
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
         url: "/socialprev.png",
         width: 1731,
         height: 909,
-        alt: "متو - مسیریاب مترو تهران",
+        alt: "متو - مسیریاب مترو",
         type: "image/png",
       },
     ],

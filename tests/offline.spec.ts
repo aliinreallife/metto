@@ -180,7 +180,7 @@ test.describe("metto offline PWA", () => {
     // 15-17. Map loads offline, vectors render, basemap note shows.
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
       page.getByText("بدون اینترنت", { exact: true }),
@@ -244,7 +244,7 @@ test.describe("metto offline PWA", () => {
       `&dp=35.7000,51.4000,مقصد تست`;
     await page.goto(pinsUrl, { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
 
     async function assertStackedTopToBottom() {

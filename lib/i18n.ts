@@ -3,7 +3,7 @@ export type Lang = "en" | "fa";
 export const STRINGS = {
   en: {
     appTitle: "metto",
-    appSubtitle: "Tehran Metro route planner & map",
+    appSubtitle: "Metro route planner & map",
     from: "From",
     to: "To",
     origin: "Station or place name…",
@@ -112,7 +112,7 @@ export const STRINGS = {
     dataBy: "Metro data by",
     searchHintBefore: "you could also search places like",
     searchHintExample: "Iran Mall",
-    searchHintAfter: "or any place in Tehran",
+    searchHintAfter: "or any place you need",
     nearbyHintBefore: "you could also find nearest station with",
     nearbyHintExample: "restroom",
     nearbyHintAfter: "or any other feature you may need",
@@ -128,7 +128,7 @@ export const STRINGS = {
   },
   fa: {
     appTitle: "متو",
-    appSubtitle: "نقشه و مسیریابی مترو تهران",
+    appSubtitle: "نقشه و مسیریابی مترو",
     from: "مبدأ",
     to: "مقصد",
     origin: "ایستگاه یا نام مکان…",
@@ -237,7 +237,7 @@ export const STRINGS = {
     dataBy: "داده‌های مترو از",
     searchHintBefore: "می‌توانید مکان‌هایی مثل",
     searchHintExample: "ایران مال",
-    searchHintAfter: "یا هر مکانی در تهران را جستجو کنید",
+    searchHintAfter: "یا هر مکان دیگری را جستجو کنید",
     nearbyHintBefore: "می‌توانید نزدیک‌ترین ایستگاه با",
     nearbyHintExample: "سرویس بهداشتی",
     nearbyHintAfter: "یا هر امکان دیگری که نیاز دارید",
