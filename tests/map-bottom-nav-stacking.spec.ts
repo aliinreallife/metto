@@ -20,7 +20,7 @@ const PNG_1PX = Buffer.from(
 
 async function dragMap(page: Page, dx: number, dy: number) {
   const box = await page
-    .locator('[aria-label="Tehran metro on real map"]')
+    .locator('[aria-label="Metro on real map"]')
     .boundingBox();
   expect(box).not.toBeNull();
   const cx = box!.x + box!.width / 2;
@@ -51,7 +51,7 @@ test.describe("Map / bottom-nav stacking", () => {
     const page = await context.newPage();
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expect
       .poll(
@@ -84,7 +84,7 @@ test.describe("Map / bottom-nav stacking", () => {
     // viewport must NOT be a second `isolate` context.
     const stacking = await page.evaluate(() => {
       const mount = document.querySelector(
-        '[aria-label="Tehran metro on real map"]',
+        '[aria-label="Metro on real map"]',
       );
       const viewport = mount?.parentElement ?? null;
       const screen = viewport?.parentElement ?? null;
@@ -122,7 +122,7 @@ test.describe("Map / bottom-nav stacking", () => {
     // The map viewport must end at or above the top edge of the footer.
     const geometry = await page.evaluate(() => {
       const mount = document.querySelector(
-        '[aria-label="Tehran metro on real map"]',
+        '[aria-label="Metro on real map"]',
       );
       const viewport = mount?.parentElement;
       const footer = document.querySelector("footer.fixed.bottom-0");

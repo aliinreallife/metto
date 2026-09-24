@@ -194,7 +194,7 @@ test.describe("Map reconnect recovery", () => {
 
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await waitForOfflineReady(page);
 
@@ -322,7 +322,7 @@ test.describe("Map reconnect recovery", () => {
     const page = await context.newPage();
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await waitForOfflineReady(page);
     // Deterministic precondition: seed one tile entry directly so the
@@ -383,7 +383,7 @@ test.describe("Map reconnect recovery", () => {
     const page = await context.newPage();
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     // A controlling worker is the prerequisite for the offline reload
     // below (the precache fallback is served only by the worker). Fresh
@@ -400,7 +400,7 @@ test.describe("Map reconnect recovery", () => {
     await page.getByRole("button", { name: "بستن" }).first().click();
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
       page.getByText("ذخیره برای استفاده آفلاین", { exact: true }),

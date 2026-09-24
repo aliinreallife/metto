@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "metto — Tehran Metro API",
-    "description": "Free API for Tehran Metro route planning, station data, and nearby station lookup.",
+    "title": "metto — Metro API",
+    "description": "Free API for metro route planning, station data, and nearby station lookup (currently Tehran).",
     "version": "1.0.0",
     "contact": {
       "name": "aliinreallife",
@@ -63,7 +63,7 @@
           {
             "name": "departAt",
             "in": "query",
-            "description": "Optional ISO-8601 departure datetime with explicit timezone offset or Z (e.g. 2026-09-07T14:00:00+03:30). Defaults to now. metto automatically derives the Tehran weekday/Thursday/Friday-or-official-holiday timetable from this instant.",
+            "description": "Optional ISO-8601 departure datetime with explicit timezone offset or Z (e.g. 2026-09-07T14:00:00+03:30). Defaults to now. metto automatically derives the Iran (Asia/Tehran) weekday/Thursday/Friday-or-official-holiday timetable from this instant.",
             "schema": { "type": "string" },
             "example": "2026-09-07T14:00:00+03:30"
           }
@@ -261,7 +261,7 @@
           },
           "estimatedArrival": {
             "type": ["string", "null"],
-            "description": "Tehran HH:MM arrival at the destination, or null when status is no_service."
+            "description": "Iran (Asia/Tehran) HH:MM arrival at the destination, or null when status is no_service."
           },
           "status": {
             "type": "string",
@@ -274,7 +274,7 @@
           },
           "reachableUntil": {
             "type": "string",
-            "description": "Tehran HH:MM wall clock of the last propagated instant."
+            "description": "Iran (Asia/Tehran) HH:MM wall clock of the last propagated instant."
           },
           "path": { "type": "array", "items": { "type": "string" } },
           "hops": {

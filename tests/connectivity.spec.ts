@@ -133,7 +133,7 @@ test.describe("Effective connectivity", () => {
     const page = await context.newPage();
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
 
     // Offline UI with zero browser events dispatched in this test.
@@ -175,7 +175,7 @@ test.describe("Effective connectivity", () => {
     });
     await page.goto("/map", { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator('[aria-label="Tehran metro on real map"]'),
+      page.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
       page.getByText("بدون اینترنت", { exact: true }),

@@ -37,7 +37,7 @@ export const METRO_TOOL_ANNOTATIONS = {
 
 export const GET_ROUTE_DESCRIPTION =
   "Plan a metro route between two stations. Returns stops, transfers, travel time, and path. " +
-  "Departure is an absolute instant: metto automatically derives the correct Tehran (Asia/Tehran) " +
+  "Departure is an absolute instant: metto automatically derives the correct Iran (Asia/Tehran) " +
   "weekday, Thursday, or Friday/official-holiday timetable from it — never pass a day type.";
 
 export const LIST_STATIONS_DESCRIPTION =
@@ -60,7 +60,7 @@ export const TO_DESCRIPTION =
 export const DEPART_AT_DESCRIPTION =
   "ISO-8601 departure datetime with explicit timezone offset or Z " +
   "(e.g. '2026-09-07T14:00:00+03:30'). Defaults to now. " +
-  "metto derives the Tehran weekday/Thursday/Friday-or-official-holiday timetable " +
+  "metto derives the Iran (Asia/Tehran) weekday/Thursday/Friday-or-official-holiday timetable " +
   "automatically from this instant.";
 
 export const LINE_FILTER_DESCRIPTION = "Filter by line number (1-7)";

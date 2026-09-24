@@ -1,6 +1,6 @@
-# metto — متو | Tehran Metro Route Planner
+# metto — متو | Metro Route Planner
 
-metto (متو) is a free, fast, bilingual (فارسی / English) web app for navigating the Tehran Metro — live at **[metto.ir](https://metto.ir)**.
+metto (متو) is a free, fast, bilingual (فارسی / English) web app for navigating metro systems — currently Tehran — live at **[metto.ir](https://metto.ir)**.
 
 Find the fastest route between any two stations with timetable-aware ETAs, browse all stations across 7 lines, find the nearest station by GPS or amenity, and share routes via link.
 

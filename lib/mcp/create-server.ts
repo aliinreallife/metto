@@ -259,7 +259,7 @@ export function createMettoMcpServer(): McpServer {
   // Resources
 
   server.registerResource("stations", "metro://stations", {
-    description: "Full list of all Tehran Metro stations with names, lines, coordinates, and amenities",
+    description: "Full list of all metro stations with names, lines, coordinates, and amenities",
     mimeType: "application/json",
   }, async () => ({
     contents: [{
@@ -273,7 +273,7 @@ export function createMettoMcpServer(): McpServer {
   }));
 
   server.registerResource("lines", "metro://lines", {
-    description: "Tehran Metro line information with colors and station counts",
+    description: "Metro line information with colors and station counts",
     mimeType: "application/json",
   }, async () => {
     const lines = LINES.map(l => {
