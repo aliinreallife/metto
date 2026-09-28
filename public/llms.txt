@@ -38,3 +38,4 @@ endpoint: `POST https://metto.ir/mcp`.
 - [Stations](https://metto.ir/stations) - Station list with schedules
 - [Map](https://metto.ir/map) - Interactive metro map
 - [Nearby](https://metto.ir/nearby) - Find nearest station
+- [Welcome](https://metto.ir/welcome) - Landing page: what metto is, how it works, install and support info

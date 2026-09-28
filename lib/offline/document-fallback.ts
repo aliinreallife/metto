@@ -2,18 +2,19 @@
  * Narrow offline document fallback for the top-level static tabs.
  *
  * Background: Serwist precaches canonical documents (`/`, `/map`,
- * `/stations`, `/nearby`) but only strips `utm_*`/`fbclid` query params
- * when matching, so a navigation like `/map?from=ahang&to=aliabad` misses
- * the precache entry. The fallback below maps such requests back to their
- * canonical precached document — normalizing ONLY for the cache lookup.
- * The browser URL is never mutated or redirected.
+ * `/stations`, `/nearby`, `/welcome`) but only strips `utm_*`/`fbclid`
+ * query params when matching, so a navigation like
+ * `/map?from=ahang&to=aliabad` misses the precache entry. The fallback
+ * below maps such requests back to their canonical precached document —
+ * normalizing ONLY for the cache lookup. The browser URL is never mutated
+ * or redirected.
  *
  * Rules encoded here (and mirrored in `app/sw.ts` fallback entries):
  * - same-origin only;
  * - full document navigations only (`request.mode === "navigate"`,
  *   defensively also `destination === "document"`) — RSC/Flight, API,
  *   assets and tiles can never match;
- * - exact pathname must be one of the four canonical static documents;
+ * - exact pathname must be one of the five canonical static documents;
  * - unknown paths match nothing and fail normally offline.
  */
 
@@ -22,6 +23,7 @@ export const CANONICAL_STATIC_DOCS: ReadonlyArray<string> = [
   "/map",
   "/stations",
   "/nearby",
+  "/welcome",
 ];
 
 /** Exact-match check against the canonical static documents. */
