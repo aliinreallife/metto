@@ -47,12 +47,13 @@ export function useConnectivity(): ConnectivityValue {
   return toValue(snapshot);
 }
 
-/** Top-level static tabs known to be in the Serwist precache. */
+/** Top-level static routes known to be in the Serwist precache. */
 const PRECACHED_TABS: ReadonlySet<string> = new Set([
   "/",
   "/stations",
   "/nearby",
   "/map",
+  "/welcome",
 ]);
 
 /**
