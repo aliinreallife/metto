@@ -513,7 +513,7 @@ function RouteView({
                 : t.pickBoth}
             </p>
             {!(originId && destId && originId === destId) && (
-              <p className="mt-1 text-xs text-muted-foreground/80 md:text-sm">
+              <p className="mt-1 text-xs text-muted-foreground md:text-sm">
                 <Link href="/welcome" className="underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary">
                   {t.slogan}
                 </Link>
