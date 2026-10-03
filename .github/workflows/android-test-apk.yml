@@ -1,13 +1,16 @@
 # Android signed TEST APK (manual only): release-signed test build for
-# real-device update testing of unmerged branches (first use: PR #81;
-# current test build: PR #91 monochrome/themed icon).
+# real-device update testing of unmerged branches.
 #
 # TEST-ONLY. This workflow NEVER publishes anything: no tag, no GitHub
 # Release, no Play/Bazaar/Myket submission. It uploads the signed APK as a
 # run artifact only. The APK carries the REAL production certificate (same
-# signing identity as v0.7.2), so install it only on test devices — and it
-# can only update installs whose versionCode is lower (that is the point:
-# versionCode 7004 > v0.7.2's 7002 and > the PR #81 test build's 7003).
+# signing identity as production releases), so install it only on test
+# devices — and it can only update installs whose versionCode is lower.
+#
+# Version identity is supplied at dispatch time (no hardcoded test versions
+# live in this file): pick a versionName that is clearly test-only
+# (e.g. 0.7.7-test-foo, never a production version) and a versionCode
+# higher than any build installed on the test devices.
 #
 # It builds WHATEVER ref it is manually run against (Actions → Run
 # workflow → select branch, e.g. fix/twa-location-settings). Nothing is
@@ -17,10 +20,19 @@
 # android-ci.yml / android-release.yml (see version comments).
 name: Android Signed Test APK
 
-run-name: "signed test APK from ${{ github.ref_name }}"
+run-name: "signed test APK ${{ inputs.version_name }} (${{ inputs.version_code }}) from ${{ github.ref_name }}"
 
 on:
   workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Test-only versionName (free-form, never a production version)"
+        required: true
+        type: string
+      version_code:
+        description: "Test-only versionCode, higher than any build on the test devices"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -34,12 +46,19 @@ jobs:
     permissions:
       contents: read
     env:
-      # TEST-ONLY version: versionCode MUST stay > 7003 (PR #81 test build)
-      # so the APK offers Update over it. versionName is free-form
-      # for Gradle (strict semver applies only to release tags).
-      VERSION_NAME: 0.7.3-test-pr91
-      VERSION_CODE: "7004"
+      # TEST-ONLY version from dispatch inputs (never production versions;
+      # strict semver applies only to release tags, Gradle accepts free-form).
+      VERSION_NAME: ${{ inputs.version_name }}
+      VERSION_CODE: ${{ inputs.version_code }}
     steps:
+      - name: Validate test version inputs
+        # Fail fast on empty/non-numeric input before the slower Gradle build.
+        run: |
+          set -euo pipefail
+          [ -n "${VERSION_NAME:-}" ] || { echo "::error::version_name input is empty"; exit 1; }
+          [[ "${VERSION_CODE:-}" =~ ^[0-9]+$ ]] || { echo "::error::version_code must be an integer (got '${VERSION_CODE:-}')"; exit 1; }
+          echo "test identity: versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+
       - name: Checkout (selected ref, no merge)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -141,8 +160,7 @@ jobs:
         # certificate fingerprints — never secrets):
         # - apksigner: signature verifies
         # - package: ir.metto.app (application ID untouched)
-        # - versionCode: 7004 (> PR #81 test build's 7003, so it offers Update)
-        # - versionName: 0.7.3-test-pr91
+        # - versionCode/versionName: exactly the dispatched inputs
         run: |
           set -euo pipefail
           APK="android/app/build/outputs/apk/release/app-release.apk"
@@ -157,17 +175,17 @@ jobs:
           fail() { echo "::error::$1"; exit 1; }
           echo "$BADGING" | grep -q "package: name='ir.metto.app'" \
             || fail "package name is not ir.metto.app"
-          echo "$BADGING" | grep -q "versionCode='7004'" \
-            || fail "versionCode is not 7004"
-          echo "$BADGING" | grep -q "versionName='0.7.3-test-pr91'" \
-            || fail "versionName is not 0.7.3-test-pr91"
-          echo "APK verification: PASS (signed, ir.metto.app, versionCode 7004, versionName 0.7.3-test-pr91)"
+          echo "$BADGING" | grep -q "versionCode='$VERSION_CODE'" \
+            || fail "versionCode is not $VERSION_CODE"
+          echo "$BADGING" | grep -q "versionName='$VERSION_NAME'" \
+            || fail "versionName is not $VERSION_NAME"
+          echo "APK verification: PASS (signed, ir.metto.app, versionCode $VERSION_CODE, versionName $VERSION_NAME)"
 
       - name: Stage TEST-ONLY APK
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp android/app/build/outputs/apk/release/app-release.apk dist/metto-pr91-test-7004.apk
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/metto-test-$VERSION_NAME-$VERSION_CODE.apk"
           ls -l dist/
 
       - name: Upload signed TEST APK (artifact only, no publish)
@@ -175,7 +193,7 @@ jobs:
         # No GitHub Release, no tag, no store step exists in this workflow.
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: metto-pr91-signed-test
+          name: metto-test-apk-${{ inputs.version_code }}
           if-no-files-found: error
           retention-days: 14
-          path: dist/metto-pr91-test-7004.apk
+          path: dist/metto-test-${{ inputs.version_name }}-${{ inputs.version_code }}.apk

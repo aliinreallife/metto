@@ -14,7 +14,9 @@ remains the main application and Vercel remains the web build authority.
 - Generator: `@bubblewrap/cli@1.25.0` / `@bubblewrap/core@1.25.0`
   (pinned in `android/.bubblewrap-version`). Template values at generation
   time: `compileSdk 36`, `targetSdk 36`, Gradle `8.11.1`, AGP `8.9.1`
-  (needs JDK 17 in CI).
+  (needs JDK 17 in CI). Since then the committed project moved to
+  Gradle `9.6.0` / AGP `9.4.1` (still JDK 17 in CI; no toolchain pin —
+  `android/gradle/gradle-daemon-jvm.properties` is intentionally absent).
 - Committed defaults: `appVersionName 0.1.0`, `appVersionCode 1000`
   (consistent with the intended first release; release CI overrides both
   from the git tag and is authoritative).
