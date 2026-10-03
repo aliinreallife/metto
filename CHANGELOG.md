@@ -8,6 +8,30 @@ PR body instead (see AGENTS.md).
 
 ## [Unreleased]
 
+## [v0.7.6] - 2026-10-03
+
+### New / جدید
+
+- App icon now supports Android themed icons: it adapts to your wallpaper colors when themed icons are on. (#91)
+- New welcome page at metto.ir/welcome: what metto is, live route demo, install guide and support info. (#93)
+- Welcome page works offline and is linked from the home screen slogan. (#93)
+
+#### فارسی
+
+- آیکون برنامه از آیکون‌های تم‌دار اندروید پشتیبانی می‌کند: با روشن بودن آیکون‌های تم‌دار، با رنگ‌های تصویر پس‌زمینه هماهنگ می‌شود. (#91)
+- صفحه خوش‌آمدگویی در metto.ir/welcome: معرفی متو، دموی زنده مسیر، راهنمای نصب و حمایت. (#93)
+- صفحه خوش‌آمد آفلاین کار می‌کند و از صفحه اصلی به آن لینک شده است. (#93)
+
+### Improvements / بهبودها
+
+- The Install button no longer appears when the metto Android app is already installed, so you won't end up with two launcher icons. (#87)
+- App wording is now city-neutral (Metro instead of Tehran Metro) to get ready for more cities; Tehran service itself is unchanged. (#90)
+
+#### فارسی
+
+- وقتی اپ اندروید metto نصب باشد، دکمه نصب دیگر نمایش داده نمی‌شود تا دو آیکن تکراری ساخته نشود. (#87)
+- متن‌های برنامه عمومی شد (مترو به‌جای مترو تهران) تا برای شهرهای بعدی آماده شود؛ سرویس تهران بدون تغییر باقی ماند. (#90)
+
 ## [v0.7.3] - 2026-09-23
 
 ### Improvements / بهبودها
