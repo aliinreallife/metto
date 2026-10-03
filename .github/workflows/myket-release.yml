@@ -1,0 +1,172 @@
+# Myket distribution (second Android target, APK only).
+#
+# Architecture (deliberately decoupled from the Android build):
+#   semver tag -> android-release.yml -> signed APK + AAB + checksums
+#     -> GitHub Release (immutable source of truth)
+#     -> THIS workflow consumes that exact signed APK -> Myket API.
+#
+# - Automatic path: `release: published` fires after android-release.yml
+#   creates the GitHub Release (which only happens after a successful signed
+#   build). This workflow never builds Android itself.
+# - Manual retry: `workflow_dispatch` with a tag (e.g. v0.1.0) downloads the
+#   exact APK from the existing GitHub Release and publishes it — never
+#   rebuilds a potentially different APK.
+#
+# Security: MYKET_ACCESS_TOKEN lives ONLY in the protected `myket-release`
+# environment and is sent only as `X-Access-Token` (Server-to-Server).
+# It is never printed, never in inputs/artifacts/code, and never available
+# to pull-request workflows (this workflow has no pull_request trigger).
+#
+# Policy: isManualPublish=true — Actions uploads + submits for review, a human
+# finalizes publication in Myket after approval. Google Play stays manual
+# (AAB -> Internal Testing); no Play automation here.
+#
+# Myket API: https://myket.ir/kb/pages/developer-cd/
+# NOTE: the doc page shows the commit URL as `developer.myket.i/apir/...`
+# (typo). The corrected `developer.myket.ir/api/.../commit` form is used
+# (see scripts/myket-publish.mjs), consistent with every other endpoint.
+#
+# Third-party Actions are pinned to immutable commit SHAs (comments show the
+# release version), matching android-ci.yml / android-release.yml.
+name: Myket Release (APK)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to (re)publish, e.g. v0.1.0 (uses that GitHub Release's APK, no rebuild)"
+        required: true
+        type: string
+      staged-rollout-percent:
+        description: "Staged rollout percent (1-100)"
+        required: false
+        default: "100"
+        type: string
+      dry-run:
+        description: "Validate only (no Myket upload, no token needed)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  publish-myket:
+    name: publish APK to Myket
+    runs-on: ubuntu-latest
+    environment: myket-release
+    permissions:
+      contents: read
+    env:
+      PACKAGE_ID: ir.metto.app
+    steps:
+      - name: Checkout (script + CHANGELOG source)
+        # Default ref is exactly what retry needs:
+        # - release event -> the published tag (new releases contain this script).
+        # - workflow_dispatch -> the branch selected at dispatch time (usually
+        #   main, which has this script + the cumulative CHANGELOG, so even
+        #   pre-script releases can be retried without rebuilding).
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Resolve tag + rollout
+        id: tag
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            ROLLOUT="100"
+          else
+            TAG="${{ inputs.tag }}"
+            ROLLOUT="${{ inputs.staged-rollout-percent }}"
+          fi
+          if [ -z "$TAG" ]; then
+            echo "::error::no release tag resolved (release event or workflow_dispatch input required)"
+            exit 1
+          fi
+          echo "tag=$TAG"
+          echo "rollout=$ROLLOUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "rollout=$ROLLOUT" >> "$GITHUB_OUTPUT"
+
+      - name: Strict semver validation (no secrets)
+        run: node scripts/android-version.mjs "${{ steps.tag.outputs.tag }}"
+
+      - name: Verify GitHub Release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release view "${{ steps.tag.outputs.tag }}" --json tagName,name,createdAt
+          echo "GitHub Release ${{ steps.tag.outputs.tag }}: present (immutable source of truth)"
+
+      - name: Download signed APK + checksums (no rebuild)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.tag }}"
+          mkdir -p dist
+          gh release download "$TAG" --dir dist --pattern "metto-${TAG}.apk" --pattern SHA256SUMS.txt
+          ls -l dist/
+          # Verify the exact release APK against its published checksum.
+          (cd dist && grep "\.apk$" SHA256SUMS.txt | sha256sum -c -)
+          APK="dist/metto-${TAG}.apk"
+          SIZE="$(stat -c%s "$APK")"
+          echo "APK $APK: $SIZE bytes, checksum verified"
+          if [ "$SIZE" -gt 524288000 ]; then
+            echo "::error::APK exceeds Myket's 500MB upload limit — upload via the Myket panel instead"
+            exit 1
+          fi
+
+      - name: Myket dry-run validation (no token, no network mutation)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry-run == true
+        run: |
+          set -euo pipefail
+          node scripts/myket-publish.mjs \
+            --tag "${{ steps.tag.outputs.tag }}" \
+            --apk "dist/metto-${{ steps.tag.outputs.tag }}.apk" \
+            --package "$PACKAGE_ID" \
+            --rollout "${{ steps.tag.outputs.rollout }}" \
+            --dry-run
+
+      - name: Publish APK to Myket (upload + submit for review)
+        # Skipped only for explicit dry-run retries. The release.published
+        # path always publishes. A Myket failure fails ONLY this job — the
+        # GitHub Release is never modified or deleted.
+        if: github.event_name == 'release' || inputs.dry-run != true
+        env:
+          MYKET_ACCESS_TOKEN: ${{ secrets.MYKET_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MYKET_ACCESS_TOKEN:-}" ]; then
+            echo "::error::MYKET_ACCESS_TOKEN is empty. Add it to the protected \`myket-release\` environment (Myket panel -> in-app products -> verification token). See docs/ANDROID_TWA.md."
+            exit 1
+          fi
+          node scripts/myket-publish.mjs \
+            --tag "${{ steps.tag.outputs.tag }}" \
+            --apk "dist/metto-${{ steps.tag.outputs.tag }}.apk" \
+            --package "$PACKAGE_ID" \
+            --rollout "${{ steps.tag.outputs.rollout }}"
+
+      - name: Summarize (no credentials)
+        if: always()
+        run: |
+          {
+            echo "## Myket publish — ${{ steps.tag.outputs.tag }}"
+            echo ""
+            echo "- Package: \`$PACKAGE_ID\`"
+            echo "- Source: GitHub Release \`${{ steps.tag.outputs.tag }}\` APK \`dist/metto-${{ steps.tag.outputs.tag }}.apk\` (checksum-verified, no rebuild)"
+            echo "- Rollout: \`${{ steps.tag.outputs.rollout }}%\`"
+            echo "- Mode: \`isManualPublish=true\` (upload + submit for review; finalize manually in Myket after approval)"
+            echo "- Trigger: \`${{ github.event_name }}\`"
+            echo ""
+            echo "Myket failures fail only this job — the GitHub Release stays intact. Retry via Actions → Myket Release → Run workflow → tag \`${{ steps.tag.outputs.tag }}\`."
+          } >> "$GITHUB_STEP_SUMMARY"

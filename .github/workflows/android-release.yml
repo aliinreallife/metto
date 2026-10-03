@@ -2,9 +2,12 @@
 #
 # Flow: merge PR -> main -> `git tag vX.Y.Z && git push origin vX.Y.Z`
 #   -> validate semver -> verify tag is on main -> derive versions
-#   -> signed Gradle build (android-release env) -> GitHub Release.
-# No store auto-publishing: the signed APK is for direct distribution and
-# Bazaar/Myket submission; the AAB is kept for future store needs.
+#   -> signed Gradle build (android-release env) -> GitHub Release
+#   -> (downstream, separate workflow) myket-release.yml consumes the release
+#      APK for Myket; the AAB is for manual Google Play upload.
+# No store publishing inside this workflow: the signed APK is for direct
+# distribution and downstream Myket publishing; the AAB is for manual Play
+# upload (Internal Testing).
 #
 # The `gate` job runs WITHOUT secrets and rejects bad tags before the
 # environment-gated `build` job can load signing credentials.
@@ -202,9 +205,9 @@ jobs:
             echo ""
             echo "metto Android $GITHUB_REF_NAME (versionCode $VERSION_CODE)."
             echo ""
-            echo "Artifacts: signed .apk (release certificate) for direct testing and Bazaar/Myket submission + signed .aab for future store needs, with SHA256SUMS.txt."
+            echo "Artifacts: signed .apk (release certificate) for direct testing and downstream Myket publishing (myket-release.yml) + signed .aab for manual Google Play upload, with SHA256SUMS.txt."
             echo ""
-            echo "No store auto-publishing is configured."
+            echo "No store publishing inside this workflow."
           } >> RELEASE_NOTES.md
           cat RELEASE_NOTES.md
 
