@@ -29,7 +29,7 @@
     https://developers.google.com/web/updates/2017/10/using-twa#set_up_digital_asset_links_in_an_android_app
     and is injected into the AndroidManifest.xml
   -->
-  <string name="assetStatements">
+  <string name="assetStatements" translatable="false">
     [{
         \"relation\": [\"delegate_permission/common.handle_all_urls\"],
         \"target\": {
