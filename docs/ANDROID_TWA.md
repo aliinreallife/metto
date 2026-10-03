@@ -198,9 +198,9 @@ same rule as `/sw.js`).
 
 ## Myket distribution (APK)
 
-> Status: automation is implemented but **untested against a real Myket
-> account/token** — do not treat Myket publishing as working until the first
-> real upload + review + manual publication succeeds.
+> Status (proven live on v0.7.6): token auth, bundle read, APK upload path,
+> and the status safety gate all work against the real account. First proven
+> end-to-end upload is still pending a submittable bundle state (see below).
 
 Myket is metto's second Android distribution target (APK only). Google Play
 keeps using the `.aab` via manual Internal Testing upload — no Play API
@@ -209,7 +209,8 @@ integration exists. The Android build itself never talks to Myket; the chain is:
 ```text
 semver tag → android-release.yml → signed APK + AAB + checksums
   → GitHub Release (immutable source of truth)
-  → myket-release.yml consumes that exact APK → Myket API
+  → myket-release.yml (auto-fired by workflow_run on release completion,
+     or manual retry) consumes that exact APK → Myket API
 ```
 
 Package is always the permanent `ir.metto.app`.
@@ -230,8 +231,11 @@ Package is always the permanent `ir.metto.app`.
 
 ### Automatic flow
 
-Publishing a GitHub Release (tag `vX.Y.Z`) triggers `myket-release.yml`,
-which: validates semver → confirms the release exists → downloads
+When `Android Release (TWA)` completes on a version tag, `myket-release.yml`
+auto-fires via `workflow_run` (a `release: published` trigger cannot work:
+releases created with `GITHUB_TOKEN` emit no workflow-triggering events, as
+proven by v0.7.6). Non-tag or unsuccessful upstream runs exit quietly green.
+The job: validates semver → confirms the release exists → downloads
 `metto-vX.Y.Z.apk` + `SHA256SUMS.txt` → verifies the APK checksum → runs
 `node scripts/myket-publish.mjs --tag vX.Y.Z --apk …` (`--dry-run` needs no
 token: `node scripts/myket-publish.mjs --tag vX.Y.Z --apk … --dry-run`).
@@ -274,6 +278,11 @@ publishes automatically.
   `JustCreated`, `Rejected`, or `RolledBack` → proceed (update/re-upload);
   `WaitingForApproval` or `Approved` → abort safely with manual instructions
   (a bundle under review is never overwritten); unknown statuses abort.
+  The API emits Persian display strings (e.g. `تایید شده` for `Approved`);
+  `normalizeMyketStatus()` maps only live-observed ones — never guess a
+  mapping. Residual rule: with an Approved bundle and no draft, a human must
+  open the next version in the Myket panel first (the panel requires the APK
+  + changelog up front); automation takes it from the draft state.
 - `400`/`401` fail only the Myket job with the Myket `messageCode`
   (`EditNotPossible`, `MissingRequiredData`, `PostAppFailed`, …) in the log
   and step summary — the GitHub Release is never modified or deleted.
