@@ -1,12 +1,13 @@
 # Android signed TEST APK (manual only): release-signed test build for
-# real-device update testing of unmerged branches (first use: PR #81).
+# real-device update testing of unmerged branches (first use: PR #81;
+# current test build: PR #91 monochrome/themed icon).
 #
 # TEST-ONLY. This workflow NEVER publishes anything: no tag, no GitHub
 # Release, no Play/Bazaar/Myket submission. It uploads the signed APK as a
 # run artifact only. The APK carries the REAL production certificate (same
 # signing identity as v0.7.2), so install it only on test devices — and it
 # can only update installs whose versionCode is lower (that is the point:
-# versionCode 7003 > v0.7.2's 7002).
+# versionCode 7004 > v0.7.2's 7002 and > the PR #81 test build's 7003).
 #
 # It builds WHATEVER ref it is manually run against (Actions → Run
 # workflow → select branch, e.g. fix/twa-location-settings). Nothing is
@@ -33,11 +34,11 @@ jobs:
     permissions:
       contents: read
     env:
-      # TEST-ONLY version: versionCode MUST stay > 7002 (v0.7.2) so the APK
-      # offers Update over the installed release. versionName is free-form
+      # TEST-ONLY version: versionCode MUST stay > 7003 (PR #81 test build)
+      # so the APK offers Update over it. versionName is free-form
       # for Gradle (strict semver applies only to release tags).
-      VERSION_NAME: 0.7.3-test-pr81
-      VERSION_CODE: "7003"
+      VERSION_NAME: 0.7.3-test-pr91
+      VERSION_CODE: "7004"
     steps:
       - name: Checkout (selected ref, no merge)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -140,8 +141,8 @@ jobs:
         # certificate fingerprints — never secrets):
         # - apksigner: signature verifies
         # - package: ir.metto.app (application ID untouched)
-        # - versionCode: 7003 (> v0.7.2's 7002, so it offers Update)
-        # - versionName: 0.7.3-test-pr81
+        # - versionCode: 7004 (> PR #81 test build's 7003, so it offers Update)
+        # - versionName: 0.7.3-test-pr91
         run: |
           set -euo pipefail
           APK="android/app/build/outputs/apk/release/app-release.apk"
@@ -156,17 +157,17 @@ jobs:
           fail() { echo "::error::$1"; exit 1; }
           echo "$BADGING" | grep -q "package: name='ir.metto.app'" \
             || fail "package name is not ir.metto.app"
-          echo "$BADGING" | grep -q "versionCode='7003'" \
-            || fail "versionCode is not 7003"
-          echo "$BADGING" | grep -q "versionName='0.7.3-test-pr81'" \
-            || fail "versionName is not 0.7.3-test-pr81"
-          echo "APK verification: PASS (signed, ir.metto.app, versionCode 7003, versionName 0.7.3-test-pr81)"
+          echo "$BADGING" | grep -q "versionCode='7004'" \
+            || fail "versionCode is not 7004"
+          echo "$BADGING" | grep -q "versionName='0.7.3-test-pr91'" \
+            || fail "versionName is not 0.7.3-test-pr91"
+          echo "APK verification: PASS (signed, ir.metto.app, versionCode 7004, versionName 0.7.3-test-pr91)"
 
       - name: Stage TEST-ONLY APK
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp android/app/build/outputs/apk/release/app-release.apk dist/metto-pr81-test-7003.apk
+          cp android/app/build/outputs/apk/release/app-release.apk dist/metto-pr91-test-7004.apk
           ls -l dist/
 
       - name: Upload signed TEST APK (artifact only, no publish)
@@ -174,7 +175,7 @@ jobs:
         # No GitHub Release, no tag, no store step exists in this workflow.
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: metto-pr81-signed-test
+          name: metto-pr91-signed-test
           if-no-files-found: error
           retention-days: 14
-          path: dist/metto-pr81-test-7003.apk
+          path: dist/metto-pr91-test-7004.apk
