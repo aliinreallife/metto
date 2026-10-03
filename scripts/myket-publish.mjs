@@ -197,14 +197,33 @@ export function getCurrentBundleFromList(json) {
 }
 
 /**
+ * Normalize a Myket bundle status to its English API code.
+ *
+ * The API has been observed returning Persian display strings (e.g. the
+ * v0.7.6 run saw "تایید شده" instead of "Approved"). Only mappings proven
+ * by live API responses belong here — never guess a mapping, because a
+ * wrong proceed=true mapping could overwrite a live release. Anything
+ * unmapped still aborts via the default branch below (fail-safe).
+ */
+export function normalizeMyketStatus(status) {
+  const s = String(status ?? "").trim();
+  if (s === "تایید شده") return "Approved"; // observed live on the v0.7.6 run
+  return s;
+}
+
+/**
  * Safety gate around the current bundle status. A bundle under review must
  * never be overwritten; approved bundles need explicit manual handling.
+ * Status is normalized first (the API emits Persian display strings), but
+ * the decisions are unchanged: only an empty state, JustCreated, Rejected,
+ * or RolledBack may proceed.
  */
 export function decideMyketAction(status) {
-  if (status == null || String(status).trim() === "") {
+  const normalized = normalizeMyketStatus(status);
+  if (normalized === "") {
     return { proceed: true, reason: "no current bundle — create normally" };
   }
-  switch (String(status).trim()) {
+  switch (normalized) {
     case "JustCreated":
       return { proceed: true, reason: "JustCreated bundle exists — update it and continue" };
     case "Rejected":
@@ -226,7 +245,7 @@ export function decideMyketAction(status) {
     default:
       return {
         proceed: false,
-        reason: `unknown bundle status ${JSON.stringify(status)} — refusing to proceed blindly. Inspect GET /release-bundle and handle manually.`,
+        reason: `unknown bundle status ${JSON.stringify(status)}${normalized !== String(status ?? "").trim() ? ` (normalized: ${JSON.stringify(normalized)})` : ""} — refusing to proceed blindly. Inspect GET /release-bundle and handle manually.`,
       };
   }
 }
@@ -442,7 +461,7 @@ async function main() {
 
   const list = await myketGetList(endpoints, token);
   const current = getCurrentBundleFromList(list);
-  console.log(`myket-publish: current bundle status=${current?.status ?? "(none)"}${current ? ` (releases=${current.count})` : ""}`);
+  console.log(`myket-publish: current bundle status=${current?.status ?? "(none)"} title=${JSON.stringify(current?.title ?? null)}${current ? ` (releases=${current.count})` : ""}`);
   const decision = decideMyketAction(current?.status ?? null);
   if (!decision.proceed) {
     throw new Error(`myket-publish aborted: ${decision.reason}`);

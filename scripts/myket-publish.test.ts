@@ -14,6 +14,7 @@ import {
   decideMyketAction,
   getCurrentBundleFromList,
   myketEndpoints,
+  normalizeMyketStatus,
   splitMyketDescriptions,
   validatePackageId,
   validateRolloutPercent,
@@ -141,6 +142,22 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
     const d = decideMyketAction("WaitingForApproval");
     expect(d.proceed).toBe(false);
     expect(d.reason).toMatch(/WaitingForApproval/);
+  });
+
+  it("maps the observed Persian Approved status to the designed refusal", () => {
+    // Seen live on the v0.7.6 run: the API returned "تایید شده".
+    expect(normalizeMyketStatus("تایید شده")).toBe("Approved");
+    const d = decideMyketAction("تایید شده");
+    expect(d.proceed).toBe(false);
+    expect(d.reason).toMatch(/Approved/);
+  });
+
+  it("leaves unmapped statuses to fail-safe abort", () => {
+    expect(normalizeMyketStatus("SomethingNew")).toBe("SomethingNew");
+    expect(normalizeMyketStatus(null)).toBe("");
+    const d = decideMyketAction("SomethingNew");
+    expect(d.proceed).toBe(false);
+    expect(d.reason).toMatch(/unknown bundle status/);
   });
 
   it("picks the latest bundle by createdAt from GET list", () => {

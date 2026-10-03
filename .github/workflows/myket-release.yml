@@ -5,9 +5,11 @@
 #     -> GitHub Release (immutable source of truth)
 #     -> THIS workflow consumes that exact signed APK -> Myket API.
 #
-# - Automatic path: `release: published` fires after android-release.yml
-#   creates the GitHub Release (which only happens after a successful signed
-#   build). This workflow never builds Android itself.
+# - Automatic path: `workflow_run` fires after android-release.yml
+#   completes (a `release: published` trigger cannot work here: releases
+#   created with GITHUB_TOKEN do not emit workflow-triggering events, as
+#   proven by v0.7.6). The first step below accepts only successful runs
+#   on version tags; anything else exits quietly green.
 # - Manual retry: `workflow_dispatch` with a tag (e.g. v0.1.0) downloads the
 #   exact APK from the existing GitHub Release and publishes it — never
 #   rebuilds a potentially different APK.
@@ -31,8 +33,9 @@
 name: Myket Release (APK)
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Android Release (TWA)"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       tag:
@@ -65,7 +68,10 @@ jobs:
     steps:
       - name: Checkout (script + CHANGELOG source)
         # Default ref is exactly what retry needs:
-        # - release event -> the published tag (new releases contain this script).
+        # - workflow_run -> the default branch (the release tag's tree is NOT
+        #   checked out; the APK comes checksum-verified from the GitHub
+        #   Release, and CHANGELOG.md on main is cumulative, so even
+        #   pre-script releases resolve correctly).
         # - workflow_dispatch -> the branch selected at dispatch time (usually
         #   main, which has this script + the cumulative CHANGELOG, so even
         #   pre-script releases can be retried without rebuilding).
@@ -80,15 +86,32 @@ jobs:
         id: tag
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "release" ]; then
-            TAG="${{ github.event.release.tag_name }}"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            # Automatic path: only successful release-workflow runs on version
+            # tags proceed. Anything else (failure, cancellation, branch
+            # pushes) exits quietly green — nothing to publish.
+            if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+              echo "upstream Android Release concluded '${{ github.event.workflow_run.conclusion }}' — nothing to publish."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "TAG=" >> "$GITHUB_OUTPUT"
+              echo "ROLLOUT=100" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            TAG="${{ github.event.workflow_run.head_branch }}"
             ROLLOUT="100"
+            if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "upstream run was not on a version tag (head_branch='$TAG') — nothing to publish."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "TAG=" >> "$GITHUB_OUTPUT"
+              echo "ROLLOUT=100" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           else
             TAG="${{ inputs.tag }}"
             ROLLOUT="${{ inputs.staged-rollout-percent }}"
           fi
           if [ -z "$TAG" ]; then
-            echo "::error::no release tag resolved (release event or workflow_dispatch input required)"
+            echo "::error::no release tag resolved (upstream tag run or workflow_dispatch input required)"
             exit 1
           fi
           echo "tag=$TAG"
@@ -97,9 +120,11 @@ jobs:
           echo "rollout=$ROLLOUT" >> "$GITHUB_OUTPUT"
 
       - name: Strict semver validation (no secrets)
+        if: steps.tag.outputs.skip != 'true'
         run: node scripts/android-version.mjs "${{ steps.tag.outputs.tag }}"
 
       - name: Verify GitHub Release exists
+        if: steps.tag.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -108,6 +133,7 @@ jobs:
           echo "GitHub Release ${{ steps.tag.outputs.tag }}: present (immutable source of truth)"
 
       - name: Download signed APK + checksums (no rebuild)
+        if: steps.tag.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -127,7 +153,7 @@ jobs:
           fi
 
       - name: Myket dry-run validation (no token, no network mutation)
-        if: github.event_name == 'workflow_dispatch' && inputs.dry-run == true
+        if: github.event_name == 'workflow_dispatch' && inputs.dry-run == true && steps.tag.outputs.skip != 'true'
         run: |
           set -euo pipefail
           node scripts/myket-publish.mjs \
@@ -138,10 +164,10 @@ jobs:
             --dry-run
 
       - name: Publish APK to Myket (upload + submit for review)
-        # Skipped only for explicit dry-run retries. The release.published
-        # path always publishes. A Myket failure fails ONLY this job — the
-        # GitHub Release is never modified or deleted.
-        if: github.event_name == 'release' || inputs.dry-run != true
+        # Skipped for explicit dry-run retries and for upstream runs that are
+        # not successful tag releases (quiet green skip). A Myket failure
+        # fails ONLY this job — the GitHub Release is never modified.
+        if: steps.tag.outputs.skip != 'true' && (github.event_name == 'workflow_run' || inputs.dry-run != true)
         env:
           MYKET_ACCESS_TOKEN: ${{ secrets.MYKET_ACCESS_TOKEN }}
         run: |
@@ -160,13 +186,19 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Myket publish — ${{ steps.tag.outputs.tag }}"
-            echo ""
-            echo "- Package: \`$PACKAGE_ID\`"
-            echo "- Source: GitHub Release \`${{ steps.tag.outputs.tag }}\` APK \`dist/metto-${{ steps.tag.outputs.tag }}.apk\` (checksum-verified, no rebuild)"
-            echo "- Rollout: \`${{ steps.tag.outputs.rollout }}%\`"
-            echo "- Mode: \`isManualPublish=true\` (upload + submit for review; finalize manually in Myket after approval)"
-            echo "- Trigger: \`${{ github.event_name }}\`"
-            echo ""
-            echo "Myket failures fail only this job — the GitHub Release stays intact. Retry via Actions → Myket Release → Run workflow → tag \`${{ steps.tag.outputs.tag }}\`."
+            if [ "${{ steps.tag.outputs.skip }}" = "true" ]; then
+              echo "## Myket publish — skipped"
+              echo ""
+              echo "Upstream Android Release run was not a successful version-tag release — nothing to publish."
+            else
+              echo "## Myket publish — ${{ steps.tag.outputs.tag }}"
+              echo ""
+              echo "- Package: \`$PACKAGE_ID\`"
+              echo "- Source: GitHub Release \`${{ steps.tag.outputs.tag }}\` APK \`dist/metto-${{ steps.tag.outputs.tag }}.apk\` (checksum-verified, no rebuild)"
+              echo "- Rollout: \`${{ steps.tag.outputs.rollout }}%\`"
+              echo "- Mode: \`isManualPublish=true\` (upload + submit for review; finalize manually in Myket after approval)"
+              echo "- Trigger: \`${{ github.event_name }}\`"
+              echo ""
+              echo "Myket failures fail only this job — the GitHub Release stays intact. Retry via Actions → Myket Release → Run workflow → tag \`${{ steps.tag.outputs.tag }}\`."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
