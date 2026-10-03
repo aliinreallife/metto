@@ -186,9 +186,101 @@ same rule as `/sw.js`).
   e.g. v0.1.0→1000, v1.12.34→1012034) injected via
   `-PmettoVersionCode/-PmettoVersionName`, signed
   `bundleRelease + assembleRelease`, `SHA256SUMS.txt`, GitHub Release with
-  `.aab` + `.apk` + checksums. No store auto-publish; the `.apk` is for
-  direct/GitHub distribution and Bazaar/Myket submission, the `.aab` is
-  kept for future store needs.
+  `.aab` + `.apk` + checksums. No store publishing inside this workflow; the
+  `.apk` is for direct/GitHub distribution and downstream Myket publishing
+  (`myket-release.yml`), the `.aab` is for manual Google Play upload.
+- `myket-release.yml` (GitHub Release `published` + manual `workflow_dispatch`,
+  `myket-release` environment, `contents: read`): downloads the exact signed
+  `.apk` from the GitHub Release (checksum-verified, never rebuilt) and
+  publishes it to Myket (APK only) — see “Myket distribution (APK)” below.
+
+## Myket distribution (APK)
+
+> Status: automation is implemented but **untested against a real Myket
+> account/token** — do not treat Myket publishing as working until the first
+> real upload + review + manual publication succeeds.
+
+Myket is metto's second Android distribution target (APK only). Google Play
+keeps using the `.aab` via manual Internal Testing upload — no Play API
+integration exists. The Android build itself never talks to Myket; the chain is:
+
+```text
+semver tag → android-release.yml → signed APK + AAB + checksums
+  → GitHub Release (immutable source of truth)
+  → myket-release.yml consumes that exact APK → Myket API
+```
+
+Package is always the permanent `ir.metto.app`.
+
+### One-time setup (manual)
+
+1. Create/register the `ir.metto.app` application in the Myket developer
+   panel under the account that will own it. CI cannot do this — the app
+   must first exist and be owned by that account, otherwise the API returns
+   `401`.
+2. In the same panel, open the app's in-app products section and copy the
+   verification token (“توکن صحت‌سنجی”). This is the Server-to-Server
+   `X-Access-Token`.
+3. Store it as `MYKET_ACCESS_TOKEN` in the protected **`myket-release`**
+   GitHub Environment (never in code, resources, workflow inputs, artifacts,
+   logs, or PR workflows):
+   `gh secret set MYKET_ACCESS_TOKEN --env myket-release` (paste when prompted).
+
+### Automatic flow
+
+Publishing a GitHub Release (tag `vX.Y.Z`) triggers `myket-release.yml`,
+which: validates semver → confirms the release exists → downloads
+`metto-vX.Y.Z.apk` + `SHA256SUMS.txt` → verifies the APK checksum → runs
+`node scripts/myket-publish.mjs --tag vX.Y.Z --apk …` (`--dry-run` needs no
+token: `node scripts/myket-publish.mjs --tag vX.Y.Z --apk … --dry-run`).
+The script derives the bundle title (`metto vX.Y.Z`), the full EN/FA
+descriptions (complete `## [vX.Y.Z]` CHANGELOG section split on
+`#### فارسی` — never truncated), and rollout (default `100`), then calls:
+
+1. `PUT …/release-bundle` (create/update),
+2. `PUT …/release-bundle/upload` (signed APK as multipart with an **empty**
+   field name, exactly as Myket documents `--form '=@"test.apk"'` — never the
+   `.aab`),
+3. `POST …/release-bundle/commit` with
+   `{"isManualPublish": true, "message": "Metto Android release vX.Y.Z"}`.
+
+The commit endpoint uses the corrected
+`https://developer.myket.ir/api/…/release-bundle/commit` form — the doc page
+shows `developer.myket.i/apir/…`, which is a typo (see the source comment in
+`scripts/myket-publish.mjs`).
+
+### Manual retry (no rebuild)
+
+Actions → Myket Release → Run workflow → `tag: vX.Y.Z` (optional
+`staged-rollout-percent`, `dry-run`). It downloads and checksum-verifies that
+release's APK and publishes it — the GitHub Release stays the immutable
+source of truth. Use `dry-run: true` first to validate tag/APK/metadata/
+payload/endpoints without touching Myket or needing a token.
+
+### `isManualPublish=true` behavior
+
+Actions uploads the APK and submits it for Myket review; Myket reviews it;
+you finalize publication manually in the Myket panel afterward. Automatic
+publication after approval is deliberately off for initial releases. To switch
+later, change the commit payload to `"isManualPublish": false` (script +
+workflow + this doc together) — after Myket approval the release then
+publishes automatically.
+
+### Status / failure handling
+
+- Pre-flight `GET …/release-bundle` gates overwrites: no bundle,
+  `JustCreated`, `Rejected`, or `RolledBack` → proceed (update/re-upload);
+  `WaitingForApproval` or `Approved` → abort safely with manual instructions
+  (a bundle under review is never overwritten); unknown statuses abort.
+- `400`/`401` fail only the Myket job with the Myket `messageCode`
+  (`EditNotPossible`, `MissingRequiredData`, `PostAppFailed`, …) in the log
+  and step summary — the GitHub Release is never modified or deleted.
+- Never retry by creating duplicate bundles blindly; inspect the bundle list
+  first. Never print `MYKET_ACCESS_TOKEN` (headers via env only).
+- Useful statuses: `JustCreated`, `WaitingForApproval`, `Rejected`,
+  `Approved`, `RolledBack` (see `GET …/release-bundle?status=…`).
+- Check review state in the Myket developer panel or via
+  `GET /api/partners/applications/ir.metto.app/release-bundle`.
 
 ## Metro data updates (no APK needed)
 
