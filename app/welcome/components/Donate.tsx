@@ -5,7 +5,7 @@ import { WELCOME_CONTENT } from "../content";
 import { Reveal } from "./Reveal";
 import { ArrowIcon, CheckIcon, HeartIcon, StarIcon } from "./Icons";
 
-const SPONSORS_URL = "https://github.com/sponsors/aliinreallife";
+const DONATE_URL = "https://reymit.ir/aliinreallife";
 const REPO_URL = "https://github.com/aliinreallife/metto";
 const ISSUE_URL = "https://github.com/aliinreallife/metto/issues/new";
 
@@ -113,7 +113,7 @@ export function Donate() {
 
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a
-              href={SPONSORS_URL}
+              href={DONATE_URL}
               target="_blank"
               rel="noreferrer noopener"
               className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-bold text-primary-foreground shadow-[0_10px_28px_-14px_var(--primary)] transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
