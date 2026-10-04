@@ -84,18 +84,27 @@ describe("myket-publish.mjs EN/FA transformation (exact, no truncation)", () => 
   });
 
   it("keeps multi-group structure in both languages", () => {
-    const body = `### Improvements\n\n- Faster search.\n\n#### فارسی\n\n### بهبودها\n\n- جست‌وجو سریع‌تر شد.\n\n### Fixes\n\n- Fixed midnight crash.\n\n#### فارسی\n\n### رفع مشکلات\n\n- کرش بعد از نیمه‌شب رفع شد.\n`;
+    const body = `### Improvements\n\n- Faster search.\n\n### Fixes\n\n- Fixed midnight crash.\n\n#### فارسی\n\n### بهبودها\n\n- جست‌وجو سریع‌تر شد.\n\n### رفع مشکلات\n\n- کرش بعد از نیمه‌شب رفع شد.\n`;
     const { en, fa } = splitMyketDescriptions(body);
-    expect(en).toContain("### Improvements");
-    expect(en).toContain("### Fixes");
-    expect(en).toContain("- Faster search.");
-    expect(en).toContain("- Fixed midnight crash.");
+    expect(en).toBe(
+      `### Improvements\n\n- Faster search.\n\n### Fixes\n\n- Fixed midnight crash.`,
+    );
+    expect(fa).toBe(
+      `### بهبودها\n\n- جست‌وجو سریع‌تر شد.\n\n### رفع مشکلات\n\n- کرش بعد از نیمه‌شب رفع شد.`,
+    );
     expect(en).not.toContain("جست‌وجو");
-    expect(fa).toContain("### بهبودها");
-    expect(fa).toContain("### رفع مشکلات");
-    expect(fa).toContain("- جست‌وجو سریع‌تر شد.");
-    expect(fa).toContain("- کرش بعد از نیمه‌شب رفع شد.");
     expect(fa).not.toContain("- Faster search.");
+  });
+
+  it("accepts interleaved sections without duplicating FA headings (issue #104)", () => {
+    const body = `### New\n\n- Ship it.\n\n#### فارسی\n\n### جدید\n\n- ارسال شد.\n\n### Improvements\n\n- Faster.\n\n#### فارسی\n\n### بهبودها\n\n- سریع‌تر.\n`;
+    const { en, fa } = splitMyketDescriptions(body);
+    expect(en).toContain("### New");
+    expect(en).toContain("### Improvements");
+    expect(fa.split("### جدید").length - 1).toBe(1);
+    expect(fa.split("### بهبودها").length - 1).toBe(1);
+    expect(fa).toContain("- ارسال شد.");
+    expect(fa).toContain("- سریع‌تر.");
   });
 
   it("accepts legacy bilingual sections, normalizing both sides (issue #102)", () => {
