@@ -49,7 +49,8 @@ Release notes: none
 - Allowed values: `New`, `Improvement`, `Fix`. Omit the line when unsure.
 - The value only decides which CHANGELOG group the bullets land in
   (EN `### New` / FA `### جدید`, EN `### Improvements` / FA `### بهبودها`,
-  EN `### Fixes` / FA `### رفع مشکلات`).
+  EN `### Fixes` / FA `### رفع مشکلات`). Sections render the whole EN
+  listing first, then `#### فارسی` with the whole FA listing.
 - No category → `Uncategorized` bucket (EN `### Uncategorized` /
   FA `### بدون دسته‌بندی`), sorted by a human
   during release review. Never invent or reinterpret categories from prose.

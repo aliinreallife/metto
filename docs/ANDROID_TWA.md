@@ -240,12 +240,12 @@ The job: validates semver → confirms the release exists → downloads
 `node scripts/myket-publish.mjs --tag vX.Y.Z --apk …` (`--dry-run` needs no
 token: `node scripts/myket-publish.mjs --tag vX.Y.Z --apk … --dry-run`).
 The script derives the bundle title (`metto vX.Y.Z`), the full EN/FA
-descriptions (complete `## [vX.Y.Z]` CHANGELOG section split on
-`#### فارسی` — never truncated; the EN side carries English-only group
-headings such as `### New`, the FA side Persian-only ones such as
-`### جدید`, so no Persian script reaches the EN field by construction —
-`sanitizeEnForMyket()` stays as a guard), and rollout (default `100`),
-then calls:
+descriptions (complete `## [vX.Y.Z]` CHANGELOG section: the whole EN
+listing first — intro + English-only group headings such as `### New` —
+then `#### فارسی` with the whole FA listing — Persian-only headings such
+as `### جدید` — never truncated, so no Persian script reaches the EN
+field by construction — `sanitizeEnForMyket()` stays as a guard), and
+rollout (default `100`), then calls:
 
 1. `PUT …/release-bundle` (create/update),
 2. `PUT …/release-bundle/upload` (signed APK as multipart with an **empty**

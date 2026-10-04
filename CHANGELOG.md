@@ -16,6 +16,11 @@ PR body instead (see AGENTS.md).
 - New welcome page at metto.ir/welcome: what metto is, live route demo, install guide and support info. (#93)
 - Welcome page works offline and is linked from the home screen slogan. (#93)
 
+### Improvements
+
+- The Install button no longer appears when the metto Android app is already installed, so you won't end up with two launcher icons. (#87)
+- App wording is now city-neutral (Metro instead of Tehran Metro) to get ready for more cities; Tehran service itself is unchanged. (#90)
+
 #### فارسی
 
 ### جدید
@@ -23,13 +28,6 @@ PR body instead (see AGENTS.md).
 - آیکون برنامه از آیکون‌های تم‌دار اندروید پشتیبانی می‌کند: با روشن بودن آیکون‌های تم‌دار، با رنگ‌های تصویر پس‌زمینه هماهنگ می‌شود. (#91)
 - صفحه خوش‌آمدگویی در metto.ir/welcome: معرفی متو، دموی زنده مسیر، راهنمای نصب و حمایت. (#93)
 - صفحه خوش‌آمد آفلاین کار می‌کند و از صفحه اصلی به آن لینک شده است. (#93)
-
-### Improvements
-
-- The Install button no longer appears when the metto Android app is already installed, so you won't end up with two launcher icons. (#87)
-- App wording is now city-neutral (Metro instead of Tehran Metro) to get ready for more cities; Tehran service itself is unchanged. (#90)
-
-#### فارسی
 
 ### بهبودها
 
@@ -46,6 +44,10 @@ PR body instead (see AGENTS.md).
 - Footer credit now links to the metto repo. (#84)
 - Fixes the manifest type error that broke the production build. (#84)
 
+### Fixes
+
+- Fixed the Android app's Turn on location button, which previously did nothing when tapped — it now opens the system Location settings. (#83)
+
 #### فارسی
 
 ### بهبودها
@@ -55,12 +57,6 @@ PR body instead (see AGENTS.md).
 - نام اپ همه‌جا با حروف کوچک metto شد و در دستگاه‌های فارسی متو می‌ماند. (#84)
 - پیوند سازنده در پاورقی به ریپازیتوری metto می‌رود. (#84)
 - خطای تایپ منیفست که بیلد پروداکشن را خراب کرده بود رفع شد. (#84)
-
-### Fixes
-
-- Fixed the Android app's Turn on location button, which previously did nothing when tapped — it now opens the system Location settings. (#83)
-
-#### فارسی
 
 ### رفع مشکلات
 
@@ -86,24 +82,21 @@ PR body instead (see AGENTS.md).
 
 - Timetables can now update in the background without an app release; offline keeps working from the last good copy. (#68)
 
-#### فارسی
-
-### جدید
-
-- برنامه حرکت قطارها از این پس در پس‌زمینه به‌روز می‌شود؛ استفاده آفلاین با آخرین نسخه سالم ادامه پیدا می‌کند. (#68)
-
 ### Fixes
 
 - Fixed an issue where map tiles could appear over the bottom tabs after panning the map while offline. (#66)
 
 #### فارسی
 
+### جدید
+
+- برنامه حرکت قطارها از این پس در پس‌زمینه به‌روز می‌شود؛ استفاده آفلاین با آخرین نسخه سالم ادامه پیدا می‌کند. (#68)
+
 ### رفع مشکلات
 
 - مشکلی برطرف شد که در حالت آفلاین، پس از جابه‌جایی روی نقشه، بخش‌هایی از نقشه ممکن بود روی تب‌های پایین صفحه نمایش داده شوند. (#66)
 
 ## [v0.7.0] - 2026-09-13
-
 First installable Android release of Metto.
 
 ### New
@@ -117,3 +110,4 @@ First installable Android release of Metto.
 
 - متو حالا به‌صورت اپلیکیشن قابل‌نصب اندروید منتشر شده است: فایل APK امضاشده همین نسخه را دانلود کنید و مسیریاب مترو را به‌صورت تمام‌صفحه باز کنید.
 - پوسته برنامه بعد از اولین بازدید بدون اینترنت هم کار می‌کند، پس صفحه‌های ذخیره‌شده آفلاین باز می‌شوند.
+

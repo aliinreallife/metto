@@ -133,6 +133,18 @@ describe("prepare-changelog.mjs", () => {
     expect(text).toContain("### Uncategorized");
     expect(text).toContain("### بدون دسته‌بندی");
     expect(text).not.toContain("### New / جدید");
+    // Full-split shape (issue #104): every EN group precedes the single
+    // marker, every FA group follows it — no interleaving.
+    const section = text.split("## [v0.8.0]")[1].split("## [Unreleased]")[0] ?? text;
+    const markerAt = section.indexOf("#### فارسی");
+    expect(markerAt).toBeGreaterThan(-1);
+    expect(section.match(/#### فارسی/g)).toHaveLength(1);
+    for (const h of ["### New", "### Fixes", "### Uncategorized"]) {
+      expect(section.indexOf(h)).toBeLessThan(markerAt);
+    }
+    for (const h of ["### جدید", "### رفع مشکلات", "### بدون دسته‌بندی"]) {
+      expect(section.indexOf(h)).toBeGreaterThan(markerAt);
+    }
     expect(text).toContain("Night departures are now shown. (#101)");
     expect(text).toContain("کرش بعد از نیمه‌شب رفع شد. (#102)");
     expect(text).toContain("Search is faster. (#103)");
@@ -140,13 +152,13 @@ describe("prepare-changelog.mjs", () => {
     expect(r.out).toMatch(/skipped internal-only \(1\): #104/);
   });
 
-  it("migrates a legacy bilingual section to split headings on merge (issue #102)", () => {
+  it("normalizes an interleaved section to full-split on merge (issue #104)", () => {
     const dir = mkdtempSync(join(tmpdir(), "prepare-changelog-"));
     const changelog = join(dir, "CHANGELOG.md");
     const prsFile = join(dir, "prs.json");
     writeFileSync(
       changelog,
-      `# Changelog\n\n## [Unreleased]\n\n## [v0.8.0] - 2026-09-20\n\n### New / جدید\n\n- Night departures are now shown. (#101)\n\n#### فارسی\n\n- حرکت‌های شبانه حالا نمایش داده می‌شوند. (#101)\n`,
+      `# Changelog\n\n## [Unreleased]\n\n## [v0.8.0] - 2026-09-20\n\n### New\n\n- Night departures are now shown. (#101)\n\n#### فارسی\n\n### جدید\n\n- حرکت‌های شبانه حالا نمایش داده می‌شوند. (#101)\n`,
     );
     writeFileSync(
       prsFile,
@@ -170,12 +182,52 @@ describe("prepare-changelog.mjs", () => {
     ]);
     expect(r.status).toBe(0);
     const text = readFileSync(changelog, "utf8");
-    // Legacy top heading migrated to the EN-only heading …
-    expect(text).toContain("### New");
+    const section = text.split("## [v0.8.0]")[1];
+    // Single marker: all EN before it, all FA after it …
+    expect(section.match(/#### فارسی/g)).toHaveLength(1);
+    const markerAt = section.indexOf("#### فارسی");
+    expect(section.indexOf("### New")).toBeLessThan(markerAt);
+    expect(section.indexOf("### جدید")).toBeGreaterThan(markerAt);
+    // … and the new bullets appended on both sides, nothing duplicated.
+    expect(text).toContain("Late trains listed. (#102)");
+    expect(text).toContain("قطارهای دیرهنگام فهرست شدند. (#102)");
+    expect(text.split("Night departures are now shown. (#101)").length - 1).toBe(1);
+    expect(text.split("### جدید").length - 1).toBe(1);
+  });
+
+  it("normalizes a legacy bilingual section to full-split on merge", () => {
+    const dir = mkdtempSync(join(tmpdir(), "prepare-changelog-"));
+    const changelog = join(dir, "CHANGELOG.md");
+    const prsFile = join(dir, "prs.json");
+    writeFileSync(
+      changelog,
+      `# Changelog\n\n## [Unreleased]\n\n## [v0.8.0] - 2026-09-20\n\n### New / جدید\n\n- Night departures are now shown. (#101)\n\n#### فارسی\n\n- حرکت‌های شبانه حالا نمایش داده می‌شوند. (#101)\n`,
+    );
+    writeFileSync(
+      prsFile,
+      JSON.stringify([
+        {
+          number: 102,
+          title: "Late trains",
+          body: "## Release notes\nCategory: New\n### English\n- Late trains listed.\n### فارسی\n- قطارهای دیرهنگام فهرست شدند.\n",
+        },
+      ]),
+    );
+    const r = runPrepare(dir, [
+      "--version",
+      "v0.8.0",
+      "--date",
+      "2026-09-20",
+      "--changelog",
+      changelog,
+      "--prs-file",
+      prsFile,
+    ]);
+    expect(r.status).toBe(0);
+    const text = readFileSync(changelog, "utf8");
     expect(text).not.toContain("### New / جدید");
-    // … with the Persian-only heading ensured after the marker …
+    expect(text).toContain("### New");
     expect(text).toContain("### جدید");
-    // … and the new bullets appended on both sides.
     expect(text).toContain("Late trains listed. (#102)");
     expect(text).toContain("قطارهای دیرهنگام فهرست شدند. (#102)");
   });

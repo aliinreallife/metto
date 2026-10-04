@@ -30,9 +30,9 @@ import { androidVersionFromTag } from "./android-version.mjs";
 import {
   extractChangelogSection,
   FA_SUBHEADING,
-  GROUP_HEADINGS,
   GROUP_HEADINGS_EN,
   GROUP_HEADINGS_FA,
+  groupForHeading,
 } from "./release-notes.mjs";
 
 export const MYKET_BASE_URL_DEFAULT = "https://developer.myket.ir";
@@ -110,11 +110,13 @@ export function sanitizeEnForMyket(text) {
     .join("\n");
 }
 
-const EN_GROUP_SET = new Set(Object.values(GROUP_HEADINGS_EN));
-const FA_GROUP_SET = new Set(Object.values(GROUP_HEADINGS_FA));
-const LEGACY_GROUP_SET = new Set(Object.values(GROUP_HEADINGS));
-const LEGACY_TO_EN = new Map(Object.keys(GROUP_HEADINGS).map((g) => [GROUP_HEADINGS[g], GROUP_HEADINGS_EN[g]]));
-const EN_TO_FA = new Map(Object.keys(GROUP_HEADINGS_EN).map((g) => [GROUP_HEADINGS_EN[g], GROUP_HEADINGS_FA[g]]));
+// Group key -> split headings, used to normalize legacy bilingual sections.
+const EN_HEADING_OF = {};
+const FA_HEADING_OF = {};
+for (const g of Object.keys(GROUP_HEADINGS_EN)) {
+  EN_HEADING_OF[g] = GROUP_HEADINGS_EN[g];
+  FA_HEADING_OF[g] = GROUP_HEADINGS_FA[g];
+}
 
 /**
  * Split an extracted CHANGELOG section body into Myket EN/FA descriptions.
@@ -122,14 +124,14 @@ const EN_TO_FA = new Map(Object.keys(GROUP_HEADINGS_EN).map((g) => [GROUP_HEADIN
  * - Sends the COMPLETE section content; never truncates (no documented Myket
  *   length limit exists today — if Myket later returns a length validation
  *   error, add an explicit evidence-based limit then, not now).
- * - en: everything outside `#### فارسی` blocks (intro + English-only group
- *   headings like `### New` + English bullets), marker lines dropped, then
- *   passed through sanitizeEnForMyket as a guard.
- * - fa: Persian-only group headings (`### جدید`, …) + Persian bullets only,
- *   so the Persian listing reads standalone.
- * - Pre-split (legacy bilingual `### New / جدید`) sections are still
- *   accepted: the EN side is normalized to the English-only heading and the
- *   FA side inherits the matching Persian-only heading.
+ * - Sections are full-split (issue #104): the whole EN listing first, then
+ *   `#### فارسی` and the whole FA listing. en = intro + English-only group
+ *   headings like `### New` + English bullets; fa = Persian-only group
+ *   headings (`### جدید`, …) + Persian bullets. Marker lines are dropped,
+ *   then the EN side passes through sanitizeEnForMyket as a guard.
+ * - Older shapes are still accepted via groupForHeading: interleaved
+ *   per-group sections (#103) and legacy bilingual `### New / جدید`
+ *   headings (#102, normalized to the split headings on each side).
  * - Falls back to the non-empty side when one side is missing; throws when
  *   both are empty.
  */
@@ -140,73 +142,76 @@ export function splitMyketDescriptions(sectionBody) {
   const enLines = [];
   const faLines = [];
   let inFa = false;
-  let lastFaHeading = null;
+  let pendingFaHeading = null;
   let faHasGroup = false;
-
-  const isFaMarker = (l) => l.trim() === FA_SUBHEADING;
-  const isHeading = (l) => /^\s*#{1,6}\s/.test(l);
 
   const pushFaHeading = (heading) => {
     if (faLines.length > 0) faLines.push("");
     faLines.push(heading, "");
     faHasGroup = true;
+    pendingFaHeading = null;
   };
 
   for (const line of lines) {
     const t = line.trim();
-    if (isFaMarker(line)) {
+    if (t === FA_SUBHEADING) {
       inFa = true;
       faHasGroup = false;
       continue;
     }
-    if (FA_GROUP_SET.has(t)) {
-      // Persian-only group heading inside the FA block.
-      if (!inFa) inFa = true;
-      pushFaHeading(line);
+    const known = /^\s*###\s/.test(line) ? groupForHeading(line) : null;
+    if (known) {
+      if (known.lang === "fa") {
+        // Persian-only group heading: belongs to the FA side wherever it
+        // appears (full-split FA region, or interleaved group block).
+        if (!inFa) inFa = true;
+        pushFaHeading(line);
+      } else if (known.lang === "legacy") {
+        // Bilingual heading: normalize each side to its split heading.
+        pendingFaHeading = FA_HEADING_OF[known.group] ?? null;
+        inFa = false;
+        enLines.push(EN_HEADING_OF[known.group]);
+        faHasGroup = false;
+      } else {
+        pendingFaHeading = FA_HEADING_OF[known.group] ?? null;
+        inFa = false;
+        enLines.push(line);
+        faHasGroup = false;
+      }
       continue;
     }
-    if (LEGACY_GROUP_SET.has(t)) {
-      // Pre-split bilingual heading: normalize EN side, derive the FA side.
-      const enHeading = LEGACY_TO_EN.get(t);
-      lastFaHeading = EN_TO_FA.get(enHeading) ?? null;
-      inFa = false;
-      enLines.push(enHeading);
-      faHasGroup = false;
-      continue;
-    }
-    if (EN_GROUP_SET.has(t)) {
-      lastFaHeading = EN_TO_FA.get(t) ?? null;
-      inFa = false;
-      enLines.push(line);
-      faHasGroup = false;
-      continue;
-    }
-    if (isHeading(line)) {
+    if (/^\s*#{1,6}\s/.test(line)) {
       if (/^\s*###\s/.test(line)) {
         // Unknown ### heading: keep language sides separate.
         if (inFa) {
           pushFaHeading(line);
         } else {
-          lastFaHeading = null;
+          pendingFaHeading = null;
           faHasGroup = false;
           enLines.push(line);
         }
       } else if (/^\s*####\s/.test(line)) {
-        // Any other #### subsection ends the FA block.
+        // Any other #### subsection ends the FA region.
         inFa = false;
-        lastFaHeading = null;
+        pendingFaHeading = null;
         enLines.push(line);
       } else {
         inFa = false;
-        lastFaHeading = null;
+        pendingFaHeading = null;
         enLines.push(line);
       }
       continue;
     }
     if (inFa) {
-      if (line.trim() === "" && faLines.length === 0) continue;
-      if (!faHasGroup && lastFaHeading) {
-        pushFaHeading(lastFaHeading);
+      if (line.trim() === "") {
+        // Never lazy-inject a heading before a blank line: the explicit
+        // heading (or real content deserving an injected one) comes next.
+        if (faHasGroup) faLines.push(line);
+        continue;
+      }
+      if (!faHasGroup && pendingFaHeading) {
+        // Interleaved/legacy group whose FA side has no explicit heading.
+        pushFaHeading(pendingFaHeading);
       }
       faLines.push(line);
     } else {
