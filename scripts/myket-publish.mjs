@@ -84,13 +84,35 @@ export function commitMessageForTag(tag) {
 }
 
 /**
+ * Myket's EN description validator rejects Persian/Arabic-script characters,
+ * but our group headings are bilingual (`### New / جدید`). Strip Arabic
+ * script from the EN side and clean up the orphaned ` / ` separators it
+ * leaves behind. The FA side is untouched. Observed live: an unsanitized EN
+ * description surfaces a panel validation error on the draft.
+ */
+const ARABIC_SCRIPT_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
+
+export function sanitizeEnForMyket(text) {
+  return String(text ?? "")
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(ARABIC_SCRIPT_RE, "")
+        .replace(/\s+\/\s*$/, "")
+        .replace(/[ \t]{2,}/g, " ")
+        .trimEnd(),
+    )
+    .join("\n");
+}
+/**
  * Split an extracted CHANGELOG section body into Myket EN/FA descriptions.
  *
  * - Sends the COMPLETE section content; never truncates (no documented Myket
  *   length limit exists today — if Myket later returns a length validation
  *   error, add an explicit evidence-based limit then, not now).
  * - en: everything outside `#### فارسی` blocks (intro + group headings +
- *   English bullets), marker lines dropped.
+ *   English bullets), marker lines dropped, then sanitized via
+ *   sanitizeEnForMyket (Myket rejects Persian script in the EN field).
  * - fa: parent group headings (bilingual `### ... / ...` lines) + Persian
  *   bullets only, so the Persian listing reads standalone.
  * - Falls back to the non-empty side when one side is missing; throws when
@@ -147,7 +169,7 @@ export function splitMyketDescriptions(sectionBody) {
     }
   }
 
-  const en = enLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  const en = sanitizeEnForMyket(enLines.join("\n")).replace(/\n{3,}/g, "\n\n").trim();
   const faRaw = faLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
   if (!en && !faRaw) throw new Error("empty changelog section (no EN/FA descriptions to derive)");
   return { en: en || faRaw, fa: faRaw || en };
