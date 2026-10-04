@@ -16,8 +16,11 @@
 //
 // Safety:
 //   - GitHub Release is the source of truth; this script never deletes it.
-//   - A bundle currently under review (WaitingForApproval) or already
-//     Approved is never overwritten — abort with manual instructions.
+//   - A bundle currently under review (WaitingForApproval) is never touched —
+//     abort with manual instructions (the API itself rejects edits there).
+//   - An Approved bundle does NOT block: per the documented PUT
+//     create-or-update semantics a new title registers a new bundle entry,
+//     and assertFreshDraftForTitle() verifies exactly that before any upload.
 //   - --dry-run performs zero Myket mutations and needs no token.
 //
 // Node builtins only (plus global fetch/FormData/Blob on Node 22).
@@ -212,11 +215,72 @@ export function normalizeMyketStatus(status) {
 }
 
 /**
+ * Highest versionCode across every version of every bundle in a GET list
+ * response. Returns null when no versions exist (nothing to downgrade from).
+ */
+export function maxVersionCodeFromList(json) {
+  const releases = json?.releases;
+  if (!Array.isArray(releases)) return null;
+  let max = null;
+  for (const r of releases) {
+    const versions = r?.versions;
+    if (!Array.isArray(versions)) continue;
+    for (const v of versions) {
+      const n = Number(v?.versionCode);
+      if (Number.isInteger(n) && n > 0 && (max === null || n > max)) max = n;
+    }
+  }
+  return max;
+}
+
+/**
+ * Refuse to submit an older (or equal) build over a newer store listing.
+ * Pure check on the pre-PUT list state; the tag's own versionCode comes from
+ * strict semver derivation, so only genuine regressions trip it.
+ */
+export function assertNoDowngrade({ tag, versionCode, listJson }) {
+  const max = maxVersionCodeFromList(listJson);
+  if (max !== null && versionCode <= max) {
+    throw new Error(
+      `refusing to submit ${tag} (versionCode ${versionCode}) over store max versionCode ${max} — tag a newer version instead`,
+    );
+  }
+  return max;
+}
+
+/**
+ * Post-PUT verification: the newest bundle entry must be OUR fresh entry —
+ * exact title match and never a review/live state. This is what makes
+ * proceeding past an Approved bundle safe: if PUT had edited the live
+ * listing in place instead of registering a new entry, the newest entry
+ * would carry a review/live status (or a foreign title) and we abort
+ * before uploading anything.
+ */
+export function assertFreshDraftForTitle(listJson, title) {
+  const cur = getCurrentBundleFromList(listJson);
+  if (!cur) {
+    throw new Error(`post-PUT verification failed: bundle list is empty after PUT ${JSON.stringify(title)}`);
+  }
+  if (cur.title !== title) {
+    throw new Error(
+      `post-PUT verification failed: newest bundle is ${JSON.stringify(cur.title)} (status ${cur.status}), expected fresh entry ${JSON.stringify(title)} — aborting before upload`,
+    );
+  }
+  const st = normalizeMyketStatus(cur.status);
+  if (st === "WaitingForApproval" || st === "Approved") {
+    throw new Error(
+      `post-PUT verification failed: newest bundle ${JSON.stringify(title)} is in ${st} state — refusing to upload into a review/live entry`,
+    );
+  }
+  return cur;
+}
+
+/**
  * Safety gate around the current bundle status. A bundle under review must
- * never be overwritten; approved bundles need explicit manual handling.
+ * never be touched; approved bundles need a fresh entry (verified after PUT).
  * Status is normalized first (the API emits Persian display strings), but
  * the decisions are unchanged: only an empty state, JustCreated, Rejected,
- * or RolledBack may proceed.
+ * RolledBack — or Approved (new entry will be created) — may proceed.
  */
 export function decideMyketAction(status) {
   const normalized = normalizeMyketStatus(status);
@@ -238,9 +302,9 @@ export function decideMyketAction(status) {
       };
     case "Approved":
       return {
-        proceed: false,
+        proceed: true,
         reason:
-          "a bundle is Approved — refusing to blindly overwrite a reviewed release. Handle it manually in the Myket panel (publish/roll back first), then retry.",
+          "an Approved bundle exists — PUT registers a new bundle entry for this title (verified by assertFreshDraftForTitle before upload); the reviewed release itself is never modified",
       };
     default:
       return {
@@ -467,9 +531,13 @@ async function main() {
     throw new Error(`myket-publish aborted: ${decision.reason}`);
   }
   console.log(`myket-publish: status gate: ${decision.reason}`);
+  assertNoDowngrade({ tag, versionCode, listJson: list });
 
   await myketPutBundle(endpoints, token, bundlePayload);
   console.log("myket-publish: bundle create/update: OK");
+  const afterPut = await myketGetList(endpoints, token);
+  const fresh = assertFreshDraftForTitle(afterPut, title);
+  console.log(`myket-publish: fresh draft verified: title=${JSON.stringify(fresh.title)} status=${fresh.status}`);
   await myketUploadApk(endpoints, token, apkPath, apkFilename);
   console.log("myket-publish: APK upload: OK (resultCode Successful)");
   await myketCommit(endpoints, token, commitPayload);

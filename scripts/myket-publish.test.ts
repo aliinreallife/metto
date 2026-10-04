@@ -6,6 +6,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   MAX_APK_BYTES,
+  assertFreshDraftForTitle,
+  assertNoDowngrade,
   buildCommitPayload,
   buildReleaseBundlePayload,
   buildUploadFormData,
@@ -13,6 +15,7 @@ import {
   commitMessageForTag,
   decideMyketAction,
   getCurrentBundleFromList,
+  maxVersionCodeFromList,
   myketEndpoints,
   normalizeMyketStatus,
   splitMyketDescriptions,
@@ -132,7 +135,8 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
     ["Rejected", true],
     ["RolledBack", true],
     ["WaitingForApproval", false],
-    ["Approved", false],
+    ["Approved", true],
+    ["تایید شده", true],
     ["SomethingNew", false],
   ])("status %s -> proceed=%s", (status, proceed) => {
     expect(decideMyketAction(status as string).proceed).toBe(proceed);
@@ -144,12 +148,12 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
     expect(d.reason).toMatch(/WaitingForApproval/);
   });
 
-  it("maps the observed Persian Approved status to the designed refusal", () => {
+  it("maps the observed Persian Approved status to the new-entry path", () => {
     // Seen live on the v0.7.6 run: the API returned "تایید شده".
     expect(normalizeMyketStatus("تایید شده")).toBe("Approved");
     const d = decideMyketAction("تایید شده");
-    expect(d.proceed).toBe(false);
-    expect(d.reason).toMatch(/Approved/);
+    expect(d.proceed).toBe(true);
+    expect(d.reason).toMatch(/new bundle entry/);
   });
 
   it("leaves unmapped statuses to fail-safe abort", () => {
@@ -175,6 +179,66 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
   it("returns null when no releases exist", () => {
     expect(getCurrentBundleFromList({ releases: [] })).toBeNull();
     expect(getCurrentBundleFromList({})).toBeNull();
+  });
+
+  it("proceeds past Approved to create a new entry (live listing untouched)", () => {
+    const d = decideMyketAction("Approved");
+    expect(d.proceed).toBe(true);
+    expect(d.reason).toMatch(/new bundle entry/);
+  });
+});
+
+describe("myket-publish.mjs post-PUT draft verification + downgrade guard", () => {
+  const draftList = (title: string, status: string) => ({
+    releases: [{ title, status, createdAt: "2026-10-03T00:00:00Z", id: "new" }],
+  });
+
+  it("accepts a fresh entry with our exact title", () => {
+    const cur = assertFreshDraftForTitle(draftList("metto v0.7.6", "JustCreated"), "metto v0.7.6");
+    expect(cur?.status).toBe("JustCreated");
+  });
+
+  it("rejects when the newest entry carries a foreign title", () => {
+    expect(() => assertFreshDraftForTitle(draftList("0.7.3", "JustCreated"), "metto v0.7.6")).toThrow(
+      /newest bundle is "0.7.3"/,
+    );
+  });
+
+  it("rejects uploading into a review/live entry even with our title", () => {
+    for (const s of ["WaitingForApproval", "Approved"]) {
+      expect(() => assertFreshDraftForTitle(draftList("metto v0.7.6", s), "metto v0.7.6")).toThrow(
+        /refusing to upload/,
+      );
+    }
+  });
+
+  it("rejects an empty post-PUT list", () => {
+    expect(() => assertFreshDraftForTitle({ releases: [] }, "metto v0.7.6")).toThrow(/empty after PUT/);
+  });
+
+  it("finds the max versionCode across releases", () => {
+    expect(
+      maxVersionCodeFromList({
+        releases: [
+          { versions: [{ versionCode: 7003 }, { versionCode: "7004" }] },
+          { versions: [{ versionCode: 7006 }] },
+          {},
+        ],
+      }),
+    ).toBe(7006);
+    expect(maxVersionCodeFromList({ releases: [] })).toBeNull();
+    expect(maxVersionCodeFromList({})).toBeNull();
+  });
+
+  it("refuses a tag at or below the store max versionCode", () => {
+    const listJson = { releases: [{ versions: [{ versionCode: 7003 }] }] };
+    expect(assertNoDowngrade({ tag: "v0.7.6", versionCode: 7006, listJson })).toBe(7003);
+    expect(() => assertNoDowngrade({ tag: "v0.7.3", versionCode: 7003, listJson })).toThrow(
+      /over store max versionCode 7003/,
+    );
+    expect(() => assertNoDowngrade({ tag: "v0.7.2", versionCode: 7002, listJson })).toThrow(
+      /tag a newer version/,
+    );
   });
 });
 
