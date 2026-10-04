@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, ArrowUpDown, Check, Copy, Search } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT } from "../content";
 import { persianDigits } from "@/lib/i18n";
@@ -11,11 +10,20 @@ import {
   canBoardAtStation,
   getAllStations,
   getStation,
+  getStationLines,
   searchStations,
 } from "@/lib/metro/selectors";
 import type { MetroStation } from "@/lib/metro/types";
 import { cn } from "@/lib/utils";
 import { Reveal } from "./Reveal";
+import {
+  ArrowIcon,
+  CheckIcon,
+  CopyIcon,
+  SearchIcon,
+  SwapIcon,
+  TrainIcon,
+} from "./Icons";
 
 function Field({
   id,
@@ -32,6 +40,7 @@ function Field({
 }) {
   const { lang } = useMetro();
   const t = WELCOME_CONTENT[lang].demo;
+  const isFa = lang === "fa";
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -50,7 +59,8 @@ function Field({
   }, []);
 
   const matches = useMemo(() => (open ? searchStations(query, 6) : []), [open, query]);
-  const value = open ? query : lang === "fa" ? station.name.fa : station.name.en;
+  const value = open ? query : isFa ? station.name.fa : station.name.en;
+  const lines = getStationLines(station.id);
 
   return (
     <div ref={wrap} className="relative flex-1">
@@ -59,11 +69,11 @@ function Field({
       </label>
       <div
         className={cn(
-          "flex items-center gap-2 rounded-lg border bg-background px-3 transition-colors",
-          open ? "border-primary" : "border-border",
+          "flex items-center gap-2 rounded-lg border bg-background px-3 transition-colors duration-200",
+          open ? "border-primary" : "border-border hover:border-input",
         )}
       >
-        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <SearchIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           id={id}
           type="text"
@@ -91,6 +101,9 @@ function Field({
           }}
           className="h-11 w-full min-w-0 bg-transparent text-sm font-bold outline-none placeholder:font-normal placeholder:text-muted-foreground/85"
         />
+        <span className="tnum hidden shrink-0 rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground sm:inline">
+          {isFa ? `خط ${persianDigits(lines.join("، "), lang)}` : `L${lines.join("/")}`}
+        </span>
       </div>
 
       <ul
@@ -98,7 +111,7 @@ function Field({
         role="listbox"
         aria-label={label}
         className={cn(
-          "absolute inset-x-0 top-full z-30 mt-2 max-h-60 overflow-y-auto rounded-lg border border-border bg-popover shadow-xl transition-all",
+          "absolute inset-x-0 top-full z-30 mt-2 max-h-60 overflow-y-auto rounded-lg border border-border bg-popover shadow-[0_24px_48px_-24px_rgba(0,0,0,0.35)] transition-all duration-200",
           open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-1 opacity-0",
         )}
       >
@@ -117,9 +130,15 @@ function Field({
                   setQuery("");
                   setOpen(false);
                 }}
-                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-start text-sm transition-colors hover:bg-accent"
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 px-3 py-2.5 text-start text-sm transition-colors duration-150 hover:bg-primary-wash hover:text-primary",
+                  s.id === station.id && "bg-muted font-bold",
+                )}
               >
-                <span className="truncate font-medium">{lang === "fa" ? s.name.fa : s.name.en}</span>
+                <span className="truncate font-medium">{isFa ? s.name.fa : s.name.en}</span>
+                <span className="tnum shrink-0 text-[10px] text-muted-foreground">
+                  {persianDigits(getStationLines(s.id).join(" · "), lang)}
+                </span>
               </button>
             </li>
           ))
@@ -138,6 +157,7 @@ export function DemoStrip() {
   const [from, setFrom] = useState<MetroStation>(() => getStation("tajrish") ?? boardable[0]);
   const [to, setTo] = useState<MetroStation>(() => getStation("tehran-sadeghiyeh") ?? boardable[1]);
   const [copied, setCopied] = useState(false);
+  const [spin, setSpin] = useState(false);
 
   const trip = useMemo(() => findRoute(from.id, to.id), [from, to]);
   const href = `/?from=${from.id}&to=${to.id}`;
@@ -151,6 +171,8 @@ export function DemoStrip() {
   const swap = () => {
     setFrom(to);
     setTo(from);
+    setSpin(true);
+    window.setTimeout(() => setSpin(false), 400);
   };
 
   const copy = async () => {
@@ -174,6 +196,13 @@ export function DemoStrip() {
   };
 
   const minutes = trip ? Math.max(1, Math.round(trip.totalSeconds / 60)) : null;
+  const transfers = useMemo(() => {
+    if (!trip) return [];
+    return trip.segments.slice(1).map((seg) => ({
+      stationId: seg.stations[0],
+      line: seg.line,
+    }));
+  }, [trip]);
 
   return (
     <section id="demo" className="relative border-b border-border bg-muted/25 py-14 sm:py-20">
@@ -197,23 +226,38 @@ export function DemoStrip() {
                 onClick={swap}
                 aria-label={t.swap}
                 title={t.swap}
-                className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition hover:border-primary hover:text-primary active:scale-90 lg:h-11 lg:w-11"
+                className="mx-auto mb-0.5 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all duration-200 hover:border-primary hover:text-primary active:scale-90 lg:h-11 lg:w-11"
               >
-                <ArrowUpDown className="h-[18px] w-[18px]" />
+                <SwapIcon
+                  className={cn("h-[18px] w-[18px] transition-transform duration-300", spin && "rotate-180")}
+                />
               </button>
               <Field id="demo-to" label={t.toLabel} station={to} onSelect={setTo} placeholder={t.toPlaceholder} />
               <Link
                 href={href}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98]"
+                className="group inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
               >
                 {t.cta}
-                {isFa ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+                <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
               </Link>
             </div>
 
             <div className="rounded-b-lg border-t border-border bg-background px-4 py-4 sm:px-5">
-              <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-                <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm font-bold tabular-nums">
+              <div className="flex items-center gap-3">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-primary bg-background" aria-hidden />
+                <div className="relative h-[3px] flex-1 overflow-visible rounded-full bg-track">
+                  <span
+                    className="run-rail absolute top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md bg-primary text-primary-foreground"
+                    aria-hidden
+                  >
+                    <TrainIcon className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-hidden />
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                <div className="tnum flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm font-bold">
                   {trip && minutes != null ? (
                     <>
                       <span>
@@ -237,12 +281,39 @@ export function DemoStrip() {
                 <button
                   type="button"
                   onClick={copy}
-                  className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition hover:border-foreground hover:text-foreground active:scale-95"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-all duration-200 hover:border-foreground hover:text-foreground active:scale-95"
                 >
-                  {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied ? <CheckIcon className="h-3.5 w-3.5 text-primary" /> : <CopyIcon className="h-3.5 w-3.5" />}
                   {copied ? t.copied : t.copy}
+                  <span className="latin hidden max-w-[15rem] truncate text-[10px] font-medium opacity-60 sm:inline">
+                    metto.ir{href}
+                  </span>
                 </button>
               </div>
+
+              {transfers.length > 0 && (
+                <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-6 text-muted-foreground">
+                  <span className="font-bold text-foreground">
+                    {isFa ? "تعویض خط در" : "Change at"}:
+                  </span>
+                  {transfers.map((xfer) => {
+                    const s = getStation(xfer.stationId);
+                    if (!s) return null;
+                    return (
+                      <span
+                        key={xfer.stationId}
+                        className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-bold"
+                      >
+                        {isFa ? s.name.fa : s.name.en}
+                        <span className="tnum ms-1 text-primary">
+                          {isFa ? `خط ${persianDigits(xfer.line, lang)}` : `L${xfer.line}`}
+                        </span>
+                      </span>
+                    );
+                  })}
+                </p>
+              )}
+
               <p className="mt-2 text-[11px] leading-6 text-muted-foreground">{t.hint}</p>
             </div>
           </div>

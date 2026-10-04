@@ -1,14 +1,15 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Check, Heart, Star } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT } from "../content";
 import { Reveal } from "./Reveal";
+import { ArrowIcon, CheckIcon, HeartIcon, StarIcon } from "./Icons";
 
 const SPONSORS_URL = "https://github.com/sponsors/aliinreallife";
 const REPO_URL = "https://github.com/aliinreallife/metto";
 const ISSUE_URL = "https://github.com/aliinreallife/metto/issues/new";
 
+/** Title like «رایگان. بدون تبلیغ. برای همیشه.» — each clause on its own line, red full stop. */
 function Lines({ text }: { text: string }) {
   const parts = text
     .split(". ")
@@ -16,18 +17,21 @@ function Lines({ text }: { text: string }) {
     .filter(Boolean);
   return (
     <>
-      {parts.map((part) => (
+      {parts.map((part, i) => (
         <span key={part} className="block">
           {part.replace(/\.$/, "")}
-          <span className="text-primary" aria-hidden>
-            .
-          </span>
+          {(i < parts.length - 1 || text.endsWith(".")) && (
+            <span className="latin text-primary" aria-hidden>
+              .
+            </span>
+          )}
         </span>
       ))}
     </>
   );
 }
 
+/** A fake banner ad, crossed out — because it will never exist here. */
 function CrossedAd() {
   const { lang } = useMetro();
   const t = WELCOME_CONTENT[lang].donate;
@@ -38,17 +42,20 @@ function CrossedAd() {
         <span className="text-muted-foreground">{t.slotLabel}</span>
         <span className="relative rounded-md border border-border px-1.5 py-0.5 text-muted-foreground">
           {t.adBadge}
-          <span className="absolute -inset-x-1 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-primary" aria-hidden />
+          <span
+            className="absolute -inset-x-1 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-primary"
+            aria-hidden
+          />
         </span>
       </div>
 
       <div className="relative mt-3 overflow-hidden rounded-lg border border-dashed border-border bg-muted/40 p-4">
         <div className="flex items-center gap-3 opacity-80" aria-hidden>
-          <span className="h-14 w-14 shrink-0 rounded-lg bg-muted" />
+          <span className="h-14 w-14 shrink-0 rounded-lg bg-track/60" />
           <div className="flex-1 space-y-2.5">
-            <span className="block h-2.5 w-3/4 rounded-full bg-muted" />
-            <span className="block h-2.5 w-1/2 rounded-full bg-muted" />
-            <span className="block h-6 w-24 rounded-md bg-muted" />
+            <span className="block h-2.5 w-3/4 rounded-full bg-track/70" />
+            <span className="block h-2.5 w-1/2 rounded-full bg-track/70" />
+            <span className="block h-6 w-24 rounded-md bg-track/80" />
           </div>
         </div>
         <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
@@ -60,7 +67,7 @@ function CrossedAd() {
 
       <p className="mt-4 text-sm font-bold leading-7">{t.neverCaption}</p>
       <p className="mt-2 flex items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
-        <Heart className="h-4 w-4 shrink-0 animate-pulse text-primary" />
+        <HeartIcon className="heart-beat h-4 w-4 shrink-0 text-primary" />
         {t.thanks}
       </p>
     </div>
@@ -70,14 +77,13 @@ function CrossedAd() {
 export function Donate() {
   const { lang } = useMetro();
   const t = WELCOME_CONTENT[lang].donate;
-  const isFa = lang === "fa";
 
   return (
     <section id="donate" className="border-t border-border py-16 sm:py-24">
       <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:gap-12">
         <Reveal className="lg:col-span-7">
           <span className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-primary uppercase">
-            <Heart className="h-4 w-4 animate-pulse" />
+            <HeartIcon className="heart-beat h-4 w-4" />
             {t.eyebrow}
           </span>
 
@@ -85,15 +91,19 @@ export function Donate() {
             <Lines text={t.title} />
           </h2>
 
-          <p className="mt-4 max-w-xl text-sm leading-8 text-muted-foreground sm:text-base">{t.desc}</p>
+          <p className="mt-4 max-w-xl text-sm leading-8 text-muted-foreground sm:text-base">
+            {t.desc}
+          </p>
 
           <div className="mt-6">
-            <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{t.paysTitle}</h3>
+            <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+              {t.paysTitle}
+            </h3>
             <ul className="mt-3 space-y-2.5">
               {t.pays.map((item) => (
                 <li key={item} className="flex items-center gap-2.5 text-sm leading-7">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Check className="h-3 w-3" />
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-wash text-primary">
+                    <CheckIcon className="h-3 w-3" />
                   </span>
                   {item}
                 </li>
@@ -106,19 +116,19 @@ export function Donate() {
               href={SPONSORS_URL}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98]"
+              className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-bold text-primary-foreground shadow-[0_10px_28px_-14px_var(--primary)] transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
             >
-              <Heart className="h-4 w-4" />
+              <HeartIcon className="h-4 w-4 transition-transform duration-300 group-hover:scale-125" />
               {t.primary}
-              {isFa ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+              <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
             </a>
             <a
               href={REPO_URL}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold transition hover:border-foreground active:scale-[0.98]"
+              className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold transition-all duration-200 hover:border-foreground hover:bg-muted active:scale-[0.98]"
             >
-              <Star className="h-4 w-4 text-primary" />
+              <StarIcon className="h-4 w-4 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
               {t.secondary}
             </a>
           </div>
@@ -137,7 +147,7 @@ export function Donate() {
                       href={ISSUE_URL}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+                      className="underline decoration-border decoration-1 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
                     >
                       {item}
                     </a>

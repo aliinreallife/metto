@@ -24,6 +24,8 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-track: var(--track);
+  --color-primary-wash: var(--primary-wash);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -68,6 +70,9 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.553 0.224 26.3);
+  --track: oklch(0.87 0 0);
+  --hairline: rgba(20, 20, 22, 0.08);
+  --primary-wash: rgba(190, 18, 40, 0.07);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -104,6 +109,9 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.637 0.222 25.8);
+  --track: oklch(0.32 0 0);
+  --hairline: rgba(244, 244, 245, 0.1);
+  --primary-wash: rgba(230, 60, 90, 0.14);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -140,6 +148,9 @@
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.637 0.222 25.8);
+    --track: oklch(0.32 0 0);
+    --hairline: rgba(244, 244, 245, 0.1);
+    --primary-wash: rgba(230, 60, 90, 0.14);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -178,6 +189,167 @@
    in Vazirmatn without switching to a monospace font. */
 .tnum {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Latin display face for counters and badges (welcome page). */
+.latin {
+  font-family: var(--font-vazirmatn), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Fine engineering grid used as ambient page texture (welcome page). */
+.bg-blueprint {
+  background-image:
+    linear-gradient(to right, var(--hairline) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hairline) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.bg-hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--hairline) 0 1px,
+    transparent 1px 7px
+  );
+}
+
+.mask-fade-b {
+  mask-image: linear-gradient(to bottom, black 45%, transparent 100%);
+}
+
+.mask-fade-x {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.lift {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.25s ease,
+    background-color 0.25s ease,
+    box-shadow 0.35s ease;
+}
+
+/* ---------- Welcome station ticker ---------- */
+@keyframes ticker-rtl {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(50%, 0, 0);
+  }
+}
+@keyframes ticker-ltr {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: ticker-ltr 140s linear infinite;
+}
+[dir="rtl"] .ticker-track {
+  animation-name: ticker-rtl;
+}
+.ticker-host:hover .ticker-track,
+.ticker-host:active .ticker-track {
+  animation-play-state: paused;
+}
+
+/* ---------- Train running along the rail (welcome page) ---------- */
+@keyframes run-rail {
+  0% {
+    inset-inline-start: -2%;
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 1;
+  }
+  100% {
+    inset-inline-start: 100%;
+    opacity: 0;
+  }
+}
+.run-rail {
+  animation: run-rail 9s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+@keyframes run-rail-v {
+  0% {
+    top: -6%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 98%;
+    opacity: 0;
+  }
+}
+.run-rail-v {
+  animation: run-rail-v 8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.6);
+  }
+}
+.soft-pulse {
+  animation: soft-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes heart-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  22% {
+    transform: scale(1.18);
+  }
+  40% {
+    transform: scale(1);
+  }
+  58% {
+    transform: scale(1.1);
+  }
+  72% {
+    transform: scale(1);
+  }
+}
+.heart-beat {
+  animation: heart-beat 1.6s ease-in-out infinite;
+}
+
+@keyframes drift-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+.drift-y {
+  animation: drift-y 7s ease-in-out infinite;
 }
 
 /* Hide painted scrollbar chrome on the main tab lists (mobile-app pattern).
