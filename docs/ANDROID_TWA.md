@@ -318,7 +318,9 @@ publishes automatically.
   APK + changelog up front; save as draft only, automation takes it from the
   draft state). The API emits Persian display strings (e.g. `تایید شده` for
   `Approved`, `پیش‌نویس` for `JustCreated`); `normalizeMyketStatus()` maps
-  only live-observed ones — never guess a mapping.
+  only live-observed ones — never guess a mapping. Re-uploading an already
+  registered `versionCode` reports `RepeatedVersionCode`: not fatal, the flow
+  continues to verification (which still gates the commit).
 - `400`/`401` fail only the Myket job with the Myket `messageCode`
   (`EditNotPossible`, `MissingRequiredData`, `PostAppFailed`, …) in the log
   and step summary — the GitHub Release is never modified or deleted.

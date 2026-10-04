@@ -214,6 +214,22 @@ export function normalizeMyketStatus(status) {
 }
 
 /**
+ * Classify an APK upload failure. Observed live on the v0.7.6 runs:
+ * - RepeatedVersionCode: the build's versionCode is already registered
+ *   (e.g. an earlier run uploaded it). Not fatal: the flow continues to
+ *   post-upload verification, which still gates the commit — if the code
+ *   is only in a review/live entry (or nowhere committable), we abort.
+ * - ReleaseNotFound: no draft exists for the upload to attach to — the
+ *   human must create the draft in the panel first (draft only).
+ */
+export function classifyUploadError(err) {
+  const message = String(err?.message ?? err);
+  if (message.includes("RepeatedVersionCode")) return { kind: "already-staged", message };
+  if (message.includes("ReleaseNotFound")) return { kind: "no-draft", message };
+  return { kind: "fatal", message };
+}
+
+/**
  * Highest versionCode across every version of every bundle in a GET list
  * response. Returns null when no versions exist (nothing to downgrade from).
  */
@@ -570,16 +586,21 @@ async function main() {
   console.log("myket-publish: bundle create/update: OK");
   try {
     await myketUploadApk(endpoints, token, apkPath, apkFilename);
+    console.log("myket-publish: APK upload: OK (resultCode Successful)");
   } catch (err) {
-    const msg = String(err?.message ?? err);
-    if (msg.includes("ReleaseNotFound")) {
-      throw new Error(
-        `${msg} — no draft bundle exists for the upload to attach to. Create the draft version in the Myket panel (APK + changelog, save as draft only), then retry`,
+    const c = classifyUploadError(err);
+    if (c.kind === "already-staged") {
+      console.log(
+        `myket-publish: note: upload reports RepeatedVersionCode — build ${versionCode} is already registered; verifying what is staged before commit`,
       );
+    } else if (c.kind === "no-draft") {
+      throw new Error(
+        `${c.message} — no draft bundle exists for the upload to attach to. Create the draft version in the Myket panel (APK + changelog, save as draft only), then retry`,
+      );
+    } else {
+      throw err;
     }
-    throw err;
   }
-  console.log("myket-publish: APK upload: OK (resultCode Successful)");
   const afterUpload = await myketGetList(endpoints, token);
   const ours = assertOurReleasePresent(afterUpload, { title, versionCode });
   console.log(

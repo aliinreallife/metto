@@ -12,6 +12,7 @@ import {
   buildReleaseBundlePayload,
   buildUploadFormData,
   bundleTitleForTag,
+  classifyUploadError,
   commitMessageForTag,
   decideMyketAction,
   getCurrentBundleFromList,
@@ -347,13 +348,24 @@ describe("myket-publish.mjs post-upload verification + downgrade guard", () => {
     expect(maxVersionCodeFromList({})).toBeNull();
   });
 
-  it("allows re-submitting the identical build, refuses older ones", () => {
+    it("allows re-submitting the identical build, refuses older ones", () => {
+
     const listJson = { releases: [{ versions: [{ versionCode: 7003 }] }] };
     expect(assertNoDowngrade({ tag: "v0.7.6", versionCode: 7006, listJson })).toBe(7003);
     expect(assertNoDowngrade({ tag: "v0.7.3", versionCode: 7003, listJson })).toBe(7003);
     expect(() => assertNoDowngrade({ tag: "v0.7.2", versionCode: 7002, listJson })).toThrow(
       /below store max versionCode 7003/,
     );
+  });
+
+  it("classifies upload failures: already-staged continues to verify, no-draft and fatal abort", () => {
+    // Seen live: re-uploading the already-registered 7006.
+    expect(classifyUploadError(new Error("Myket APK upload failed (RepeatedVersionCode): …")).kind).toBe(
+      "already-staged",
+    );
+    expect(classifyUploadError(new Error("… ReleaseNotFound …")).kind).toBe("no-draft");
+    expect(classifyUploadError(new Error("socket connection was closed")).kind).toBe("fatal");
+    expect(classifyUploadError("plain string failure").kind).toBe("fatal");
   });
 });
 
