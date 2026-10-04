@@ -27,7 +27,13 @@
 import { readFileSync, statSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { androidVersionFromTag } from "./android-version.mjs";
-import { extractChangelogSection, FA_SUBHEADING } from "./release-notes.mjs";
+import {
+  extractChangelogSection,
+  FA_SUBHEADING,
+  GROUP_HEADINGS,
+  GROUP_HEADINGS_EN,
+  GROUP_HEADINGS_FA,
+} from "./release-notes.mjs";
 
 export const MYKET_BASE_URL_DEFAULT = "https://developer.myket.ir";
 export const MYKET_PACKAGE_DEFAULT = "ir.metto.app";
@@ -82,15 +88,48 @@ export function commitMessageForTag(tag) {
 }
 
 /**
+ * Safety-net guard for the Myket EN description field: Myket's EN validator
+ * rejects Persian/Arabic-script characters. Since issue #102 the changelog
+ * source emits split headings (EN `### New`, FA `### جدید`), so the EN side
+ * arrives clean by construction — this stays as defense in depth (e.g. a
+ * stray Persian word in an English bullet) and for pre-split sections.
+ * The FA side is never passed through here.
+ */
+const ARABIC_SCRIPT_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
+
+export function sanitizeEnForMyket(text) {
+  return String(text ?? "")
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(ARABIC_SCRIPT_RE, "")
+        .replace(/\s+\/\s*$/, "")
+        .replace(/[ \t]{2,}/g, " ")
+        .trimEnd(),
+    )
+    .join("\n");
+}
+
+const EN_GROUP_SET = new Set(Object.values(GROUP_HEADINGS_EN));
+const FA_GROUP_SET = new Set(Object.values(GROUP_HEADINGS_FA));
+const LEGACY_GROUP_SET = new Set(Object.values(GROUP_HEADINGS));
+const LEGACY_TO_EN = new Map(Object.keys(GROUP_HEADINGS).map((g) => [GROUP_HEADINGS[g], GROUP_HEADINGS_EN[g]]));
+const EN_TO_FA = new Map(Object.keys(GROUP_HEADINGS_EN).map((g) => [GROUP_HEADINGS_EN[g], GROUP_HEADINGS_FA[g]]));
+
+/**
  * Split an extracted CHANGELOG section body into Myket EN/FA descriptions.
  *
  * - Sends the COMPLETE section content; never truncates (no documented Myket
  *   length limit exists today — if Myket later returns a length validation
  *   error, add an explicit evidence-based limit then, not now).
- * - en: everything outside `#### فارسی` blocks (intro + group headings +
- *   English bullets), marker lines dropped.
- * - fa: parent group headings (bilingual `### ... / ...` lines) + Persian
- *   bullets only, so the Persian listing reads standalone.
+ * - en: everything outside `#### فارسی` blocks (intro + English-only group
+ *   headings like `### New` + English bullets), marker lines dropped, then
+ *   passed through sanitizeEnForMyket as a guard.
+ * - fa: Persian-only group headings (`### جدید`, …) + Persian bullets only,
+ *   so the Persian listing reads standalone.
+ * - Pre-split (legacy bilingual `### New / جدید`) sections are still
+ *   accepted: the EN side is normalized to the English-only heading and the
+ *   FA side inherits the matching Persian-only heading.
  * - Falls back to the non-empty side when one side is missing; throws when
  *   both are empty.
  */
@@ -101,43 +140,73 @@ export function splitMyketDescriptions(sectionBody) {
   const enLines = [];
   const faLines = [];
   let inFa = false;
-  let lastGroupHeading = null;
+  let lastFaHeading = null;
   let faHasGroup = false;
 
   const isFaMarker = (l) => l.trim() === FA_SUBHEADING;
   const isHeading = (l) => /^\s*#{1,6}\s/.test(l);
-  const isGroupHeading = (l) => /^\s*###\s/.test(l) && !isFaMarker(l);
+
+  const pushFaHeading = (heading) => {
+    if (faLines.length > 0) faLines.push("");
+    faLines.push(heading, "");
+    faHasGroup = true;
+  };
 
   for (const line of lines) {
+    const t = line.trim();
     if (isFaMarker(line)) {
       inFa = true;
       faHasGroup = false;
       continue;
     }
+    if (FA_GROUP_SET.has(t)) {
+      // Persian-only group heading inside the FA block.
+      if (!inFa) inFa = true;
+      pushFaHeading(line);
+      continue;
+    }
+    if (LEGACY_GROUP_SET.has(t)) {
+      // Pre-split bilingual heading: normalize EN side, derive the FA side.
+      const enHeading = LEGACY_TO_EN.get(t);
+      lastFaHeading = EN_TO_FA.get(enHeading) ?? null;
+      inFa = false;
+      enLines.push(enHeading);
+      faHasGroup = false;
+      continue;
+    }
+    if (EN_GROUP_SET.has(t)) {
+      lastFaHeading = EN_TO_FA.get(t) ?? null;
+      inFa = false;
+      enLines.push(line);
+      faHasGroup = false;
+      continue;
+    }
     if (isHeading(line)) {
-      if (isGroupHeading(line)) {
-        lastGroupHeading = line;
-        inFa = false;
-        enLines.push(line);
-        // Group heading is pushed to faLines lazily on first FA content line,
-        // so groups without Persian bullets leave no empty heading behind.
-        faHasGroup = false;
+      if (/^\s*###\s/.test(line)) {
+        // Unknown ### heading: keep language sides separate.
+        if (inFa) {
+          pushFaHeading(line);
+        } else {
+          lastFaHeading = null;
+          faHasGroup = false;
+          enLines.push(line);
+        }
       } else if (/^\s*####\s/.test(line)) {
         // Any other #### subsection ends the FA block.
         inFa = false;
+        lastFaHeading = null;
         enLines.push(line);
       } else {
         inFa = false;
+        lastFaHeading = null;
         enLines.push(line);
       }
       continue;
     }
     if (inFa) {
       if (line.trim() === "" && faLines.length === 0) continue;
-      if (!faHasGroup && lastGroupHeading) {
-        if (faLines.length > 0) faLines.push("");
-        faLines.push(lastGroupHeading, "");
-        faHasGroup = true;
+      if (!faHasGroup && lastFaHeading) {
+        pushFaHeading(lastFaHeading);
       }
       faLines.push(line);
     } else {
@@ -145,7 +214,7 @@ export function splitMyketDescriptions(sectionBody) {
     }
   }
 
-  const en = enLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  const en = sanitizeEnForMyket(enLines.join("\n")).replace(/\n{3,}/g, "\n\n").trim();
   const faRaw = faLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
   if (!en && !faRaw) throw new Error("empty changelog section (no EN/FA descriptions to derive)");
   return { en: en || faRaw, fa: faRaw || en };

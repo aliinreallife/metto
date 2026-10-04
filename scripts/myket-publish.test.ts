@@ -18,6 +18,7 @@ import {
   maxVersionCodeFromList,
   myketEndpoints,
   normalizeMyketStatus,
+  sanitizeEnForMyket,
   splitMyketDescriptions,
   validatePackageId,
   validateRolloutPercent,
@@ -52,12 +53,14 @@ function tempChangelog(sectionBody: string, tag = "v0.1.0"): string {
 
 const SECTION_FIXTURE = `First installable Android release of Metto.
 
-### New / جدید
+### New
 
 - Metto is now available as an installable Android app.
 - The app shell keeps working offline after the first load.
 
 #### فارسی
+
+### جدید
 
 - متو حالا به‌صورت اپلیکیشن قابل‌نصب اندروید منتشر شده است.
 - پوسته برنامه بعد از اولین بازدید بدون اینترنت هم کار می‌کند.
@@ -67,10 +70,10 @@ describe("myket-publish.mjs EN/FA transformation (exact, no truncation)", () => 
   it("splits English and Persian without truncation or marker leakage", () => {
     const { en, fa } = splitMyketDescriptions(SECTION_FIXTURE);
     expect(en).toBe(
-      `First installable Android release of Metto.\n\n### New / جدید\n\n- Metto is now available as an installable Android app.\n- The app shell keeps working offline after the first load.`,
+      `First installable Android release of Metto.\n\n### New\n\n- Metto is now available as an installable Android app.\n- The app shell keeps working offline after the first load.`,
     );
     expect(fa).toBe(
-      `### New / جدید\n\n- متو حالا به‌صورت اپلیکیشن قابل‌نصب اندروید منتشر شده است.\n- پوسته برنامه بعد از اولین بازدید بدون اینترنت هم کار می‌کند.`,
+      `### جدید\n\n- متو حالا به‌صورت اپلیکیشن قابل‌نصب اندروید منتشر شده است.\n- پوسته برنامه بعد از اولین بازدید بدون اینترنت هم کار می‌کند.`,
     );
     // No changelog scaffolding leaks into store descriptions.
     expect(en).not.toContain("#### فارسی");
@@ -81,28 +84,50 @@ describe("myket-publish.mjs EN/FA transformation (exact, no truncation)", () => 
   });
 
   it("keeps multi-group structure in both languages", () => {
-    const body = `### Improvements / بهبودها\n\n- Faster search.\n\n#### فارسی\n\n- جست‌وجو سریع‌تر شد.\n\n### Fixes / رفع مشکلات\n\n- Fixed midnight crash.\n\n#### فارسی\n\n- کرش بعد از نیمه‌شب رفع شد.\n`;
+    const body = `### Improvements\n\n- Faster search.\n\n#### فارسی\n\n### بهبودها\n\n- جست‌وجو سریع‌تر شد.\n\n### Fixes\n\n- Fixed midnight crash.\n\n#### فارسی\n\n### رفع مشکلات\n\n- کرش بعد از نیمه‌شب رفع شد.\n`;
     const { en, fa } = splitMyketDescriptions(body);
-    expect(en).toContain("### Improvements / بهبودها");
-    expect(en).toContain("### Fixes / رفع مشکلات");
+    expect(en).toContain("### Improvements");
+    expect(en).toContain("### Fixes");
     expect(en).toContain("- Faster search.");
     expect(en).toContain("- Fixed midnight crash.");
     expect(en).not.toContain("جست‌وجو");
-    expect(fa).toContain("### Improvements / بهبودها");
-    expect(fa).toContain("### Fixes / رفع مشکلات");
+    expect(fa).toContain("### بهبودها");
+    expect(fa).toContain("### رفع مشکلات");
     expect(fa).toContain("- جست‌وجو سریع‌تر شد.");
     expect(fa).toContain("- کرش بعد از نیمه‌شب رفع شد.");
     expect(fa).not.toContain("- Faster search.");
   });
 
+  it("accepts legacy bilingual sections, normalizing both sides (issue #102)", () => {
+    const body = `### Improvements / بهبودها\n\n- Faster search.\n\n#### فارسی\n\n- جست‌وجو سریع‌تر شد.\n`;
+    const { en, fa } = splitMyketDescriptions(body);
+    expect(en).toContain("### Improvements");
+    expect(en).not.toContain("بهبودها");
+    expect(fa).toContain("### بهبودها");
+    expect(fa).toContain("- جست‌وجو سریع‌تر شد.");
+  });
+
   it("falls back to the non-empty side when one language is missing", () => {
-    const { en, fa } = splitMyketDescriptions(`### New / جدید\n\n- Only English here.\n`);
+    const { en, fa } = splitMyketDescriptions(`### New\n\n- Only English here.\n`);
     expect(en).toContain("Only English here.");
     expect(fa).toBe(en);
   });
 
   it("rejects an empty section", () => {
     expect(() => splitMyketDescriptions("   \n  ")).toThrow(/empty changelog section/);
+  });
+
+  it("keeps the EN sanitizer as a guard so Myket's EN validator accepts it", () => {
+    const AR = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    const body = `### New\n\n- App icon now supports themed icons.\n\n#### فارسی\n\n### جدید\n\n- آیکون برنامه از تم پشتیبانی می‌کند.\n`;
+    const { en, fa } = splitMyketDescriptions(body);
+    expect(en).toContain("### New");
+    expect(AR.test(en)).toBe(false);
+    expect(sanitizeEnForMyket("### Improvements / بهبودها")).toBe("### Improvements");
+    expect(sanitizeEnForMyket("- Faster search.")).toBe("- Faster search.");
+    // FA side keeps its script.
+    expect(fa).toContain("آیکون برنامه از تم پشتیبانی می‌کند.");
+    expect(fa).toContain("### جدید");
   });
 });
 

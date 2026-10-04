@@ -48,8 +48,10 @@ Release notes: none
 
 - Allowed values: `New`, `Improvement`, `Fix`. Omit the line when unsure.
 - The value only decides which CHANGELOG group the bullets land in
-  (`New / جدید`, `Improvements / بهبودها`, `Fixes / رفع مشکلات`).
-- No category → `Uncategorized / بدون دسته‌بندی` bucket, sorted by a human
+  (EN `### New` / FA `### جدید`, EN `### Improvements` / FA `### بهبودها`,
+  EN `### Fixes` / FA `### رفع مشکلات`).
+- No category → `Uncategorized` bucket (EN `### Uncategorized` /
+  FA `### بدون دسته‌بندی`), sorted by a human
   during release review. Never invent or reinterpret categories from prose.
 - An invalid value fails CI — fix the value or delete the line.
 

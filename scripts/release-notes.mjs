@@ -25,6 +25,24 @@
 // bucket for snippets without a Category — a human sorts them during review.
 export const GROUP_ORDER = ["New", "Improvement", "Fix", "Uncategorized"];
 
+export const GROUP_HEADINGS_EN = {
+  New: "### New",
+  Improvement: "### Improvements",
+  Fix: "### Fixes",
+  Uncategorized: "### Uncategorized",
+};
+
+export const GROUP_HEADINGS_FA = {
+  New: "### جدید",
+  Improvement: "### بهبودها",
+  Fix: "### رفع مشکلات",
+  Uncategorized: "### بدون دسته‌بندی",
+};
+
+// Legacy bilingual headings (pre-split format, see issue #102). Kept for
+// backward-compatible parsing of existing CHANGELOG sections — new sections
+// always emit the split shape (EN heading up top, FA heading inside the
+// `#### فارسی` block). Never emit these; match them when reading.
 export const GROUP_HEADINGS = {
   New: "### New / جدید",
   Improvement: "### Improvements / بهبودها",
@@ -33,6 +51,35 @@ export const GROUP_HEADINGS = {
 };
 
 export const FA_SUBHEADING = "#### فارسی";
+
+const EN_HEADING_GROUP = new Map(Object.entries(GROUP_HEADINGS_EN).map(([g, h]) => [h, g]));
+const FA_HEADING_GROUP = new Map(Object.entries(GROUP_HEADINGS_FA).map(([g, h]) => [h, g]));
+const LEGACY_HEADING_GROUP = new Map(Object.entries(GROUP_HEADINGS).map(([g, h]) => [h, g]));
+
+/**
+ * Classify a `###` group heading line. Returns { group, lang } with lang one
+ * of "en" | "fa" | "legacy", or null when the line is no known group heading.
+ * Used to accept pre-split sections while emitting only the split shape.
+ */
+export function groupForHeading(line) {
+  const t = String(line ?? "").trim();
+  if (EN_HEADING_GROUP.has(t)) return { group: EN_HEADING_GROUP.get(t), lang: "en" };
+  if (FA_HEADING_GROUP.has(t)) return { group: FA_HEADING_GROUP.get(t), lang: "fa" };
+  if (LEGACY_HEADING_GROUP.has(t)) return { group: LEGACY_HEADING_GROUP.get(t), lang: "legacy" };
+  return null;
+}
+
+/**
+ * Whether a heading line ends the current EN group block during merge.
+ * FA group headings (`### جدید`, …) live INSIDE their group's `#### فارسی`
+ * block, so they never end it. The marker itself never ends it either.
+ */
+function endsGroupBlock(line) {
+  const t = String(line ?? "").trim();
+  if (t === FA_SUBHEADING) return false;
+  if (FA_HEADING_GROUP.has(t)) return false;
+  return /^\s*#{2,6}\s/.test(line);
+}
 
 // Accepted Category values (case-insensitive). A small fixed alias map —
 // deterministic normalization, never prose interpretation.
@@ -339,9 +386,9 @@ export function renderVersionSection({ version, date, groups }) {
       for (const b of item.en) enLines.push(`- ${item.pr ? withPrRef(b, item.pr) : b}`);
       for (const b of item.fa) faLines.push(`- ${item.pr ? withPrRef(b, item.pr) : b}`);
     }
-    out.push(GROUP_HEADINGS[group], "");
+    out.push(GROUP_HEADINGS_EN[group], "");
     if (enLines.length > 0) out.push(...enLines, "");
-    if (faLines.length > 0) out.push(FA_SUBHEADING, "", ...faLines, "");
+    if (faLines.length > 0) out.push(FA_SUBHEADING, "", GROUP_HEADINGS_FA[group], "", ...faLines, "");
   }
   // Trim trailing blank lines, ensure single trailing newline handled by caller.
   while (out.length > 0 && out[out.length - 1] === "") out.pop();
@@ -374,7 +421,7 @@ export function extractChangelogSection(changelogText, version) {
  */
 export function mergeIntoChangelog(changelogText, { version, date, items }) {
   const groupOf = (item) =>
-    item.group && GROUP_HEADINGS[item.group] ? item.group : "Uncategorized";
+    item.group && GROUP_ORDER.includes(item.group) ? item.group : "Uncategorized";
 
   // Desired bullet lines per group.
   const desired = new Map(GROUP_ORDER.map((g) => [g, []]));
@@ -433,7 +480,8 @@ export function mergeIntoChangelog(changelogText, { version, date, items }) {
   let added = 0;
   // Work on a mutable copy of the section slice.
   const section = lines.slice(headIdx, endIdx);
-  const groupHeadingLine = (g) => GROUP_HEADINGS[g];
+  const groupHeadingLine = (g) => GROUP_HEADINGS_EN[g];
+  const legacyHeadingLine = (g) => GROUP_HEADINGS[g];
 
   for (const g of GROUP_ORDER) {
     const wanted = desired.get(g).filter((d) => !existing.has(bulletIdentity(d.line)));
@@ -441,17 +489,24 @@ export function mergeIntoChangelog(changelogText, { version, date, items }) {
     const enWanted = wanted.filter((d) => d.lang === "en").map((d) => d.line);
     const faWanted = wanted.filter((d) => d.lang === "fa").map((d) => d.line);
 
-    let gIdx = section.findIndex((l) => l.trim() === groupHeadingLine(g));
+    let gIdx = section.findIndex(
+      (l) => l.trim() === groupHeadingLine(g) || l.trim() === legacyHeadingLine(g),
+    );
     if (gIdx === -1) {
       // Append a new group block at the end of the section.
       while (section.length > 0 && section[section.length - 1].trim() === "") section.pop();
       section.push("", groupHeadingLine(g), "");
       gIdx = section.length - 3 + 2; // index of heading line
+    } else if (section[gIdx].trim() === legacyHeadingLine(g)) {
+      // Migrate a pre-split bilingual heading to the EN-only heading in place.
+      section[gIdx] = groupHeadingLine(g);
     }
-    // Group block ends at the next ### heading / ## heading or section end.
+    // Group block ends at the next block-ending heading or section end.
+    // FA group headings live inside the block (after the marker), so they
+    // never end it — see endsGroupBlock().
     let blockEnd = section.length;
     for (let i = gIdx + 1; i < section.length; i++) {
-      if (/^\s*#{2,6}\s/.test(section[i])) {
+      if (endsGroupBlock(section[i])) {
         blockEnd = i;
         break;
       }
@@ -478,16 +533,30 @@ export function mergeIntoChangelog(changelogText, { version, date, items }) {
       let fIdx = -1;
       let bEnd = section.length;
       for (let i = gIdx + 1; i < section.length; i++) {
-        if (/^\s*#{2,6}\s/.test(section[i]) && section[i].trim() !== FA_SUBHEADING) {
+        if (endsGroupBlock(section[i])) {
           bEnd = i;
           break;
         }
         if (section[i].trim() === FA_SUBHEADING) fIdx = i;
       }
+      const faHeading = GROUP_HEADINGS_FA[g];
       if (fIdx === -1) {
         while (bEnd - 1 > fIdx && section[bEnd - 1]?.trim() === "") bEnd -= 1;
-        section.splice(bEnd, 0, "", FA_SUBHEADING, "", ...faWanted);
+        section.splice(bEnd, 0, "", FA_SUBHEADING, "", faHeading, "", ...faWanted);
       } else {
+        // Ensure the Persian-only group heading follows the marker
+        // (legacy sections have bare bullets here — this migrates them).
+        let k = fIdx + 1;
+        while (k < bEnd && section[k]?.trim() === "") k += 1;
+        if (section[k]?.trim() !== faHeading) {
+          const seen = section[k]?.trim();
+          if (seen && (FA_HEADING_GROUP.has(seen) || LEGACY_HEADING_GROUP.has(seen))) {
+            section[k] = faHeading;
+          } else {
+            section.splice(fIdx + 1, 0, "", faHeading, "");
+            bEnd += 3;
+          }
+        }
         let at = bEnd;
         // Insert before trailing blank lines of the block.
         while (at - 1 > fIdx && section[at - 1]?.trim() === "") at -= 1;
