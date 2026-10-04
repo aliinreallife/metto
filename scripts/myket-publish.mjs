@@ -259,58 +259,63 @@ export function maxVersionCodeFromList(json) {
 }
 
 /**
- * Refuse to submit an older (or equal) build over a newer store listing.
- * Pure check on the pre-PUT list state; the tag's own versionCode comes from
- * strict semver derivation, so only genuine regressions trip it.
+ * Refuse to submit an older build over a newer store listing. Equal codes
+ * are allowed: re-submitting the identical build (e.g. retrying after an
+ * aborted run that already uploaded) is idempotent, not a downgrade.
  */
 export function assertNoDowngrade({ tag, versionCode, listJson }) {
   const max = maxVersionCodeFromList(listJson);
-  if (max !== null && versionCode <= max) {
+  if (max !== null && versionCode < max) {
     throw new Error(
-      `refusing to submit ${tag} (versionCode ${versionCode}) over store max versionCode ${max} — tag a newer version instead`,
+      `refusing to submit ${tag} (versionCode ${versionCode}) below store max versionCode ${max} — tag a newer version instead`,
     );
   }
   return max;
 }
 
 /**
- * Post-upload verification: OUR release must exist as its own entry —
- * matched by exact title across ALL releases (no createdAt ordering
- * assumptions), never in a review/live state, and (when versionCode is
- * given) carrying exactly our uploaded versionCode.
+ * Post-upload verification: OUR uploaded build must be present as a
+ * committable entry. Identity key is OUR versionCode inside versions[],
+ * searched across ALL releases with no createdAt ordering assumptions —
+ * Myket titles auto-created drafts itself (e.g. "CD - …") and may ignore
+ * our title, so title is only a preference, never the key.
  *
- * Why verify after upload instead of after PUT: per Myket's docs the upload
- * endpoint "adds a new bundle", and a fresh entry may only materialize in
- * listings once it carries a version. Verifying before upload therefore
- * rejects the documented happy path. The commit step still fires only on
- * positive proof, so a misdirected upload can never be submitted: the worst
- * case is an uncommitted draft row visible in the panel (reversible, never
- * published, never sent for review).
+ * A match inside a review/live entry is refused outright. No match means
+ * the upload landed nowhere committable: abort before commit (an
+ * uncommitted draft row is reversible, never published, never submitted).
  *
  * @param {{ releases?: Array<{ title?: unknown, status?: unknown, versions?: Array<{ versionCode?: unknown }> }> }} listJson
  * @param {{ title: string, versionCode?: number | string | null }} [opts]
  */
 export function assertOurReleasePresent(listJson, { title, versionCode = null } = {}) {
-  const releases = listJson?.releases;
-  const ours = Array.isArray(releases) ? releases.find((r) => r?.title === title) : undefined;
-  if (!ours) {
+  const releases = Array.isArray(listJson?.releases) ? listJson.releases : [];
+  const code = versionCode === null || versionCode === undefined ? null : Number(versionCode);
+  const carrying =
+    code === null
+      ? []
+      : releases.filter(
+          (r) => Array.isArray(r?.versions) && r.versions.some((v) => Number(v?.versionCode) === code),
+        );
+  if (carrying.length === 0) {
     throw new Error(
-      `verification failed: no bundle titled ${JSON.stringify(title)} exists after upload — Myket opened nothing. Create the draft version in the Myket panel (APK + changelog, save as draft only), then retry`,
+      `verification failed: no bundle carries versionCode ${code} after upload — Myket staged nothing committable. Create the draft version in the Myket panel (APK + changelog, save as draft only), then retry`,
     );
   }
-  const st = normalizeMyketStatus(ours.status);
-  if (st === "WaitingForApproval" || st === "Approved") {
+  const eligible = carrying.filter((r) => {
+    const st = normalizeMyketStatus(r?.status);
+    return st !== "WaitingForApproval" && st !== "Approved";
+  });
+  if (eligible.length === 0) {
+    const only = carrying[0];
     throw new Error(
-      `verification failed: bundle ${JSON.stringify(title)} is in ${st} state — refusing to submit a review/live entry`,
+      `verification failed: versionCode ${code} is only present inside ${only?.status} entry ${JSON.stringify(only?.title)} — refusing to submit a review/live entry`,
     );
   }
-  if (versionCode !== null && versionCode !== undefined) {
-    const codes = Array.isArray(ours.versions) ? ours.versions.map((v) => Number(v?.versionCode)) : [];
-    if (!codes.includes(Number(versionCode))) {
-      throw new Error(
-        `verification failed: bundle ${JSON.stringify(title)} does not carry versionCode ${versionCode} (has [${codes.join(", ")}]) — the upload may have landed elsewhere; aborting before commit`,
-      );
-    }
+  const ours = eligible.find((r) => r?.title === title) ?? eligible[0];
+  if (ours?.title !== title) {
+    console.log(
+      `myket-publish: note: committing draft titled ${JSON.stringify(ours?.title)} (Myket-titled; identity proven by versionCode ${code})`,
+    );
   }
   return ours;
 }

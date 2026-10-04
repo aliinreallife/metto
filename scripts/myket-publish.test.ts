@@ -205,82 +205,68 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
 
 describe("myket-publish.mjs post-upload verification + downgrade guard", () => {
   const entry = (title: string, status: string, codes: unknown[] = []) => ({
-    releases: [
-      {
-        title,
-        status,
-        createdAt: "2026-10-03T00:00:00Z",
-        id: "new",
-        versions: codes.map((versionCode) => ({ versionCode })),
-      },
-    ],
+    title,
+    status,
+    createdAt: "2026-10-03T00:00:00Z",
+    id: "e",
+    versions: codes.map((versionCode) => ({ versionCode })),
   });
+  // Live shape observed on the v0.7.6 runs: Myket titles auto-created drafts
+  // itself ("CD - …"), so identity is proven by versionCode, not title.
   const live076 = () => ({
     releases: [
-      {
-        title: "0.7.3",
-        status: "تایید شده",
-        createdAt: "2026-10-03T00:00:00Z",
-        id: "old",
-        versions: [{ versionCode: 7003 }],
-      },
-      {
-        title: "metto v0.7.6",
-        status: "JustCreated",
-        createdAt: "2026-10-04T00:00:00Z",
-        id: "new",
-        versions: [{ versionCode: 7006 }],
-      },
+      { ...entry("0.7.3", "تایید شده", [7003]), createdAt: "2026-10-03T00:00:00Z" },
+      { ...entry("CD - ۱۴۰۵/۰۷/۱۲ ۱۱:۰۱:۰۱", "پیش‌نویس", [7006]), createdAt: "2026-10-04T00:00:00Z" },
     ],
   });
 
-  it("accepts our entry by title with our versionCode, regardless of order", () => {
+  it("accepts our versionCode inside a Myket-titled draft (live shape)", () => {
     const cur = assertOurReleasePresent(live076(), { title: "metto v0.7.6", versionCode: 7006 });
-    expect(cur?.status).toBe("JustCreated");
+    expect(cur?.status).toBe("پیش‌نویس");
   });
 
-  it("finds our entry even when it is not the newest", () => {
+  it("prefers the title match when several entries carry the code", () => {
     const list = {
       releases: [
-        { title: "metto v0.7.6", status: "JustCreated", createdAt: "2020-01-01T00:00:00Z", versions: [{ versionCode: 7006 }] },
-        { title: "0.7.3", status: "تایید شده", createdAt: "2026-10-03T00:00:00Z", versions: [{ versionCode: 7003 }] },
+        entry("CD - other", "JustCreated", [7006]),
+        entry("metto v0.7.6", "JustCreated", [7006]),
       ],
     };
-    expect(assertOurReleasePresent(list, { title: "metto v0.7.6", versionCode: 7006 })?.status).toBe(
-      "JustCreated",
+    expect(assertOurReleasePresent(list, { title: "metto v0.7.6", versionCode: 7006 })?.title).toBe(
+      "metto v0.7.6",
     );
   });
 
-  it("rejects when no entry carries our title", () => {
+  it("rejects when no entry carries our versionCode", () => {
     expect(() =>
-      assertOurReleasePresent(entry("0.7.3", "تایید شده", [7003]), {
+      assertOurReleasePresent({ releases: [entry("0.7.3", "X", [7003])] }, {
         title: "metto v0.7.6",
         versionCode: 7006,
       }),
-    ).toThrow(/no bundle titled "metto v0.7.6"/);
+    ).toThrow(/no bundle carries versionCode 7006/);
+    expect(() => assertOurReleasePresent({ releases: [] }, { title: "metto v0.7.6" })).toThrow(
+      /no bundle carries versionCode null/,
+    );
   });
 
-  it("rejects submitting a review/live entry even with our title", () => {
-    for (const s of ["WaitingForApproval", "Approved", "تایید شده"]) {
+  it("rejects when our code lives only inside review/live entries", () => {
+    for (const s of ["WaitingForApproval", "Approved"]) {
       expect(() =>
-        assertOurReleasePresent(entry("metto v0.7.6", s, [7006]), { title: "metto v0.7.6", versionCode: 7006 }),
+        assertOurReleasePresent({ releases: [entry("0.7.3", s, [7006])] }, {
+          title: "metto v0.7.6",
+          versionCode: 7006,
+        }),
       ).toThrow(/refusing to submit/);
     }
   });
 
-  it("rejects when our versionCode is missing from the entry", () => {
+  it("rejects an entry whose versions lack our code", () => {
     expect(() =>
-      assertOurReleasePresent(entry("metto v0.7.6", "JustCreated", [7003]), {
+      assertOurReleasePresent({ releases: [entry("metto v0.7.6", "JustCreated", [7003])] }, {
         title: "metto v0.7.6",
         versionCode: 7006,
       }),
-    ).toThrow(/does not carry versionCode 7006/);
-  });
-
-  it("rejects an empty list", () => {
-    expect(() => assertOurReleasePresent({ releases: [] }, { title: "metto v0.7.6" })).toThrow(
-      /no bundle titled/,
-    );
+    ).toThrow(/no bundle carries versionCode 7006/);
   });
 
   it("finds the max versionCode across releases", () => {
@@ -297,14 +283,12 @@ describe("myket-publish.mjs post-upload verification + downgrade guard", () => {
     expect(maxVersionCodeFromList({})).toBeNull();
   });
 
-  it("refuses a tag at or below the store max versionCode", () => {
+  it("allows re-submitting the identical build, refuses older ones", () => {
     const listJson = { releases: [{ versions: [{ versionCode: 7003 }] }] };
     expect(assertNoDowngrade({ tag: "v0.7.6", versionCode: 7006, listJson })).toBe(7003);
-    expect(() => assertNoDowngrade({ tag: "v0.7.3", versionCode: 7003, listJson })).toThrow(
-      /over store max versionCode 7003/,
-    );
+    expect(assertNoDowngrade({ tag: "v0.7.3", versionCode: 7003, listJson })).toBe(7003);
     expect(() => assertNoDowngrade({ tag: "v0.7.2", versionCode: 7002, listJson })).toThrow(
-      /tag a newer version/,
+      /below store max versionCode 7003/,
     );
   });
 });
