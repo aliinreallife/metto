@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMetro } from "@/app/providers";
 import { persianDigits } from "@/lib/i18n";
 import { LINES } from "@/lib/metro/lines";
@@ -17,34 +17,19 @@ import { SearchIcon, TrainIcon } from "./Icons";
 
 const ALL_LINE_IDS = [1, 2, 3, 4, 5, 6, 7];
 
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return reduced;
-}
-
 /** A train that runs along a real route, so it never leaves its track. */
 function TrainOnRoute({
   lineId,
   routeId,
   dur,
   begin,
-  reduced,
 }: {
   lineId: number;
   routeId: string;
   dur: number;
   begin: string;
-  reduced: boolean;
 }) {
   const color = lineColor(lineId);
-  if (reduced) return null;
 
   return (
     <g filter="url(#metto-train-shadow)">
@@ -69,7 +54,6 @@ function TrainOnRoute({
 export function TehranMap() {
   const { lang } = useMetro();
   const isFa = lang === "fa";
-  const reduced = usePrefersReducedMotion();
   const { stations, byId, lines } = useWelcomeMap();
   const labels = useMemo(() => buildLabels(byId), [byId]);
 
@@ -283,16 +267,16 @@ export function TehranMap() {
           </g>
 
           {activeLines.includes(1) && (
-            <TrainOnRoute lineId={1} routeId="metto-route-1" dur={16} begin="0s" reduced={reduced} />
+            <TrainOnRoute lineId={1} routeId="metto-route-1" dur={16} begin="0s" />
           )}
           {activeLines.includes(2) && (
-            <TrainOnRoute lineId={2} routeId="metto-route-2" dur={19} begin="-6s" reduced={reduced} />
+            <TrainOnRoute lineId={2} routeId="metto-route-2" dur={19} begin="-6s" />
           )}
           {activeLines.includes(3) && (
-            <TrainOnRoute lineId={3} routeId="metto-route-3" dur={21} begin="-11s" reduced={reduced} />
+            <TrainOnRoute lineId={3} routeId="metto-route-3" dur={21} begin="-11s" />
           )}
           {activeLines.includes(6) && (
-            <TrainOnRoute lineId={6} routeId="metto-route-6" dur={23} begin="-4s" reduced={reduced} />
+            <TrainOnRoute lineId={6} routeId="metto-route-6" dur={23} begin="-4s" />
           )}
 
           <g>
@@ -425,12 +409,10 @@ export function TehranMap() {
             <span className="h-2 w-2 rounded-full bg-primary" />
             {isFa ? "ایستگاه" : "Station"}
           </span>
-          {!reduced && (
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <TrainIcon className="h-3.5 w-3.5 text-primary" />
-              {isFa ? "قطار روی ریل" : "Train on track"}
-            </span>
-          )}
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <TrainIcon className="h-3.5 w-3.5 text-primary" />
+            {isFa ? "قطار روی ریل" : "Train on track"}
+          </span>
           <span className="tnum text-muted-foreground">
             {isFa
               ? `${persianDigits(visibleStations.length, lang)} از ${persianDigits(stations.length, lang)} ایستگاه`

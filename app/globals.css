@@ -352,17 +352,6 @@
   animation: drift-y 7s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track,
-  .run-rail,
-  .run-rail-v,
-  .soft-pulse,
-  .heart-beat,
-  .drift-y {
-    animation: none !important;
-  }
-}
-
 /* Hide painted scrollbar chrome on the main tab lists (mobile-app pattern).
    Scrolling stays fully native (touch, wheel, keyboard, screen readers) —
    only the OS scrollbar track/buttons/thumb are not painted, so classic
