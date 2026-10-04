@@ -162,12 +162,13 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
     expect(d.reason).toMatch(/WaitingForApproval/);
   });
 
-  it("maps the observed Persian Approved status to the new-entry path", () => {
-    // Seen live on the v0.7.6 run: the API returned "تایید شده".
+  it("maps live-observed Persian statuses to their designed branches", () => {
+    // تایید شده seen on the v0.7.6 run; پیش‌نویس seen once our PUT+upload
+    // materialized a draft.
     expect(normalizeMyketStatus("تایید شده")).toBe("Approved");
-    const d = decideMyketAction("تایید شده");
-    expect(d.proceed).toBe(true);
-    expect(d.reason).toMatch(/new bundle entry/);
+    expect(normalizeMyketStatus("پیش‌نویس")).toBe("JustCreated");
+    expect(decideMyketAction("پیش‌نویس").proceed).toBe(true);
+    expect(decideMyketAction("پیش‌نویس").reason).toMatch(/JustCreated/);
   });
 
   it("leaves unmapped statuses to fail-safe abort", () => {

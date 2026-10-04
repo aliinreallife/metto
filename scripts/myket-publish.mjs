@@ -226,8 +226,8 @@ export function getCurrentBundleFromList(json) {
 /**
  * Normalize a Myket bundle status to its English API code.
  *
- * The API has been observed returning Persian display strings (e.g. the
- * v0.7.6 run saw "تایید شده" instead of "Approved"). Only mappings proven
+ * The API has been observed returning Persian display strings (v0.7.6 run:
+ * "تایید شده" for Approved; later "پیش‌نویس" for a fresh draft). Only mappings proven
  * by live API responses belong here — never guess a mapping, because a
  * wrong proceed=true mapping could overwrite a live release. Anything
  * unmapped still aborts via the default branch below (fail-safe).
@@ -235,6 +235,7 @@ export function getCurrentBundleFromList(json) {
 export function normalizeMyketStatus(status) {
   const s = String(status ?? "").trim();
   if (s === "تایید شده") return "Approved"; // observed live on the v0.7.6 run
+  if (s === "پیش‌نویس") return "JustCreated"; // observed live: API-created draft
   return s;
 }
 
