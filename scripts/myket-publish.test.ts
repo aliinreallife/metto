@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   MAX_APK_BYTES,
-  assertFreshDraftForTitle,
   assertNoDowngrade,
+  assertOurReleasePresent,
   buildCommitPayload,
   buildReleaseBundlePayload,
   buildUploadFormData,
@@ -188,32 +188,84 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
   });
 });
 
-describe("myket-publish.mjs post-PUT draft verification + downgrade guard", () => {
-  const draftList = (title: string, status: string) => ({
-    releases: [{ title, status, createdAt: "2026-10-03T00:00:00Z", id: "new" }],
+describe("myket-publish.mjs post-upload verification + downgrade guard", () => {
+  const entry = (title: string, status: string, codes: unknown[] = []) => ({
+    releases: [
+      {
+        title,
+        status,
+        createdAt: "2026-10-03T00:00:00Z",
+        id: "new",
+        versions: codes.map((versionCode) => ({ versionCode })),
+      },
+    ],
+  });
+  const live076 = () => ({
+    releases: [
+      {
+        title: "0.7.3",
+        status: "تایید شده",
+        createdAt: "2026-10-03T00:00:00Z",
+        id: "old",
+        versions: [{ versionCode: 7003 }],
+      },
+      {
+        title: "metto v0.7.6",
+        status: "JustCreated",
+        createdAt: "2026-10-04T00:00:00Z",
+        id: "new",
+        versions: [{ versionCode: 7006 }],
+      },
+    ],
   });
 
-  it("accepts a fresh entry with our exact title", () => {
-    const cur = assertFreshDraftForTitle(draftList("metto v0.7.6", "JustCreated"), "metto v0.7.6");
+  it("accepts our entry by title with our versionCode, regardless of order", () => {
+    const cur = assertOurReleasePresent(live076(), { title: "metto v0.7.6", versionCode: 7006 });
     expect(cur?.status).toBe("JustCreated");
   });
 
-  it("rejects when the newest entry carries a foreign title", () => {
-    expect(() => assertFreshDraftForTitle(draftList("0.7.3", "JustCreated"), "metto v0.7.6")).toThrow(
-      /newest bundle is "0.7.3"/,
+  it("finds our entry even when it is not the newest", () => {
+    const list = {
+      releases: [
+        { title: "metto v0.7.6", status: "JustCreated", createdAt: "2020-01-01T00:00:00Z", versions: [{ versionCode: 7006 }] },
+        { title: "0.7.3", status: "تایید شده", createdAt: "2026-10-03T00:00:00Z", versions: [{ versionCode: 7003 }] },
+      ],
+    };
+    expect(assertOurReleasePresent(list, { title: "metto v0.7.6", versionCode: 7006 })?.status).toBe(
+      "JustCreated",
     );
   });
 
-  it("rejects uploading into a review/live entry even with our title", () => {
-    for (const s of ["WaitingForApproval", "Approved"]) {
-      expect(() => assertFreshDraftForTitle(draftList("metto v0.7.6", s), "metto v0.7.6")).toThrow(
-        /refusing to upload/,
-      );
+  it("rejects when no entry carries our title", () => {
+    expect(() =>
+      assertOurReleasePresent(entry("0.7.3", "تایید شده", [7003]), {
+        title: "metto v0.7.6",
+        versionCode: 7006,
+      }),
+    ).toThrow(/no bundle titled "metto v0.7.6"/);
+  });
+
+  it("rejects submitting a review/live entry even with our title", () => {
+    for (const s of ["WaitingForApproval", "Approved", "تایید شده"]) {
+      expect(() =>
+        assertOurReleasePresent(entry("metto v0.7.6", s, [7006]), { title: "metto v0.7.6", versionCode: 7006 }),
+      ).toThrow(/refusing to submit/);
     }
   });
 
-  it("rejects an empty post-PUT list", () => {
-    expect(() => assertFreshDraftForTitle({ releases: [] }, "metto v0.7.6")).toThrow(/empty after PUT/);
+  it("rejects when our versionCode is missing from the entry", () => {
+    expect(() =>
+      assertOurReleasePresent(entry("metto v0.7.6", "JustCreated", [7003]), {
+        title: "metto v0.7.6",
+        versionCode: 7006,
+      }),
+    ).toThrow(/does not carry versionCode 7006/);
+  });
+
+  it("rejects an empty list", () => {
+    expect(() => assertOurReleasePresent({ releases: [] }, { title: "metto v0.7.6" })).toThrow(
+      /no bundle titled/,
+    );
   });
 
   it("finds the max versionCode across releases", () => {

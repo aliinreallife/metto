@@ -278,11 +278,16 @@ publishes automatically.
   `JustCreated`, `Rejected`, or `RolledBack` → proceed (update/re-upload).
   `WaitingForApproval` → abort (a bundle under review is never touched; the
   API itself rejects edits there). Unknown statuses abort. An `Approved`
-  bundle does NOT block: per the documented PUT create-or-update semantics a
-  new title registers a new bundle entry — but only after two proof checks:
-  the tag's `versionCode` must exceed the store max (downgrade guard), and a
-  post-PUT re-GET must show a fresh entry with our exact title outside any
-  review/live state before the APK uploads. The API emits Persian display
+  bundle does NOT block outright: PUT is attempted for a new entry, then the
+  APK uploads, and only a positively proven entry is committed — the script
+  re-GETs and requires OUR exact title carrying OUR versionCode outside any
+  review/live state before `commit` fires. The tag's `versionCode` must also
+  exceed the store max (downgrade guard). Worst case on unexpected API
+  behavior is an uncommitted draft row (reversible, never published, never
+  submitted). Residual rule: if no entry with our title ever appears, a
+  human must open that version's draft in the Myket panel first (the panel
+  requires the APK + changelog up front; save as draft only, automation
+  takes it from the draft state). The API emits Persian display
   strings (e.g. `تایید شده` for `Approved`); `normalizeMyketStatus()` maps
   only live-observed ones — never guess a mapping.
 - `400`/`401` fail only the Myket job with the Myket `messageCode`

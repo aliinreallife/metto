@@ -18,9 +18,11 @@
 //   - GitHub Release is the source of truth; this script never deletes it.
 //   - A bundle currently under review (WaitingForApproval) is never touched —
 //     abort with manual instructions (the API itself rejects edits there).
-//   - An Approved bundle does NOT block: per the documented PUT
-//     create-or-update semantics a new title registers a new bundle entry,
-//     and assertFreshDraftForTitle() verifies exactly that before any upload.
+//   - Flow is PUT → upload → verify → commit. The commit (the only step that
+//     sends anything for review) fires only after OUR entry is positively
+//     proven by exact title + our versionCode outside any review/live state.
+//     An Approved live listing therefore cannot be submitted or overwritten
+//     by this script; the worst case is an uncommitted draft row.
 //   - --dry-run performs zero Myket mutations and needs no token.
 //
 // Node builtins only (plus global fetch/FormData/Blob on Node 22).
@@ -249,38 +251,53 @@ export function assertNoDowngrade({ tag, versionCode, listJson }) {
 }
 
 /**
- * Post-PUT verification: the newest bundle entry must be OUR fresh entry —
- * exact title match and never a review/live state. This is what makes
- * proceeding past an Approved bundle safe: if PUT had edited the live
- * listing in place instead of registering a new entry, the newest entry
- * would carry a review/live status (or a foreign title) and we abort
- * before uploading anything.
+ * Post-upload verification: OUR release must exist as its own entry —
+ * matched by exact title across ALL releases (no createdAt ordering
+ * assumptions), never in a review/live state, and (when versionCode is
+ * given) carrying exactly our uploaded versionCode.
+ *
+ * Why verify after upload instead of after PUT: per Myket's docs the upload
+ * endpoint "adds a new bundle", and a fresh entry may only materialize in
+ * listings once it carries a version. Verifying before upload therefore
+ * rejects the documented happy path. The commit step still fires only on
+ * positive proof, so a misdirected upload can never be submitted: the worst
+ * case is an uncommitted draft row visible in the panel (reversible, never
+ * published, never sent for review).
+ *
+ * @param {{ releases?: Array<{ title?: unknown, status?: unknown, versions?: Array<{ versionCode?: unknown }> }> }} listJson
+ * @param {{ title: string, versionCode?: number | string | null }} [opts]
  */
-export function assertFreshDraftForTitle(listJson, title) {
-  const cur = getCurrentBundleFromList(listJson);
-  if (!cur) {
-    throw new Error(`post-PUT verification failed: bundle list is empty after PUT ${JSON.stringify(title)}`);
-  }
-  if (cur.title !== title) {
+export function assertOurReleasePresent(listJson, { title, versionCode = null } = {}) {
+  const releases = listJson?.releases;
+  const ours = Array.isArray(releases) ? releases.find((r) => r?.title === title) : undefined;
+  if (!ours) {
     throw new Error(
-      `post-PUT verification failed: newest bundle is ${JSON.stringify(cur.title)} (status ${cur.status}), expected fresh entry ${JSON.stringify(title)} — aborting before upload`,
+      `verification failed: no bundle titled ${JSON.stringify(title)} exists after upload — Myket opened nothing. Create the draft version in the Myket panel (APK + changelog, save as draft only), then retry`,
     );
   }
-  const st = normalizeMyketStatus(cur.status);
+  const st = normalizeMyketStatus(ours.status);
   if (st === "WaitingForApproval" || st === "Approved") {
     throw new Error(
-      `post-PUT verification failed: newest bundle ${JSON.stringify(title)} is in ${st} state — refusing to upload into a review/live entry`,
+      `verification failed: bundle ${JSON.stringify(title)} is in ${st} state — refusing to submit a review/live entry`,
     );
   }
-  return cur;
+  if (versionCode !== null && versionCode !== undefined) {
+    const codes = Array.isArray(ours.versions) ? ours.versions.map((v) => Number(v?.versionCode)) : [];
+    if (!codes.includes(Number(versionCode))) {
+      throw new Error(
+        `verification failed: bundle ${JSON.stringify(title)} does not carry versionCode ${versionCode} (has [${codes.join(", ")}]) — the upload may have landed elsewhere; aborting before commit`,
+      );
+    }
+  }
+  return ours;
 }
 
 /**
  * Safety gate around the current bundle status. A bundle under review must
- * never be touched; approved bundles need a fresh entry (verified after PUT).
- * Status is normalized first (the API emits Persian display strings), but
- * the decisions are unchanged: only an empty state, JustCreated, Rejected,
- * RolledBack — or Approved (new entry will be created) — may proceed.
+ * never be touched. Status is normalized first (the API emits Persian
+ * display strings). An Approved bundle proceeds: the flow verifies OUR
+ * entry by title + versionCode after upload and only then commits, so the
+ * live listing can never be submitted or overwritten by this script.
  */
 export function decideMyketAction(status) {
   const normalized = normalizeMyketStatus(status);
@@ -304,7 +321,7 @@ export function decideMyketAction(status) {
       return {
         proceed: true,
         reason:
-          "an Approved bundle exists — PUT registers a new bundle entry for this title (verified by assertFreshDraftForTitle before upload); the reviewed release itself is never modified",
+          "an Approved bundle exists — attempting PUT for a new bundle entry for this title (verified by title + versionCode after upload, before commit; the reviewed release itself is never modified)",
       };
     default:
       return {
@@ -535,11 +552,23 @@ async function main() {
 
   await myketPutBundle(endpoints, token, bundlePayload);
   console.log("myket-publish: bundle create/update: OK");
-  const afterPut = await myketGetList(endpoints, token);
-  const fresh = assertFreshDraftForTitle(afterPut, title);
-  console.log(`myket-publish: fresh draft verified: title=${JSON.stringify(fresh.title)} status=${fresh.status}`);
-  await myketUploadApk(endpoints, token, apkPath, apkFilename);
+  try {
+    await myketUploadApk(endpoints, token, apkPath, apkFilename);
+  } catch (err) {
+    const msg = String(err?.message ?? err);
+    if (msg.includes("ReleaseNotFound")) {
+      throw new Error(
+        `${msg} — no draft bundle exists for the upload to attach to. Create the draft version in the Myket panel (APK + changelog, save as draft only), then retry`,
+      );
+    }
+    throw err;
+  }
   console.log("myket-publish: APK upload: OK (resultCode Successful)");
+  const afterUpload = await myketGetList(endpoints, token);
+  const ours = assertOurReleasePresent(afterUpload, { title, versionCode });
+  console.log(
+    `myket-publish: verified our entry: title=${JSON.stringify(ours.title)} status=${ours.status} versionCode=${versionCode} — safe to commit`,
+  );
   await myketCommit(endpoints, token, commitPayload);
   console.log(`myket-publish: commit: OK (isManualPublish=true — finalize manually in Myket after approval)`);
 }
