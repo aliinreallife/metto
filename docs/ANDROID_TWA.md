@@ -275,14 +275,16 @@ publishes automatically.
 ### Status / failure handling
 
 - Pre-flight `GET …/release-bundle` gates overwrites: no bundle,
-  `JustCreated`, `Rejected`, or `RolledBack` → proceed (update/re-upload);
-  `WaitingForApproval` or `Approved` → abort safely with manual instructions
-  (a bundle under review is never overwritten); unknown statuses abort.
-  The API emits Persian display strings (e.g. `تایید شده` for `Approved`);
-  `normalizeMyketStatus()` maps only live-observed ones — never guess a
-  mapping. Residual rule: with an Approved bundle and no draft, a human must
-  open the next version in the Myket panel first (the panel requires the APK
-  + changelog up front); automation takes it from the draft state.
+  `JustCreated`, `Rejected`, or `RolledBack` → proceed (update/re-upload).
+  `WaitingForApproval` → abort (a bundle under review is never touched; the
+  API itself rejects edits there). Unknown statuses abort. An `Approved`
+  bundle does NOT block: per the documented PUT create-or-update semantics a
+  new title registers a new bundle entry — but only after two proof checks:
+  the tag's `versionCode` must exceed the store max (downgrade guard), and a
+  post-PUT re-GET must show a fresh entry with our exact title outside any
+  review/live state before the APK uploads. The API emits Persian display
+  strings (e.g. `تایید شده` for `Approved`); `normalizeMyketStatus()` maps
+  only live-observed ones — never guess a mapping.
 - `400`/`401` fail only the Myket job with the Myket `messageCode`
   (`EditNotPossible`, `MissingRequiredData`, `PostAppFailed`, …) in the log
   and step summary — the GitHub Release is never modified or deleted.
