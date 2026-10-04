@@ -188,7 +188,7 @@ const fa = {
     paysTitle: "حمایتت صرف چه می‌شود؟",
     pays: ["سرور را روشن نگه می‌دارد", "داده‌ها و زمان‌بندی را به‌روز نگه می‌دارد", "قابلیت‌ها و شهرهای جدید را می‌سازد"],
     primary: "حمایت مالی",
-    primaryNote: "از طریق صفحه حامیان متو در گیت‌هاب",
+    primaryNote: "از طریق ریمیت",
     secondary: "ستاره روی گیت‌هاب",
     altTitle: "حمایت گران‌بها لزوماً پولی نیست:",
     altWays: ["متو را به یک دوست معرفی کن", "خطای داده را گزارش بده", "ایده‌ات را برایمان بنویس"],
@@ -367,7 +367,7 @@ const en: typeof fa = {
     items: [
       {
         q: "Is it free?",
-        a: "Completely — with no ads, forever. No sign-up, no payment. Hosting and data run purely on voluntary user support; if you feel like it, the “Support metto” section at the bottom of the page links to GitHub Sponsors.",
+        a: "Completely — with no ads, forever. No sign-up, no payment. Hosting and data run purely on voluntary user support; if you feel like it, the “Support metto” section at the bottom of the page links to Reymit.",
       },
       {
         q: "Which cities?",
@@ -392,7 +392,7 @@ const en: typeof fa = {
     paysTitle: "What your support pays for",
     pays: ["Keeps the server running", "Keeps data and timetables current", "Builds new features and cities"],
     primary: "Donate",
-    primaryNote: "via GitHub Sponsors",
+    primaryNote: "via Reymit",
     secondary: "Star on GitHub",
     altTitle: "Not all valuable support is money:",
     altWays: ["Tell a friend about metto", "Report a data mistake", "Share an idea with us"],
