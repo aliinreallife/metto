@@ -10,6 +10,10 @@ test.describe("landing page", () => {
     page,
   }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
+    // Hero headline actually paints (guards against collapsed sections:
+    // Reveal content is opacity-0 until its observer fires, so an
+    // invisible hero fails here instead of slipping through).
+    await expect(page.locator("#hero h1")).toBeVisible({ timeout: 15_000 });
     // Hero CTA into the app.
     await expect(
       page.getByRole("link", { name: "شروع مسیریابی" }).first(),

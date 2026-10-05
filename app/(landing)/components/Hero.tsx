@@ -39,7 +39,7 @@ function LineBadge({ line, tone = "solid" }: { line: number; tone?: "solid" | "g
         "tnum inline-flex items-center gap-1 rounded-lg border px-1.5 py-0.5 text-[10px] font-bold leading-none",
         tone === "solid"
           ? "border-primary/40 bg-primary-wash text-primary"
-          : "border-border bg-muted text-muted-foreground",
+          : "border-border bg-muted text-foreground",
       )}
     >
       <span className="hidden sm:inline">{t.lineLabel}</span>
@@ -194,7 +194,7 @@ function RoutePanel() {
             { v: persianDigits(walkMin, lang), l: t.walk, u: t.minutes },
           ].map((m) => (
             <div key={m.l} className="bg-muted/40 px-2 py-2.5 text-center">
-              <dt className="text-[10px] leading-tight text-muted-foreground">{m.l}</dt>
+              <dt className="text-[10px] leading-tight text-foreground/80">{m.l}</dt>
               <dd className="tnum mt-1 flex items-baseline justify-center gap-1 text-base font-extrabold leading-none">
                 {m.v}
                 {m.u && <span className="text-[9px] font-normal text-muted-foreground">{m.u}</span>}

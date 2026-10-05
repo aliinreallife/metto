@@ -113,8 +113,11 @@ export function WelcomePage() {
     }
   }, []);
 
+  // Block layout for the scroll container (not flex): children stack at
+  // content height and this container scrolls. A flex column here would
+  // starve <main> of height and shrink its overflow-hidden sections to zero.
   return (
-    <div dir={dir} className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background text-foreground">
+    <div dir={dir} className="min-h-0 flex-1 overflow-y-auto bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }} />
       <a
         href="#main"
