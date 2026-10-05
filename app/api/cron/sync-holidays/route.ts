@@ -5,7 +5,7 @@ import { syncHolidays } from "@/lib/holidays/sync";
 // Same endpoint can later run every 6h on Vercel Pro with no logic change.
 // syncHolidays refreshes today + next 7 Tehran dates (≈8 upstream calls/run).
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 function authorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
