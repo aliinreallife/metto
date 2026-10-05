@@ -50,10 +50,10 @@ export function useConnectivity(): ConnectivityValue {
 /** Top-level static routes known to be in the Serwist precache. */
 const PRECACHED_TABS: ReadonlySet<string> = new Set([
   "/",
+  "/route",
   "/stations",
   "/nearby",
   "/map",
-  "/welcome",
 ]);
 
 /**

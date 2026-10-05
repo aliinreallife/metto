@@ -79,7 +79,7 @@ function Field({
           type="text"
           role="combobox"
           aria-expanded={open}
-          aria-controls={`${id}-list`}
+          aria-controls={open ? `${id}-list` : undefined}
           aria-autocomplete="list"
           autoComplete="off"
           value={value}
@@ -106,20 +106,27 @@ function Field({
         </span>
       </div>
 
+      {/* Mounted only while open: a closed (opacity-0) listbox must not
+          linger in the accessibility tree with no valid owned options. */}
+      {open && (
       <ul
         id={`${id}-list`}
         role="listbox"
         aria-label={label}
-        className={cn(
-          "absolute inset-x-0 top-full z-30 mt-2 max-h-60 overflow-y-auto rounded-lg border border-border bg-popover shadow-[0_24px_48px_-24px_rgba(0,0,0,0.35)] transition-all duration-200",
-          open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-1 opacity-0",
-        )}
+        className="absolute inset-x-0 top-full z-30 mt-2 max-h-60 overflow-y-auto rounded-lg border border-border bg-popover shadow-[0_24px_48px_-24px_rgba(0,0,0,0.35)]"
       >
         {matches.length === 0 ? (
-          <li className="px-3 py-3 text-xs text-muted-foreground">{t.noMatch}</li>
+          <li
+            role="option"
+            aria-selected="false"
+            aria-disabled="true"
+            className="px-3 py-3 text-xs text-muted-foreground"
+          >
+            {t.noMatch}
+          </li>
         ) : (
           matches.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} role="presentation">
               <button
                 type="button"
                 role="option"
@@ -144,6 +151,7 @@ function Field({
           ))
         )}
       </ul>
+      )}
     </div>
   );
 }
@@ -160,7 +168,7 @@ export function DemoStrip() {
   const [spin, setSpin] = useState(false);
 
   const trip = useMemo(() => findRoute(from.id, to.id), [from, to]);
-  const href = `/?from=${from.id}&to=${to.id}`;
+  const href = `/route?from=${from.id}&to=${to.id}`;
 
   useEffect(() => {
     if (!copied) return;

@@ -77,7 +77,7 @@ test.describe("metto offline PWA", () => {
         offlineLogs.push(msg.text());
       }
     });
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     await waitForOfflineReady(page);
     await expect(
       page.getByText("در حال آماده‌سازی آفلاین"),
@@ -122,18 +122,18 @@ test.describe("metto offline PWA", () => {
     });
 
     // Destination via shareable URL (same state path as tab switches).
-    await page.goto(`/?from=${ORIGIN_ID}&to=${DEST_ID}`, {
+    await page.goto(`/route?from=${ORIGIN_ID}&to=${DEST_ID}`, {
       waitUntil: "domcontentloaded",
     });
     await expectRouteResult(page);
     expect(upstreamHits.count).toBe(0);
 
-    // 8-10. Browser-level offline + COLD start of `/` (fresh page in the
+    // 8-10. Browser-level offline + COLD start of `/route` (fresh page in the
     // same profile, exactly like reopening the app — never a warm reload).
     await context.setOffline(true);
     await page.close();
     page = await context.newPage();
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     // Cold boot must hydrate schedule + holiday data from cache (not HTTP
     // cache luck) before the planner can run — poll for the steady state.
     await expect
@@ -149,7 +149,7 @@ test.describe("metto offline PWA", () => {
 
     // 11. Station-to-station route calc while offline (no global offline
     // banner: the planner simply works).
-    await page.goto(`/?from=${ORIGIN_ID}&to=${DEST_ID}`, {
+    await page.goto(`/route?from=${ORIGIN_ID}&to=${DEST_ID}`, {
       waitUntil: "domcontentloaded",
     });
     await expectRouteResult(page);
@@ -187,7 +187,7 @@ test.describe("metto offline PWA", () => {
     ).toBeVisible({ timeout: 15_000 });
 
     // 18-20. Landmark search explains the Internet requirement offline.
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     await page
       .getByRole("button", { name: "مبدأ", exact: true })
       .first()
@@ -223,7 +223,7 @@ test.describe("metto offline PWA", () => {
 
     // 24-25. Restore network; app recovers (ready again, route works).
     await context.setOffline(false);
-    await page.goto(`/?from=${ORIGIN_ID}&to=${DEST_ID}`, {
+    await page.goto(`/route?from=${ORIGIN_ID}&to=${DEST_ID}`, {
       waitUntil: "domcontentloaded",
     });
     await expectRouteResult(page);
@@ -303,7 +303,7 @@ test.describe("metto offline PWA", () => {
         swLogs.push(msg.text());
       }
     });
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     await waitForOfflineReady(page);
 
     // Marker: any automatic reload would wipe window state.
@@ -350,7 +350,7 @@ test.describe("metto offline PWA", () => {
       expect(swLogs.some((l) => l.includes("waiting"))).toBe(true);
 
       // The app remains fully functional while the newer worker waits.
-      await page.goto(`/?from=${ORIGIN_ID}&to=${DEST_ID}`, {
+      await page.goto(`/route?from=${ORIGIN_ID}&to=${DEST_ID}`, {
         waitUntil: "domcontentloaded",
       });
       await expectRouteResult(page);
@@ -363,7 +363,7 @@ test.describe("metto offline PWA", () => {
       // real user launch behaves.
       await page.close();
       const page2 = await context.newPage();
-      await page2.goto("/", { waitUntil: "domcontentloaded" });
+      await page2.goto("/route", { waitUntil: "domcontentloaded" });
       let settled = false;
       for (let i = 0; i < 6 && !settled; i++) {
         const s = await page2.evaluate(async () => {
@@ -393,7 +393,7 @@ test.describe("metto offline PWA", () => {
     await blockThirdParty(context, upstreamHits);
 
     const page = await context.newPage();
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     await waitForOfflineReady(page);
 
     // Simulate a device whose offline download never finished: evict the
@@ -432,7 +432,7 @@ test.describe("metto offline PWA", () => {
     await context.setOffline(true);
     await page.close();
     const offlinePage = await context.newPage();
-    await offlinePage.goto("/", { waitUntil: "domcontentloaded" });
+    await offlinePage.goto("/route", { waitUntil: "domcontentloaded" });
     await expect
       .poll(
         async () =>

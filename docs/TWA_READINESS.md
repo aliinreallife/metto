@@ -292,7 +292,7 @@ hang, never a misleading empty state):
 
 ## 7. Manifest & TWA navigation
 
-- `app/manifest.ts`: `id: "/"`, `start_url: "/"`, `scope: "/"`,
+- `app/manifest.ts`: `id: "/"`, `start_url: "/route"`, `scope: "/"`,
   `display: "standalone"`, `theme_color #cc0e2d`,
   `background_color #0a0a0a`, 192×192 + 512×512 (+ maskable purpose),
   Persian name/description. Valid and installable.

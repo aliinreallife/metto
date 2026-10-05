@@ -71,11 +71,11 @@ describe("compact place params (op/dp)", () => {
   });
 
   it("buildTabHref keeps any base path with the same compact params", () => {
-    const href = buildTabHref("/", {
+    const href = buildTabHref("/route", {
       from: "a",
       originPlace: { lat: 35.7, lng: 51.3, label: "x" },
     });
-    expect(href.startsWith("/?")).toBe(true);
+    expect(href.startsWith("/route?")).toBe(true);
     expect(href).toContain("op=35.7000%2C51.3000%2Cx");
   });
 });

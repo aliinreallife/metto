@@ -375,7 +375,7 @@ export function Hero() {
             <Reveal delay={210}>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
-                  href="/"
+                  href="/route"
                   className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-bold text-primary-foreground shadow-[0_10px_28px_-14px_var(--primary)] transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
                 >
                   {t.ctaPrimary}

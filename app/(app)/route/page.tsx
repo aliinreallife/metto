@@ -10,17 +10,17 @@ export const metadata: Metadata = {
   description:
     "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
   alternates: {
-    canonical: "https://metto.ir",
+    canonical: "https://metto.ir/route",
     languages: {
-      en: "/?lang=en",
-      fa: "/",
+      en: "/route?lang=en",
+      fa: "/route",
     },
   },
   openGraph: {
     title: "متو | مسیریاب مترو تهران، زمان قطار بعدی و تخمین رسیدن",
     description:
       "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
-    url: "https://metto.ir",
+    url: "https://metto.ir/route",
     siteName: "متو",
     locale: "fa_IR",
     type: "website",

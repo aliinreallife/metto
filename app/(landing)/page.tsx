@@ -5,13 +5,13 @@ export const metadata: Metadata = {
   title: "مسیریاب مترو، ساده و سریع",
   description: "متو؛ مسیریاب رایگان مترو با زمان رسیدن، نقشه واقعی و اطلاعات ایستگاه‌ها.",
   alternates: {
-    canonical: "https://metto.ir/welcome",
-    languages: { fa: "https://metto.ir/welcome", en: "https://metto.ir/welcome?lang=en" },
+    canonical: "https://metto.ir",
+    languages: { fa: "https://metto.ir", en: "https://metto.ir?lang=en" },
   },
   openGraph: {
     title: "متو | مسیریاب مترو، ساده و سریع",
     description: "بهترین مسیر، زمان رسیدن و قطار بعدی را ببین.",
-    url: "https://metto.ir/welcome",
+    url: "https://metto.ir",
     images: ["/socialprev.png"],
   },
 };

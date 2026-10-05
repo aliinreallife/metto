@@ -42,7 +42,7 @@ export function WelcomeFooter() {
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <Link
-                href="/"
+                href="/route"
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98]"
               >
                 {heroCta}
@@ -59,7 +59,7 @@ export function WelcomeFooter() {
               </a>
               <a
                 href="#donate"
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 text-sm font-bold text-foreground transition hover:bg-primary hover:text-primary-foreground"
               >
                 <Heart className="h-4 w-4" />
                 {donateCta}
@@ -116,8 +116,8 @@ export function WelcomeFooter() {
 
         <div className="mt-12 flex flex-col-reverse items-start justify-between gap-3 border-t border-border pt-6 text-[11px] text-muted-foreground sm:flex-row sm:items-center">
           <p>© {persianDigits(new Date().getFullYear(), lang)} metto.ir</p>
-          <Link href="/welcome" className="inline-flex items-center gap-1.5 font-bold transition-colors hover:text-primary">
-            {isFa ? "صفحه خوش‌آمدگویی" : "Welcome page"}
+          <Link href="/route" className="inline-flex items-center gap-1.5 font-bold transition-colors hover:text-primary">
+            {heroCta}
             {isFa ? <ArrowLeft className="h-3 w-3" /> : <ArrowRight className="h-3 w-3" />}
           </Link>
         </div>

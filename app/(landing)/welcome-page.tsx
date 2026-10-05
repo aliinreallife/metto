@@ -6,6 +6,7 @@ import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT } from "./content";
 import { cn } from "@/lib/utils";
 import { Hero } from "./components/Hero";
+import { TopBar } from "./components/TopBar";
 import { DemoStrip } from "./components/DemoStrip";
 import { Donate } from "./components/Donate";
 import { Features } from "./components/Features";
@@ -71,11 +72,11 @@ function MobileCta() {
         "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 backdrop-blur-md transition-transform duration-300 sm:hidden",
         show ? "translate-y-0" : "translate-y-full",
       )}
-      style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}
+      style={{ bottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="grid grid-cols-[1fr_auto] gap-2 p-3">
         <Link
-          href="/"
+          href="/route"
           className="inline-flex h-11 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground active:scale-[0.98]"
         >
           {t.ctaPrimary}
@@ -101,8 +102,19 @@ export function WelcomePage() {
     document.documentElement.dir = dir;
   }, [lang, dir]);
 
+  // Old share links (metto.ir/?from=…&to=…) redirect server-side to /route
+  // when online. If this page still renders with route params (an offline
+  // cold open served from precache), hand off client-side with a
+  // full-document navigation — client routing cannot succeed offline.
+  useEffect(() => {
+    const search = window.location.search;
+    if (/[?&](from|to)=/.test(search)) {
+      window.location.replace(`/route${search}`);
+    }
+  }, []);
+
   return (
-    <div dir={dir} className="h-full overflow-y-auto bg-background text-foreground">
+    <div dir={dir} className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }} />
       <a
         href="#main"
@@ -110,6 +122,7 @@ export function WelcomePage() {
       >
         {t.misc.skip}
       </a>
+      <TopBar />
       <main id="main" className="flex min-h-0 flex-1 flex-col">
         <Hero />
         <DemoStrip />

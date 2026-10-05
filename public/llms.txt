@@ -34,8 +34,8 @@ endpoint: `POST https://metto.ir/mcp`.
 
 ## Pages
 
-- [Homepage](https://metto.ir) - Route planner
+- [Homepage](https://metto.ir) - Landing page: what metto is, how it works, install and support info
+- [Route Planner](https://metto.ir/route) - Plan a route between two stations
 - [Stations](https://metto.ir/stations) - Station list with schedules
 - [Map](https://metto.ir/map) - Interactive metro map
 - [Nearby](https://metto.ir/nearby) - Find nearest station
-- [Welcome](https://metto.ir/welcome) - Landing page: what metto is, how it works, install and support info

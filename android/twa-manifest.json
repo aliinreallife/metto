@@ -12,7 +12,7 @@
   "navigationDividerColorDark": "#000000",
   "backgroundColor": "#0A0A0A",
   "enableNotifications": false,
-  "startUrl": "/",
+  "startUrl": "/route",
   "iconUrl": "https://metto.ir/icon-512.png",
   "maskableIconUrl": "https://metto.ir/icon-512.png",
   "splashScreenFadeOutDuration": 300,

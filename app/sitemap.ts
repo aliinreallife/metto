@@ -53,14 +53,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       },
     },
     {
-      url: `${baseUrl}/welcome`,
+      url: `${baseUrl}/route`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
       alternates: {
         languages: {
-          fa: `${baseUrl}/welcome`,
-          en: `${baseUrl}/welcome?lang=en`,
+          fa: `${baseUrl}/route`,
+          en: `${baseUrl}/route?lang=en`,
         },
       },
     },

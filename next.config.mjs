@@ -30,6 +30,28 @@ const nextConfig = {
   async rewrites() {
     return [{ source: "/mcp", destination: "/api/mcp" }];
   },
+  // Landing/app URL scheme (landing at /, planner at /route):
+  // - /welcome → / (old landing URL; query such as ?lang=en is preserved).
+  // - /?from=…&to=… → /route (old share/launch links keep working).
+  //   The `has` guards keep plain / (and /?lang=en) rendering the landing.
+  //   Unmatched query params pass through to the destination.
+  async redirects() {
+    return [
+      { source: "/welcome", destination: "/", permanent: true },
+      {
+        source: "/",
+        has: [{ type: "query", key: "from" }],
+        destination: "/route",
+        permanent: true,
+      },
+      {
+        source: "/",
+        has: [{ type: "query", key: "to" }],
+        destination: "/route",
+        permanent: true,
+      },
+    ];
+  },
 }
 
 export default nextConfig

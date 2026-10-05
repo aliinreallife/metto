@@ -12,9 +12,9 @@ function nav(url: string, mode = "navigate", destination = "document") {
 }
 
 describe("isCanonicalStaticDoc", () => {
-  it("matches exactly the five static documents", () => {
-    expect(CANONICAL_STATIC_DOCS).toEqual(["/", "/map", "/stations", "/nearby", "/welcome"]);
-    for (const p of ["/", "/map", "/stations", "/nearby", "/welcome"]) {
+  it("matches exactly the six static documents", () => {
+    expect(CANONICAL_STATIC_DOCS).toEqual(["/", "/route", "/map", "/stations", "/nearby"]);
+    for (const p of ["/", "/route", "/map", "/stations", "/nearby"]) {
       expect(isCanonicalStaticDoc(p)).toBe(true);
     }
   });
@@ -51,11 +51,11 @@ describe("canonicalDocFallbackFor", () => {
       canonicalDocFallbackFor("/stations", nav(`${ORIGIN}/stations?from=ahang`)),
     ).toBe("/stations");
     expect(
-      canonicalDocFallbackFor("/", nav(`${ORIGIN}/?from=ahang&to=aliabad`)),
+      canonicalDocFallbackFor("/", nav(`${ORIGIN}/?lang=en`)),
     ).toBe("/");
     expect(
-      canonicalDocFallbackFor("/welcome", nav(`${ORIGIN}/welcome?lang=en`)),
-    ).toBe("/welcome");
+      canonicalDocFallbackFor("/route", nav(`${ORIGIN}/route?from=ahang&to=aliabad`)),
+    ).toBe("/route");
   });
 
   it("never cross-matches another known page (no / fallback for /map)", () => {

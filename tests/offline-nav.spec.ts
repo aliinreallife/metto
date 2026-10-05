@@ -83,7 +83,7 @@ test.describe("Offline bottom navigation", () => {
     context,
   }) => {
     const page = await context.newPage();
-    await page.goto("/?from=ahang&to=aliabad", {
+    await page.goto("/route?from=ahang&to=aliabad", {
       waitUntil: "domcontentloaded",
     });
     await waitForOfflineReady(page);
@@ -150,7 +150,7 @@ test.describe("Offline bottom navigation", () => {
 
     // Back to Route: same href semantics as online, route state intact.
     await tabLink(page, "مسیر").click();
-    await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe("/");
+    await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe("/route");
     expect(new URL(page.url()).searchParams.get("from")).toBe("ahang");
     expect(new URL(page.url()).searchParams.get("to")).toBe("aliabad");
     await expectRouteResult(page);
@@ -170,7 +170,7 @@ test.describe("Offline bottom navigation", () => {
     context,
   }) => {
     const page = await context.newPage();
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     await waitForOfflineReady(page);
     await context.setOffline(true);
 
@@ -178,7 +178,7 @@ test.describe("Offline bottom navigation", () => {
     // page: the current tab stays put (the browser handles the new tab).
     await tabLink(page, "نقشه").click({ modifiers: ["Control"] });
     await page.waitForTimeout(2000);
-    expect(await pathname(page)).toBe("/");
+    expect(await pathname(page)).toBe("/route");
     // Clean up any tab the browser opened for the modifier click.
     for (const p of context.pages()) {
       if (p !== page) await p.close();
@@ -193,7 +193,7 @@ test.describe("Offline bottom navigation", () => {
     // Truly cold: only `/` is ever loaded online. In particular NO
     // query-bearing document may be warmed into `metto-pages` first.
     const page = await context.newPage();
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     await waitForOfflineReady(page);
 
     // Canonical static documents exist ONLY because of precache…
@@ -208,7 +208,7 @@ test.describe("Offline bottom navigation", () => {
       }
       return [...found].sort();
     });
-    for (const p of ["/", "/map", "/stations", "/nearby"]) {
+    for (const p of ["/", "/route", "/map", "/stations", "/nearby"]) {
       expect(precachedPaths).toContain(p);
     }
 
@@ -306,7 +306,7 @@ test.describe("Offline bottom navigation", () => {
 
     // Route with query → Route HTML.
     await tabLink(page, "مسیر").click();
-    await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe("/");
+    await expect.poll(() => pathname(page), { timeout: 30_000 }).toBe("/route");
     await expectRouteResult(page);
 
     // Cold arbitrary combo incl. junk param → canonical Nearby HTML,

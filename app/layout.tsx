@@ -4,7 +4,6 @@ import type { Metadata, Viewport } from "next";
 import { Vazirmatn } from "next/font/google";
 import { MetroProvider } from "./providers";
 import { SerwistProvider } from "./serwist";
-import { AppNav } from "./nav";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -17,11 +16,11 @@ const siteUrl = "https://metto.ir";
 
 export const metadata: Metadata = {
   title: {
-    default: "متو | مسیریاب مترو، زمان قطار بعدی و تخمین رسیدن",
+    default: "متو | مسیریاب مترو، ساده و سریع",
     template: "%s | متو",
   },
   description:
-    "با متو مسیر مترو را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
+    "متو؛ مسیریاب رایگان مترو با زمان رسیدن، نقشه واقعی و اطلاعات ایستگاه‌ها.",
   verification: {
     google: "yT7M8VQ3-f2WbNtL_hwI6hVnVSgTkp1xGp2NMg7QL-E",
   },
@@ -57,9 +56,9 @@ export const metadata: Metadata = {
     alternateLocale: "en_US",
     url: siteUrl,
     siteName: "متو",
-    title: "متو | مسیریاب مترو، زمان قطار بعدی و تخمین رسیدن",
+    title: "متو | مسیریاب مترو، ساده و سریع",
     description:
-      "با متو مسیر مترو را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
+      "متو؛ مسیریاب رایگان مترو با زمان رسیدن، نقشه واقعی و اطلاعات ایستگاه‌ها.",
     images: [
       {
         url: "/socialprev.png",
@@ -72,9 +71,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "متو | مسیریاب مترو، زمان قطار بعدی و تخمین رسیدن",
+    title: "متو | مسیریاب مترو، ساده و سریع",
     description:
-      "با متو مسیر مترو را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
+      "متو؛ مسیریاب رایگان مترو با زمان رسیدن، نقشه واقعی و اطلاعات ایستگاه‌ها.",
     images: ["/socialprev.png"],
     creator: "@aliinreallife",
   },
@@ -185,8 +184,7 @@ export default function RootLayout({
           disable={process.env.NODE_ENV === "development"}
         >
         <MetroProvider>
-          <AppNav />
-          <main className="relative min-h-0 flex-1 flex flex-col overflow-hidden pb-[60px] pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
+          {children}
         </MetroProvider>
         </SerwistProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
