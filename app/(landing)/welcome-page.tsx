@@ -102,14 +102,29 @@ export function WelcomePage() {
     document.documentElement.dir = dir;
   }, [lang, dir]);
 
-  // Old share links (metto.ir/?from=…&to=…) redirect server-side to /route
-  // when online. If this page still renders with route params (an offline
-  // cold open served from precache), hand off client-side with a
-  // full-document navigation — client routing cannot succeed offline.
+  // Landing fast-path, evaluated in order with full-document navigation
+  // (client routing cannot succeed offline, and replace() keeps history
+  // clean either way):
+  // 1. Old share links (metto.ir/?from=…&to=…) redirect server-side to
+  //    /route when online. If this page still renders with route params
+  //    (an offline cold open served from precache), hand off client-side.
+  // 2. Returning visitors (this browser has used the planner before — the
+  //    "route.seen" flag) skip the intro and go straight back to the app
+  //    they love. First-timers, bots (clean storage: no flag, so crawlers
+  //    always index the landing), and private mode (storage throws: fall
+  //    through to the landing) are unaffected.
   useEffect(() => {
     const search = window.location.search;
     if (/[?&](from|to)=/.test(search)) {
       window.location.replace(`/route${search}`);
+      return;
+    }
+    try {
+      if (localStorage.getItem("route.seen") === "1") {
+        window.location.replace(`/route${search}`);
+      }
+    } catch {
+      // Private mode etc. — show the landing.
     }
   }, []);
 

@@ -43,6 +43,30 @@ test.describe("landing page", () => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     expect(new URL(page.url()).pathname).toBe("/");
   });
+
+  test("returning visitor skips the landing straight to /route", async ({
+    context,
+    page,
+  }) => {
+    // Seed the flag the planner sets on mount (route.seen).
+    await context.addInitScript(() => {
+      try {
+        window.localStorage.setItem("route.seen", "1");
+      } catch {
+        // Storage unavailable — the test premise needs it.
+      }
+    });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect
+      .poll(() => Promise.resolve(new URL(page.url()).pathname), {
+        timeout: 15_000,
+      })
+      .toBe("/route");
+    // And the planner actually boots there.
+    await expect(page.locator("#origin-combobox")).toBeVisible({
+      timeout: 15_000,
+    });
+  });
 });
 
 test.describe("old-link redirects", () => {

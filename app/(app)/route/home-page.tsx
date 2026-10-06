@@ -123,6 +123,9 @@ export function HomePage() {
   // (Runs on mount only; URL always wins.)
   useEffect(() => {
     try {
+      // Remember that this browser has used the planner: the landing page
+      // fast-paths returning visitors straight back here (see welcome-page).
+      localStorage.setItem("route.seen", "1");
       if (!searchParams.get("from")) {
         const saved = localStorage.getItem("route.from");
         if (saved) setOriginId(saved);

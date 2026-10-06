@@ -23,7 +23,7 @@ plugins {
 def twaManifest = [
     applicationId: 'ir.metto.app',
     hostName: 'metto.ir', // The domain being opened in the TWA.
-    launchUrl: '/', // The start path for the TWA. Must be relative to the domain.
+    launchUrl: '/route', // The start path for the TWA. Must be relative to the domain.
     name: 'metto', // The application name.
     launcherName: 'metto', // The name shown on the Android Launcher.
     themeColor: '#CC0E2D', // The color used for the status bar.
