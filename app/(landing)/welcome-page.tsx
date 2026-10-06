@@ -104,7 +104,8 @@ export function WelcomePage() {
 
   // Landing fast-path, evaluated in order with full-document navigation
   // (client routing cannot succeed offline, and replace() keeps history
-  // clean either way):
+  // clean either way). The inline script above already handles the common
+  // case pre-paint; this effect is the fallback. Cases:
   // 1. Old share links (metto.ir/?from=…&to=…) redirect server-side to
   //    /route when online. If this page still renders with route params
   //    (an offline cold open served from precache), hand off client-side.
@@ -133,6 +134,17 @@ export function WelcomePage() {
   // starve <main> of height and shrink its overflow-hidden sections to zero.
   return (
     <div dir={dir} className="min-h-0 flex-1 overflow-y-auto bg-background text-foreground">
+      {/* Synchronous pre-paint redirect: old ?from/to links and the
+          returning-visitor flag ("route.seen") both land on /route BEFORE
+          first paint, so there is no flash-of-landing. Parser-blocking by
+          design — keep this the first node. Crawlers and first-timers have
+          no flag, so they always render the landing. The React effect below
+          is the fallback (e.g. if inline scripts are stripped). */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `try{var s=location.search;if(/[?&](from|to)=/.test(s)||localStorage.getItem("route.seen")==="1"){location.replace("/route"+s)}}catch(e){}`,
+        }}
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }} />
       <a
         href="#main"
