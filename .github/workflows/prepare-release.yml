@@ -52,6 +52,7 @@ jobs:
   prepare:
     name: prepare release
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       VERSION: ${{ inputs.version }}
       BRANCH: release/${{ inputs.version }}
@@ -109,7 +110,7 @@ jobs:
           OUT="$(node scripts/release-pr.mjs prepare --version "$VERSION" --summary-file "$RUNNER_TEMP/release-summary.json")"
           echo "$OUT"
           echo "$OUT" > "$RUNNER_TEMP/release-pr.json"
-          node -e "const p = require('$RUNNER_TEMP/release-pr.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'pushed_sha=' + p.pushedSha + '\npr_url=' + p.prUrl + '\n')"
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/release-pr.json','utf8')); fs.appendFileSync(process.env.GITHUB_OUTPUT, 'pushed_sha=' + p.pushedSha + '\npr_url=' + p.prUrl + '\n')"
 
       - name: Dispatch CI on the release branch and wait
         # Synchronous: correlates the exact workflow_dispatch run for the

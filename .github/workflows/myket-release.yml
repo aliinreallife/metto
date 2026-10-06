@@ -60,6 +60,7 @@ jobs:
   publish-myket:
     name: publish APK to Myket
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: myket-release
     permissions:
       contents: read
@@ -112,6 +113,10 @@ jobs:
           fi
           if [ -z "$TAG" ]; then
             echo "::error::no release tag resolved (upstream tag run or workflow_dispatch input required)"
+            exit 1
+          fi
+          if ! [[ "$ROLLOUT" =~ ^[0-9]+$ ]] || [ "$ROLLOUT" -lt 1 ] || [ "$ROLLOUT" -gt 100 ]; then
+            echo "::error::staged-rollout-percent must be an integer 1-100 (got '$ROLLOUT')"
             exit 1
           fi
           echo "tag=$TAG"
