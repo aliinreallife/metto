@@ -94,9 +94,49 @@ export function MetroProvider({ children }: { children: ReactNode }) {
         () => {
           void refreshScheduleData();
         },
-        () => {},
+        () => {
+          // First attempt failed (offline boot before the SW takes over,
+          // stalled fetch, corrupt entry with no fallback): retry with
+          // backoff instead of leaving "Loading schedule..." up forever.
+          // Capped chain; the 'online' listener below keeps recovering
+          // across connectivity changes until load succeeds.
+          primeScheduleWithRetry(0);
+        },
       );
+    function onOnline() {
+      // Browser reports connectivity back — a failed primer may succeed now.
+      // loadScheduleData dedupes concurrent attempts internally.
+      void loadScheduleData().then(
+        () => {
+          void refreshScheduleData();
+        },
+        () => {
+          primeScheduleWithRetry(0);
+        },
+      );
+    }
+    window.addEventListener("online", onOnline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+    };
   }, []);
+
+  // Bounded retry chain for the initial timetable load. Runs only while
+  // schedule data is still inactive (each success activates + notifies).
+  function primeScheduleWithRetry(attempt: number) {
+    const delays = [2000, 5000, 15000, 30000, 60000];
+    const delay = delays[Math.min(attempt, delays.length - 1)];
+    window.setTimeout(() => {
+      void loadScheduleData().then(
+        () => {
+          void refreshScheduleData();
+        },
+        () => {
+          if (attempt + 1 < delays.length) primeScheduleWithRetry(attempt + 1);
+        },
+      );
+    }, delay);
+  }
 
   // Persist route + place selections so they stick across reloads.
   useEffect(() => {

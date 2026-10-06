@@ -749,6 +749,41 @@ describe("repository lifecycle", () => {
     expect(activated).toEqual([{ version: BUNDLED_SCHEDULE_VERSION }]);
   });
 
+  it("a stalled bundled download fails instead of hanging startup", async () => {
+    // No fetchJson injected: exercises defaultFetchJson against a hung
+    // global fetch. The 30s abort must surface a failure (callers retry)
+    // rather than pending forever with "Loading schedule..." up.
+    vi.useFakeTimers();
+    try {
+      const hungFetch = vi.fn(
+        (_url: string, init?: { signal?: AbortSignal }) =>
+          new Promise((_, reject) => {
+            init?.signal?.addEventListener("abort", () =>
+              reject(new DOMException("aborted", "AbortError")),
+            );
+          }),
+      );
+      vi.stubGlobal("fetch", hungFetch);
+      const pending = ensureScheduleData({
+        isLoaded: () => false,
+        activate: () => {
+          throw new Error("must not activate from a stalled download");
+        },
+        readStored: async () => null,
+        readPrevious: async () => null,
+      });
+      await vi.advanceTimersByTimeAsync(30_000);
+      await expect(pending).resolves.toBe(false);
+      expect(hungFetch).toHaveBeenCalledWith(
+        "/schedule-data.json",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
   it("newer timetable becomes the active data source via refresh", async () => {
     const activated: { version: string; lines: number }[] = [];
     const ok = await refreshScheduleData("2026-09-01.1", {
