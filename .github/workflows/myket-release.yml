@@ -187,6 +187,18 @@ jobs:
             --package "$PACKAGE_ID" \
             --rollout "${{ steps.tag.outputs.rollout }}"
 
+      - name: Upload store descriptions (Bazaar/Play paste)
+        # Plain-text EN/FA files written by myket-publish.mjs (dry-run and
+        # live runs alike) — the exact bytes sent to Myket, reusable for
+        # manual Bazaar/Play panel paste. No credentials involved.
+        if: steps.tag.outputs.skip != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: store-descriptions-${{ steps.tag.outputs.tag }}
+          if-no-files-found: error
+          retention-days: 30
+          path: dist/store-descriptions-*
+
       - name: Summarize (no credentials)
         if: always()
         run: |
@@ -205,5 +217,14 @@ jobs:
               echo "- Trigger: \`${{ github.event_name }}\`"
               echo ""
               echo "Myket failures fail only this job — the GitHub Release stays intact. Retry via Actions → Myket Release → Run workflow → tag \`${{ steps.tag.outputs.tag }}\`."
+              FA_FILE="dist/store-descriptions-${{ steps.tag.outputs.tag }}.fa.txt"
+              if [ -f "$FA_FILE" ]; then
+                echo ""
+                echo "### FA description (exact bytes sent to Myket — paste to Bazaar panel as-is)"
+                echo ""
+                echo '```text'
+                cat "$FA_FILE"
+                echo '```'
+              fi
             fi
           } >> "$GITHUB_STEP_SUMMARY"

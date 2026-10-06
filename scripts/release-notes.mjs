@@ -4,7 +4,8 @@
 // Single source of truth for:
 //   - scripts/check-release-notes.mjs      (PR-body CI check)
 //   - scripts/prepare-changelog.mjs        (release-prep aggregation)
-//   - scripts/extract-changelog-section.mjs (GitHub Release body)
+//   - scripts/extract-changelog-section.mjs (GitHub Release body + --plain store text)
+//   - scripts/myket-publish.mjs            (plain-text Myket EN/FA descriptions)
 //
 // Pure functions, Node builtins only — no dependencies, no LLM, deterministic.
 //
@@ -513,6 +514,125 @@ function emitParsedGroups({ intro, groups, unknown }) {
  */
 export function normalizeSectionBody(body) {
   return emitParsedGroups(parseSectionGroups(body)).join("\n").trim() + "\n";
+}
+
+// Plain-text store headings: Myket, Bazaar, and Google Play render
+// descriptions as plain text (no markdown), so the `###` headings must never
+// reach a store. These mirror GROUP_HEADINGS_EN/FA without the `###` prefix.
+export const STORE_HEADINGS_EN = {
+  New: "New:",
+  Improvement: "Improvements:",
+  Fix: "Fixes:",
+  Uncategorized: "Uncategorized:",
+};
+
+export const STORE_HEADINGS_FA = {
+  New: "جدید:",
+  Improvement: "بهبودها:",
+  Fix: "رفع مشکلات:",
+  Uncategorized: "بدون دسته‌بندی:",
+};
+
+const STORE_ARABIC_SCRIPT_RE = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
+
+// Strip the trailing "(#NN)" PR reference: useful on GitHub, noise on stores.
+// Also eats one trailing period so author-written "Fixed crash (#83)."
+// cleans to "Fixed crash" (CHANGELOG bullets carry the ref last as ". (#NN)"
+// via withPrRef, which keeps its sentence period).
+function stripStorePrRef(text) {
+  return String(text ?? "").replace(/\s*\(#\d+\)\.?\s*$/, "").trim();
+}
+
+// Unwrap inline markdown so store text reads as plain prose:
+//   [label](url) -> "label (url)", **bold** -> bold, `code` -> code.
+function unwrapStoreInline(text) {
+  return String(text ?? "")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)")
+    .replaceAll("**", "")
+    .replaceAll("__", "")
+    .replaceAll("`", "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+// Convert one parsed content line to a plain-text store line.
+// Bullets normalize to "- ..." (refs stripped); prose passes through unwrapped.
+// Returns null when nothing readable remains.
+function toStoreLine(line) {
+  const m = BULLET_RE.exec(String(line ?? ""));
+  if (m) {
+    const content = unwrapStoreInline(stripStorePrRef(m[1]));
+    if (!content) return null;
+    return `- ${content}`;
+  }
+  const prose = unwrapStoreInline(line);
+  return prose || null;
+}
+
+function plainHeadingForUnknown(line) {
+  const content = unwrapStoreInline(String(line ?? "").replace(/^\s*#{1,6}\s*/, ""));
+  if (!content) return null;
+  if (/[:：]$/.test(content)) return content;
+  return `${content}:`;
+}
+
+/**
+ * Format an extracted CHANGELOG section body as plain-text store descriptions.
+ *
+ * Parses with parseSectionGroups (so full-split, interleaved, and legacy
+ * bilingual shapes all work), then emits per language:
+ *   - EN: intro prose + `New:`-style headings + `- ` dash bullets
+ *   - FA: `جدید:`-style headings + `- ` dash bullets (no intro, no markers)
+ * PR refs are stripped on both sides; inline markdown is unwrapped.
+ * Unknown hand-edited content is never dropped: each line goes to the side
+ * matching its script (Arabic-script -> FA, otherwise EN).
+ * Returns { en, fa } trimmed (possibly empty strings — callers apply the
+ * non-empty-side fallback and the empty-section error).
+ */
+export function formatStoreDescriptions(sectionBody) {
+  const text = String(sectionBody ?? "");
+  if (!text.trim()) throw new Error("empty changelog section (no EN/FA descriptions to derive)");
+  const { intro, groups, unknown } = parseSectionGroups(text);
+
+  const enOut = [];
+  const faOut = [];
+
+  for (const line of intro) {
+    const plain = unwrapStoreInline(line);
+    if (plain) enOut.push(plain);
+  }
+  if (enOut.length > 0) enOut.push("");
+
+  for (const group of GROUP_ORDER) {
+    const enLines = (groups.get(group)?.en ?? []).map(toStoreLine).filter(Boolean);
+    if (enLines.length > 0) enOut.push(STORE_HEADINGS_EN[group], "", ...enLines, "");
+    const faLines = (groups.get(group)?.fa ?? []).map(toStoreLine).filter(Boolean);
+    if (faLines.length > 0) faOut.push(STORE_HEADINGS_FA[group], "", ...faLines, "");
+  }
+
+  for (const block of unknown) {
+    const blockEn = [];
+    const blockFa = [];
+    if (block.heading) {
+      const heading = plainHeadingForUnknown(block.heading);
+      if (heading) {
+        if (STORE_ARABIC_SCRIPT_RE.test(heading)) blockFa.push(heading);
+        else blockEn.push(heading);
+      }
+    }
+    for (const line of block.lines) {
+      const plain = toStoreLine(line);
+      if (!plain) continue;
+      if (STORE_ARABIC_SCRIPT_RE.test(plain)) blockFa.push(plain);
+      else blockEn.push(plain);
+    }
+    if (blockEn.length > 0) enOut.push(...blockEn, "");
+    if (blockFa.length > 0) faOut.push(...blockFa, "");
+  }
+
+  const en = enOut.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  const fa = faOut.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return { en, fa };
 }
 
 /**
