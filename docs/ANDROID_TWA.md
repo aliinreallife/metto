@@ -240,12 +240,12 @@ The job: validates semver → confirms the release exists → downloads
 `node scripts/myket-publish.mjs --tag vX.Y.Z --apk …` (`--dry-run` needs no
 token: `node scripts/myket-publish.mjs --tag vX.Y.Z --apk … --dry-run`).
 The script derives the bundle title (`metto vX.Y.Z`), the full EN/FA
-descriptions (complete `## [vX.Y.Z]` CHANGELOG section: the whole EN
-listing first — intro + English-only group headings such as `### New` —
-then `#### فارسی` with the whole FA listing — Persian-only headings such
-as `### جدید` — never truncated, so no Persian script reaches the EN
-field by construction — `sanitizeEnForMyket()` stays as a guard), and
-rollout (default `100`), then calls:
+descriptions as **plain text** (stores don't render markdown — so `###`
+headings are sent as `New:` / `جدید:`, bullets as `- ` dashes, trailing
+`(#NN)` PR refs stripped, inline markdown unwrapped; the complete
+`## [vX.Y.Z]` CHANGELOG section, never truncated, so no Persian script
+reaches the EN field by construction — `sanitizeEnForMyket()` stays as a
+guard), and rollout (default `100`), then calls:
 
 1. `PUT …/release-bundle` (create/update),
 2. `PUT …/release-bundle/upload` (signed APK as multipart with an **empty**
@@ -266,6 +266,23 @@ Actions → Myket Release → Run workflow → `tag: vX.Y.Z` (optional
 release's APK and publishes it — the GitHub Release stays the immutable
 source of truth. Use `dry-run: true` first to validate tag/APK/metadata/
 payload/endpoints without touching Myket or needing a token.
+
+### Store text for manual Bazaar/Play paste
+
+Every run (dry-run included) prints the exact EN/FA store bytes and writes
+them to `dist/store-descriptions-vX.Y.Z.{en,fa}.txt` (also uploaded as a
+workflow artifact and echoed into the job summary). Locally:
+
+```bash
+node scripts/myket-publish.mjs --tag vX.Y.Z --apk … --dry-run  # prints + writes dist/*.txt
+node scripts/extract-changelog-section.mjs vX.Y.Z --plain --lang fa  # FA only, paste to Bazaar/Myket panel
+node scripts/extract-changelog-section.mjs vX.Y.Z --plain --lang en  # EN only
+```
+
+`--plain` warns when a side exceeds Google Play's 500-char "What's new"
+limit per locale (trim by hand for Play; Myket/Bazaar take the full text).
+The GitHub Release body always stays markdown — only store descriptions are
+plain text.
 
 ### `isManualPublish=true` behavior
 

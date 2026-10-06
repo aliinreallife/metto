@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -20,10 +20,13 @@ import {
   normalizeMyketStatus,
   sanitizeEnForMyket,
   splitMyketDescriptions,
+  storeDescriptionFilenames,
   validatePackageId,
   validateRolloutPercent,
   validateTag,
+  writeStoreDescriptionFiles,
 } from "./myket-publish.mjs";
+import { formatStoreDescriptions } from "./release-notes.mjs";
 
 const SCRIPT = join(process.cwd(), "scripts", "myket-publish.mjs");
 
@@ -67,42 +70,54 @@ const SECTION_FIXTURE = `First installable Android release of Metto.
 `;
 
 describe("myket-publish.mjs EN/FA transformation (exact, no truncation)", () => {
-  it("splits English and Persian without truncation or marker leakage", () => {
+  it("splits English and Persian as plain text without markdown or marker leakage", () => {
     const { en, fa } = splitMyketDescriptions(SECTION_FIXTURE);
     expect(en).toBe(
-      `First installable Android release of Metto.\n\n### New\n\n- Metto is now available as an installable Android app.\n- The app shell keeps working offline after the first load.`,
+      `First installable Android release of Metto.\n\nNew:\n\n- Metto is now available as an installable Android app.\n- The app shell keeps working offline after the first load.`,
     );
     expect(fa).toBe(
-      `### جدید\n\n- متو حالا به‌صورت اپلیکیشن قابل‌نصب اندروید منتشر شده است.\n- پوسته برنامه بعد از اولین بازدید بدون اینترنت هم کار می‌کند.`,
+      `جدید:\n\n- متو حالا به‌صورت اپلیکیشن قابل‌نصب اندروید منتشر شده است.\n- پوسته برنامه بعد از اولین بازدید بدون اینترنت هم کار می‌کند.`,
     );
-    // No changelog scaffolding leaks into store descriptions.
+    // No markdown or changelog scaffolding leaks into store descriptions.
+    expect(en).not.toContain("#");
+    expect(fa).not.toContain("#");
     expect(en).not.toContain("#### فارسی");
     expect(fa).not.toContain("#### فارسی");
+    expect(en).not.toContain("*");
     // Complete content preserved (not truncated).
     expect(en).toContain("Metto is now available as an installable Android app.");
     expect(fa).toContain("متو حالا به‌صورت اپلیکیشن قابل‌نصب اندروید منتشر شده است.");
   });
 
-  it("keeps multi-group structure in both languages", () => {
+  it("keeps multi-group structure in both languages as plain headings", () => {
     const body = `### Improvements\n\n- Faster search.\n\n### Fixes\n\n- Fixed midnight crash.\n\n#### فارسی\n\n### بهبودها\n\n- جست‌وجو سریع‌تر شد.\n\n### رفع مشکلات\n\n- کرش بعد از نیمه‌شب رفع شد.\n`;
     const { en, fa } = splitMyketDescriptions(body);
     expect(en).toBe(
-      `### Improvements\n\n- Faster search.\n\n### Fixes\n\n- Fixed midnight crash.`,
+      `Improvements:\n\n- Faster search.\n\nFixes:\n\n- Fixed midnight crash.`,
     );
     expect(fa).toBe(
-      `### بهبودها\n\n- جست‌وجو سریع‌تر شد.\n\n### رفع مشکلات\n\n- کرش بعد از نیمه‌شب رفع شد.`,
+      `بهبودها:\n\n- جست‌وجو سریع‌تر شد.\n\nرفع مشکلات:\n\n- کرش بعد از نیمه‌شب رفع شد.`,
     );
     expect(en).not.toContain("جست‌وجو");
     expect(fa).not.toContain("- Faster search.");
   });
 
+  it("strips trailing PR refs so stores never show (#NN)", () => {
+    const body = `### New\n\n- Ship it. (#12)\n\n#### فارسی\n\n### جدید\n\n- ارسال شد. (#12)\n`;
+    const { en, fa } = splitMyketDescriptions(body);
+    expect(en).toBe(`New:\n\n- Ship it.`);
+    expect(fa).toBe(`جدید:\n\n- ارسال شد.`);
+    expect(en).not.toContain("(#");
+    expect(fa).not.toContain("(#");
+  });
+
   it("accepts interleaved sections without duplicating FA headings (issue #104)", () => {
     const body = `### New\n\n- Ship it.\n\n#### فارسی\n\n### جدید\n\n- ارسال شد.\n\n### Improvements\n\n- Faster.\n\n#### فارسی\n\n### بهبودها\n\n- سریع‌تر.\n`;
     const { en, fa } = splitMyketDescriptions(body);
-    expect(en).toContain("### New");
-    expect(en).toContain("### Improvements");
-    expect(fa.split("### جدید").length - 1).toBe(1);
-    expect(fa.split("### بهبودها").length - 1).toBe(1);
+    expect(en).toContain("New:");
+    expect(en).toContain("Improvements:");
+    expect(fa.split("جدید:").length - 1).toBe(1);
+    expect(fa.split("بهبودها:").length - 1).toBe(1);
     expect(fa).toContain("- ارسال شد.");
     expect(fa).toContain("- سریع‌تر.");
   });
@@ -110,9 +125,9 @@ describe("myket-publish.mjs EN/FA transformation (exact, no truncation)", () => 
   it("accepts legacy bilingual sections, normalizing both sides (issue #102)", () => {
     const body = `### Improvements / بهبودها\n\n- Faster search.\n\n#### فارسی\n\n- جست‌وجو سریع‌تر شد.\n`;
     const { en, fa } = splitMyketDescriptions(body);
-    expect(en).toContain("### Improvements");
+    expect(en).toContain("Improvements:");
     expect(en).not.toContain("بهبودها");
-    expect(fa).toContain("### بهبودها");
+    expect(fa).toContain("بهبودها:");
     expect(fa).toContain("- جست‌وجو سریع‌تر شد.");
   });
 
@@ -127,16 +142,48 @@ describe("myket-publish.mjs EN/FA transformation (exact, no truncation)", () => 
   });
 
   it("keeps the EN sanitizer as a guard so Myket's EN validator accepts it", () => {
-    const AR = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    const AR = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
     const body = `### New\n\n- App icon now supports themed icons.\n\n#### فارسی\n\n### جدید\n\n- آیکون برنامه از تم پشتیبانی می‌کند.\n`;
     const { en, fa } = splitMyketDescriptions(body);
-    expect(en).toContain("### New");
+    expect(en).toContain("New:");
     expect(AR.test(en)).toBe(false);
     expect(sanitizeEnForMyket("### Improvements / بهبودها")).toBe("### Improvements");
     expect(sanitizeEnForMyket("- Faster search.")).toBe("- Faster search.");
     // FA side keeps its script.
     expect(fa).toContain("آیکون برنامه از تم پشتیبانی می‌کند.");
-    expect(fa).toContain("### جدید");
+    expect(fa).toContain("جدید:");
+  });
+
+  it("unwraps inline markdown links and emphasis for plain-text stores", () => {
+    const { en } = formatStoreDescriptions(
+      `### New\n\n- See [the guide](https://metto.ir/welcome) for **details**.\n\n#### فارسی\n\n### جدید\n\n- راهنما را ببینید.\n`,
+    );
+    expect(en).toBe(`New:\n\n- See the guide (https://metto.ir/welcome) for details.`);
+    expect(en).not.toContain("**");
+    expect(en).not.toContain("](");
+  });
+
+  it("never drops unknown hand-edited content (routes by script)", () => {
+    const { en, fa } = formatStoreDescriptions(
+      `### New\n\n- Ship it.\n\n### Release admin\n\nInternal rollout note.\n\n#### فارسی\n\n### جدید\n\n- ارسال شد.\n`,
+    );
+    expect(en).toContain("Release admin:");
+    expect(en).toContain("Internal rollout note.");
+    expect(fa).toContain("- ارسال شد.");
+  });
+
+  it("writes exact store-description bytes to out-dir files", () => {
+    const dir = mkdtempSync(join(tmpdir(), "myket-out-"));
+    const { enPath, faPath } = writeStoreDescriptionFiles(dir, "v0.1.0", {
+      en: "New:\n\n- Ship it.",
+      fa: "جدید:\n\n- ارسال شد.",
+    });
+    expect(storeDescriptionFilenames("v0.1.0")).toEqual({
+      en: "store-descriptions-v0.1.0.en.txt",
+      fa: "store-descriptions-v0.1.0.fa.txt",
+    });
+    expect(readFileSync(enPath, "utf8")).toBe("New:\n\n- Ship it.\n");
+    expect(readFileSync(faPath, "utf8")).toBe("جدید:\n\n- ارسال شد.\n");
   });
 });
 
@@ -336,13 +383,20 @@ describe("myket-publish.mjs --dry-run (no token, no network)", () => {
   it("validates tag+apk+metadata and prints endpoints without a token", () => {
     const apk = tempApk();
     const changelog = tempChangelog(SECTION_FIXTURE, "v0.1.0");
-    const r = dryRun(["--tag", "v0.1.0", "--apk", apk, "--changelog", changelog, "--dry-run"]);
+    const outDir = mkdtempSync(join(tmpdir(), "myket-dry-"));
+    const r = dryRun(["--tag", "v0.1.0", "--apk", apk, "--changelog", changelog, "--out-dir", outDir, "--dry-run"]);
     expect(r.status).toBe(0);
     expect(r.out).toContain("dry-run");
     expect(r.out).toContain("ir.metto.app");
     expect(r.out).toContain("/release-bundle/upload");
     expect(r.out).toContain("/release-bundle/commit");
     expect(r.out).toContain("no network, no token required");
+    // Exact store bytes are printed and written for review/paste.
+    expect(r.out).toContain("New:");
+    expect(r.out).toContain("جدید:");
+    expect(r.out).not.toContain("###");
+    expect(readFileSync(join(outDir, "store-descriptions-v0.1.0.en.txt"), "utf8")).toContain("New:");
+    expect(readFileSync(join(outDir, "store-descriptions-v0.1.0.fa.txt"), "utf8")).toContain("جدید:");
   });
 
   it("rejects a bad tag and a missing APK in dry-run", () => {

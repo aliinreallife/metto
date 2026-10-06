@@ -24,16 +24,10 @@
 //   - --dry-run performs zero Myket mutations and needs no token.
 //
 // Node builtins only (plus global fetch/FormData/Blob on Node 22).
-import { readFileSync, statSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
 import { androidVersionFromTag } from "./android-version.mjs";
-import {
-  extractChangelogSection,
-  FA_SUBHEADING,
-  GROUP_HEADINGS_EN,
-  GROUP_HEADINGS_FA,
-  groupForHeading,
-} from "./release-notes.mjs";
+import { extractChangelogSection, formatStoreDescriptions } from "./release-notes.mjs";
 
 export const MYKET_BASE_URL_DEFAULT = "https://developer.myket.ir";
 export const MYKET_PACKAGE_DEFAULT = "ir.metto.app";
@@ -110,117 +104,45 @@ export function sanitizeEnForMyket(text) {
     .join("\n");
 }
 
-// Group key -> split headings, used to normalize legacy bilingual sections.
-const EN_HEADING_OF = {};
-const FA_HEADING_OF = {};
-for (const g of Object.keys(GROUP_HEADINGS_EN)) {
-  EN_HEADING_OF[g] = GROUP_HEADINGS_EN[g];
-  FA_HEADING_OF[g] = GROUP_HEADINGS_FA[g];
+// File names for the exact store-description bytes (review + manual paste to
+// Bazaar/Play). Written by main() in every run (dry-run included).
+export function storeDescriptionFilenames(tag) {
+  const t = String(tag).trim();
+  return { en: `store-descriptions-${t}.en.txt`, fa: `store-descriptions-${t}.fa.txt` };
+}
+
+export function writeStoreDescriptionFiles(outDir, tag, { en, fa }) {
+  mkdirSync(outDir, { recursive: true });
+  const names = storeDescriptionFilenames(tag);
+  const enPath = join(outDir, names.en);
+  const faPath = join(outDir, names.fa);
+  writeFileSync(enPath, String(en).trim() + "\n", "utf8");
+  writeFileSync(faPath, String(fa).trim() + "\n", "utf8");
+  return { enPath, faPath };
 }
 
 /**
  * Split an extracted CHANGELOG section body into Myket EN/FA descriptions.
  *
- * - Sends the COMPLETE section content; never truncates (no documented Myket
- *   length limit exists today — if Myket later returns a length validation
- *   error, add an explicit evidence-based limit then, not now).
- * - Sections are full-split (issue #104): the whole EN listing first, then
- *   `#### فارسی` and the whole FA listing. en = intro + English-only group
- *   headings like `### New` + English bullets; fa = Persian-only group
- *   headings (`### جدید`, …) + Persian bullets. Marker lines are dropped,
- *   then the EN side passes through sanitizeEnForMyket as a guard.
- * - Older shapes are still accepted via groupForHeading: interleaved
- *   per-group sections (#103) and legacy bilingual `### New / جدید`
- *   headings (#102, normalized to the split headings on each side).
- * - Falls back to the non-empty side when one side is missing; throws when
- *   both are empty.
+ * Stores render descriptions as plain text (no markdown), so both sides go
+ * through formatStoreDescriptions: plain `New:` / `جدید:` headings, `- `
+ * dash bullets, trailing `(#NN)` PR refs stripped, inline markdown
+ * unwrapped. The `#### فارسی` marker never reaches a store.
+ * Sends the COMPLETE section content; never truncates (no documented Myket
+ * length limit exists today — if Myket later returns a length validation
+ * error, add an explicit evidence-based limit then, not now).
+ * Older section shapes (interleaved groups, legacy bilingual headings) are
+ * accepted via parseSectionGroups.
+ * Falls back to the non-empty side when one side is missing; throws when
+ * both are empty. The EN side passes through sanitizeEnForMyket as a guard
+ * (Myket's EN validator rejects Persian/Arabic-script characters).
  */
 export function splitMyketDescriptions(sectionBody) {
   const text = String(sectionBody ?? "");
   if (!text.trim()) throw new Error("empty changelog section (no EN/FA descriptions to derive)");
-  const lines = text.replace(/\r\n/g, "\n").split("\n");
-  const enLines = [];
-  const faLines = [];
-  let inFa = false;
-  let pendingFaHeading = null;
-  let faHasGroup = false;
-
-  const pushFaHeading = (heading) => {
-    if (faLines.length > 0) faLines.push("");
-    faLines.push(heading, "");
-    faHasGroup = true;
-    pendingFaHeading = null;
-  };
-
-  for (const line of lines) {
-    const t = line.trim();
-    if (t === FA_SUBHEADING) {
-      inFa = true;
-      faHasGroup = false;
-      continue;
-    }
-    const known = /^\s*###\s/.test(line) ? groupForHeading(line) : null;
-    if (known) {
-      if (known.lang === "fa") {
-        // Persian-only group heading: belongs to the FA side wherever it
-        // appears (full-split FA region, or interleaved group block).
-        if (!inFa) inFa = true;
-        pushFaHeading(line);
-      } else if (known.lang === "legacy") {
-        // Bilingual heading: normalize each side to its split heading.
-        pendingFaHeading = FA_HEADING_OF[known.group] ?? null;
-        inFa = false;
-        enLines.push(EN_HEADING_OF[known.group]);
-        faHasGroup = false;
-      } else {
-        pendingFaHeading = FA_HEADING_OF[known.group] ?? null;
-        inFa = false;
-        enLines.push(line);
-        faHasGroup = false;
-      }
-      continue;
-    }
-    if (/^\s*#{1,6}\s/.test(line)) {
-      if (/^\s*###\s/.test(line)) {
-        // Unknown ### heading: keep language sides separate.
-        if (inFa) {
-          pushFaHeading(line);
-        } else {
-          pendingFaHeading = null;
-          faHasGroup = false;
-          enLines.push(line);
-        }
-      } else if (/^\s*####\s/.test(line)) {
-        // Any other #### subsection ends the FA region.
-        inFa = false;
-        pendingFaHeading = null;
-        enLines.push(line);
-      } else {
-        inFa = false;
-        pendingFaHeading = null;
-        enLines.push(line);
-      }
-      continue;
-    }
-    if (inFa) {
-      if (line.trim() === "") {
-        // Never lazy-inject a heading before a blank line: the explicit
-        // heading (or real content deserving an injected one) comes next.
-        if (faHasGroup) faLines.push(line);
-        continue;
-      }
-      if (!faHasGroup && pendingFaHeading) {
-        // Interleaved/legacy group whose FA side has no explicit heading.
-        pushFaHeading(pendingFaHeading);
-      }
-      faLines.push(line);
-    } else {
-      enLines.push(line);
-    }
-  }
-
-  const en = sanitizeEnForMyket(enLines.join("\n")).replace(/\n{3,}/g, "\n\n").trim();
-  const faRaw = faLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  const { en: plainEn, fa: plainFa } = formatStoreDescriptions(text);
+  const en = sanitizeEnForMyket(plainEn).replace(/\n{3,}/g, "\n\n").trim();
+  const faRaw = plainFa.replace(/\n{3,}/g, "\n\n").trim();
   if (!en && !faRaw) throw new Error("empty changelog section (no EN/FA descriptions to derive)");
   return { en: en || faRaw, fa: faRaw || en };
 }
@@ -399,7 +321,9 @@ function usage() {
       "  --rollout <1..100>    staged rollout percent, default 100",
       "  --changelog <path>    default CHANGELOG.md",
       "  --base-url <url>      default https://developer.myket.ir",
+      "  --out-dir <dir>       where store-description .txt files go, default dist",
       "  --dry-run             validate only; performs zero Myket network mutations, needs no token",
+      "                        (prints both descriptions and writes the .txt files for review/paste)",
       "  --help                this help",
       "",
       "Env (non-dry-run only): MYKET_ACCESS_TOKEN (X-Access-Token header, never printed).",
@@ -415,6 +339,7 @@ function parseArgs(argv) {
     rollout: "100",
     changelog: resolve(process.cwd(), "CHANGELOG.md"),
     baseUrl: MYKET_BASE_URL_DEFAULT,
+    outDir: resolve(process.cwd(), "dist"),
     dryRun: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -431,6 +356,7 @@ function parseArgs(argv) {
     else if (a === "--rollout") out.rollout = next();
     else if (a === "--changelog") out.changelog = resolve(process.cwd(), next());
     else if (a === "--base-url") out.baseUrl = next();
+    else if (a === "--out-dir") out.outDir = resolve(process.cwd(), next());
     else if (a === "--dry-run") out.dryRun = true;
     else if (a === "--help" || a === "-h") {
       usage();
@@ -574,6 +500,9 @@ async function main() {
   const commitPayload = buildCommitPayload({ message: commitMessageForTag(tag), isManualPublish: true });
   const endpoints = myketEndpoints(opts.baseUrl, packageId);
   const apkFilename = basename(apkPath);
+  // Exact store-description bytes for review + manual Bazaar/Play paste.
+  // Written before any network call, in dry-run and live runs alike.
+  const { enPath, faPath } = writeStoreDescriptionFiles(opts.outDir, tag, { en, fa });
 
   if (opts.dryRun) {
     console.log(`myket-publish dry-run: tag=${tag} versionName=${versionName} versionCode=${versionCode}`);
@@ -586,6 +515,12 @@ async function main() {
     console.log(`  bundle title: ${JSON.stringify(title)}`);
     console.log(`  commit: ${JSON.stringify(commitPayload)}`);
     console.log(`  en chars=${en.length} fa chars=${fa.length} (full section, no truncation)`);
+    console.log(`  wrote: ${enPath}`);
+    console.log(`  wrote: ${faPath}`);
+    console.log("  --- EN description (exact bytes) ---");
+    console.log(en);
+    console.log("  --- FA description (exact bytes) ---");
+    console.log(fa);
     console.log("myket-publish dry-run: OK (no network, no token required)");
     return;
   }
@@ -596,6 +531,7 @@ async function main() {
   }
 
   console.log(`myket-publish: tag=${tag} package=${packageId} rollout=${rollout} apk=${apkFilename} (${apkStat.size} bytes)`);
+  console.log(`myket-publish: store descriptions: en chars=${en.length} fa chars=${fa.length} (files: ${enPath}, ${faPath})`);
 
   const list = await myketGetList(endpoints, token);
   const current = getCurrentBundleFromList(list);
