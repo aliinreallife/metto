@@ -18,6 +18,13 @@
 //   - GitHub Release is the source of truth; this script never deletes it.
 //   - A bundle currently under review (WaitingForApproval) is never touched —
 //     abort with manual instructions (the API itself rejects edits there).
+//   - The "current bundle" (latest by createdAt) gate is not sufficient: the
+//     v0.7.9 run showed latest=Approved while the PUT still failed with
+//     EditNotPossible because ANOTHER entry was under review. So every entry
+//     is scanned for review state before the PUT, and an EditNotPossible PUT
+//     failure is re-marked the same way. Both paths throw with the
+//     MYKET_UNDER_REVIEW marker so the workflow can turn this known waiting
+//     state green-with-instructions instead of red.
 //   - Flow is PUT → upload → verify → commit. The commit (the only step that
 //     sends anything for review) fires only after OUR entry is positively
 //     proven by our versionCode outside any review/live state. An Approved
@@ -37,6 +44,18 @@ export const MAX_APK_BYTES = 500 * 1024 * 1024; // Myket rejects files larger th
 export const TAG_RE = /^v([0-9]+)\.([0-9]+)\.([0-9]+)$/;
 export const PACKAGE_RE = /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/;
 export const MYKET_STATUSES = ["JustCreated", "WaitingForApproval", "Rejected", "Approved", "RolledBack"];
+
+/**
+ * Machine-readable marker for the "a version is under Myket review" waiting
+ * state. The workflow greps publish output for this marker: marked failures
+ * become a green job with an action-needed summary (publish/revert in the
+ * panel, then retry) instead of a red failure. Unmarked failures stay red.
+ */
+export const MYKET_UNDER_REVIEW_MARKER = "MYKET_UNDER_REVIEW";
+
+export function isUnderReviewError(err) {
+  return String(err?.message ?? err).includes(MYKET_UNDER_REVIEW_MARKER);
+}
 
 /**
  * Documented Myket endpoints. NOTE: the official doc page currently shows the
@@ -195,6 +214,19 @@ export function getCurrentBundleFromList(json) {
   const cur = sorted[0];
   if (!cur || !cur.status) return null;
   return { status: String(cur.status), title: cur.title ?? null, id: cur.id ?? null, count: releases.length };
+}
+
+/**
+ * Every bundle entry currently under Myket review (normalized status).
+ *
+ * Myket rejects edits while ANY entry is under review — not just the latest
+ * one. Observed live on the v0.7.9 run: latest was Approved ("تایید شده")
+ * so the current-bundle gate proceeded, but the PUT failed with
+ * EditNotPossible because another entry was under review.
+ */
+export function findReviewEntries(json) {
+  const releases = Array.isArray(json?.releases) ? json.releases : [];
+  return releases.filter((r) => normalizeMyketStatus(r?.status) === "WaitingForApproval");
 }
 
 /**
@@ -483,7 +515,11 @@ async function myketPutBundle(endpoints, token, payload) {
           : code === "UploadReleaseVersionFailed"
             ? "no uploadable version present — the APK upload step must succeed first"
             : "see messageCode above";
-    throw new Error(`Myket PUT release-bundle failed (${code}): ${json?.translatedMessage ?? ""} — ${hint}`.trim());
+    const message = `Myket PUT release-bundle failed (${code}): ${json?.translatedMessage ?? ""} — ${hint}`.trim();
+    // Known waiting state, not a bug: mark it so the workflow can go green
+    // with manual instructions instead of failing red.
+    if (code === "EditNotPossible") throw new Error(`${MYKET_UNDER_REVIEW_MARKER}: ${message}`);
+    throw new Error(message);
   }
   return json;
 }
@@ -577,9 +613,20 @@ async function main() {
   console.log(`myket-publish: current bundle status=${current?.status ?? "(none)"} title=${JSON.stringify(current?.title ?? null)}${current ? ` (releases=${current.count})` : ""}`);
   const decision = decideMyketAction(current?.status ?? null);
   if (!decision.proceed) {
-    throw new Error(`myket-publish aborted: ${decision.reason}`);
+    const marker = normalizeMyketStatus(current?.status) === "WaitingForApproval" ? `${MYKET_UNDER_REVIEW_MARKER}: ` : "";
+    throw new Error(`${marker}myket-publish aborted: ${decision.reason}`);
   }
   console.log(`myket-publish: status gate: ${decision.reason}`);
+  // The current-bundle gate only sees the latest entry, but Myket blocks
+  // edits while ANY entry is under review (v0.7.9 run: latest was Approved
+  // yet PUT failed with EditNotPossible). Refuse early with instructions.
+  const reviewEntries = findReviewEntries(list);
+  if (reviewEntries.length > 0) {
+    const titles = reviewEntries.map((r) => JSON.stringify(r?.title ?? r?.id ?? "?")).join(", ");
+    throw new Error(
+      `${MYKET_UNDER_REVIEW_MARKER}: ${reviewEntries.length} bundle(s) under Myket review (${titles}) — publish or revert them manually in the Myket panel, then retry with the same tag`,
+    );
+  }
   assertNoDowngrade({ tag, versionCode, listJson: list });
 
   await myketPutBundle(endpoints, token, bundlePayload);

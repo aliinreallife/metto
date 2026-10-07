@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   MAX_APK_BYTES,
+  MYKET_UNDER_REVIEW_MARKER,
   assertNoDowngrade,
   assertOurReleasePresent,
   buildCommitPayload,
@@ -15,7 +16,9 @@ import {
   classifyUploadError,
   commitMessageForTag,
   decideMyketAction,
+  findReviewEntries,
   getCurrentBundleFromList,
+  isUnderReviewError,
   maxVersionCodeFromList,
   myketEndpoints,
   normalizeMyketStatus,
@@ -268,6 +271,31 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
     const d = decideMyketAction("Approved");
     expect(d.proceed).toBe(true);
     expect(d.reason).toMatch(/new bundle entry/);
+  });
+
+  it("finds review entries anywhere in the list, not just the latest (v0.7.9 run)", () => {
+    // Latest is Approved, but an older entry is under review — the old
+    // current-only gate proceeded and the PUT failed with EditNotPossible.
+    const list = {
+      releases: [
+        { status: "WaitingForApproval", title: "older", createdAt: "2026-01-01T00:00:00Z" },
+        { status: "تایید شده", title: "0.7.6", createdAt: "2026-02-01T00:00:00Z" },
+      ],
+    };
+    const found = findReviewEntries(list);
+    expect(found).toHaveLength(1);
+    expect(found[0]?.title).toBe("older");
+    // All-approved lists have nothing under review.
+    expect(findReviewEntries({ releases: [{ status: "تایید شده" }, { status: "Approved" }] })).toEqual([]);
+    expect(findReviewEntries({ releases: [] })).toEqual([]);
+    expect(findReviewEntries({})).toEqual([]);
+  });
+
+  it("marks under-review failures so the workflow can tell them apart", () => {
+    expect(MYKET_UNDER_REVIEW_MARKER).toBe("MYKET_UNDER_REVIEW");
+    expect(isUnderReviewError(new Error(`${MYKET_UNDER_REVIEW_MARKER}: blocked`))).toBe(true);
+    expect(isUnderReviewError(new Error("Myket APK upload failed (RepeatedVersionCode)"))).toBe(false);
+    expect(isUnderReviewError("plain string failure")).toBe(false);
   });
 });
 

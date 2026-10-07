@@ -14,6 +14,12 @@
 #   exact APK from the existing GitHub Release and publishes it — never
 #   rebuilds a potentially different APK.
 #
+# - Under-review retry: Myket rejects edits while ANY bundle entry is under
+#   review (PUT EditNotPossible — seen on the v0.7.9 run). myket-publish.mjs
+#   marks that case with MYKET_UNDER_REVIEW and the publish step turns it
+#   green with an action-needed summary (publish/revert in the Myket panel,
+#   then retry here with the same tag) instead of failing red.
+#
 # Security: MYKET_ACCESS_TOKEN lives ONLY in the protected `myket-release`
 # environment and is sent only as `X-Access-Token` (Server-to-Server).
 # It is never printed, never in inputs/artifacts/code, and never available
@@ -172,6 +178,10 @@ jobs:
         # Skipped for explicit dry-run retries and for upstream runs that are
         # not successful tag releases (quiet green skip). A Myket failure
         # fails ONLY this job — the GitHub Release is never modified.
+        # Exception: the MYKET_UNDER_REVIEW waiting state (a version is under
+        # Myket review) goes green with an action-needed summary instead of
+        # red — a human must publish/revert in the panel, then retry.
+        id: publish
         if: steps.tag.outputs.skip != 'true' && (github.event_name == 'workflow_run' || inputs.dry-run != true)
         env:
           MYKET_ACCESS_TOKEN: ${{ secrets.MYKET_ACCESS_TOKEN }}
@@ -181,11 +191,25 @@ jobs:
             echo "::error::MYKET_ACCESS_TOKEN is empty. Add it to the protected \`myket-release\` environment (Myket panel -> in-app products -> verification token). See docs/ANDROID_TWA.md."
             exit 1
           fi
+          set +e
           node scripts/myket-publish.mjs \
             --tag "${{ steps.tag.outputs.tag }}" \
             --apk "dist/metto-${{ steps.tag.outputs.tag }}.apk" \
             --package "$PACKAGE_ID" \
-            --rollout "${{ steps.tag.outputs.rollout }}"
+            --rollout "${{ steps.tag.outputs.rollout }}" > publish.log 2>&1
+          CODE=$?
+          set -e
+          cat publish.log
+          if grep -q "MYKET_UNDER_REVIEW" publish.log; then
+            echo "under_review=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "under_review=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$CODE" -ne 0 ] && grep -q "MYKET_UNDER_REVIEW" publish.log; then
+            echo "::warning::Myket has a version under review — publish or revert it manually in the Myket panel, then retry this workflow with tag ${{ steps.tag.outputs.tag }}."
+            exit 0
+          fi
+          exit "$CODE"
 
       - name: Upload store descriptions (Bazaar/Play paste)
         # Plain-text EN/FA files written by myket-publish.mjs (dry-run and
@@ -207,6 +231,16 @@ jobs:
               echo "## Myket publish — skipped"
               echo ""
               echo "Upstream Android Release run was not a successful version-tag release — nothing to publish."
+            elif [ "${{ steps.publish.outputs.under_review }}" = "true" ]; then
+              echo "## Myket publish — action needed (not a failure)"
+              echo ""
+              echo "Myket has a version under review, so edits are blocked (\`EditNotPossible\`)."
+              echo ""
+              echo "1. Open the Myket developer panel and publish or revert the in-review version."
+              echo "2. Retry: Actions → Myket Release → Run workflow → tag \`${{ steps.tag.outputs.tag }}\`."
+              echo ""
+              echo "- Package: \`$PACKAGE_ID\`"
+              echo "- Tag: \`${{ steps.tag.outputs.tag }}\` (GitHub Release APK untouched)"
             else
               echo "## Myket publish — ${{ steps.tag.outputs.tag }}"
               echo ""
