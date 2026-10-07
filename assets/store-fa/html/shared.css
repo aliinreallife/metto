@@ -1,0 +1,236 @@
+/* Shared styles for the 9:16 (1080x1920) store images — same look as brag-output-fa-appstore-v2. */
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 400 700;
+  src: url(../fonts/vazirmatn-2.woff2) format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 400 700;
+  src: url(../fonts/vazirmatn-3.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+2000-206F, U+2190-2193, U+2212;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html,
+body {
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background: #fafaf8;
+}
+:root {
+  --ink: #1f1f22;
+  --muted: #4b4b53;
+  --brand: #cc0e2d;
+  --l1: #e0001f;
+  --l2: #2f4389;
+  --l3: #67c5f5;
+  --l4: #f8e100;
+  --l5: #007e46;
+  --l6: #ef639f;
+  --l7: #7f0b74;
+}
+.canvas {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background: #fafaf8;
+  color: var(--ink);
+  font-family: 'Vazirmatn', system-ui, sans-serif;
+  direction: rtl;
+}
+
+/* ---------- text block (top, centred) ---------- */
+.text {
+  position: absolute;
+  top: 70px;
+  left: 60px;
+  right: 60px;
+  height: 450px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+.kicker {
+  font-size: 46px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.title {
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+.body {
+  font-size: 40px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 920px;
+  text-wrap: balance;
+}
+/* For slides with a 2-line title AND a 2-line body: the default block is ~8px too tall for its
+   450px box, which crowded the phone. Slightly tighter leading keeps a clear gap above the phone. */
+.text.tight {
+  top: 58px;
+  gap: 12px;
+}
+.text.tight .kicker {
+  line-height: 1.35;
+}
+.text.tight .title {
+  line-height: 1.15;
+}
+
+/* ---------- backdrop orb ---------- */
+.orb {
+  position: absolute;
+  width: 1200px;
+  height: 1200px;
+  left: -60px;
+  top: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 17%, transparent) 0%, color-mix(in srgb, var(--accent) 6%, transparent) 55%, transparent 72%);
+}
+
+/* ---------- phone mockup (412x892 CSS-px screen, positioned + scaled per page) ---------- */
+.pw {
+  position: absolute;
+  width: 436px;
+  height: 916px;
+  transform-origin: top left;
+}
+.phone {
+  position: relative;
+  width: 436px;
+  height: 916px;
+  border-radius: 66px;
+  background: #17171b;
+  padding: 12px;
+  box-shadow: 0 60px 110px rgba(20, 20, 30, 0.3), 0 18px 36px rgba(20, 20, 30, 0.18), inset 0 0 0 2px #34343b;
+}
+.screen {
+  position: relative;
+  width: 412px;
+  height: 892px;
+  border-radius: 54px;
+  overflow: hidden;
+  background: #ffffff;
+}
+.screen img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+}
+.punch {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: #0b0b0d;
+  z-index: 30;
+}
+.hl {
+  position: absolute;
+  border: 3px solid var(--accent);
+  border-radius: 16px;
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 20%, transparent);
+  z-index: 5;
+}
+.tap {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 3px solid var(--accent);
+  z-index: 6;
+}
+
+/* ---------- brand bits (CTA image) ---------- */
+.app-icon {
+  width: 230px;
+  height: 230px;
+  border-radius: 56px;
+  background: var(--brand);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 30px 60px rgba(204, 14, 45, 0.28);
+}
+.app-icon svg {
+  width: 138px;
+  height: 138px;
+}
+.stripe {
+  display: flex;
+  direction: ltr;
+  border-radius: 11px;
+  overflow: hidden;
+}
+.stripe i {
+  flex: 1;
+  display: block;
+}
+
+/* ---------- network image ---------- */
+.ldots {
+  display: flex;
+  gap: 18px;
+  margin-top: 10px;
+}
+.ldot {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 44px;
+  font-weight: 700;
+  color: #ffffff;
+}
+.checks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.check-row {
+  width: 560px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 52px;
+  font-weight: 500;
+}
+.check-ico {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--brand);
+  display: grid;
+  place-items: center;
+}
+.check-ico svg {
+  width: 30px;
+  height: 30px;
+}
