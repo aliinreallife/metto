@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest"
 import {
+  INSTALL_PROMPT_WAIT_MS,
   IOS_INSTALL_HINT_PREVIEW_FLAG,
   isIosDevice,
   isIosInstallHintPreviewForced,
   isStandaloneDisplay,
+  shouldCollapsePromptWait,
   shouldForceIosHintPreview,
   shouldHideInstallButton,
   shouldShowIosInstallHint,
@@ -239,6 +241,36 @@ describe("supportsInstallPromptEvent", () => {
     expect(supportsInstallPromptEvent({})).toBe(false)
     expect(supportsInstallPromptEvent(null)).toBe(false)
     expect(supportsInstallPromptEvent(undefined)).toBe(false)
+  })
+})
+
+describe("shouldCollapsePromptWait", () => {
+  it("waits a few seconds for a late prompt before collapsing", () => {
+    expect(INSTALL_PROMPT_WAIT_MS).toBeGreaterThan(0)
+    expect(
+      shouldCollapsePromptWait({
+        canInstallPrompt: true,
+        promptWaitExpired: false,
+      }),
+    ).toBe(false)
+  })
+
+  it("collapses once the wait expires, even with prompt support", () => {
+    expect(
+      shouldCollapsePromptWait({
+        canInstallPrompt: true,
+        promptWaitExpired: true,
+      }),
+    ).toBe(true)
+  })
+
+  it("collapses immediately where install can never appear", () => {
+    expect(
+      shouldCollapsePromptWait({
+        canInstallPrompt: false,
+        promptWaitExpired: false,
+      }),
+    ).toBe(true)
   })
 })
 

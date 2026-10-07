@@ -131,6 +131,7 @@ const fa = {
     storyNote: "فقط زمان لحظه‌ای قطار بعدی به اینترنت نیاز دارد؛ مسیر و نقشه همیشه هستند.",
     install: "نصب متو",
     installed: "روی این دستگاه نصب شده",
+    installedHint: "متو روی این دستگاه نصب شده و نیازی به کار دیگری نیست",
     noInstallTitle: "نصب اختیاری است؛ آفلاین بودن نه",
     noInstallDesc:
       "متو یک سایت است و همان‌طور که هست، آفلاین کار می‌کند. نصب کردن فقط یک آیکون به صفحه اصلی گوشی‌ات اضافه می‌کند تا سریع‌تر بازش کنی.",
@@ -335,6 +336,7 @@ const en: typeof fa = {
     storyNote: "Only the live next-train time needs a connection; routes and the map are always there.",
     install: "Install metto",
     installed: "Already installed on this device",
+    installedHint: "metto is already installed on this device — nothing left to do",
     noInstallTitle: "Installing is optional. Offline isn't.",
     noInstallDesc:
       "metto is a website and it works offline exactly as it is. Installing only adds an icon to your home screen so you can open it faster.",

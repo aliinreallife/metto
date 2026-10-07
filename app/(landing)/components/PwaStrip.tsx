@@ -97,7 +97,7 @@ export function PwaStrip() {
   ];
 
   return (
-    <section id="install" className="relative overflow-hidden bg-foreground py-16 text-background sm:py-20">
+    <section id="install" className="relative overflow-hidden bg-muted/50 py-16 text-foreground sm:py-20">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.08]"
         style={{
@@ -110,46 +110,61 @@ export function PwaStrip() {
       />
       <div className="relative mx-auto w-full max-w-6xl px-4 sm:px-6">
         <Reveal>
-          <span className="inline-flex items-center gap-2 rounded-lg border border-background/25 px-2.5 py-1 text-[11px] font-bold">
+          <span className="inline-flex items-center gap-2 rounded-lg border border-border px-2.5 py-1 text-[11px] font-bold">
             <OfflineIcon className="h-3.5 w-3.5 text-primary" />
             {t.eyebrow}
           </span>
           <h2 className="mt-4 max-w-2xl text-[clamp(1.8rem,4.6vw,2.9rem)] font-black leading-[1.15] tracking-tight">
             {t.title}
           </h2>
-          <p className="mt-4 max-w-xl text-sm leading-8 text-background/85 sm:text-base">{t.desc}</p>
+          <p className="mt-4 max-w-xl text-sm leading-8 text-muted-foreground sm:text-base">{t.desc}</p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={install}
-              disabled={!installEvent && !installed}
-              className={cn(
-                "group inline-flex h-12 items-center gap-2 rounded-lg px-6 text-sm font-bold transition-all duration-200",
-                installEvent
-                  ? "bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98]"
-                  : "cursor-default border border-background/30 text-background/80",
-              )}
-            >
-              {installed ? <CheckIcon className="h-4 w-4" /> : <PhoneIcon className="h-4 w-4" />}
-              {installed ? t.installed : t.install}
-            </button>
+            {installed && !installEvent ? (
+              <span
+                role="status"
+                title={t.installedHint}
+                aria-label={t.installedHint}
+                className="inline-flex h-12 items-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold"
+              >
+                <CheckIcon className="h-4 w-4 text-primary" />
+                {t.installed}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={install}
+                disabled={!installEvent && !installed}
+                title={!installEvent && !installed ? t.note : undefined}
+                className={cn(
+                  "group inline-flex h-12 items-center gap-2 rounded-lg px-6 text-sm font-bold transition-all duration-200",
+                  installEvent
+                    ? "bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98]"
+                    : "cursor-default border border-border text-muted-foreground",
+                )}
+              >
+                {installed ? <CheckIcon className="h-4 w-4" /> : <PhoneIcon className="h-4 w-4" />}
+                {installed ? t.installed : t.install}
+              </button>
+            )}
             <Link
               href="/route"
-              className="inline-flex h-12 items-center gap-2 rounded-lg border border-background/30 px-5 text-sm font-bold transition-colors duration-200 hover:bg-background hover:text-foreground"
+              className="inline-flex h-12 items-center gap-2 rounded-lg border border-border px-5 text-sm font-bold transition-colors duration-200 hover:bg-card"
             >
               <TrainIcon className="h-4 w-4" />
               {heroCta}
             </Link>
           </div>
-          <p className="mt-2.5 text-[11px] text-background/70">{t.note}</p>
+          <p className="mt-2.5 text-[11px] text-muted-foreground">
+            {installed && !installEvent ? t.installedHint : t.note}
+          </p>
         </Reveal>
 
         <Reveal delay={60}>
           <div className="mt-10">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-base font-black tracking-tight">{t.storesTitle}</h3>
-              <p className="text-[11px] text-background/70">{t.storesSubtitle}</p>
+              <p className="text-[11px] text-muted-foreground">{t.storesSubtitle}</p>
             </div>
 
             <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
@@ -160,10 +175,10 @@ export function PwaStrip() {
                       className={cn(
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200",
                         disabled
-                          ? "border-background/15 text-background/40"
+                          ? "border-border text-muted-foreground"
                           : primary
                             ? "border-primary/50 bg-primary text-primary-foreground"
-                            : "border-background/30 text-background group-hover:border-background/50",
+                            : "border-border text-foreground group-hover:border-foreground",
                       )}
                       aria-hidden
                     >
@@ -171,24 +186,24 @@ export function PwaStrip() {
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-sm font-bold">{title}</span>
-                      <span className={cn("text-[11px]", disabled ? "text-background/50" : "text-background/70")}>
+                      <span className="text-[11px] text-muted-foreground">
                         {note}
                       </span>
                     </span>
                     {disabled ? (
-                      <span className="shrink-0 rounded-md border border-background/20 px-1.5 py-0.5 text-[10px] font-bold text-background/55">
+                      <span className="shrink-0 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
                         {isFa ? "به‌زودی" : "soon"}
                       </span>
                     ) : (
-                      <ArrowIcon className="h-4 w-4 shrink-0 text-background/55 transition-all duration-300 group-hover:translate-x-1 group-hover:text-background rtl:rotate-180 rtl:group-hover:-translate-x-1" />
+                      <ArrowIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-all duration-300 group-hover:translate-x-1 group-hover:text-foreground rtl:rotate-180 rtl:group-hover:-translate-x-1" />
                     )}
                   </>
                 );
                 const cls = cn(
                   "group flex items-center gap-3 rounded-lg border px-3.5 py-3 text-start transition-all duration-200",
                   disabled
-                    ? "cursor-not-allowed border-dashed border-background/20 text-background/60"
-                    : "border-background/25 bg-background/[0.08] hover:-translate-y-0.5 hover:border-background/45 hover:bg-background/[0.13] active:scale-[0.99]",
+                    ? "cursor-not-allowed border-dashed border-border text-muted-foreground"
+                    : "border-border bg-card hover:-translate-y-0.5 hover:border-foreground hover:bg-muted active:scale-[0.99]",
                 );
                 return (
                   <li key={key}>

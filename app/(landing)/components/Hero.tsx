@@ -297,7 +297,7 @@ function Ticker() {
           <span className="h-1.5 w-1.5 rounded-full bg-primary/70" aria-hidden />
           <span className="flex items-center gap-1.5 text-xs font-medium">
             <span>{isFa ? s.fa : s.en}</span>
-            <span className="tnum rounded bg-muted px-1 text-[10px] font-bold text-muted-foreground">
+            <span className="tnum rounded bg-muted px-1 text-[10px] font-bold text-foreground">
               {isFa ? `خط ${persianDigits(s.line, lang)}` : `L${s.line}`}
             </span>
           </span>
