@@ -8,6 +8,70 @@ PR body instead (see AGENTS.md).
 
 ## [Unreleased]
 
+## [v0.7.9] - 2026-10-07
+
+### New
+
+- metto.ir is now the intro page (what metto is, live demo, install and support info); the planner moved to metto.ir/route, and returning visitors skip the intro straight to it. (#109)
+- Old links keep working: /welcome redirects home and old shared route links open on /route. (#109)
+- The Android app opens straight into the route planner. (#109)
+
+### Improvements
+
+- Removed the tagline link from the home screen empty state. (#98)
+- Rebuilt the welcome page to match the intended design: live route panel, station ticker, interactive feature cards with a real metro map, and a tunnel-mode install section. (#98)
+- Donation button now links to Reymit. (#107)
+- App updates faster and offline stays fresh: the app now always checks for the newest version on open. (#108)
+- Small icons load faster on repeat visits. (#108)
+- Simpler homepage that gets you into the route planner faster, with support and install options kept. (#116)
+- Warmer full-width support section and a store section that looks right in dark mode too. (#117)
+- Support section now fills the screen with the regular site background. (#118)
+- No more odd gap in the header when the app is installed, clearer installed message, and a store section that matches dark mode. (#119)
+- Cleaner homepage: no top bar, full-screen sections, language switch next to the start buttons. (#120)
+- Easier homepage on phones: bigger tap targets, roomier stats, safer spacing. (#121)
+- GitHub Releases now show a simple download table with file sizes and install steps, so the APK is easier to find. (#123)
+
+### Fixes
+
+- If timetable data failed to load on the first try, the app showed "Loading schedule..." forever. It now retries automatically until the data arrives. (#111)
+- Footer credits stay on one line on mobile; the About link was removed and Support kept. (#113)
+- The Support/Donate link now opens correctly even for returning visitors. (#113)
+- Fixed the direct APK download button on the landing page that led to a missing file. (#122)
+
+#### فارسی
+
+### جدید
+
+- metto.ir حالا صفحه معرفی است (معرفی، دموی زنده، نصب و حمایت)؛ مسیریاب به metto.ir/route رفت و کاربران قبلی مستقیم وارد آن می‌شوند. (#109)
+- لینک‌های قدیمی کار می‌کنند: /welcome به خانه می‌رود و لینک‌های قدیمی مسیر در /route باز می‌شوند. (#109)
+- اپ اندروید مستقیم مسیریاب را باز می‌کند. (#109)
+
+### بهبودها
+
+- لینک شعار از صفحه اصلی حذف شد. (#98)
+- صفحه خوش‌آمدگویی بازسازی شد: پنل زنده مسیر، نوار ایستگاه‌ها، کارت‌های تعاملی با نقشه واقعی مترو و بخش نصب حالت تونل. (#98)
+- دکمه حمایت مالی به ریمیت وصل شد. (#107)
+- به‌روزرسانی برنامه سریع‌تر شد و حالت آفلاین تازه می‌ماند: برنامه هر بار تازه‌ترین نسخه را بررسی می‌کند. (#108)
+- آیکن‌های کوچک در بازدیدهای بعدی سریع‌تر باز می‌شوند. (#108)
+- صفحه اصلی ساده‌تر که سریع‌تر شما را به مسیریاب می‌رساند؛ حمایت و نصب سر جایش است. (#116)
+- بخش حمایت تمام‌عرض و گرم‌تر، و بخش نصب که در حالت تیره هم درست به نظر می‌رسد. (#117)
+- بخش حمایت حالا تمام صفحه و با پس‌زمینه معمولی سایت نمایش داده می‌شود. (#118)
+- بدون فاصله اضافی در سربرگ هنگام نصب بودن برنامه، پیام واضح‌تر نصب‌شده، و بخش نصب هماهنگ با حالت تیره. (#119)
+- Header install placeholder collapses 5s after load when no install prompt arrives (was a permanent phantom gap inside the installed app). (#119)
+- PwaStrip installed state is a static explained status badge instead of a dead button. (#119)
+- Store section uses a subtle muted band that follows the system theme in both modes. (#119)
+- Drive-by: hero ticker badges now pass axe color-contrast. (#119)
+- صفحه اصلی تمیزتر: بدون سربرگ، بخش‌های تمام‌صفحه، و تغییر زبان کنار دکمه‌های شروع. (#120)
+- صفحه اصلی راحت‌تر در موبایل: دکمه‌های بزرگ‌تر، آمار خواناتر و فاصله‌گذاری بهتر. (#121)
+- صفحه انتشار گیت‌هاب حالا جدول دانلود ساده با حجم فایل‌ها و راهنمای نصب دارد تا پیدا کردن APK راحت‌تر شود. (#123)
+
+### رفع مشکلات
+
+- اگر بارگذاری جدول زمانی در تلاش اول ناموفق بود، برنامه برای همیشه «در حال بارگذاری…» می‌ماند. حالا خودش دوباره تلاش می‌کند تا داده‌ها برسند. (#111)
+- اعتبارهای پایین صفحه در موبایل تک‌خط شد؛ لینک درباره حذف و حمایت ماند. (#113)
+- لینک حمایت برای کاربران قبلی هم درست باز می‌شود. (#113)
+- دکمه دانلود مستقیم APK در صفحه اصلی که به فایل اشتباه می‌رفت اصلاح شد. (#122)
+
 ## [v0.7.6] - 2026-10-03
 
 ### New
@@ -110,4 +174,3 @@ First installable Android release of Metto.
 
 - متو حالا به‌صورت اپلیکیشن قابل‌نصب اندروید منتشر شده است: فایل APK امضاشده همین نسخه را دانلود کنید و مسیریاب مترو را به‌صورت تمام‌صفحه باز کنید.
 - پوسته برنامه بعد از اولین بازدید بدون اینترنت هم کار می‌کند، پس صفحه‌های ذخیره‌شده آفلاین باز می‌شوند.
-
