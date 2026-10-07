@@ -1,18 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect } from "react";
 import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT } from "./content";
-import { cn } from "@/lib/utils";
 import { Hero } from "./components/Hero";
 import { TopBar } from "./components/TopBar";
-import { DemoStrip } from "./components/DemoStrip";
 import { Donate } from "./components/Donate";
-import { Features } from "./components/Features";
-import { HowItWorks } from "./components/HowItWorks";
 import { PwaStrip } from "./components/PwaStrip";
-import { Faq } from "./components/Faq";
 import { WelcomeFooter } from "./components/WelcomeFooter";
 
 const FAQ_JSON_LD = {
@@ -53,44 +47,6 @@ const FAQ_JSON_LD = {
     },
   ],
 };
-
-function MobileCta() {
-  const { lang } = useMetro();
-  const t = WELCOME_CONTENT[lang].hero;
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setShow(window.scrollY > 620);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  return (
-    <div
-      className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 backdrop-blur-md transition-transform duration-300 sm:hidden",
-        show ? "translate-y-0" : "translate-y-full",
-      )}
-      style={{ bottom: "env(safe-area-inset-bottom)" }}
-    >
-      <div className="grid grid-cols-[1fr_auto] gap-2 p-3">
-        <Link
-          href="/route"
-          className="inline-flex h-11 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground active:scale-[0.98]"
-        >
-          {t.ctaPrimary}
-        </Link>
-        <Link
-          href="/map"
-          className="inline-flex h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-bold"
-        >
-          {t.ctaSecondary}
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 export function WelcomePage() {
   const { lang } = useMetro();
@@ -162,16 +118,10 @@ export function WelcomePage() {
       <TopBar />
       <main id="main" className="flex min-h-0 flex-1 flex-col">
         <Hero />
-        <DemoStrip />
         <Donate />
-        <Features />
-        <HowItWorks />
         <PwaStrip />
-        <Faq />
       </main>
       <WelcomeFooter />
-      <MobileCta />
-      <div className="h-16 sm:hidden" aria-hidden />
     </div>
   );
 }
