@@ -43,7 +43,7 @@ export function WelcomeFooter() {
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <Link
                 href="/route"
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98]"
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98] sm:w-auto"
               >
                 {heroCta}
                 {isFa ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
@@ -52,14 +52,14 @@ export function WelcomeFooter() {
                 href={REPO_URL}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-bold transition hover:border-primary hover:text-primary"
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-bold transition hover:border-primary hover:text-primary sm:w-auto"
               >
                 <Star className="h-4 w-4" />
                 {t.github}
               </a>
               <a
                 href="#donate"
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 text-sm font-bold text-foreground transition hover:bg-primary hover:text-primary-foreground"
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 text-sm font-bold text-foreground transition hover:bg-primary hover:text-primary-foreground sm:w-auto"
               >
                 <Heart className="h-4 w-4" />
                 {donateCta}
