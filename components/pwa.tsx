@@ -63,6 +63,28 @@ export function shouldShowIosInstallHint(opts: {
 }
 
 /**
+ * How long the install slot waits for a late `beforeinstallprompt` before
+ * collapsing the invisible placeholder. The event normally arrives within a
+ * second of load when install is possible; waiting forever leaves a phantom
+ * gap in the header (e.g. inside an already-installed app, where the event
+ * never fires and installed-state detection can miss). A prompt arriving
+ * after the collapse still renders the button — only the placeholder goes.
+ */
+export const INSTALL_PROMPT_WAIT_MS = 5000
+
+/**
+ * Pure render gate for the invisible placeholder slot. True when the slot
+ * must collapse: install can never appear (no prompt support and no iOS
+ * hint), or the wait for a late prompt has expired.
+ */
+export function shouldCollapsePromptWait(opts: {
+  canInstallPrompt: boolean
+  promptWaitExpired: boolean
+}): boolean {
+  return !opts.canInstallPrompt || opts.promptWaitExpired
+}
+
+/**
  * Pure render gate for the install slot. True when the button must collapse:
  * already installed, running as an installed PWA, or the Android wrapper
  * (TWA) is installed — the last case avoids nudging TWA users toward a
@@ -158,6 +180,11 @@ export function InstallButton({
   // the mount effect where install can never appear (standalone or no
   // prompt support and no iOS hint).
   const [canInstallPrompt, setCanInstallPrompt] = useState(true)
+  // True once the wait for a late beforeinstallprompt has expired: the
+  // invisible placeholder collapses instead of holding a phantom gap
+  // forever (e.g. inside an already-installed app, where the event never
+  // fires). A prompt arriving later still renders the real button.
+  const [promptWaitExpired, setPromptWaitExpired] = useState(false)
   // TEMPORARY dev preview flag (see block above; delete with it).
   const [isHintPreviewForced, setIsHintPreviewForced] = useState(false)
 
@@ -208,6 +235,9 @@ export function InstallButton({
     } catch {
       setCanInstallPrompt(false)
     }
+    const waitTimer = window.setTimeout(() => {
+      setPromptWaitExpired(true)
+    }, INSTALL_PROMPT_WAIT_MS)
     // TEMPORARY dev preview override (delete this block to remove): bypasses
     // only the isIosDevice() check. installed/standalone gating stays intact.
     // Render precedence is handled below: the flag makes the hint win for
@@ -222,6 +252,7 @@ export function InstallButton({
     }
     return () => {
       cancelled = true
+      window.clearTimeout(waitTimer)
       window.removeEventListener("beforeinstallprompt", onPrompt)
       window.removeEventListener("appinstalled", onInstalled)
     }
@@ -308,10 +339,12 @@ export function InstallButton({
 
   // No prompt (yet) and no iOS hint: hold the exact button-sized slot so a
   // late beforeinstallprompt does not shift the header tabs or lang button.
-  // Collapse only where install can never appear: browsers without prompt
-  // support and without an iOS hint (e.g. desktop Firefox, where holding a
-  // gap forever would waste header space).
-  if (!canInstallPrompt) return null
+  // Collapse where install can never appear (browsers without prompt
+  // support and without an iOS hint, e.g. desktop Firefox, where holding a
+  // gap forever would waste header space), and once the wait for a late
+  // prompt has expired (a prompt arriving later still renders the button).
+  if (shouldCollapsePromptWait({ canInstallPrompt, promptWaitExpired }))
+    return null
 
   return (
     <span
