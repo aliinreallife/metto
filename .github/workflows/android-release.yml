@@ -196,18 +196,38 @@ jobs:
           cat dist/SHA256SUMS.txt
 
       - name: Build release notes from CHANGELOG.md
-        # User-facing bilingual notes first, artifact details appended after.
+        # User-facing bilingual notes first, download table + artifact details after.
         # Extraction fails the job if the version section is missing.
         run: |
           set -euo pipefail
           node scripts/extract-changelog-section.mjs "$GITHUB_REF_NAME" > RELEASE_NOTES.md
+          TAG="$GITHUB_REF_NAME"
+          REPO="$GITHUB_REPOSITORY"
+          BASE_URL="https://github.com/$REPO/releases/download/$TAG"
+          APK="dist/metto-${TAG}.apk"
+          AAB="dist/metto-${TAG}.aab"
+          SUMS="dist/SHA256SUMS.txt"
+          APK_MB="$(awk "BEGIN {printf \"%.1f\", $(stat -c%s "$APK")/1048576}")"
+          AAB_MB="$(awk "BEGIN {printf \"%.1f\", $(stat -c%s "$AAB")/1048576}")"
+          SUMS_KB="$(awk "BEGIN {printf \"%.0f\", $(stat -c%s "$SUMS")/1024}")"
           {
             echo ""
             echo "---"
             echo ""
-            echo "metto Android $GITHUB_REF_NAME (versionCode $VERSION_CODE)."
+            echo "## Download / دانلود"
             echo ""
-            echo "Artifacts: signed .apk (release certificate) for direct testing and downstream Myket publishing (myket-release.yml) + signed .aab for manual Google Play upload, with SHA256SUMS.txt."
+            echo "metto Android $TAG (versionCode $VERSION_CODE)."
+            echo ""
+            echo "| File | For your phone / برای گوشی | Size |"
+            echo "| --- | --- | --- |"
+            echo "| [metto-${TAG}.apk](${BASE_URL}/metto-${TAG}.apk) | Download and tap to install / دانلود و نصب | ${APK_MB} MB |"
+            echo "| [metto-${TAG}.aab](${BASE_URL}/metto-${TAG}.aab) | Google Play upload only, not for phones | ${AAB_MB} MB |"
+            echo "| [SHA256SUMS.txt](${BASE_URL}/SHA256SUMS.txt) | Checksums to verify downloads | ${SUMS_KB} KB |"
+            echo ""
+            echo "How to install: download the APK above → open it → allow install → open metto."
+            echo "نصب: فایل APK بالا را دانلود کنید → باز کنید → اجازه نصب بدهید."
+            echo ""
+            echo "Also on Myket: https://myket.ir/app/ir.metto.app"
             echo ""
             echo "No store publishing inside this workflow."
           } >> RELEASE_NOTES.md
