@@ -79,7 +79,7 @@ export function Donate() {
   const t = WELCOME_CONTENT[lang].donate;
 
   return (
-    <section id="donate" className="border-t border-border py-16 sm:py-24">
+    <section id="donate" className="border-y border-border bg-primary-wash py-16 sm:py-24">
       <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:gap-12">
         <Reveal className="lg:col-span-7">
           <span className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-primary uppercase">
@@ -102,7 +102,7 @@ export function Donate() {
             <ul className="mt-3 space-y-2.5">
               {t.pays.map((item) => (
                 <li key={item} className="flex items-center gap-2.5 text-sm leading-7">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-wash text-primary">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-card text-primary">
                     <CheckIcon className="h-3 w-3" />
                   </span>
                   {item}
