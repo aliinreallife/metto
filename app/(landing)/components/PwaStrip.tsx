@@ -32,7 +32,7 @@ function isStandalone() {
 }
 
 const INSTALL_TARGETS = {
-  twa: "https://github.com/aliinreallife/metto/releases/latest/download/metto.apk",
+  twa: "https://github.com/aliinreallife/metto/releases/latest",
   myket: "https://myket.ir/app/ir.metto.app",
 } as const;
 
