@@ -79,7 +79,7 @@ export function Donate() {
   const t = WELCOME_CONTENT[lang].donate;
 
   return (
-    <section id="donate" className="border-y border-border bg-primary-wash py-16 sm:py-24">
+    <section id="donate" className="flex min-h-svh flex-col justify-center border-y border-border bg-background py-16 sm:py-24">
       <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:gap-12">
         <Reveal className="lg:col-span-7">
           <span className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-primary uppercase">
