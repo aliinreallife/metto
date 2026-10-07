@@ -35,5 +35,8 @@ export default defineConfig([
     "public/sw.js.map",
     "test-results/**",
     "playwright-report/**",
+    // Curated promo/store binaries + vendored render libs (gsap.min.js etc.)
+    // — not application code, never lint.
+    "assets/**",
   ]),
 ]);

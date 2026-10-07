@@ -43,3 +43,11 @@ android/.gradle/
 android/build/
 android/app/build/
 android/app/release/
+
+# Local promo/store scratch (curated finals live under assets/)
+brag-output*/
+store-assets-*/
+dist/
+*.apk
+*.zip
+*.Zone.Identifier

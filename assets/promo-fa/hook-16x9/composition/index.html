@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="fa" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>متو — تو مترو گم شدی؟ ما هم شده بودیم.</title>
+    <script src="assets/js/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Vazirmatn';
+        font-style: normal;
+        font-weight: 400 700;
+        font-display: swap;
+        src: url(assets/fonts/vazirmatn-2.woff2) format('woff2');
+        unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+      }
+      @font-face {
+        font-family: 'Vazirmatn';
+        font-style: normal;
+        font-weight: 400 700;
+        font-display: swap;
+        src: url(assets/fonts/vazirmatn-3.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+2000-206F, U+2190-2193, U+2212;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #fafaf8;
+      }
+      :root {
+        --ink: #1f1f22;
+        --muted: #4b4b53;
+        --brand: #cc0e2d;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #fafaf8;
+        color: var(--ink);
+        font-family: 'Vazirmatn', system-ui, sans-serif;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+      .visual {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* ---------- text column (right side, RTL) ---------- */
+      .text-col {
+        position: absolute;
+        right: 140px;
+        top: 0;
+        bottom: 0;
+        width: 800px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 22px;
+        direction: rtl;
+        text-align: right;
+      }
+      .kicker {
+        font-size: 46px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .title {
+        font-size: 100px;
+        font-weight: 700;
+        line-height: 1.25;
+        color: var(--ink);
+      }
+      .body {
+        font-size: 48px;
+        font-weight: 400;
+        line-height: 1.65;
+        color: var(--muted);
+      }
+
+      /* ---------- backdrop orb ---------- */
+      .orb {
+        position: absolute;
+        width: 900px;
+        height: 900px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 17%, transparent) 0%, color-mix(in srgb, var(--accent) 6%, transparent) 55%, transparent 72%);
+      }
+
+      /* ---------- phone mockup (natural 412x892 CSS-px screen, scaled by wrapper) ---------- */
+      .pw {
+        position: absolute;
+        width: 436px;
+        height: 916px;
+        transform-origin: top left;
+      }
+      .phone {
+        position: relative;
+        width: 436px;
+        height: 916px;
+        border-radius: 66px;
+        background: #17171b;
+        padding: 12px;
+        box-shadow: 0 60px 110px rgba(20, 20, 30, 0.3), 0 18px 36px rgba(20, 20, 30, 0.18), inset 0 0 0 2px #34343b;
+      }
+      .screen {
+        position: relative;
+        width: 412px;
+        height: 892px;
+        border-radius: 54px;
+        overflow: hidden;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+      }
+      .screen img {
+        display: block;
+        flex: none;
+      }
+      .punch {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        width: 14px;
+        height: 14px;
+        margin-left: -7px;
+        border-radius: 50%;
+        background: #0b0b0d;
+        z-index: 30;
+      }
+      .mid {
+        position: relative;
+        flex: none;
+        width: 412px;
+        overflow: hidden;
+      }
+      .scroller {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 412px;
+      }
+      .scroller img {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+      .hl {
+        position: absolute;
+        border: 3px solid var(--accent);
+        border-radius: 16px;
+        box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 20%, transparent);
+        opacity: 0;
+        z-index: 5;
+      }
+      .tap {
+        position: absolute;
+        width: 64px;
+        height: 64px;
+        margin: -32px 0 0 -32px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--accent) 32%, transparent);
+        border: 3px solid var(--accent);
+        opacity: 0;
+        z-index: 6;
+      }
+      .overlay-full {
+        position: absolute;
+        inset: 0;
+        z-index: 15;
+        opacity: 0;
+      }
+      .overlay-full img {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+
+      /* ---------- hook / CTA ---------- */
+      .center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        direction: rtl;
+        text-align: center;
+      }
+      .app-icon {
+        width: 210px;
+        height: 210px;
+        border-radius: 52px;
+        background: var(--brand);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 30px 60px rgba(204, 14, 45, 0.28);
+      }
+      .app-icon svg {
+        width: 126px;
+        height: 126px;
+      }
+      .hook-line {
+        font-size: 158px;
+        font-weight: 700;
+        line-height: 1.22;
+        color: var(--ink);
+      }
+      .hook-red {
+        color: var(--brand);
+      }
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        margin-top: 70px;
+        direction: rtl;
+      }
+      .lockup .app-icon-sm {
+        width: 100px;
+        height: 100px;
+        border-radius: 27px;
+        background: var(--brand);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 16px 34px rgba(204, 14, 45, 0.25);
+      }
+      .lockup .app-icon-sm svg {
+        width: 60px;
+        height: 60px;
+      }
+      .lk-name {
+        font-size: 80px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .lk-sep {
+        width: 4px;
+        height: 54px;
+        border-radius: 2px;
+        background: #cfcfd6;
+      }
+      .lk-sub {
+        font-size: 50px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      .cta-line {
+        font-size: 104px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-top: 40px;
+        text-align: center;
+        line-height: 1.3;
+      }
+      .cta-url {
+        font-size: 150px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--brand);
+        direction: ltr;
+        margin-top: 22px;
+        line-height: 1.15;
+      }
+      .cta-pill {
+        font-size: 44px;
+        font-weight: 700;
+        color: #ffffff;
+        background: var(--ink);
+        border-radius: 999px;
+        padding: 10px 44px;
+        margin-top: 34px;
+      }
+      .bottom-stripe {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 18px;
+        display: flex;
+        direction: ltr;
+      }
+      .bottom-stripe i {
+        flex: 1;
+        display: block;
+        transform-origin: left center;
+      }
+
+      /* ---------- network scene ---------- */
+      .ldots {
+        display: flex;
+        direction: rtl;
+        gap: 18px;
+        margin: 4px 0 6px;
+      }
+      .ldot {
+        width: 78px;
+        height: 78px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 42px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+      .checks {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        margin-top: 8px;
+      }
+      .check-row {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        font-size: 50px;
+        font-weight: 500;
+        color: var(--ink);
+      }
+      .check-ico {
+        flex: none;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--brand);
+        display: grid;
+        place-items: center;
+      }
+      .check-ico svg {
+        width: 28px;
+        height: 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="29.9" data-width="1920" data-height="1080">
+      <!-- ============ S1 hook 0 -> 3.8 ============ -->
+      <section id="s1" class="clip" data-start="0" data-duration="3.8" data-track-index="0">
+        <div id="s1-visual" class="visual">
+          <div class="center">
+            <div id="hk1" class="hook-line">تو مترو گم شدی؟</div>
+            <div id="hk2" class="hook-line hook-red">ما هم شده بودیم.</div>
+            <div id="hk-lock" class="lockup">
+              <div class="app-icon-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M8 3.1V7a4 4 0 0 0 8 0V3.1" />
+                  <path d="m9 15-1-1" />
+                  <path d="m15 15 1-1" />
+                  <path d="M9 19c-2.8 0-5-2.2-5-5v-4a8 8 0 0 1 16 0v4c0 2.8-2.2 5-5 5Z" />
+                  <path d="m8 19-2 3" />
+                  <path d="m16 19 2 3" />
+                </svg>
+              </div>
+              <div class="lk-name">متو</div>
+              <div class="lk-sep"></div>
+              <div class="lk-sub">مسیریاب مترو</div>
+            </div>
+          </div>
+          <div id="h-stripe" class="bottom-stripe">
+            <i style="background: #e0001f"></i><i style="background: #2f4389"></i><i style="background: #67c5f5"></i><i style="background: #f8e100"></i><i style="background: #007e46"></i><i style="background: #ef639f"></i><i style="background: #7f0b74"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S2 route planner 3.4 -> 8.5 ============ -->
+      <section id="s2" class="clip" data-start="3.4" data-duration="5.1" data-track-index="1" style="--accent: #cc0e2d">
+        <div id="s2-visual" class="visual">
+          <div id="s2-orb" class="orb" style="left: 70px; top: 90px"></div>
+          <div class="pw" style="left: 280px; top: 36px; transform: scale(1.1)">
+            <div id="s2-phone" class="phone">
+              <div class="screen">
+                <div class="punch"></div>
+                <img src="assets/img/route-top.png" width="412" height="65" alt="" />
+                <div class="mid" style="height: 738px">
+                  <div id="s2-sc" class="scroller">
+                    <img src="assets/img/route-mid.png" width="412" height="1746" alt="" />
+                    <div id="s2-hl1" class="hl" style="left: 14px; top: 184px; width: 384px; height: 106px"></div>
+                    <div id="s2-hl2" class="hl" style="left: 14px; top: 298px; width: 384px; height: 32px; border-radius: 12px"></div>
+                    <div id="s2-hl3" class="hl" style="left: 14px; top: 771px; width: 384px; height: 46px; border-radius: 14px"></div>
+                  </div>
+                </div>
+                <img src="assets/img/route-bottom.png" width="412" height="89" alt="" />
+              </div>
+            </div>
+          </div>
+          <div class="text-col">
+            <div id="s2-kicker" class="kicker">مسیریاب هوشمند</div>
+            <div id="s2-title" class="title">مبدأ، مقصد، تمام</div>
+            <div id="s2-body" class="body">ایستگاه&zwnj;ها، تعویض خط و ساعت رسیدن، یک&zwnj;جا. لینک مسیر را هم کپی کن.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S3 timetable 8.1 -> 13.1 ============ -->
+      <section id="s3" class="clip" data-start="8.1" data-duration="5.0" data-track-index="2" style="--accent: #2f4389">
+        <div id="s3-visual" class="visual">
+          <div id="s3-orb" class="orb" style="left: 70px; top: 90px"></div>
+          <div class="pw" style="left: 280px; top: 36px; transform: scale(1.1)">
+            <div id="s3-phone" class="phone">
+              <div class="screen">
+                <div class="punch"></div>
+                <img src="assets/img/stations-top.png" width="412" height="65" alt="" />
+                <div class="mid" style="height: 766px">
+                  <div id="s3-sc" class="scroller">
+                    <img src="assets/img/stations-mid.png" width="412" height="1774" alt="" />
+                    <div id="s3-hl1" class="hl" style="left: 15px; top: 311px; width: 382px; height: 58px; border-radius: 12px"></div>
+                    <div id="s3-tap" class="tap" style="left: 334px; top: 394px"></div>
+                  </div>
+                </div>
+                <img src="assets/img/stations-bottom.png" width="412" height="61" alt="" />
+                <div id="s3-dlg" class="overlay-full"><img src="assets/img/07-schedule-dialog.png" width="412" height="892" alt="" /></div>
+              </div>
+            </div>
+          </div>
+          <div class="text-col">
+            <div id="s3-kicker" class="kicker">برنامهٔ حرکت قطارها</div>
+            <div id="s3-title" class="title">نه حدس،<br />جدول قطار</div>
+            <div id="s3-body" class="body">ساعت حرکت بعدی هر ایستگاه، برای روزهای عادی و تعطیل.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S4 nearby 12.7 -> 17.6 ============ -->
+      <section id="s4" class="clip" data-start="12.7" data-duration="4.9" data-track-index="3" style="--accent: #007e46">
+        <div id="s4-visual" class="visual">
+          <div id="s4-orb" class="orb" style="left: 70px; top: 90px"></div>
+          <div class="pw" style="left: 280px; top: 36px; transform: scale(1.1)">
+            <div id="s4-phone" class="phone">
+              <div class="screen">
+                <div class="punch"></div>
+                <img src="assets/img/nearby-top.png" width="412" height="65" alt="" />
+                <div class="mid" style="height: 766px">
+                  <div id="s4-sc" class="scroller">
+                    <img src="assets/img/nearby-mid.png" width="412" height="1774" alt="" />
+                    <div id="s4-hl1" class="hl" style="left: 14px; top: 242px; width: 384px; height: 160px; border-radius: 18px"></div>
+                    <div id="s4-hl2" class="hl" style="left: 14px; top: 410px; width: 384px; height: 186px; border-radius: 18px"></div>
+                  </div>
+                </div>
+                <img src="assets/img/nearby-bottom.png" width="412" height="61" alt="" />
+              </div>
+            </div>
+          </div>
+          <div class="text-col">
+            <div id="s4-kicker" class="kicker">نزدیک من</div>
+            <div id="s4-title" class="title">نزدیک&zwnj;ترین ایستگاه، با یک لمس</div>
+            <div id="s4-body" class="body">فاصله و حرکت بعدیِ ایستگاه&zwnj;های اطراف، با فیلتر امکانات.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S5 map 17.2 -> 22.0 ============ -->
+      <section id="s5" class="clip" data-start="17.2" data-duration="4.8" data-track-index="4" style="--accent: #7f0b74">
+        <div id="s5-visual" class="visual">
+          <div id="s5-orb" class="orb" style="left: 70px; top: 90px"></div>
+          <div class="pw" style="left: 280px; top: 36px; transform: scale(1.1)">
+            <div id="s5-phone" class="phone">
+              <div class="screen">
+                <div class="punch"></div>
+                <img id="s5-m1" src="assets/img/map-z11.png" width="412" height="892" alt="" style="position: absolute; left: 0; top: 0" />
+                <img id="s5-m2" src="assets/img/map-route.png" width="412" height="892" alt="" style="position: absolute; left: 0; top: 0; opacity: 0" />
+                <img id="s5-m3" src="assets/img/map-z13.png" width="412" height="892" alt="" style="position: absolute; left: 0; top: 0; opacity: 0" />
+              </div>
+            </div>
+          </div>
+          <div class="text-col">
+            <div id="s5-kicker" class="kicker">نقشهٔ مترو</div>
+            <div id="s5-title" class="title">کل شبکه،<br />روی یک نقشه</div>
+            <div id="s5-body" class="body">مسیرت روی نقشه پررنگ می&zwnj;شود و با زوم کردن، نام ایستگاه&zwnj;ها پیدا می&zwnj;شود.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S6 network + bilingual 21.6 -> 26.4 ============ -->
+      <section id="s6" class="clip" data-start="21.6" data-duration="4.8" data-track-index="5" style="--accent: #cc0e2d">
+        <div id="s6-visual" class="visual">
+          <div id="s6-orb" class="orb" style="left: 20px; top: 110px"></div>
+          <div class="pw" style="left: 120px; top: 215px; transform: scale(0.84)">
+            <div id="s6-phone-en" class="phone">
+              <div class="screen">
+                <div class="punch"></div>
+                <img src="assets/img/route-en-full.png" width="412" height="892" alt="" />
+              </div>
+            </div>
+          </div>
+          <div class="pw" style="left: 440px; top: 155px; transform: scale(0.84)">
+            <div id="s6-phone-fa" class="phone">
+              <div class="screen">
+                <div class="punch"></div>
+                <img src="assets/img/route-full.png" width="412" height="892" alt="" />
+              </div>
+            </div>
+          </div>
+          <div class="text-col">
+            <div id="s6-kicker" class="kicker">همه&zwnj;جا همراهت</div>
+            <div id="s6-title" class="title">۱۵۱ ایستگاه، ۷ خط</div>
+            <div id="s6-dots" class="ldots">
+              <div class="ldot" style="background: #e0001f">۱</div>
+              <div class="ldot" style="background: #2f4389">۲</div>
+              <div class="ldot" style="background: #67c5f5">۳</div>
+              <div class="ldot" style="background: #f8e100; color: #1f1f22">۴</div>
+              <div class="ldot" style="background: #007e46">۵</div>
+              <div class="ldot" style="background: #ef639f">۶</div>
+              <div class="ldot" style="background: #7f0b74">۷</div>
+            </div>
+            <div id="s6-checks" class="checks">
+              <div class="check-row">
+                <div class="check-ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 6.5" /></svg>
+                </div>
+                <div>فارسی و English</div>
+              </div>
+              <div class="check-row">
+                <div class="check-ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 6.5" /></svg>
+                </div>
+                <div>مسیریابی بدون اینترنت</div>
+              </div>
+              <div class="check-row">
+                <div class="check-ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 6.5" /></svg>
+                </div>
+                <div>شهرهای بیشتر در راه</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S7 CTA 26.0 -> 29.9 ============ -->
+      <section id="s7" class="clip" data-start="26.0" data-duration="3.9" data-track-index="6">
+        <div id="s7-visual" class="visual">
+          <div class="center">
+            <div id="c-icon" class="app-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 3.1V7a4 4 0 0 0 8 0V3.1" />
+                <path d="m9 15-1-1" />
+                <path d="m15 15 1-1" />
+                <path d="M9 19c-2.8 0-5-2.2-5-5v-4a8 8 0 0 1 16 0v4c0 2.8-2.2 5-5 5Z" />
+                <path d="m8 19-2 3" />
+                <path d="m16 19 2 3" />
+              </svg>
+            </div>
+            <div id="c-line" class="cta-line">همین حالا مسیرت را پیدا کن</div>
+            <div id="c-url" class="cta-url">metto.ir</div>
+            <div id="c-pill" class="cta-pill">رایگان</div>
+          </div>
+          <div id="c-stripe" class="bottom-stripe">
+            <i style="background: #e0001f"></i><i style="background: #2f4389"></i><i style="background: #67c5f5"></i><i style="background: #f8e100"></i><i style="background: #007e46"></i><i style="background: #ef639f"></i><i style="background: #7f0b74"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ audio ============ -->
+      <audio
+        id="bg-music"
+        src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"
+        data-start="0"
+        data-duration="29.9"
+        data-track-index="20"
+        data-volume="0.32"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.8,"v":1},{"t":27.9,"v":1},{"t":29.9,"v":0}]}]}'
+      ></audio>
+      <audio id="sfx-hook" src="assets/sfx/interface/drop_001.ogg" data-start="1.0" data-duration="1" data-track-index="21" data-volume="0.5"></audio>
+      <audio id="sfx-s2" src="assets/sfx/interface/drop_002.ogg" data-start="3.8" data-duration="1" data-track-index="22" data-volume="0.6"></audio>
+      <audio id="sfx-s3" src="assets/sfx/interface/drop_001.ogg" data-start="8.5" data-duration="1" data-track-index="23" data-volume="0.6"></audio>
+      <audio id="sfx-s3-tap" src="assets/sfx/interface/drop_002.ogg" data-start="11.1" data-duration="1" data-track-index="24" data-volume="0.4"></audio>
+      <audio id="sfx-s4" src="assets/sfx/interface/drop_001.ogg" data-start="13.1" data-duration="1" data-track-index="25" data-volume="0.6"></audio>
+      <audio id="sfx-s5" src="assets/sfx/interface/drop_002.ogg" data-start="17.6" data-duration="1" data-track-index="26" data-volume="0.6"></audio>
+      <audio id="sfx-s6" src="assets/sfx/interface/drop_001.ogg" data-start="22.0" data-duration="1" data-track-index="27" data-volume="0.6"></audio>
+      <audio id="sfx-logo" src="assets/sfx/interface/bong_001.ogg" data-start="26.6" data-duration="1.5" data-track-index="28" data-volume="0.65"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // scene start times (crossfade begins here)
+      const T2 = 3.4, T3 = 8.1, T4 = 12.7, T5 = 17.2, T6 = 21.6, T7 = 26.0;
+
+      ['s2', 's3', 's4', 's5', 's6', 's7'].forEach((id) => gsap.set('#' + id + '-visual', { opacity: 0 }));
+      gsap.set(['#s2-hl1', '#s2-hl2', '#s2-hl3', '#s3-hl1', '#s3-tap', '#s3-dlg', '#s4-hl1', '#s4-hl2'], { opacity: 0 });
+      gsap.set(['#s5-m2', '#s5-m3'], { opacity: 0 });
+
+      // cross-fade between scene visuals
+      const xfade = (from, to, t) => {
+        tl.to('#' + from + '-visual', { opacity: 0, duration: 0.4, ease: 'power1.inOut' }, t);
+        tl.to('#' + to + '-visual', { opacity: 1, duration: 0.4, ease: 'power1.inOut' }, t);
+      };
+      // shared scene entrance (orb, phone, kicker, title, body)
+      const enter = (T, p) => {
+        tl.fromTo('#' + p + '-orb', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.9, ease: 'power2.out' }, T + 0.15);
+        tl.fromTo('#' + p + '-phone', { x: -120, opacity: 0, rotate: -3 }, { x: 0, opacity: 1, rotate: 0, duration: 0.8, ease: 'power3.out' }, T + 0.3);
+        tl.fromTo('#' + p + '-kicker', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power3.out' }, T + 0.5);
+        tl.fromTo('#' + p + '-title', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: 'power3.out' }, T + 0.75);
+        tl.fromTo('#' + p + '-body', { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power3.out' }, T + 1.25);
+      };
+      // highlight ring on a real UI region
+      const pulse = (sel, t, hold) => {
+        tl.fromTo(sel, { opacity: 0, scale: 1.07 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power2.out' }, t);
+        tl.to(sel, { opacity: 0, duration: 0.3, ease: 'power1.in' }, t + hold);
+      };
+
+      // ---------- S1 hook: «تو مترو گم شدی؟ ما هم شده بودیم.» ----------
+      tl.fromTo('#hk1', { y: 56, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }, 0.25);
+      tl.fromTo('#hk2', { y: 56, opacity: 0, scale: 0.94 }, { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: 'power3.out' }, 1.05);
+      tl.fromTo('#h-stripe i', { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power2.out', stagger: 0.06 }, 1.6);
+      tl.fromTo('#hk-lock', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: 'power3.out' }, 2.0);
+      xfade('s1', 's2', T2);
+
+      // ---------- S2 route planner ----------
+      enter(T2, 's2');
+      pulse('#s2-hl1', T2 + 1.5, 0.9);
+      pulse('#s2-hl2', T2 + 2.7, 0.4);
+      tl.to('#s2-sc', { y: -100, duration: 0.55, ease: 'power2.inOut' }, T2 + 3.2);
+      pulse('#s2-hl3', T2 + 3.8, 0.45);
+      xfade('s2', 's3', T3);
+
+      // ---------- S3 timetable ----------
+      enter(T3, 's3');
+      pulse('#s3-hl1', T3 + 1.65, 1.1);
+      tl.fromTo('#s3-tap', { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.25, ease: 'power2.out' }, T3 + 3.0);
+      tl.to('#s3-tap', { opacity: 0, scale: 1.6, duration: 0.4, ease: 'power1.in' }, T3 + 3.3);
+      tl.fromTo('#s3-dlg', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power1.out' }, T3 + 3.35);
+      xfade('s3', 's4', T4);
+
+      // ---------- S4 nearby ----------
+      enter(T4, 's4');
+      pulse('#s4-hl1', T4 + 1.5, 1.0);
+      tl.to('#s4-sc', { y: -330, duration: 0.85, ease: 'power2.inOut' }, T4 + 2.85);
+      pulse('#s4-hl2', T4 + 3.7, 0.45);
+      xfade('s4', 's5', T5);
+
+      // ---------- S5 map ----------
+      enter(T5, 's5');
+      tl.to('#s5-m2', { opacity: 1, duration: 0.5, ease: 'power1.inOut' }, T5 + 1.4);
+      tl.to('#s5-m3', { opacity: 1, duration: 0.5, ease: 'power1.inOut' }, T5 + 2.8);
+      xfade('s5', 's6', T6);
+
+      // ---------- S6 network + bilingual ----------
+      tl.fromTo('#s6-orb', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.9, ease: 'power2.out' }, T6 + 0.15);
+      tl.fromTo('#s6-phone-fa', { y: 120, opacity: 0, rotate: 3 }, { y: 0, opacity: 1, rotate: 0, duration: 0.8, ease: 'power3.out' }, T6 + 0.3);
+      tl.fromTo('#s6-phone-en', { x: -120, opacity: 0, rotate: -3 }, { x: 0, opacity: 1, rotate: 0, duration: 0.8, ease: 'power3.out' }, T6 + 0.6);
+      tl.fromTo('#s6-kicker', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power3.out' }, T6 + 0.5);
+      tl.fromTo('#s6-title', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: 'power3.out' }, T6 + 0.75);
+      tl.fromTo('#s6-dots .ldot', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(2)', stagger: 0.07 }, T6 + 1.3);
+      tl.fromTo('#s6-checks .check-row', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power3.out', stagger: 0.3 }, T6 + 1.9);
+      xfade('s6', 's7', T7);
+
+      // ---------- S7 CTA ----------
+      tl.fromTo('#c-icon', { scale: 0.5, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.6, ease: 'back.out(1.8)' }, T7 + 0.5);
+      tl.fromTo('#c-line', { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: 'power3.out' }, T7 + 0.9);
+      tl.fromTo('#c-url', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: 'power3.out' }, T7 + 1.4);
+      tl.fromTo('#c-pill', { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)' }, T7 + 1.9);
+      tl.fromTo('#c-stripe i', { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: 'power2.out', stagger: 0.08 }, T7 + 1.2);
+
+      window.__timelines['main'] = tl;
+    </script>
+  </body>
+</html>
