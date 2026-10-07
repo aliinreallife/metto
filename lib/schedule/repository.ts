@@ -32,9 +32,18 @@ export interface RepositoryDeps {
 }
 
 async function defaultFetchJson(url: string): Promise<unknown> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`http-${res.status}`);
-  return res.json();
+  // Bounded: a stalled connection must fail (and let the caller retry),
+  // never hang the startup load forever. 30s leaves ample room for the
+  // ~5MB monolith on slow mobile networks.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30_000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error(`http-${res.status}`);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
