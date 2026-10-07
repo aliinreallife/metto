@@ -97,7 +97,17 @@ export function PwaStrip() {
   ];
 
   return (
-    <section id="install" className="relative overflow-hidden border-t border-border bg-foreground py-16 text-background sm:py-20">
+    <section id="install" className="relative overflow-hidden bg-foreground py-16 text-background sm:py-20">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+          backgroundSize: "88px 88px",
+          maskImage: "radial-gradient(120% 90% at 50% 0%, black 30%, transparent 78%)",
+        }}
+        aria-hidden
+      />
       <div className="relative mx-auto w-full max-w-6xl px-4 sm:px-6">
         <Reveal>
           <span className="inline-flex items-center gap-2 rounded-lg border border-background/25 px-2.5 py-1 text-[11px] font-bold">
@@ -132,14 +142,14 @@ export function PwaStrip() {
               {heroCta}
             </Link>
           </div>
-          <p className="mt-2.5 text-[11px] text-background/60">{t.note}</p>
+          <p className="mt-2.5 text-[11px] text-background/70">{t.note}</p>
         </Reveal>
 
         <Reveal delay={60}>
           <div className="mt-10">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-base font-black tracking-tight">{t.storesTitle}</h3>
-              <p className="text-[11px] text-background/60">{t.storesSubtitle}</p>
+              <p className="text-[11px] text-background/70">{t.storesSubtitle}</p>
             </div>
 
             <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
@@ -150,10 +160,10 @@ export function PwaStrip() {
                       className={cn(
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200",
                         disabled
-                          ? "border-background/10 text-background/35"
+                          ? "border-background/15 text-background/40"
                           : primary
                             ? "border-primary/50 bg-primary text-primary-foreground"
-                            : "border-background/25 text-background group-hover:border-background/50",
+                            : "border-background/30 text-background group-hover:border-background/50",
                       )}
                       aria-hidden
                     >
@@ -161,24 +171,24 @@ export function PwaStrip() {
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-sm font-bold">{title}</span>
-                      <span className={cn("text-[11px]", disabled ? "text-background/45" : "text-background/65")}>
+                      <span className={cn("text-[11px]", disabled ? "text-background/50" : "text-background/70")}>
                         {note}
                       </span>
                     </span>
                     {disabled ? (
-                      <span className="shrink-0 rounded-md border border-background/15 px-1.5 py-0.5 text-[10px] font-bold text-background/50">
+                      <span className="shrink-0 rounded-md border border-background/20 px-1.5 py-0.5 text-[10px] font-bold text-background/55">
                         {isFa ? "به‌زودی" : "soon"}
                       </span>
                     ) : (
-                      <ArrowIcon className="h-4 w-4 shrink-0 text-background/50 transition-all duration-300 group-hover:translate-x-1 group-hover:text-background rtl:rotate-180 rtl:group-hover:-translate-x-1" />
+                      <ArrowIcon className="h-4 w-4 shrink-0 text-background/55 transition-all duration-300 group-hover:translate-x-1 group-hover:text-background rtl:rotate-180 rtl:group-hover:-translate-x-1" />
                     )}
                   </>
                 );
                 const cls = cn(
                   "group flex items-center gap-3 rounded-lg border px-3.5 py-3 text-start transition-all duration-200",
                   disabled
-                    ? "cursor-not-allowed border-dashed border-background/15 text-background/55"
-                    : "border-background/20 bg-background/[0.07] hover:-translate-y-0.5 hover:border-background/45 hover:bg-background/[0.13] active:scale-[0.99]",
+                    ? "cursor-not-allowed border-dashed border-background/20 text-background/60"
+                    : "border-background/25 bg-background/[0.08] hover:-translate-y-0.5 hover:border-background/45 hover:bg-background/[0.13] active:scale-[0.99]",
                 );
                 return (
                   <li key={key}>
