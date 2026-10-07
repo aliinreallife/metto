@@ -187,7 +187,7 @@ function RoutePanel() {
           time={arriveAt}
         />
 
-        <dl className="mt-5 grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-border bg-border">
+        <dl className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
           {[
             { v: persianDigits(minutes, lang), l: t.duration, u: t.minutes },
             { v: persianDigits(stops, lang), l: t.stops, u: "" },
@@ -335,7 +335,7 @@ export function Hero() {
         aria-hidden
       />
 
-      <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-16">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-10 pt-[max(2.5rem,env(safe-area-inset-top))] sm:px-6 sm:pb-14 sm:pt-16">
         <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
           <div className="lg:col-span-7">
             <Reveal>
@@ -392,7 +392,7 @@ export function Hero() {
                 <button
                   type="button"
                   onClick={() => setLang(lang === "en" ? "fa" : "en")}
-                  className="inline-flex h-12 items-center justify-center gap-1.5 self-start rounded-lg border border-border px-4 text-sm font-bold transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:self-auto"
+                  className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-lg border border-border px-4 text-sm font-bold transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
                   aria-label={lang === "en" ? "فارسی — Toggle language" : "EN — تغییر زبان"}
                 >
                   <Globe className="size-4" />

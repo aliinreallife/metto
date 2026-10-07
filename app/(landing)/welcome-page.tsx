@@ -93,7 +93,7 @@ export function WelcomePage() {
   // content height and this container scrolls. A flex column here would
   // starve <main> of height and shrink its overflow-hidden sections to zero.
   return (
-    <div dir={dir} className="min-h-0 flex-1 overflow-y-auto bg-background text-foreground">
+    <div dir={dir} className="min-h-0 flex-1 overflow-y-auto bg-background pb-[env(safe-area-inset-bottom)] text-foreground">
       {/* Synchronous pre-paint redirect: old ?from/to links and the
           returning-visitor flag ("route.seen") both land on /route BEFORE
           first paint, so there is no flash-of-landing. Parser-blocking by

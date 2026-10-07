@@ -125,7 +125,7 @@ export function PwaStrip() {
                 role="status"
                 title={t.installedHint}
                 aria-label={t.installedHint}
-                className="inline-flex h-12 items-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold sm:w-auto"
               >
                 <CheckIcon className="h-4 w-4 text-primary" />
                 {t.installed}
@@ -137,7 +137,7 @@ export function PwaStrip() {
                 disabled={!installEvent && !installed}
                 title={!installEvent && !installed ? t.note : undefined}
                 className={cn(
-                  "group inline-flex h-12 items-center gap-2 rounded-lg px-6 text-sm font-bold transition-all duration-200",
+                  "group inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg px-6 text-sm font-bold transition-all duration-200 sm:w-auto",
                   installEvent
                     ? "bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98]"
                     : "cursor-default border border-border text-muted-foreground",
@@ -149,7 +149,7 @@ export function PwaStrip() {
             )}
             <Link
               href="/route"
-              className="inline-flex h-12 items-center gap-2 rounded-lg border border-border px-5 text-sm font-bold transition-colors duration-200 hover:bg-card"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-border px-5 text-sm font-bold transition-colors duration-200 hover:bg-card sm:w-auto"
             >
               <TrainIcon className="h-4 w-4" />
               {heroCta}
