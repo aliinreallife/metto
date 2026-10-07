@@ -56,7 +56,13 @@ npx -y @bubblewrap/cli@1.25.0 update --manifest android
 # with PERMISSION_DENIED while the PWA works).
 # Also re-apply the LocationSettingsActivity block ("Turn on location"
 # deep link) and the ?twa=android line in LauncherActivity.getLaunchingUrl.
-node scripts/check-android-config.mjs
+#
+# Launch path: the TWA cold-start URL must stay in sync in three places —
+# app/manifest.ts start_url (PWA installs), android/twa-manifest.json
+# startUrl (Bubblewrap input), and android/app/build.gradle launchUrl
+# (authoritative for APK builds). `update` regenerates build.gradle from
+# the template, so re-apply the /route value there too.
+node scripts/check-android-config.mjs # also asserts the launch-path sync
 ```
 
 ## Location-services-OFF UX (no GMS)

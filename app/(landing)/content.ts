@@ -2,7 +2,7 @@ export type WelcomeLang = "fa" | "en";
 export type WelcomeNavKey = "route" | "stations" | "nearby" | "map";
 
 export const WELCOME_NAV: { key: WelcomeNavKey; href: string }[] = [
-  { key: "route", href: "/" },
+  { key: "route", href: "/route" },
   { key: "stations", href: "/stations" },
   { key: "nearby", href: "/nearby" },
   { key: "map", href: "/map" },

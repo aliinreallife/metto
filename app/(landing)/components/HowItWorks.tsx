@@ -22,7 +22,7 @@ export function HowItWorks() {
               <h2 className="mt-2 text-[clamp(1.7rem,4vw,2.6rem)] font-black leading-tight tracking-tight">{t.title}</h2>
             </div>
             <Link
-              href="/"
+              href="/route"
               className="group inline-flex h-11 items-center gap-2 rounded-lg border border-border bg-card px-5 text-sm font-bold transition-all duration-200 hover:border-primary hover:text-primary active:scale-[0.98]"
             >
               {t.cta}

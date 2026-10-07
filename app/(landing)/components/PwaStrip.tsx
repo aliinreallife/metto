@@ -306,7 +306,7 @@ export function PwaStrip() {
                   {installed ? t.installed : t.install}
                 </button>
                 <Link
-                  href="/"
+                  href="/route"
                   className="inline-flex h-12 items-center gap-2 rounded-lg border border-background/30 px-5 text-sm font-bold transition-colors duration-200 hover:bg-background hover:text-foreground"
                 >
                   <TrainIcon className="h-4 w-4" />

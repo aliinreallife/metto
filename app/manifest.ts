@@ -36,7 +36,10 @@ export default function manifest(): LocalizedManifest {
             dir: "rtl"
         }
     },
-    start_url: "/",
+    // The launch target is the route planner, not the landing page.
+    // `id` intentionally stays "/" so installed PWAs keep their identity
+    // (changing `id` would orphan existing installs into a duplicate app).
+    start_url: "/route",
     scope: "/",
     display: "standalone",
     background_color: "#0a0a0a",

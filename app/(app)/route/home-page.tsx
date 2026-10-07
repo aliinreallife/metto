@@ -18,6 +18,7 @@ import { RoutePanel } from "@/components/route-panel";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
 import { useMetro } from "@/app/providers";
+import { TabLink } from "@/app/nav";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useScheduleData } from "@/lib/use-schedule-data";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
@@ -33,6 +34,7 @@ import {
   parsePlaceParam,
 } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
+import { useConnectivity } from "@/lib/offline/use-connectivity";
 import {
   classifyGeoError,
   getCurrentPositionTolerant,
@@ -97,6 +99,8 @@ export function HomePage() {
   const isFa = lang === "fa";
   const t = STRINGS[lang];
   const searchParams = useSearchParams();
+  // Shared connectivity state for the offline-safe footer tab links.
+  const { state: connectivity } = useConnectivity();
 
   const initialFrom = searchParams.get("from");
   const initialTo = searchParams.get("to");
@@ -119,6 +123,9 @@ export function HomePage() {
   // (Runs on mount only; URL always wins.)
   useEffect(() => {
     try {
+      // Remember that this browser has used the planner: the landing page
+      // fast-paths returning visitors straight back here (see welcome-page).
+      localStorage.setItem("route.seen", "1");
       if (!searchParams.get("from")) {
         const saved = localStorage.getItem("route.from");
         if (saved) setOriginId(saved);
@@ -286,6 +293,22 @@ export function HomePage() {
           </span>
           <span className="sr-only"> ({t.opensInNewTab})</span>
         </a>
+        {/* Offline-safe tab links: client navigation online, full-document
+            navigation from precache offline (same TabLink as the nav). */}
+        <TabLink
+          href="/"
+          connectivity={connectivity}
+          className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {t.aboutLink}
+        </TabLink>
+        <TabLink
+          href="/#donate"
+          connectivity={connectivity}
+          className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {t.supportLink}
+        </TabLink>
       </div>
     </div>
   );

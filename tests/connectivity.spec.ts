@@ -79,7 +79,7 @@ test.describe("Effective connectivity", () => {
   }) => {
     await blockThirdParty(context);
     const page = await context.newPage();
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     const status = page.getByTestId("offline-status");
     await expect(status).toBeAttached({ timeout: 60_000 });
     // Sample through the ENTIRE preparing window, not just final state.
@@ -101,7 +101,7 @@ test.describe("Effective connectivity", () => {
       route.abort("blockedbyclient"),
     );
     const page = await context.newPage();
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("offline-status")).toBeAttached({
       timeout: 60_000,
     });
@@ -239,7 +239,7 @@ test.describe("Effective connectivity", () => {
       route.abort("failed"),
     );
     const page = await context.newPage();
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     await expect(
       page.getByTestId("offline-status"),
     ).toBeAttached({ timeout: 60_000 });
@@ -285,7 +285,7 @@ test.describe("Effective connectivity", () => {
       await route.fallback();
     });
     const page = await context.newPage();
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("offline-status")).toBeAttached({
       timeout: 60_000,
     });

@@ -26,7 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/", labelKey: "tabRoute" as const, icon: RouteIcon },
+  { href: "/route", labelKey: "tabRoute" as const, icon: RouteIcon },
   { href: "/stations", labelKey: "tabStations" as const, icon: ListTree },
   { href: "/nearby", labelKey: "tabNearby" as const, icon: LocateFixed },
   { href: "/map", labelKey: "tabMap" as const, icon: MapIcon },
@@ -50,7 +50,7 @@ const NAV_ITEMS = [
  * navigation works online too for precached tabs, while a client
  * navigation while offline always breaks.
  */
-function TabLink({
+export function TabLink({
   href,
   connectivity,
   className,
@@ -110,7 +110,7 @@ export function AppNav() {
   const { state: connectivity } = useConnectivity();
 
   const currentPath = pathname === "/" ? "/" : pathname;
-  const isMainTab = currentPath === "/";
+  const isMainTab = currentPath === "/route";
 
   function getHref(base: string) {
     // Preserve each side independently plus place pins on every tab, so
@@ -131,7 +131,7 @@ export function AppNav() {
   return (
     <>
       <header className="z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-6 md:py-4">
-          <TabLink href="/" connectivity={connectivity} className="flex items-center gap-2.5 md:gap-3">
+          <TabLink href="/route" connectivity={connectivity} className="flex items-center gap-2.5 md:gap-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground md:size-10">
             <TrainFront className="size-5 md:size-6" />
           </span>
@@ -214,6 +214,20 @@ export function AppNav() {
             </span>
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
+          <TabLink
+            href="/"
+            connectivity={connectivity}
+            className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t.aboutLink}
+          </TabLink>
+          <TabLink
+            href="/#donate"
+            connectivity={connectivity}
+            className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t.supportLink}
+          </TabLink>
         </div>
         )}
         <nav className={cn("grid grid-cols-4 pb-[env(safe-area-inset-bottom)]", isMainTab && "border-t border-border")}>

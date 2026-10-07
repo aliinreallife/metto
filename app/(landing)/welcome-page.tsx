@@ -6,6 +6,7 @@ import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT } from "./content";
 import { cn } from "@/lib/utils";
 import { Hero } from "./components/Hero";
+import { TopBar } from "./components/TopBar";
 import { DemoStrip } from "./components/DemoStrip";
 import { Donate } from "./components/Donate";
 import { Features } from "./components/Features";
@@ -71,11 +72,11 @@ function MobileCta() {
         "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 backdrop-blur-md transition-transform duration-300 sm:hidden",
         show ? "translate-y-0" : "translate-y-full",
       )}
-      style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}
+      style={{ bottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="grid grid-cols-[1fr_auto] gap-2 p-3">
         <Link
-          href="/"
+          href="/route"
           className="inline-flex h-11 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground active:scale-[0.98]"
         >
           {t.ctaPrimary}
@@ -101,8 +102,49 @@ export function WelcomePage() {
     document.documentElement.dir = dir;
   }, [lang, dir]);
 
+  // Landing fast-path, evaluated in order with full-document navigation
+  // (client routing cannot succeed offline, and replace() keeps history
+  // clean either way). The inline script above already handles the common
+  // case pre-paint; this effect is the fallback. Cases:
+  // 1. Old share links (metto.ir/?from=…&to=…) redirect server-side to
+  //    /route when online. If this page still renders with route params
+  //    (an offline cold open served from precache), hand off client-side.
+  // 2. Returning visitors (this browser has used the planner before — the
+  //    "route.seen" flag) skip the intro and go straight back to the app
+  //    they love. First-timers, bots (clean storage: no flag, so crawlers
+  //    always index the landing), and private mode (storage throws: fall
+  //    through to the landing) are unaffected.
+  useEffect(() => {
+    const search = window.location.search;
+    if (/[?&](from|to)=/.test(search)) {
+      window.location.replace(`/route${search}`);
+      return;
+    }
+    try {
+      if (localStorage.getItem("route.seen") === "1") {
+        window.location.replace(`/route${search}`);
+      }
+    } catch {
+      // Private mode etc. — show the landing.
+    }
+  }, []);
+
+  // Block layout for the scroll container (not flex): children stack at
+  // content height and this container scrolls. A flex column here would
+  // starve <main> of height and shrink its overflow-hidden sections to zero.
   return (
-    <div dir={dir} className="h-full overflow-y-auto bg-background text-foreground">
+    <div dir={dir} className="min-h-0 flex-1 overflow-y-auto bg-background text-foreground">
+      {/* Synchronous pre-paint redirect: old ?from/to links and the
+          returning-visitor flag ("route.seen") both land on /route BEFORE
+          first paint, so there is no flash-of-landing. Parser-blocking by
+          design — keep this the first node. Crawlers and first-timers have
+          no flag, so they always render the landing. The React effect below
+          is the fallback (e.g. if inline scripts are stripped). */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `try{var s=location.search;if(/[?&](from|to)=/.test(s)||localStorage.getItem("route.seen")==="1"){location.replace("/route"+s)}}catch(e){}`,
+        }}
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }} />
       <a
         href="#main"
@@ -110,6 +152,7 @@ export function WelcomePage() {
       >
         {t.misc.skip}
       </a>
+      <TopBar />
       <main id="main" className="flex min-h-0 flex-1 flex-col">
         <Hero />
         <DemoStrip />

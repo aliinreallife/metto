@@ -2,13 +2,13 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 // Accessibility gate for the route-search flow (Phase 1 + Phase 3).
-// - Axe scans on /, /stations, /nearby, /map — fails only on
+// - Axe scans on /route, /stations, /nearby, /map — fails only on
 //   serious/critical impacts (moderate/minor are reported, not fatal,
 //   so deferred work like palette contrast tuning doesn't block quick wins).
 // - Keyboard flow for the From/To comboboxes: labels associated,
 //   listbox/option semantics, Escape restores focus.
 
-const ROUTES = ["/", "/stations", "/nearby", "/map"] as const;
+const ROUTES = ["/route", "/stations", "/nearby", "/map"] as const;
 
 for (const route of ROUTES) {
   test(`axe: ${route} has no serious/critical violations`, async ({ page }) => {
@@ -62,8 +62,8 @@ test.describe("landmarks", () => {
     });
   }
 
-  test("/ main contains the route search form", async ({ page }) => {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+  test("/route main contains the route search form", async ({ page }) => {
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
     const main = page.locator("main");
     await expect(main.locator("#origin-combobox")).toBeVisible();
     await expect(main.locator("#dest-combobox")).toBeVisible();
@@ -74,7 +74,7 @@ test.describe("route search keyboard flow", () => {
   test("From/To labels associated, combobox semantics, Escape restores focus", async ({
     page,
   }) => {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
 
     const originLabel = page.getByText("مبدأ", { exact: true }).first();
     const destLabel = page.getByText("مقصد", { exact: true }).first();
@@ -136,7 +136,7 @@ test.describe("route search keyboard flow", () => {
   });
 
   test("route warnings and departures use live regions", async ({ page }) => {
-    await page.goto("/?from=tajrish&to=tehran-sadeghiyeh", {
+    await page.goto("/route?from=tajrish&to=tehran-sadeghiyeh", {
       waitUntil: "domcontentloaded",
     });
     // Arrival stat proves the route rendered.

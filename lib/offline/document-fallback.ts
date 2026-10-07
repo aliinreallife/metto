@@ -1,8 +1,8 @@
 /**
  * Narrow offline document fallback for the top-level static tabs.
  *
- * Background: Serwist precaches canonical documents (`/`, `/map`,
- * `/stations`, `/nearby`, `/welcome`) but only strips `utm_*`/`fbclid`
+ * Background: Serwist precaches canonical documents (`/`, `/route`, `/map`,
+ * `/stations`, `/nearby`) but only strips `utm_*`/`fbclid`
  * query params when matching, so a navigation like
  * `/map?from=ahang&to=aliabad` misses the precache entry. The fallback
  * below maps such requests back to their canonical precached document —
@@ -20,10 +20,10 @@
 
 export const CANONICAL_STATIC_DOCS: ReadonlyArray<string> = [
   "/",
+  "/route",
   "/map",
   "/stations",
   "/nearby",
-  "/welcome",
 ];
 
 /** Exact-match check against the canonical static documents. */

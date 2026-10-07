@@ -18,14 +18,21 @@ ok(twa.packageId === "ir.metto.app", `twa-manifest packageId == ir.metto.app (go
 ok(twa.host === "metto.ir", `twa-manifest host == metto.ir (got ${twa.host})`);
 ok(twa.name === "metto", `twa-manifest name == metto (got ${twa.name})`);
 ok(twa.launcherName === "metto", `twa-manifest launcherName == metto (got ${twa.launcherName})`);
-ok(twa.startUrl === "/", `twa-manifest startUrl == / (got ${twa.startUrl})`);
+ok(twa.startUrl === "/route", `twa-manifest startUrl == /route (got ${twa.startUrl})`);
 ok(twa.display === "standalone", `twa-manifest display == standalone (got ${twa.display})`);
 ok(twa.appVersionName === "0.1.0" || twa.appVersion === "0.1.0", "twa-manifest default version 0.1.0");
 ok(twa.appVersionCode === 1000, `twa-manifest appVersionCode == 1000 (got ${twa.appVersionCode})`);
 ok(twa.features?.locationDelegation?.enabled === true, "twa-manifest features.locationDelegation.enabled == true");
 ok(twa.webManifestUrl === "https://metto.ir/manifest.webmanifest", "twa-manifest webManifestUrl points at prod");
 
+// Launch-path sync: the TWA cold-start URL must agree in all three places —
+// the web manifest (PWA installs + ChromeOS/Quest), twa-manifest.json
+// (Bubblewrap input), and build.gradle (authoritative for APK builds: CI
+// builds Gradle directly and never runs `bubblewrap update`).
 const gradle = readFileSync(resolve(repoRoot, "android/app/build.gradle"), "utf8");
+ok(gradle.includes("launchUrl: '/route'"), "app/build.gradle TWA launchUrl == /route");
+const webManifest = readFileSync(resolve(repoRoot, "app/manifest.ts"), "utf8");
+ok(webManifest.includes('start_url: "/route"'), "app/manifest.ts PWA start_url == /route");
 ok(gradle.includes('targetSdkVersion 36'), "app/build.gradle targetSdkVersion 36");
 ok(gradle.includes('compileSdkVersion 36'), "app/build.gradle compileSdkVersion 36");
 ok(gradle.includes('applicationId "ir.metto.app"'), 'app/build.gradle applicationId "ir.metto.app"');
