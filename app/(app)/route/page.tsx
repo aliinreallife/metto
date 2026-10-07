@@ -37,8 +37,12 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
+  // Explicit null fallback: a bare <Suspense> bubbles to the nearest
+  // loading.js, flashing hardcoded English ("Loading...") in both
+  // languages while the client resolves search params. Null renders
+  // nothing until hydration fills the planner in.
   return (
-    <Suspense>
+    <Suspense fallback={null}>
       <HomePage />
     </Suspense>
   );
