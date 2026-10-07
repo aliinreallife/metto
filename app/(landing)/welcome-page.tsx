@@ -111,15 +111,20 @@ export function WelcomePage() {
   //    (an offline cold open served from precache), hand off client-side.
   // 2. Returning visitors (this browser has used the planner before — the
   //    "route.seen" flag) skip the intro and go straight back to the app
-  //    they love. First-timers, bots (clean storage: no flag, so crawlers
-  //    always index the landing), and private mode (storage throws: fall
-  //    through to the landing) are unaffected.
+  //    they love, UNLESS the URL carries a hash (e.g. /#donate from the
+  //    app footer): an explicit hash is intentional navigation to landing
+  //    content and must not bounce back to /route. First-timers, bots
+  //    (clean storage: no flag, so crawlers always index the landing),
+  //    and private mode (storage throws: fall through to the landing)
+  //    are unaffected.
   useEffect(() => {
     const search = window.location.search;
     if (/[?&](from|to)=/.test(search)) {
       window.location.replace(`/route${search}`);
       return;
     }
+    // Intentional in-app footer navigation (/#donate) must stay put.
+    if (window.location.hash && window.location.hash.length > 1) return;
     try {
       if (localStorage.getItem("route.seen") === "1") {
         window.location.replace(`/route${search}`);
@@ -138,11 +143,13 @@ export function WelcomePage() {
           returning-visitor flag ("route.seen") both land on /route BEFORE
           first paint, so there is no flash-of-landing. Parser-blocking by
           design — keep this the first node. Crawlers and first-timers have
-          no flag, so they always render the landing. The React effect below
+          no flag, so they always render the landing. An explicit hash
+          (e.g. /#donate from the app footer) is intentional navigation
+          and never redirects. The React effect below
           is the fallback (e.g. if inline scripts are stripped). */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `try{var s=location.search;if(/[?&](from|to)=/.test(s)||localStorage.getItem("route.seen")==="1"){location.replace("/route"+s)}}catch(e){}`,
+          __html: `try{var s=location.search,h=location.hash;if(!h||h.length<=1){if(/[?&](from|to)=/.test(s)||localStorage.getItem("route.seen")==="1"){location.replace("/route"+s)}}}catch(e){}`,
         }}
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }} />

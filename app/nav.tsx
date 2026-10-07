@@ -186,41 +186,35 @@ export function AppNav() {
       <OfflineStatus lang={lang} />
 
       {/* mobile bottom tab bar - fixed to viewport bottom; credits sit
-          directly on top with zero gap, main tab only */}
+          directly on top with zero gap, main tab only. Single line, no
+          wrap: contributor names truncate on narrow screens. */}
       <footer className="fixed bottom-0 inset-x-0 z-20 flex flex-col border-t border-border bg-card md:hidden">
         {isMainTab && (
-        <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-0.5 px-4 py-1.5">
+        <div className="flex flex-nowrap items-center justify-start gap-x-3 overflow-hidden px-4 py-1.5">
           <a
             href="https://github.com/aliinreallife/metto"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
+            className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
           >
-            <ExternalLink className="size-3 text-primary" />
-            <span className="text-muted-foreground">{t.builtBy}</span>
-            <span className="font-semibold text-foreground">aliinreallife</span>
+            <ExternalLink className="size-3 shrink-0 text-primary" />
+            <span className="shrink-0 text-muted-foreground">{t.builtBy}</span>
+            <span className="truncate font-semibold text-foreground">aliinreallife</span>
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
           <a
             href="https://github.com/mostafa-kheibary/tehran-metro-data"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
+            className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
           >
-            <Database className="size-3 text-primary" />
-            <span className="text-muted-foreground">{t.dataBy}</span>
-            <span className="font-semibold text-foreground">
+            <Database className="size-3 shrink-0 text-primary" />
+            <span className="shrink-0 text-muted-foreground">{t.dataBy}</span>
+            <span className="truncate font-semibold text-foreground">
               mostafa-kheibary
             </span>
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
-          <TabLink
-            href="/"
-            connectivity={connectivity}
-            className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {t.aboutLink}
-          </TabLink>
           <TabLink
             href="/#donate"
             connectivity={connectivity}

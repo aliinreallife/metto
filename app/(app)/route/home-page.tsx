@@ -296,13 +296,6 @@ export function HomePage() {
         {/* Offline-safe tab links: client navigation online, full-document
             navigation from precache offline (same TabLink as the nav). */}
         <TabLink
-          href="/"
-          connectivity={connectivity}
-          className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          {t.aboutLink}
-        </TabLink>
-        <TabLink
           href="/#donate"
           connectivity={connectivity}
           className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"

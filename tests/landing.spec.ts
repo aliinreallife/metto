@@ -103,15 +103,31 @@ test.describe("old-link redirects", () => {
 });
 
 test.describe("app footer links", () => {
-  test("/route footer links to the landing and the donate section", async ({
+  test("/route footer links to the donate section in one line", async ({
     page,
   }) => {
     await page.goto("/route", { waitUntil: "domcontentloaded" });
-    const about = page.getByRole("link", { name: "درباره متو" });
-    await expect(about).toBeVisible();
-    expect(await about.getAttribute("href")).toBe("/");
+    await expect(page.getByRole("link", { name: "درباره متو" })).toHaveCount(0);
     const support = page.getByRole("link", { name: "حمایت" });
     await expect(support).toBeVisible();
     expect(await support.getAttribute("href")).toBe("/#donate");
+  });
+
+  test("/#donate does not bounce returning visitors back to /route", async ({
+    context,
+    page,
+  }) => {
+    await context.addInitScript(() => {
+      try {
+        window.localStorage.setItem("route.seen", "1");
+      } catch {
+        // Storage unavailable — the test premise needs it.
+      }
+    });
+    await page.goto("/#donate", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1000);
+    expect(new URL(page.url()).pathname).toBe("/");
+    expect(new URL(page.url()).hash).toBe("#donate");
+    await expect(page.locator("#donate")).toBeAttached();
   });
 });
