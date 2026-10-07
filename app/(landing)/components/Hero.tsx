@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import { Globe } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT } from "../content";
 import { persianDigits, type Lang } from "@/lib/i18n";
@@ -319,7 +320,7 @@ function Ticker() {
 }
 
 export function Hero() {
-  const { lang } = useMetro();
+  const { lang, setLang } = useMetro();
   const t = WELCOME_CONTENT[lang].hero;
   const isFa = lang === "fa";
   const stationCount = getAllStations().length;
@@ -327,14 +328,14 @@ export function Hero() {
   const interchangeCount = getAllStations().filter((s) => isInterchange(s.id)).length;
 
   return (
-    <section className="relative overflow-hidden" id="hero">
+    <section className="relative flex min-h-svh flex-col overflow-hidden" id="hero">
       <div className="bg-blueprint mask-fade-b pointer-events-none absolute inset-0" aria-hidden />
       <div
         className="bg-hatch pointer-events-none absolute -top-24 end-0 h-64 w-64 rounded-lg opacity-70 sm:w-80"
         aria-hidden
       />
 
-      <div className="relative mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-16">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-16">
         <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
           <div className="lg:col-span-7">
             <Reveal>
@@ -388,6 +389,15 @@ export function Hero() {
                   <MapIcon className="h-4 w-4 text-primary transition-transform duration-300 group-hover:scale-110" />
                   {t.ctaSecondary}
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setLang(lang === "en" ? "fa" : "en")}
+                  className="inline-flex h-12 items-center justify-center gap-1.5 self-start rounded-lg border border-border px-4 text-sm font-bold transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:self-auto"
+                  aria-label={lang === "en" ? "فارسی — Toggle language" : "EN — تغییر زبان"}
+                >
+                  <Globe className="size-4" />
+                  {lang === "en" ? "فارسی" : "EN"}
+                </button>
               </div>
             </Reveal>
 

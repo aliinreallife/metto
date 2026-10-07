@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT } from "./content";
 import { Hero } from "./components/Hero";
-import { TopBar } from "./components/TopBar";
 import { Donate } from "./components/Donate";
 import { PwaStrip } from "./components/PwaStrip";
 import { WelcomeFooter } from "./components/WelcomeFooter";
@@ -115,7 +114,6 @@ export function WelcomePage() {
       >
         {t.misc.skip}
       </a>
-      <TopBar />
       <main id="main" className="flex min-h-0 flex-1 flex-col">
         <Hero />
         <Donate />
