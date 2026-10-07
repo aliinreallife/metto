@@ -97,7 +97,7 @@ export function PwaStrip() {
   ];
 
   return (
-    <section id="install" className="relative overflow-hidden bg-muted/50 py-16 text-foreground sm:py-20">
+    <section id="install" className="relative flex min-h-svh flex-col justify-center overflow-hidden bg-muted/50 py-16 text-foreground sm:py-20">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.08]"
         style={{
