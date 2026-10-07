@@ -305,13 +305,22 @@ publishes automatically.
   `JustCreated`, `Rejected`, or `RolledBack` → proceed (update/re-upload).
   `WaitingForApproval` → abort (a bundle under review is never touched; the
   API itself rejects edits there). Unknown statuses abort. An `Approved`
-  bundle does NOT block: per the documented PUT create-or-update semantics a
-  new title registers a new bundle entry — but only after two proof checks:
-  the tag's `versionCode` must exceed the store max (downgrade guard), and a
-  post-PUT re-GET must show a fresh entry with our exact title outside any
-  review/live state before the APK uploads. The API emits Persian display
-  strings (e.g. `تایید شده` for `Approved`); `normalizeMyketStatus()` maps
-  only live-observed ones — never guess a mapping.
+  bundle does NOT block outright: PUT is attempted for a new entry, then the
+  APK uploads, and only a positively proven entry is committed — the script
+  re-GETs and requires OUR `versionCode` inside some entry's `versions[]`
+  outside any review/live state before `commit` fires (title is only a
+  preference: Myket auto-titles drafts itself, e.g. `CD - …`). The tag's
+  `versionCode` must not be below the store max (downgrade guard; re-running
+  the identical build is allowed). Worst case on unexpected API behavior is
+  an uncommitted draft row (reversible, never published, never submitted).
+  Residual rule: if no entry ever carries our `versionCode`, a human must
+  open that version's draft in the Myket panel first (the panel requires the
+  APK + changelog up front; save as draft only, automation takes it from the
+  draft state). The API emits Persian display strings (e.g. `تایید شده` for
+  `Approved`, `پیش‌نویس` for `JustCreated`); `normalizeMyketStatus()` maps
+  only live-observed ones — never guess a mapping. Re-uploading an already
+  registered `versionCode` reports `RepeatedVersionCode`: not fatal, the flow
+  continues to verification (which still gates the commit).
 - `400`/`401` fail only the Myket job with the Myket `messageCode`
   (`EditNotPossible`, `MissingRequiredData`, `PostAppFailed`, …) in the log
   and step summary — the GitHub Release is never modified or deleted.

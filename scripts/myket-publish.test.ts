@@ -6,12 +6,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   MAX_APK_BYTES,
-  assertFreshDraftForTitle,
   assertNoDowngrade,
+  assertOurReleasePresent,
   buildCommitPayload,
   buildReleaseBundlePayload,
   buildUploadFormData,
   bundleTitleForTag,
+  classifyUploadError,
   commitMessageForTag,
   decideMyketAction,
   getCurrentBundleFromList,
@@ -229,12 +230,13 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
     expect(d.reason).toMatch(/WaitingForApproval/);
   });
 
-  it("maps the observed Persian Approved status to the new-entry path", () => {
-    // Seen live on the v0.7.6 run: the API returned "تایید شده".
+  it("maps live-observed Persian statuses to their designed branches", () => {
+    // تایید شده seen on the v0.7.6 run; پیش‌نویس seen once our PUT+upload
+    // materialized a draft.
     expect(normalizeMyketStatus("تایید شده")).toBe("Approved");
-    const d = decideMyketAction("تایید شده");
-    expect(d.proceed).toBe(true);
-    expect(d.reason).toMatch(/new bundle entry/);
+    expect(normalizeMyketStatus("پیش‌نویس")).toBe("JustCreated");
+    expect(decideMyketAction("پیش‌نویس").proceed).toBe(true);
+    expect(decideMyketAction("پیش‌نویس").reason).toMatch(/JustCreated/);
   });
 
   it("leaves unmapped statuses to fail-safe abort", () => {
@@ -269,32 +271,67 @@ describe("myket-publish.mjs status gate (never overwrite review)", () => {
   });
 });
 
-describe("myket-publish.mjs post-PUT draft verification + downgrade guard", () => {
-  const draftList = (title: string, status: string) => ({
-    releases: [{ title, status, createdAt: "2026-10-03T00:00:00Z", id: "new" }],
+describe("myket-publish.mjs post-upload verification + downgrade guard", () => {
+  const entry = (title: string, status: string, codes: unknown[] = []) => ({
+    title,
+    status,
+    createdAt: "2026-10-03T00:00:00Z",
+    id: "e",
+    versions: codes.map((versionCode) => ({ versionCode })),
+  });
+  // Live shape observed on the v0.7.6 runs: Myket titles auto-created drafts
+  // itself ("CD - …"), so identity is proven by versionCode, not title.
+  const live076 = () => ({
+    releases: [
+      { ...entry("0.7.3", "تایید شده", [7003]), createdAt: "2026-10-03T00:00:00Z" },
+      { ...entry("CD - ۱۴۰۵/۰۷/۱۲ ۱۱:۰۱:۰۱", "پیش‌نویس", [7006]), createdAt: "2026-10-04T00:00:00Z" },
+    ],
   });
 
-  it("accepts a fresh entry with our exact title", () => {
-    const cur = assertFreshDraftForTitle(draftList("metto v0.7.6", "JustCreated"), "metto v0.7.6");
-    expect(cur?.status).toBe("JustCreated");
+  it("accepts our versionCode inside a Myket-titled draft (live shape)", () => {
+    const cur = assertOurReleasePresent(live076(), { title: "metto v0.7.6", versionCode: 7006 });
+    expect(cur?.status).toBe("پیش‌نویس");
   });
 
-  it("rejects when the newest entry carries a foreign title", () => {
-    expect(() => assertFreshDraftForTitle(draftList("0.7.3", "JustCreated"), "metto v0.7.6")).toThrow(
-      /newest bundle is "0.7.3"/,
+  it("prefers the title match when several entries carry the code", () => {
+    const list = {
+      releases: [entry("CD - other", "JustCreated", [7006]), entry("metto v0.7.6", "JustCreated", [7006])],
+    };
+    expect(assertOurReleasePresent(list, { title: "metto v0.7.6", versionCode: 7006 })?.title).toBe(
+      "metto v0.7.6",
     );
   });
 
-  it("rejects uploading into a review/live entry even with our title", () => {
+  it("rejects when no entry carries our versionCode", () => {
+    expect(() =>
+      assertOurReleasePresent({ releases: [entry("0.7.3", "X", [7003])] }, {
+        title: "metto v0.7.6",
+        versionCode: 7006,
+      }),
+    ).toThrow(/no bundle carries versionCode 7006/);
+    expect(() => assertOurReleasePresent({ releases: [] }, { title: "metto v0.7.6" })).toThrow(
+      /no bundle carries versionCode null/,
+    );
+  });
+
+  it("rejects when our code lives only inside review/live entries", () => {
     for (const s of ["WaitingForApproval", "Approved"]) {
-      expect(() => assertFreshDraftForTitle(draftList("metto v0.7.6", s), "metto v0.7.6")).toThrow(
-        /refusing to upload/,
-      );
+      expect(() =>
+        assertOurReleasePresent({ releases: [entry("0.7.3", s, [7006])] }, {
+          title: "metto v0.7.6",
+          versionCode: 7006,
+        }),
+      ).toThrow(/refusing to submit/);
     }
   });
 
-  it("rejects an empty post-PUT list", () => {
-    expect(() => assertFreshDraftForTitle({ releases: [] }, "metto v0.7.6")).toThrow(/empty after PUT/);
+  it("rejects an entry whose versions lack our code", () => {
+    expect(() =>
+      assertOurReleasePresent({ releases: [entry("metto v0.7.6", "JustCreated", [7003])] }, {
+        title: "metto v0.7.6",
+        versionCode: 7006,
+      }),
+    ).toThrow(/no bundle carries versionCode 7006/);
   });
 
   it("finds the max versionCode across releases", () => {
@@ -311,15 +348,24 @@ describe("myket-publish.mjs post-PUT draft verification + downgrade guard", () =
     expect(maxVersionCodeFromList({})).toBeNull();
   });
 
-  it("refuses a tag at or below the store max versionCode", () => {
+    it("allows re-submitting the identical build, refuses older ones", () => {
+
     const listJson = { releases: [{ versions: [{ versionCode: 7003 }] }] };
     expect(assertNoDowngrade({ tag: "v0.7.6", versionCode: 7006, listJson })).toBe(7003);
-    expect(() => assertNoDowngrade({ tag: "v0.7.3", versionCode: 7003, listJson })).toThrow(
-      /over store max versionCode 7003/,
-    );
+    expect(assertNoDowngrade({ tag: "v0.7.3", versionCode: 7003, listJson })).toBe(7003);
     expect(() => assertNoDowngrade({ tag: "v0.7.2", versionCode: 7002, listJson })).toThrow(
-      /tag a newer version/,
+      /below store max versionCode 7003/,
     );
+  });
+
+  it("classifies upload failures: already-staged continues to verify, no-draft and fatal abort", () => {
+    // Seen live: re-uploading the already-registered 7006.
+    expect(classifyUploadError(new Error("Myket APK upload failed (RepeatedVersionCode): …")).kind).toBe(
+      "already-staged",
+    );
+    expect(classifyUploadError(new Error("… ReleaseNotFound …")).kind).toBe("no-draft");
+    expect(classifyUploadError(new Error("socket connection was closed")).kind).toBe("fatal");
+    expect(classifyUploadError("plain string failure").kind).toBe("fatal");
   });
 });
 
