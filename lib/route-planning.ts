@@ -34,6 +34,7 @@ import {
   getMetroScheduleDayType,
   scheduleDayToDayType,
 } from "./holidays/schedule-day";
+import { nextTehranCalendarDate } from "./holidays/jalali";
 import type { DayType } from "./schedule-data";
 import type { IsHolidayDate } from "./holidays/types";
 import { TRAIN_CHANGE_WALK_SECONDS } from "./metro/transfers";
@@ -302,9 +303,45 @@ export function getDayTypeForServiceDate(
 }
 
 /** Previous Asia/Tehran calendar date (mirrors nextTehranCalendarDate). */
-function prevTehranCalendarDate(tehranDateStr: string): string {
+export function prevTehranCalendarDate(tehranDateStr: string): string {
   const noonPrevDayMs = tehranMidnightEpoch(tehranDateStr) - 12 * 3_600_000;
   return tehranParts(noonPrevDayMs).dateStr;
+}
+
+/**
+ * Shift a Tehran calendar date by N days (negative allowed). Used by the
+ * time picker so hour/minute steppers form one continuous datetime across
+ * midnight instead of wrapping inside a single day.
+ */
+export function shiftTehranDate(tehranDateStr: string, deltaDays: number): string {
+  let date = tehranDateStr;
+  const step = deltaDays < 0 ? prevTehranCalendarDate : nextTehranCalendarDate;
+  for (let i = 0; i < Math.abs(deltaDays); i++) date = step(date);
+  return date;
+}
+
+/**
+ * Pure continuous-datetime step for the time picker: 23:55 + 5 min becomes
+ * tomorrow 00:00, and 00:00 − 5 min becomes yesterday 23:55. Bounds (today →
+ * +30 days) are enforced by the caller, not here.
+ */
+export function shiftTimeOfDay(
+  dateStr: string,
+  hh: number,
+  mm: number,
+  deltaMin: number,
+): { dateStr: string; hh: number; mm: number } {
+  let total = hh * 60 + mm + deltaMin;
+  let date = dateStr;
+  while (total >= 24 * 60) {
+    total -= 24 * 60;
+    date = shiftTehranDate(date, 1);
+  }
+  while (total < 0) {
+    total += 24 * 60;
+    date = shiftTehranDate(date, -1);
+  }
+  return { dateStr: date, hh: Math.floor(total / 60), mm: total % 60 };
 }
 
 // ---- Shareable URL state (web planner) ----

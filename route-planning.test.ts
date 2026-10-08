@@ -23,6 +23,8 @@ import {
   parseTimeModeParams,
   applyTimeParams,
   planRoute,
+  shiftTehranDate,
+  shiftTimeOfDay,
 } from "./lib/route-planning";
 import {
   parseServiceTimeToMinutes,
@@ -542,6 +544,52 @@ describe("service-date day types", () => {
     expect(getDayTypeForServiceDate("2026-03-23", (d) => d === "2026-03-23")).toBe(
       "friday",
     );
+  });
+});
+
+describe("continuous picker datetime", () => {
+  it("rolls the date forward past midnight", () => {
+    expect(shiftTimeOfDay("2026-09-07", 23, 55, 5)).toEqual({
+      dateStr: "2026-09-08",
+      hh: 0,
+      mm: 0,
+    });
+    expect(shiftTimeOfDay("2026-09-07", 23, 0, 60)).toEqual({
+      dateStr: "2026-09-08",
+      hh: 0,
+      mm: 0,
+    });
+  });
+
+  it("rolls the date backward past midnight", () => {
+    expect(shiftTimeOfDay("2026-09-08", 0, 0, -5)).toEqual({
+      dateStr: "2026-09-07",
+      hh: 23,
+      mm: 55,
+    });
+  });
+
+  it("spans month boundaries in both directions", () => {
+    expect(shiftTehranDate("2026-09-30", 1)).toBe("2026-10-01");
+    expect(shiftTehranDate("2026-10-01", -1)).toBe("2026-09-30");
+    expect(shiftTimeOfDay("2026-09-30", 23, 59, 2)).toEqual({
+      dateStr: "2026-10-01",
+      hh: 0,
+      mm: 1,
+    });
+  });
+
+  it("handles multi-hour and zero deltas", () => {
+    expect(shiftTimeOfDay("2026-09-07", 8, 30, 0)).toEqual({
+      dateStr: "2026-09-07",
+      hh: 8,
+      mm: 30,
+    });
+    expect(shiftTimeOfDay("2026-09-07", 10, 0, -180)).toEqual({
+      dateStr: "2026-09-07",
+      hh: 7,
+      mm: 0,
+    });
   });
 });
 

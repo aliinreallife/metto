@@ -6,17 +6,20 @@ import { useSearchParams } from "next/navigation";
 import {
   ArrowUpDown,
   Building2,
+  ChevronDown,
   ChevronRight,
   Clock,
+  History,
   Loader2,
   ExternalLink,
   Database,
   LocateFixed,
   Map as MapIcon,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
-import { RoutePanel } from "@/components/route-panel";
+import { NoServiceCard, RoutePanel } from "@/components/route-panel";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
 import {
@@ -46,6 +49,7 @@ import {
   parsePlaceParam,
 } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { useConnectivity } from "@/lib/offline/use-connectivity";
 import {
   classifyGeoError,
@@ -421,6 +425,10 @@ function RouteView({
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
+  const stationDisplayName = (id: string) => {
+    const s = STATION_MAP.get(id);
+    return s ? (isFa ? s.name.fa : s.name.en) : id;
+  };
   const [locating, setLocating] = useState(false);
   const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -572,7 +580,7 @@ function RouteView({
               onClear={clearDestPlace}
             />
           )}
-          <TimeControlButton
+          <AdvancedRoutingSection
             lang={lang}
             timeMode={timeMode}
             planAtMs={planAtMs}
@@ -601,19 +609,51 @@ function RouteView({
         {isPastTime ? (
           <div
             role="alert"
-            className="flex flex-col gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm md:px-4"
+            className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4"
           >
-            <p className="font-medium text-amber-700 dark:text-amber-400">
-              {timeMode === "depart" ? t.timePassed : t.arrivalPassed}
-            </p>
-            <button
-              type="button"
-              onClick={onUseNow}
-              className="self-start rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {t.useNow}
-            </button>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+              <History aria-hidden="true" className="size-4 text-muted-foreground" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">
+                {timeMode === "depart" ? t.timePassedTitle : t.arrivalPassedTitle}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {timeMode === "depart" ? t.timePassedBody : t.arrivalPassedBody}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={onUseNow}
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {t.useNow}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {t.editTime}
+              </button>
+            </div>
           </div>
+        ) : route && route.status === "no_service" ? (
+          <>
+            <NoServiceCard
+              lang={lang}
+              stationName={stationDisplayName(route.reachableUntilStationId)}
+              reachableUntil={route.reachableUntil}
+              isOrigin={route.reachableUntilStationId === originId}
+              onPlanAnotherTime={() => setSheetOpen(true)}
+            />
+            {originId && (() => {
+              const origin = STATION_MAP.get(originId);
+              if (!origin) return null;
+              return <RouteActions origin={origin} lang={lang} />;
+            })()}
+          </>
         ) : route ? (
           <>
             <RoutePanel
@@ -671,6 +711,68 @@ function RouteView({
             setSheetOpen(false);
           }}
         />
+      )}
+    </div>
+  );
+}
+
+function AdvancedRoutingSection({
+  lang,
+  timeMode,
+  planAtMs,
+  nowMs,
+  onOpen,
+}: {
+  lang: Lang;
+  timeMode: TimeMode;
+  planAtMs: number | null;
+  nowMs: number;
+  onOpen: () => void;
+}) {
+  const t = STRINGS[lang];
+  // An active shared/reloaded plan starts expanded so it stays visible.
+  const [open, setOpen] = useState(() => timeMode !== "now");
+  const active =
+    timeMode !== "now" && planAtMs !== null
+      ? formatPlanSummary(lang, planAtMs, nowMs)
+      : null;
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-background">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls="advanced-routing-panel"
+        className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:py-2.5 md:text-base"
+      >
+        <SlidersHorizontal
+          aria-hidden="true"
+          className="size-4 shrink-0 text-muted-foreground"
+        />
+        <span className="font-medium">{t.advancedRouting}</span>
+        {active && (
+          <span className="tnum min-w-0 flex-1 truncate text-start text-xs text-muted-foreground">
+            {active.dateLabel} · {active.timeLabel}
+          </span>
+        )}
+        <ChevronDown
+          aria-hidden="true"
+          className={cn(
+            "ms-auto size-4 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open && (
+        <div id="advanced-routing-panel" className="border-t border-border p-2">
+          <TimeControlButton
+            lang={lang}
+            timeMode={timeMode}
+            planAtMs={planAtMs}
+            nowMs={nowMs}
+            onOpen={onOpen}
+          />
+        </div>
       )}
     </div>
   );

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock } from "lucide-react";
+import { Clock, Minus, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { TEHRAN_TZ, formatTehranClock, tehranMinuteToInstant, tehranParts } from "@/lib/tehran-time";
+import { TEHRAN_TZ, formatTehranClock, tehranMidnightEpoch, tehranMinuteToInstant, tehranParts } from "@/lib/tehran-time";
 import { nextTehranCalendarDate } from "@/lib/holidays/jalali";
-import type { TimeMode } from "@/lib/route-planning";
+import { shiftTehranDate, shiftTimeOfDay, type TimeMode } from "@/lib/route-planning";
 
 /** Compact summary of a planned instant: "Today · 08:30" parts. */
 export function formatPlanSummary(
@@ -35,16 +35,55 @@ export function formatPlanSummary(
   return { dateLabel, timeLabel: persianDigits(formatTehranClock(atMs), lang) };
 }
 
-function nextQuarterHour(nowMs: number): { dateStr: string; time: string } {
+/** Jalali-aware display label for a Tehran calendar date. */
+export function formatDateLabel(lang: Lang, dateStr: string, nowMs: number): string {
+  const t = STRINGS[lang];
+  const today = tehranParts(nowMs).dateStr;
+  const relative =
+    dateStr === today
+      ? t.today
+      : dateStr === nextTehranCalendarDate(today)
+        ? t.tomorrow
+        : null;
+  let absolute: string;
+  try {
+    absolute = new Intl.DateTimeFormat(lang === "fa" ? "fa-IR" : "en-GB", {
+      timeZone: TEHRAN_TZ,
+      day: "numeric",
+      month: "short",
+    }).format(new Date(tehranMidnightEpoch(dateStr) + 12 * 3_600_000));
+  } catch {
+    absolute = dateStr;
+  }
+  return relative ? `${relative} · ${absolute}` : absolute;
+}
+
+/**
+ * Next 5-minute Tehran boundary strictly after now (never rounds down into
+ * the past): entering a custom mode from Now always starts in the future.
+ */
+function nextQuarterHour(nowMs: number): { dateStr: string; hh: number; mm: number } {
   const parts = tehranParts(nowMs);
   const rounded = Math.ceil((parts.minuteOfDay + 1) / 5) * 5;
   if (rounded >= 24 * 60) {
-    const tomorrow = nextTehranCalendarDate(parts.dateStr);
-    return { dateStr: tomorrow, time: "00:00" };
+    return { dateStr: nextTehranCalendarDate(parts.dateStr), hh: 0, mm: 0 };
   }
-  const hh = String(Math.floor(rounded / 60)).padStart(2, "0");
-  const mm = String(rounded % 60).padStart(2, "0");
-  return { dateStr: parts.dateStr, time: `${hh}:${mm}` };
+  return { dateStr: parts.dateStr, hh: Math.floor(rounded / 60), mm: rounded % 60 };
+}
+
+function seedDateTime(
+  atMs: number | null,
+  nowMs: number,
+): { dateStr: string; hh: number; mm: number } {
+  if (atMs !== null) {
+    const parts = tehranParts(atMs);
+    return {
+      dateStr: parts.dateStr,
+      hh: Math.floor(parts.minuteOfDay / 60),
+      mm: parts.minuteOfDay % 60,
+    };
+  }
+  return nextQuarterHour(nowMs);
 }
 
 export function TimePreferenceSheet({
@@ -63,20 +102,15 @@ export function TimePreferenceSheet({
   const t = STRINGS[lang];
   // The sheet mounts fresh on every open (parent renders conditionally), so
   // lazy initializers seed from the current plan exactly once — no effects.
+  const [nowRef] = useState(() => Date.now());
   const [selMode, setSelMode] = useState<TimeMode>(mode);
-  const [todayStr] = useState(() => tehranParts(Date.now()).dateStr);
+  const [todayStr] = useState(() => tehranParts(nowRef).dateStr);
+  // Picker horizon: the timetable repeats weekly; 30 days keeps plans honest.
+  const maxDateStr = shiftTehranDate(todayStr, 30);
   const tomorrowStr = nextTehranCalendarDate(todayStr);
-  const [dateSel, setDateSel] = useState<"today" | "tomorrow" | "custom">(() => {
-    if (atMs === null) return "today";
-    const atDate = tehranParts(atMs).dateStr;
-    return atDate === todayStr ? "today" : atDate === tomorrowStr ? "tomorrow" : "custom";
-  });
-  const [customDate, setCustomDate] = useState(() =>
-    atMs !== null ? tehranParts(atMs).dateStr : tomorrowStr,
-  );
-  const [time, setTime] = useState(() =>
-    atMs !== null ? formatTehranClock(atMs) : nextQuarterHour(Date.now()).time,
-  );
+  const [dateStr, setDateStr] = useState(() => seedDateTime(atMs, nowRef).dateStr);
+  const [hh, setHh] = useState(() => seedDateTime(atMs, nowRef).hh);
+  const [mm, setMm] = useState(() => seedDateTime(atMs, nowRef).mm);
 
   // Escape closes; background scroll locks while open.
   useEffect(() => {
@@ -92,18 +126,34 @@ export function TimePreferenceSheet({
     };
   }, [onClose]);
 
-  const effectiveDate =
-    dateSel === "today" ? todayStr : dateSel === "tomorrow" ? tomorrowStr : customDate;
+  /**
+   * One continuous Tehran datetime: stepping past midnight rolls the date
+   * (23:55 + 5 min becomes tomorrow 00:00, and back). Out-of-horizon steps
+   * are ignored (buttons disable at the bounds).
+   */
+  function shiftTime(deltaMin: number): void {
+    const next = shiftTimeOfDay(dateStr, hh, mm, deltaMin);
+    if (next.dateStr < todayStr || next.dateStr > maxDateStr) return;
+    setDateStr(next.dateStr);
+    setHh(next.hh);
+    setMm(next.mm);
+  }
+
+  function shiftDay(delta: number): void {
+    const next = shiftTehranDate(dateStr, delta);
+    if (next < todayStr || next > maxDateStr) return;
+    setDateStr(next);
+  }
+
+  const atMinBound = dateStr <= todayStr && hh === 0 && mm === 0;
+  const atMaxBound = dateStr >= maxDateStr;
 
   function apply() {
     if (selMode === "now") {
       onApply("now", null);
       return;
     }
-    if (!effectiveDate) return;
-    const [hh, mm] = time.split(":").map(Number);
-    if (!Number.isInteger(hh) || !Number.isInteger(mm)) return;
-    onApply(selMode, tehranMinuteToInstant(effectiveDate, hh * 60 + mm));
+    onApply(selMode, tehranMinuteToInstant(dateStr, hh * 60 + mm));
   }
 
   const choices: { value: Exclude<TimeMode, "now">; label: string; hint: string }[] = [
@@ -172,61 +222,87 @@ export function TimePreferenceSheet({
         </fieldset>
 
         {selMode !== "now" && (
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-2 gap-2" role="group" aria-label={t.pickDate}>
-              <button
-                type="button"
-                onClick={() => setDateSel("today")}
-                aria-pressed={dateSel === "today"}
-                className={cn(
-                  "rounded-xl border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  dateSel === "today"
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : "border-border text-muted-foreground",
-                )}
-              >
-                {t.today}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDateSel("tomorrow")}
-                aria-pressed={dateSel === "tomorrow"}
-                className={cn(
-                  "rounded-xl border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  dateSel === "tomorrow"
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : "border-border text-muted-foreground",
-                )}
-              >
-                {t.tomorrow}
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-muted-foreground">
-                {t.pickTime}
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  dir="ltr"
-                  className="rounded-xl border border-border bg-background px-3 py-2 text-center text-base text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-              </label>
-              <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-muted-foreground">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <p id="plan-date-label" className="text-xs font-medium text-muted-foreground">
                 {t.pickDate}
-                <input
-                  type="date"
-                  value={dateSel === "custom" ? customDate : dateSel === "today" ? todayStr : tomorrowStr}
-                  min={todayStr}
-                  onChange={(e) => {
-                    setCustomDate(e.target.value);
-                    setDateSel("custom");
-                  }}
-                  onFocus={() => setDateSel("custom")}
-                  dir="ltr"
-                  className="rounded-xl border border-border bg-background px-3 py-2 text-center text-base text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-              </label>
+              </p>
+              <div className="flex items-center gap-1" role="group" aria-labelledby="plan-date-label">
+                <button
+                  type="button"
+                  onClick={() => shiftDay(-1)}
+                  disabled={dateStr <= todayStr}
+                  aria-label={t.previousDay}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border transition-colors hover:bg-accent disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <ChevronLeft aria-hidden="true" className="size-4 rtl:rotate-180" />
+                </button>
+                <p aria-live="polite" className="min-w-0 flex-1 truncate text-center text-sm font-bold">
+                  {formatDateLabel(lang, dateStr, nowRef)}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => shiftDay(1)}
+                  disabled={dateStr >= maxDateStr}
+                  aria-label={t.nextDay}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border transition-colors hover:bg-accent disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <ChevronRight aria-hidden="true" className="size-4 rtl:rotate-180" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDateStr(todayStr)}
+                  aria-pressed={dateStr === todayStr}
+                  className={cn(
+                    "rounded-xl border px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    dateStr === todayStr
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border text-muted-foreground",
+                  )}
+                >
+                  {t.today}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDateStr(tomorrowStr)}
+                  aria-pressed={dateStr === tomorrowStr}
+                  className={cn(
+                    "rounded-xl border px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    dateStr === tomorrowStr
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border text-muted-foreground",
+                  )}
+                >
+                  {t.tomorrow}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2" role="group" aria-label={t.pickTime}>
+              <StepperColumn
+                label={t.hoursLabel}
+                value={persianDigits(String(hh).padStart(2, "0"), lang)}
+                testId="hour-value"
+                onIncrease={() => shiftTime(60)}
+                onDecrease={() => shiftTime(-60)}
+                increaseLabel={t.increaseHours}
+                decreaseLabel={t.decreaseHours}
+                disableDecrease={atMinBound}
+                disableIncrease={atMaxBound}
+              />
+              <StepperColumn
+                label={t.minutesLabel}
+                value={persianDigits(String(mm).padStart(2, "0"), lang)}
+                testId="minute-value"
+                onIncrease={() => shiftTime(5)}
+                onDecrease={() => shiftTime(-5)}
+                increaseLabel={t.increaseMinutes}
+                decreaseLabel={t.decreaseMinutes}
+                disableDecrease={atMinBound}
+                disableIncrease={atMaxBound}
+              />
             </div>
           </div>
         )}
@@ -247,6 +323,57 @@ export function TimePreferenceSheet({
             {t.done}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function StepperColumn({
+  label,
+  value,
+  testId,
+  onIncrease,
+  onDecrease,
+  increaseLabel,
+  decreaseLabel,
+  disableIncrease,
+  disableDecrease,
+}: {
+  label: string;
+  value: string;
+  testId: string;
+  onIncrease: () => void;
+  onDecrease: () => void;
+  increaseLabel: string;
+  decreaseLabel: string;
+  disableIncrease: boolean;
+  disableDecrease: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-xl border border-border px-2 py-2">
+      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+      <div className="flex w-full items-center justify-between gap-1">
+        <button
+          type="button"
+          onClick={onDecrease}
+          disabled={disableDecrease}
+          aria-label={decreaseLabel}
+          className="flex size-8 items-center justify-center rounded-lg border border-border transition-colors hover:bg-accent disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Minus aria-hidden="true" className="size-4" />
+        </button>
+        <span data-testid={testId} aria-live="polite" dir="ltr" className="tnum min-w-8 text-center text-xl font-bold">
+          {value}
+        </span>
+        <button
+          type="button"
+          onClick={onIncrease}
+          disabled={disableIncrease}
+          aria-label={increaseLabel}
+          className="flex size-8 items-center justify-center rounded-lg border border-border transition-colors hover:bg-accent disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Plus aria-hidden="true" className="size-4" />
+        </button>
       </div>
     </div>
   );
