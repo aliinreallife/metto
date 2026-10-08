@@ -28,7 +28,8 @@ import {
   setServerScheduleData,
 } from "./schedule-utils";
 import { tehranParts } from "./tehran-time";
-import { findRoute, type RouteResult } from "./route";
+import type { RouteResult } from "./route";
+import { planRoute } from "./route-planning";
 import { parseDepartAtParam } from "./mcp/tool-defs";
 import {
   buildScheduleNote,
@@ -111,6 +112,36 @@ export async function getRequestHolidayResolver(
 ): Promise<IsHolidayDate> {
   const firstDay = tehranParts(departAt.getTime()).dateStr;
   const secondDay = nextTehranCalendarDate(firstDay);
+  return getHolidayResolverForDates([firstDay, secondDay], store);
+}
+
+/**
+ * Sync holiday resolver over every Asia/Tehran calendar date in an absolute
+ * instant range. Arrive-by propagation reads the deadline's date plus the
+ * previous service date, so the range variant preloads the whole window ONCE
+ * instead of per leg. Store failures resolve to an empty map (fail open to
+ * weekday classification, matching the no-holiday-data behavior).
+ */
+export async function getRequestHolidayResolverRange(
+  fromMs: number,
+  toMs: number,
+  store?: HolidayStore,
+): Promise<IsHolidayDate> {
+  const days: string[] = [];
+  let day = tehranParts(Math.min(fromMs, toMs)).dateStr;
+  const last = tehranParts(Math.max(fromMs, toMs)).dateStr;
+  for (let guard = 0; guard < 8; guard++) {
+    days.push(day);
+    if (day === last) break;
+    day = nextTehranCalendarDate(day);
+  }
+  return getHolidayResolverForDates(days, store);
+}
+
+async function getHolidayResolverForDates(
+  days: string[],
+  store?: HolidayStore,
+): Promise<IsHolidayDate> {
   const known: Record<string, boolean> = {};
   try {
     // No Redis configured -> skip the store entirely (no doomed fetch
@@ -118,7 +149,7 @@ export async function getRequestHolidayResolver(
     const holidayStore =
       store ?? (resolveRedisConfig() ? createRedisHolidayStore() : null);
     if (holidayStore) {
-      for (const day of [firstDay, secondDay]) {
+      for (const day of days) {
         const entry = await holidayStore.get(day);
         if (entry) known[day] = entry.isHoliday === true;
       }
@@ -144,12 +175,47 @@ export type ScheduledRoute =
  * resolver. departAtParam must be ISO-8601 with explicit offset/Z when
  * provided (undefined = now). Returns { ok: false } for invalid input
  * (callers map to MCP isError / REST 400) and null when no route exists.
+ *
+ * Preserved contract: delegates to planRouteWithSchedule with a lone
+ * depart_at so every historical caller keeps identical behavior, including
+ * past timestamps (no past-time rejection here — that rule lives in the
+ * web planner UI only).
  */
 export async function findRouteWithSchedule(
   from: string,
   to: string,
   departAtParam?: string,
 ): Promise<ScheduledRoute | null> {
+  return planRouteWithSchedule(from, to, { departAtParam });
+}
+
+export type PlanRouteTimeParams = {
+  /** ISO-8601 with explicit offset/Z (undefined = now). */
+  departAtParam?: string;
+  /** ISO-8601 with explicit offset/Z arrival deadline. */
+  arriveByParam?: string;
+};
+
+/**
+ * Generalized planning wrapper: depart-at XOR arrive-by over server-side
+ * timetable data. Returns { ok: false } for invalid input (mutually
+ * exclusive params, malformed timestamps) and null when no route — or no
+ * feasible arrive-by timing — exists.
+ */
+export async function planRouteWithSchedule(
+  from: string,
+  to: string,
+  times?: PlanRouteTimeParams,
+): Promise<ScheduledRoute | null> {
+  const departAtParam = times?.departAtParam;
+  const arriveByParam = times?.arriveByParam;
+  if (departAtParam !== undefined && arriveByParam !== undefined) {
+    return {
+      ok: false,
+      error:
+        "Specify only one of depart_at / arrive_by (REST: departAt / arriveBy)",
+    };
+  }
   let departAt = new Date();
   if (departAtParam !== undefined) {
     const parsed = parseDepartAtParam(departAtParam);
@@ -162,9 +228,45 @@ export async function findRouteWithSchedule(
     }
     departAt = parsed;
   }
+  let arriveBy: Date | null = null;
+  if (arriveByParam !== undefined) {
+    const parsed = parseDepartAtParam(arriveByParam);
+    if (!parsed) {
+      return {
+        ok: false,
+        error:
+          "Invalid arrive_by (expected ISO-8601 datetime with explicit timezone offset or Z, e.g. 2026-09-07T14:00:00+03:30)",
+      };
+    }
+    arriveBy = parsed;
+  }
   await ensureServerScheduleData();
+  if (arriveBy) {
+    // Reverse propagation reads the deadline's date plus the previous
+    // service date: preload the whole window up front (26h of margin).
+    const isHolidayDate = await getRequestHolidayResolverRange(
+      arriveBy.getTime() - 26 * 3_600_000,
+      arriveBy.getTime(),
+    );
+    const route = planRoute(from, to, { mode: "arrive-by", at: arriveBy }, { isHolidayDate });
+    if (!route) return null;
+    return {
+      ok: true,
+      route,
+      scheduleNote: buildScheduleNote(
+        new Date(route.departedAtMs),
+        isHolidayDate,
+        route.legTiming,
+      ),
+    };
+  }
   const isHolidayDate = await getRequestHolidayResolver(departAt);
-  const route = findRoute(from, to, { departAt, isHolidayDate });
+  const route = planRoute(
+    from,
+    to,
+    departAtParam === undefined ? { mode: "now" } : { mode: "depart-at", at: departAt },
+    { isHolidayDate },
+  );
   if (!route) return null;
   return {
     ok: true,

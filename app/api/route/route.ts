@@ -3,8 +3,8 @@ import { STATION_MAP } from "@/lib/route";
 import { getStationLines, resolveStationId } from "@/lib/metro/selectors";
 import { nearestStations } from "@/lib/geo";
 import {
-  findRouteWithSchedule,
   parseDepartAtParam,
+  planRouteWithSchedule,
 } from "@/lib/schedule-server";
 
 function stationPayload(s: NonNullable<ReturnType<typeof STATION_MAP.get>>) {
@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
         usage: {
           byName: "GET /api/route?from={stationId}&to={stationId}",
           byCoords: "GET /api/route?from_lat=35.804&from_lng=51.433&to_lat=35.689&to_lng=51.389",
+          byTime: "GET /api/route?from={stationId}&to={stationId}&departAt={ISO-8601} (or &arriveBy={ISO-8601}; mutually exclusive)",
         },
       },
       { status: 400 },
@@ -101,7 +102,37 @@ export async function GET(request: NextRequest) {
     departAtParam = rawDepartAt;
   }
 
-  const scheduled = await findRouteWithSchedule(originId, destId, departAtParam);
+  let arriveByParam: string | undefined;
+  const rawArriveBy = searchParams.get("arriveBy");
+  if (rawArriveBy) {
+    if (!parseDepartAtParam(rawArriveBy)) {
+      return NextResponse.json(
+        { error: "Invalid arriveBy (expected ISO-8601 datetime with explicit timezone offset or Z)" },
+        { status: 400 },
+      );
+    }
+    arriveByParam = rawArriveBy;
+  }
+
+  if (departAtParam !== undefined && arriveByParam !== undefined) {
+    return NextResponse.json(
+      { error: "Specify only one of departAt / arriveBy" },
+      { status: 400 },
+    );
+  }
+
+  const timeMode =
+    arriveByParam !== undefined
+      ? "arrive"
+      : departAtParam !== undefined
+        ? "depart"
+        : "now";
+  // planRouteWithSchedule preserves the historical findRouteWithSchedule
+  // contract (same validation above, same null mapping below).
+  const scheduled = await planRouteWithSchedule(originId, destId, {
+    departAtParam,
+    arriveByParam,
+  });
   if (!scheduled || !scheduled.ok) {
     // findRouteWithSchedule validates departAtParam above, so !ok is unreachable here.
     return NextResponse.json(
@@ -114,6 +145,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     origin: stationPayload(origin),
     destination: stationPayload(destination),
+    timeMode,
     route: {
       stops: result.numStops,
       transfers: result.numTransfers,

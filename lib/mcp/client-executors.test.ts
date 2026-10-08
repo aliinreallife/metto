@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { findRouteWithSchedule } from "../schedule-server";
 import { executeWebMcpTool } from "./client-executors";
-import { INVALID_DEPART_AT_ERROR } from "./tool-defs";
+import { INVALID_ARRIVE_BY_ERROR, INVALID_DEPART_AT_ERROR } from "./tool-defs";
 
 const NEVER_HOLIDAY = () => false;
 
@@ -136,6 +136,49 @@ describe("get_route executor", () => {
       { isHolidayDate: NEVER_HOLIDAY, signal: controller.signal },
     );
     expect(result.isError).toBe(true);
+  });
+
+  it("rejects depart_at + arrive_by together", async () => {
+    const result = await executeWebMcpTool(
+      "get_route",
+      {
+        from: "tajrish",
+        to: "tehran-sadeghiyeh",
+        depart_at: "2026-09-07T14:00:00+03:30",
+        arrive_by: "2026-09-07T15:00:00+03:30",
+      },
+      { isHolidayDate: NEVER_HOLIDAY },
+    );
+    expect(result.isError).toBe(true);
+  });
+
+  it("rejects naive arrive_by without timezone", async () => {
+    const result = await executeWebMcpTool(
+      "get_route",
+      {
+        from: "tajrish",
+        to: "tehran-sadeghiyeh",
+        arrive_by: "2026-09-07T15:00:00",
+      },
+      { isHolidayDate: NEVER_HOLIDAY },
+    );
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toBe(INVALID_ARRIVE_BY_ERROR);
+  });
+
+  it("plans an arrive_by journey (estimated when the timetable is unloaded)", async () => {
+    const result = await executeWebMcpTool(
+      "get_route",
+      {
+        from: "tajrish",
+        to: "tehran-sadeghiyeh",
+        arrive_by: "2026-09-07T15:00:00+03:30",
+      },
+      { isHolidayDate: NEVER_HOLIDAY },
+    );
+    const structured = structuredOf(result);
+    expect(typeof structured.departedAt).toBe("string");
+    expect(typeof structured.scheduleNote).toBe("string");
   });
 });
 

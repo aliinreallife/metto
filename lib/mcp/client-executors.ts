@@ -12,6 +12,7 @@
 // exists or is accepted.
 
 import { STATION_MAP, findRoute } from "../route";
+import { planRoute, type RouteTimePreference } from "../route-planning";
 import { nearestStations } from "../geo";
 import {
   getAllStations,
@@ -22,6 +23,8 @@ import type { IsHolidayDate } from "../holidays/types";
 import { getLocalIsHolidayDate } from "../holidays/use-holiday-data";
 import type { WebMCPToolResult } from "./webmcp-types";
 import {
+  CONFLICTING_TIMES_ERROR,
+  INVALID_ARRIVE_BY_ERROR,
   INVALID_DEPART_AT_ERROR,
   TOOL_FIND_NEARBY,
   TOOL_GET_ROUTE,
@@ -97,15 +100,36 @@ function executeGetRoute(
   }
 
   let departAt = opts.now ?? new Date();
+  let arriveBy: Date | null = null;
+  if (args.depart_at !== undefined && args.arrive_by !== undefined) {
+    return errorResult(CONFLICTING_TIMES_ERROR);
+  }
   if (args.depart_at !== undefined) {
     if (typeof args.depart_at !== "string" || !parseDepartAtParam(args.depart_at)) {
       return errorResult(INVALID_DEPART_AT_ERROR);
     }
     departAt = parseDepartAtParam(args.depart_at) as Date;
   }
+  if (args.arrive_by !== undefined) {
+    if (typeof args.arrive_by !== "string" || !parseDepartAtParam(args.arrive_by)) {
+      return errorResult(INVALID_ARRIVE_BY_ERROR);
+    }
+    arriveBy = parseDepartAtParam(args.arrive_by) as Date;
+  }
 
   const isHolidayDate = opts.isHolidayDate ?? getLocalIsHolidayDate();
-  const route = findRoute(origin.id, dest.id, { departAt, isHolidayDate });
+  const pref: RouteTimePreference =
+    arriveBy !== null
+      ? { mode: "arrive-by", at: arriveBy }
+      : args.depart_at !== undefined
+        ? { mode: "depart-at", at: departAt }
+        : { mode: "now" };
+  // now mode keeps the historical default (opts.now ?? now); explicit modes
+  // use the supplied instant.
+  const route =
+    pref.mode === "now" && opts.now !== undefined
+      ? findRoute(origin.id, dest.id, { departAt, isHolidayDate })
+      : planRoute(origin.id, dest.id, pref, { isHolidayDate });
   if (!route) {
     return textResult(
       formatNoRouteText(origin.name.fa, origin.name.en, dest.name.fa, dest.name.en),
@@ -113,7 +137,13 @@ function executeGetRoute(
   }
 
   const minutes = Math.round(route.estimatedSeconds / 60);
-  const scheduleNote = buildScheduleNote(departAt, isHolidayDate, route.legTiming);
+  // The schedule note describes the journey's own departure (for arrive-by
+  // that is the derived origin boarding time, not the requested deadline).
+  const scheduleNote = buildScheduleNote(
+    new Date(route.departedAtMs),
+    isHolidayDate,
+    route.legTiming,
+  );
   const canonicalUrl = buildCanonicalRouteUrl(origin.id, dest.id);
   const summary = formatRouteSummary({
     originFa: origin.name.fa,

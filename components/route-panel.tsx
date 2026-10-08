@@ -2,11 +2,13 @@
 
 import { useId, useMemo, useState } from "react";
 import {
+  AlarmClock,
   ArrowRight,
   ChevronDown,
   Clock,
   Compass,
   Flag,
+  Moon,
   Repeat,
   TrainFront,
   Footprints,
@@ -18,6 +20,7 @@ import { LINE_COLORS } from "@/lib/metro/lines";
 import { canBoardAtStation } from "@/lib/metro/selectors";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { formatTehranClock } from "@/lib/tehran-time";
 import { cn } from "@/lib/utils";
 import {
   getNextDepartures,
@@ -27,12 +30,117 @@ import {
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { useScheduleData } from "@/lib/use-schedule-data";
 
+/**
+ * Dedicated no-service state: the subway cannot complete this journey from
+ * the requested start. Reusable across modes — callers decide when to show
+ * it; this component bakes in no mode assumptions. `onPlanAnotherTime`
+ * opens the time planner (callers wire it to the sheet).
+ */
+export function NoServiceCard({
+  lang,
+  stationName,
+  reachableUntil,
+  isOrigin,
+  onPlanAnotherTime,
+}: {
+  lang: Lang;
+  /** Last station with propagated timing (localized display name). */
+  stationName: string;
+  /** Tehran "HH:MM" until when service reaches stationName. */
+  reachableUntil: string;
+  /** True when even the origin has no usable onward service. */
+  isOrigin: boolean;
+  onPlanAnotherTime: () => void;
+}) {
+  const t = STRINGS[lang];
+  const isFa = lang === "fa";
+  const body = isOrigin
+    ? t.noServiceFromOrigin
+    : `${t.noServicePartialA} ${stationName} ${t.noServicePartialB} ${persianDigits(reachableUntil, lang)}${isFa ? "، " : ", "}${t.noServicePartialC}`;
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-4 py-6 text-center md:gap-3 md:px-6 md:py-8">
+      <span className="flex size-11 items-center justify-center rounded-full bg-muted md:size-13">
+        <Moon aria-hidden="true" className="size-5 text-muted-foreground md:size-6" />
+      </span>
+      <h2 className="text-base font-bold md:text-lg">{t.noServiceTitle}</h2>
+      <p className="max-w-sm text-sm text-muted-foreground">{body}</p>
+      <button
+        type="button"
+        onClick={onPlanAnotherTime}
+        className="mt-1 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {t.planAnotherTime}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Arrive-by deadline is in the future, but even leaving now cannot make it
+ * (proven against the forward Now route, never inferred from a bare null).
+ * Reusable and mode-free like NoServiceCard.
+ */
+export function MissedDeadlineCard({
+  lang,
+  deadlineMs,
+  earliestArrivalMs,
+  onEditTime,
+  onRouteFromNow,
+}: {
+  lang: Lang;
+  deadlineMs: number;
+  earliestArrivalMs: number;
+  onEditTime: () => void;
+  onRouteFromNow: () => void;
+}) {
+  const t = STRINGS[lang];
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-4 py-6 text-center md:gap-3 md:px-6 md:py-8">
+      <span className="flex size-11 items-center justify-center rounded-full bg-muted md:size-13">
+        <AlarmClock aria-hidden="true" className="size-5 text-muted-foreground md:size-6" />
+      </span>
+      <h2 className="text-base font-bold md:text-lg">
+        {t.missedTitleA}{" "}
+        <span className="tnum">{persianDigits(formatTehranClock(deadlineMs), lang)}</span>{" "}
+        {t.missedTitleB}
+      </h2>
+      <p className="max-w-sm text-sm text-muted-foreground">
+        {t.missedBodyA}{" "}
+        <span className="tnum font-semibold text-foreground">
+          {persianDigits(formatTehranClock(earliestArrivalMs), lang)}
+        </span>
+        {t.missedBodyB}
+      </p>
+      <p className="max-w-sm text-xs text-muted-foreground">{t.otherTransportHint}</p>
+      <div className="mt-1 flex gap-2">
+        <button
+          type="button"
+          onClick={onEditTime}
+          className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {t.editTime}
+        </button>
+        <button
+          type="button"
+          onClick={onRouteFromNow}
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {t.routeFromNow}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function RoutePanel({
   route,
   lang,
+  plan,
 }: {
   route: RouteResult;
   lang: Lang;
+  /** Advanced time plan that produced this route (absent for "now"). */
+  plan?: { mode: "depart" | "arrive"; atMs: number };
 }) {
   const loaded = useScheduleData();
   const t = STRINGS[lang];
@@ -56,6 +164,10 @@ export function RoutePanel({
   );
   const longWait = !originNoService && !failedConn && firstWait > 60;
 
+  // NOTE: the no-service branch below is intentionally retained as a
+  // defensive fallback for direct/future RoutePanel reuse. The current web
+  // planner routes all no_service results to dedicated cards (NoServiceCard)
+  // before RoutePanel renders — do not remove this as dead code.
   // Pick the single most important warning (priority: no service > long transfer wait > long origin wait)
   const topWarning = useMemo(() => {
     // 1. No service for a leg (highest priority)
@@ -138,6 +250,40 @@ export function RoutePanel({
           label={isFa ? "رسیدن" : "arrival"}
         />
       </div>
+      {plan && (
+        <div data-testid="plan-banner" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-medium">
+          <Clock aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
+          <span>
+            {t.beAtStationBy}{" "}
+            <span className="tnum font-bold">
+              {persianDigits(formatTehranClock(route.departedAtMs), lang)}
+            </span>
+          </span>
+          <span aria-hidden="true" className="text-muted-foreground">·</span>
+          <span>
+            {t.trainAt}{" "}
+            <span className="tnum font-bold">
+              {persianDigits(route.trips[0]?.departTime ?? "—", lang)}
+            </span>
+          </span>
+          <span aria-hidden="true" className="text-muted-foreground">·</span>
+          <span>
+            {t.arriveAt}{" "}
+            <span className="tnum font-bold">{persianDigits(eta, lang)}</span>
+          </span>
+          {plan.mode === "arrive" && (
+            <>
+              <span aria-hidden="true" className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">
+                {t.arriveBy}{" "}
+                <span className="tnum font-bold">
+                  {persianDigits(formatTehranClock(plan.atMs), lang)}
+                </span>
+              </span>
+            </>
+          )}
+        </div>
+      )}
       {topWarning && (
         <div
           role={topWarning.severity === "red" ? "alert" : "status"}
@@ -213,6 +359,7 @@ export function RoutePanel({
               lang={lang}
               showNextTrain={i === 0}
               trip={route.trips[i] ?? undefined}
+              isPlanned={plan !== undefined}
             />
           </li>
         ))}
@@ -249,6 +396,7 @@ function SegmentCard({
   lang,
   showNextTrain = false,
   trip,
+  isPlanned = false,
 }: {
   line: number;
   stations: string[];
@@ -257,6 +405,8 @@ function SegmentCard({
   lang: Lang;
   showNextTrain?: boolean;
   trip?: TripResult;
+  /** Planned (non-now) journey: "Then:" reflects live now, not the plan. */
+  isPlanned?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const loaded = useScheduleData();
@@ -315,6 +465,9 @@ function SegmentCard({
               ) : null}
             </p>
             {(() => {
+              // "Then:" reflects live departures from now — hide it on
+              // planned journeys where it would contradict the plan.
+              if (isPlanned) return null;
               // Find next departure with a different time than the main one
               const nextDifferent = next ? nextDep.find((d) => d.time !== next.time) : null;
               if (!nextDifferent) return null;

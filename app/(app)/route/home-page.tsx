@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import {
   ArrowUpDown,
   Building2,
+  History,
   Loader2,
   ExternalLink,
   Database,
@@ -14,12 +15,22 @@ import {
   X,
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
-import { RoutePanel } from "@/components/route-panel";
+import { MissedDeadlineCard, NoServiceCard, RoutePanel } from "@/components/route-panel";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
+import { TravelTimeCard } from "@/components/travel-time-card";
 import { useMetro } from "@/app/providers";
 import { TabLink } from "@/app/nav";
 import { STATION_MAP, findRoute } from "@/lib/route";
+import {
+  applyTimeParams,
+  getArriveByViewState,
+  parseTimeModeParams,
+  planRoute,
+  seedNextFiveMinutes,
+  type TimeMode,
+} from "@/lib/route-planning";
+import { tehranMinuteToInstant } from "@/lib/tehran-time";
 import { useScheduleData } from "@/lib/use-schedule-data";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
@@ -108,6 +119,23 @@ export function HomePage() {
   const [originId, setOriginId] = useState<string | null>(initialFrom);
   const [destId, setDestId] = useState<string | null>(initialTo);
 
+  // Advanced time planning (?timeMode=now|depart|arrive&at=ISO). Old links
+  // without time params keep meaning "now".
+  const [timeMode, setTimeMode] = useState<TimeMode>(
+    () => parseTimeModeParams(searchParams).mode,
+  );
+  const [planAtMs, setPlanAtMs] = useState<number | null>(
+    () => parseTimeModeParams(searchParams).at?.getTime() ?? null,
+  );
+  // Refreshing clock so a selected time visibly passes (past-time states).
+  // Only wired into advanced-mode routing; "now" never re-routes on a tick.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (timeMode === "now") return;
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [timeMode]);
+
   // Restore place pins from shareable URL params (?oPlat/oPlng/oPlabel…).
   const [originPlaceInfo, setOriginPlaceInfo] = useState<PlaceInfo | null>(() => {
     const pin = parsePlaceParam(searchParams, "oP");
@@ -190,23 +218,65 @@ export function HomePage() {
     if (destPlaceInfo) {
       params.set("dp", encodePlacePin({ lat: destPlaceInfo.lat, lng: destPlaceInfo.lng, label: destPlaceInfo.placeName }));
     }
+    applyTimeParams(params, timeMode, planAtMs !== null ? new Date(planAtMs) : null);
     const qs = params.toString();
     const url = qs ? `?${qs}` : window.location.pathname;
     window.history.replaceState(null, "", url);
-  }, [originId, destId, originPlaceInfo, destPlaceInfo]);
+  }, [originId, destId, originPlaceInfo, destPlaceInfo, timeMode, planAtMs]);
+
+  // Tick only invalidates advanced-mode routing (past transitions + plan
+  // freshness); "now" keeps its historical compute-once behavior.
+  const planTick = timeMode === "now" ? 0 : nowMs;
+  // A selected time in the past is never silently clamped: the UI shows an
+  // explicit "time has passed" state instead of routing from a moved instant.
+  const isPastTime =
+    timeMode !== "now" && planAtMs !== null && planAtMs < nowMs;
 
   const route = useMemo(() => {
     if (!originId || !destId || originId === destId) return null;
+    if (isPastTime) return null;
+    if (timeMode !== "now") {
+      if (planAtMs === null) return null;
+      const at = new Date(planAtMs);
+      // Holiday-aware: same local resolver the server uses (offline dataset,
+      // never a network request inside routing).
+      return planRoute(
+        originId,
+        destId,
+        timeMode === "depart" ? { mode: "depart-at", at } : { mode: "arrive-by", at },
+        { isHolidayDate },
+      );
+    }
     // Holiday-aware: same local resolver the server uses (offline dataset,
     // never a network request inside routing).
     return findRoute(originId, destId, { isHolidayDate });
-  }, [originId, destId, loaded, isHolidayDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originId, destId, loaded, isHolidayDate, timeMode, planAtMs, planTick]);
+
+  // Forward Now route for arrive-by comparison (classifies a null plan as
+  // missed / no_service / generic without inferring from the bare null).
+  const nowRoute = useMemo(() => {
+    if (timeMode !== "arrive" || isPastTime) return null;
+    if (!originId || !destId || originId === destId) return null;
+    return findRoute(originId, destId, { isHolidayDate });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originId, destId, loaded, isHolidayDate, timeMode, planTick]);
+
+  const arriveView =
+    timeMode === "arrive" && !isPastTime && planAtMs !== null
+      ? getArriveByViewState(route, nowRoute, planAtMs)
+      : null;
 
   function swap() {
     setOriginId(destId);
     setDestId(originId);
     setOriginPlaceInfo(destPlaceInfo);
     setDestPlaceInfo(originPlaceInfo);
+  }
+
+  function useNow() {
+    setTimeMode("now");
+    setPlanAtMs(null);
   }
 
   function handlePlaceSelect(place: { lat: number; lng: number; name: string }, asOrigin: boolean) {
@@ -250,6 +320,14 @@ export function HomePage() {
           destId={destId}
           selectedId={selectedId}
           route={route}
+          timeMode={timeMode}
+          planAtMs={planAtMs}
+          nowMs={nowMs}
+          isPastTime={isPastTime}
+          arriveView={arriveView}
+          setTimeMode={setTimeMode}
+          setPlanAtMs={setPlanAtMs}
+          onUseNow={useNow}
           setOriginId={setOriginId}
           setDestId={setDestId}
           setSelectedId={setSelectedId}
@@ -313,6 +391,14 @@ function RouteView({
   destId,
   selectedId,
   route,
+  timeMode,
+  planAtMs,
+  nowMs,
+  isPastTime,
+  arriveView,
+  setTimeMode,
+  setPlanAtMs,
+  onUseNow,
   setOriginId,
   setDestId,
   setSelectedId,
@@ -329,6 +415,14 @@ function RouteView({
   destId: string | null;
   selectedId: string | null;
   route: ReturnType<typeof findRoute>;
+  timeMode: TimeMode;
+  planAtMs: number | null;
+  nowMs: number;
+  isPastTime: boolean;
+  arriveView: ReturnType<typeof getArriveByViewState> | null;
+  setTimeMode: (mode: TimeMode) => void;
+  setPlanAtMs: (ms: number | null) => void;
+  onUseNow: () => void;
   setOriginId: (id: string | null) => void;
   setDestId: (id: string | null) => void;
   setSelectedId: (id: string | null) => void;
@@ -343,10 +437,38 @@ function RouteView({
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const selected = selectedId ? STATION_MAP.get(selectedId) : null;
+  const stationDisplayName = (id: string) => {
+    const s = STATION_MAP.get(id);
+    return s ? (isFa ? s.name.fa : s.name.en) : id;
+  };
   const [locating, setLocating] = useState(false);
   const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null);
+  // Inline travel-time card expansion (active plans start expanded).
+  // Edit-time entry points expand + scroll here instead of opening a modal.
+  const [timeExpanded, setTimeExpanded] = useState(() => timeMode !== "now");
+  const timeCardRef = useRef<HTMLDivElement>(null);
   const gpsLangRef = useRef(lang);
   gpsLangRef.current = lang;
+
+  function expandTimeCard(): void {
+    setTimeExpanded(true);
+    requestAnimationFrame(() => {
+      timeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }
+
+  function handleSelectMode(mode: TimeMode): void {
+    if (mode === "now") {
+      setTimeMode("now");
+      setPlanAtMs(null);
+      return;
+    }
+    if (planAtMs === null) {
+      const seed = seedNextFiveMinutes(Date.now());
+      setPlanAtMs(tehranMinuteToInstant(seed.dateStr, seed.hh * 60 + seed.mm));
+    }
+    setTimeMode(mode);
+  }
 
   async function locateOrigin() {
     if (!navigator.geolocation) {
@@ -493,6 +615,18 @@ function RouteView({
               onClear={clearDestPlace}
             />
           )}
+          <div ref={timeCardRef} className="scroll-mt-4">
+            <TravelTimeCard
+              lang={lang}
+              timeMode={timeMode}
+              planAtMs={planAtMs}
+              nowMs={nowMs}
+              expanded={timeExpanded}
+              onToggle={() => setTimeExpanded((o) => !o)}
+              onModeChange={handleSelectMode}
+              onPlanAtMs={setPlanAtMs}
+            />
+          </div>
           {showViewOnMap && (
             <Link
               href={mapHref}
@@ -512,9 +646,88 @@ function RouteView({
           />
         ) : null}
 
-        {route ? (
+        {isPastTime ? (
+          <div
+            role="alert"
+            className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+              <History aria-hidden="true" className="size-4 text-muted-foreground" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">
+                {timeMode === "depart" ? t.timePassedTitle : t.arrivalPassedTitle}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {timeMode === "depart" ? t.timePassedBody : t.arrivalPassedBody}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={onUseNow}
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {t.useNow}
+              </button>
+              <button
+                type="button"
+                onClick={expandTimeCard}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {t.editTime}
+              </button>
+            </div>
+          </div>
+        ) : arriveView && arriveView.kind === "missed" && planAtMs !== null ? (
+          <MissedDeadlineCard
+            lang={lang}
+            deadlineMs={planAtMs}
+            earliestArrivalMs={arriveView.earliestArrivalMs}
+            onEditTime={expandTimeCard}
+            onRouteFromNow={onUseNow}
+          />
+        ) : arriveView && arriveView.kind === "no_service" ? (
           <>
-            <RoutePanel route={route} lang={lang} />
+            <NoServiceCard
+              lang={lang}
+              stationName={stationDisplayName(arriveView.route.reachableUntilStationId)}
+              reachableUntil={arriveView.route.reachableUntil}
+              isOrigin={arriveView.route.reachableUntilStationId === originId}
+              onPlanAnotherTime={expandTimeCard}
+            />
+            {originId && (() => {
+              const origin = STATION_MAP.get(originId);
+              if (!origin) return null;
+              return <RouteActions origin={origin} lang={lang} />;
+            })()}
+          </>
+        ) : route && route.status === "no_service" ? (
+          <>
+            <NoServiceCard
+              lang={lang}
+              stationName={stationDisplayName(route.reachableUntilStationId)}
+              reachableUntil={route.reachableUntil}
+              isOrigin={route.reachableUntilStationId === originId}
+              onPlanAnotherTime={expandTimeCard}
+            />
+            {originId && (() => {
+              const origin = STATION_MAP.get(originId);
+              if (!origin) return null;
+              return <RouteActions origin={origin} lang={lang} />;
+            })()}
+          </>
+        ) : route ? (
+          <>
+            <RoutePanel
+              route={route}
+              lang={lang}
+              plan={
+                timeMode !== "now" && planAtMs !== null
+                  ? { mode: timeMode, atMs: planAtMs }
+                  : undefined
+              }
+            />
             {originId && (() => {
               const origin = STATION_MAP.get(originId);
               if (!origin) return null;
@@ -540,9 +753,9 @@ function RouteView({
           </div>
         ) : null}
 
-        {originId && destId && originId !== destId && !route && (
+        {originId && destId && originId !== destId && !route && !isPastTime && (!arriveView || arriveView.kind === "generic") && (
           <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
-            {t.noRoute}
+            {timeMode === "arrive" ? t.noJourneyBy : t.noRoute}
           </p>
         )}
 
@@ -552,6 +765,7 @@ function RouteView({
     </div>
   );
 }
+
 
 function PlaceCard({
   lang,
