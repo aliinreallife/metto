@@ -62,7 +62,12 @@ export function TravelTimeCard({
       >
         <Clock aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
         <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-start">
-          <span className="font-semibold">{t.travelTime}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="font-semibold">{t.travelTime}</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+              {t.optionalBadge}
+            </span>
+          </span>
           <span className="tnum truncate text-xs text-muted-foreground">{summary}</span>
         </span>
         <ChevronDown
@@ -88,19 +93,20 @@ export function TravelTimeCard({
                   name="travel-time-mode"
                   checked={timeMode === "now"}
                   onChange={() => onModeChange("now")}
-                  label={t.timeNow}
+                  label={t.leaveNow}
+                  sub={t.defaultBadge}
                 />
                 <ModeOption
                   name="travel-time-mode"
                   checked={timeMode === "depart"}
                   onChange={() => onModeChange("depart")}
-                  label={t.departShort}
+                  label={t.departLong}
                 />
                 <ModeOption
                   name="travel-time-mode"
                   checked={timeMode === "arrive"}
                   onChange={() => onModeChange("arrive")}
-                  label={t.arriveShort}
+                  label={t.arriveLong}
                 />
               </div>
             </fieldset>
@@ -133,16 +139,18 @@ function ModeOption({
   checked,
   onChange,
   label,
+  sub,
 }: {
   name: string;
   checked: boolean;
   onChange: () => void;
   label: string;
+  sub?: string;
 }) {
   return (
     <label
       className={cn(
-        "flex min-h-11 cursor-pointer items-center justify-center rounded-lg px-1 text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-ring",
+        "flex min-h-12 cursor-pointer items-center justify-center rounded-lg px-1 py-1.5 text-center text-[13px] font-semibold transition-colors focus-within:ring-2 focus-within:ring-ring",
         checked
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground",
@@ -155,7 +163,19 @@ function ModeOption({
         onChange={onChange}
         className="sr-only"
       />
-      <span className="truncate">{label}</span>
+      <span className="flex flex-col items-center leading-snug">
+        <span>{label}</span>
+        {sub && (
+          <span
+            className={cn(
+              "text-[10px] font-medium",
+              checked ? "text-primary-foreground" : "text-muted-foreground",
+            )}
+          >
+            {sub}
+          </span>
+        )}
+      </span>
     </label>
   );
 }
