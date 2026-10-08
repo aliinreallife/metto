@@ -60,7 +60,7 @@ describe("shared MCP server parity", () => {
     }
   });
 
-  it("get_route exposes depart_at (optional ISO instant), from/to required", async () => {
+  it("get_route exposes depart_at/arrive_by (optional ISO instants), from/to required", async () => {
     const { tools } = await listLiveTools();
     const route = tools.find((t) => t.name === "get_route");
     expect(route).toBeDefined();
@@ -70,12 +70,14 @@ describe("shared MCP server parity", () => {
     };
     expect(schema.required?.sort()).toEqual(["from", "to"]);
     expect(Object.keys(schema.properties ?? {}).sort()).toEqual([
+      "arrive_by",
       "depart_at",
       "from",
       "to",
     ]);
     expect(schema.properties?.depart_at?.description).toContain("ISO-8601");
     expect(schema.properties?.depart_at?.description).toContain("Tehran");
+    expect(schema.properties?.arrive_by?.description).toContain("ISO-8601");
   });
 
   it("exposes no caller-supplied day-type classification on any tool", async () => {

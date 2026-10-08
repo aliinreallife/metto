@@ -8,7 +8,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { STATION_MAP } from "../route";
-import { findRouteWithSchedule } from "../schedule-server";
+import { planRouteWithSchedule } from "../schedule-server";
 import { nearestStations } from "../geo";
 import {
   getAllStations,
@@ -17,6 +17,7 @@ import {
 } from "../metro/selectors";
 import { LINES } from "../metro/lines";
 import {
+  ARRIVE_BY_DESCRIPTION,
   DEPART_AT_DESCRIPTION,
   FIND_NEARBY_DESCRIPTION,
   FROM_DESCRIPTION,
@@ -55,6 +56,7 @@ export const GET_ROUTE_ZOD_SCHEMA = z.object({
   from: z.string().describe(FROM_DESCRIPTION),
   to: z.string().describe(TO_DESCRIPTION),
   depart_at: z.string().optional().describe(DEPART_AT_DESCRIPTION),
+  arrive_by: z.string().optional().describe(ARRIVE_BY_DESCRIPTION),
 }).strict();
 
 export const LIST_STATIONS_ZOD_SCHEMA = z.object({
@@ -102,7 +104,7 @@ export function createMettoMcpServer(): McpServer {
       path: z.array(z.string()),
       hops: z.array(z.object({ from: z.string(), to: z.string(), line: z.number() })),
     },
-  }, async ({ from, to, depart_at }) => {
+  }, async ({ from, to, depart_at, arrive_by }) => {
     const origin = STATION_MAP.get(from);
     const dest = STATION_MAP.get(to);
 
@@ -113,7 +115,10 @@ export function createMettoMcpServer(): McpServer {
       };
     }
 
-    const result = await findRouteWithSchedule(from, to, depart_at);
+    const result = await planRouteWithSchedule(from, to, {
+      departAtParam: depart_at,
+      arriveByParam: arrive_by,
+    });
     if (!result || !result.ok) {
       if (result && !result.ok) {
         return {

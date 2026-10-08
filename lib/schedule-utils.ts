@@ -447,6 +447,71 @@ export function findTripDetailed(
   return { status: "found", trip: bestResult };
 }
 
+/**
+ * Reverse timetable lookup for one ride leg (specific line/from/to/dayType).
+ * Mirror of findTripDetailed over arrivals instead of departures:
+ * - "found": the train serving from->to with the LATEST departure whose
+ *   arrival is at/before beforeMinutes (service-minute clock, 24h+ aware so
+ *   post-midnight arrivals like 24:06 compare correctly). Selection order:
+ *   latest departure, then earliest arrival, then first row in dataset order
+ *   (deterministic final tie-break — never input-dependent randomness).
+ * - "missing_schedule_data": no schedule rows exist for this line/dayType —
+ *   the caller's geometric fallback is allowed.
+ * - "no_service": the timetable covers this line/dayType but no train
+ *   arrives in time — never synthesize a fallback train.
+ */
+export function findTripArrivingByDetailed(
+  fromIdInput: string,
+  toIdInput: string,
+  line: number,
+  beforeMinutes: number,
+  dayType?: DayType,
+  options?: { expressOnly?: boolean; localOnly?: boolean },
+): TripLookupResult {
+  const fromId = normId(fromIdInput);
+  const toId = normId(toIdInput);
+  const dt = dayType ?? getCurrentDayType();
+  if (_scheduleData === null) return { status: "missing_schedule_data" };
+  const lineRows = getSchedules().filter((ls) => ls.line === line);
+  if (lineRows.length === 0) return { status: "missing_schedule_data" };
+  const dayTrains = lineRows
+    .flatMap((ls) => ls.trains)
+    .filter((t) => t.dayType === dt);
+  if (dayTrains.length === 0) return { status: "missing_schedule_data" };
+
+  let best: { depart: number; arrive: number; result: TripResult } | null = null;
+  for (const train of dayTrains) {
+    const fromIdx = train.stops.findIndex((s) => s.stationId === fromId);
+    const toIdx = train.stops.findIndex((s) => s.stationId === toId);
+    if (fromIdx === -1 || toIdx === -1) continue;
+    if (toIdx <= fromIdx) continue;
+    if (options?.expressOnly && !train.isExpress) continue;
+    if (options?.localOnly && train.isExpress) continue;
+
+    const departMin = parseServiceTimeToMinutes(train.stops[fromIdx].time);
+    let arriveMin = parseServiceTimeToMinutes(train.stops[toIdx].time);
+    // A trip itself may cross midnight (arrive clock earlier than depart).
+    if (arriveMin < departMin) arriveMin += 24 * 60;
+    if (arriveMin > beforeMinutes) continue;
+
+    const candidate: TripResult = {
+      train,
+      departTime: train.stops[fromIdx].time,
+      arriveTime: train.stops[toIdx].time,
+      travelMinutes: arriveMin - departMin,
+    };
+    if (
+      !best ||
+      departMin > best.depart ||
+      (departMin === best.depart && arriveMin < best.arrive)
+    ) {
+      best = { depart: departMin, arrive: arriveMin, result: candidate };
+    }
+  }
+  if (!best) return { status: "no_service" };
+  return { status: "found", trip: best.result };
+}
+
 export function getTrainArrivalAtStation(
   stationIdInput: string,
   line: number,

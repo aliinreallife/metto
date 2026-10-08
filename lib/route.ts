@@ -187,6 +187,18 @@ export type TripLookupArgs = {
   toRouteId: string;
 };
 
+/** Reverse timetable lookup: latest departure with arrival <= beforeMinutes. */
+export type ReverseTripLookupArgs = {
+  fromId: string;
+  toId: string;
+  line: number;
+  /** Tehran service-minute deadline on the queried service date. */
+  beforeMinutes: number;
+  dayType: DayType;
+  fromRouteId: string;
+  toRouteId: string;
+};
+
 export type FindRouteOptions = {
   /** Requested departure; defaults to now. Propagated as absolute time. */
   departAt?: Date;
@@ -244,6 +256,19 @@ function getRouteTerminalForDirection(
   return b > a ? stops[stops.length - 1] : stops[0];
 }
 
+// Time-independent path topology: the Dijkstra cost model never sees the
+// clock, so one topology serves every departure instant (and both forward and
+// reverse timetable propagation). Structured as a standalone step so planners
+// can evaluate candidate topologies without re-running timing.
+export type RouteTopology = {
+  hops: Hop[];
+  segments: RouteSegment[];
+  path: string[];
+  numStops: number;
+  numTransfers: number;
+  numTrainChanges: number;
+};
+
 // Dijkstra over (station, line, route) states.
 // - Riding along a route: no transfer, no train change.
 // - Same line, different route: train_change (split segment, penalty, no walk).
@@ -251,11 +276,10 @@ function getRouteTerminalForDirection(
 //   boardable stops.
 // Pass-through of non-boardable stations is free; boarding / alighting /
 // transferring requires canBoard/canTransfer.
-export function findRoute(
+export function computeRouteTopology(
   originInput: string,
   destInput: string,
-  opts?: FindRouteOptions,
-): RouteResult | null {
+): RouteTopology | null {
   const originId = resolveStationId(originInput) ?? originInput;
   const destId = resolveStationId(destInput) ?? destInput;
   if (originId === destId) return null;
@@ -461,12 +485,64 @@ export function findRoute(
     (s) => s.changeFromPrevious.type === "train_change",
   ).length;
 
-  // Chronological ETA engine: one absolute currentInstant (epoch ms) is
-  // propagated through every leg. Walking is applied BEFORE the connecting
-  // departure is searched, so a train departing before the passenger finishes
-  // walking is always treated as missed. All breakdown fields are integer
-  // seconds; instants are never derived by adding seconds to wall minutes.
+  return { hops, segments, path, numStops, numTransfers, numTrainChanges };
+}
+
+/** Geometric ride estimate for one ride segment (missing-data fallback). */
+export function estimateSegmentSeconds(stations: string[]): number {
+  let segSeconds = 0;
+  for (let i = 0; i < stations.length - 1; i++) {
+    const km = hopKm(stations[i], stations[i + 1]);
+    segSeconds += (km / AVG_SPEED_KMH) * 3600 + DWELL_S;
+  }
+  return Math.round(segSeconds);
+}
+
+export function findRoute(
+  originInput: string,
+  destInput: string,
+  opts?: FindRouteOptions,
+): RouteResult | null {
+  const originId = resolveStationId(originInput) ?? originInput;
+  const destId = resolveStationId(destInput) ?? destInput;
+  const topology = computeRouteTopology(originInput, destInput);
+  if (!topology) return null;
   const departAt = opts?.departAt ?? new Date();
+  const tripLookup =
+    opts?.tripLookup ??
+    ((args: TripLookupArgs): TripLookupResult =>
+      findTripDetailed(
+        args.fromId,
+        args.toId,
+        args.line,
+        args.afterMinutes,
+        args.dayType,
+      ));
+  return propagateForward(
+    topology,
+    originId,
+    destId,
+    departAt,
+    tripLookup,
+    opts?.isHolidayDate,
+  );
+}
+
+// Chronological ETA engine: one absolute currentInstant (epoch ms) is
+// propagated through every leg. Walking is applied BEFORE the connecting
+// departure is searched, so a train departing before the passenger finishes
+// walking is always treated as missed. All breakdown fields are integer
+// seconds; instants are never derived by adding seconds to wall minutes.
+function propagateForward(
+  topology: RouteTopology,
+  originId: string,
+  destId: string,
+  departAt: Date,
+  tripLookup: (args: TripLookupArgs) => TripLookupResult,
+  isHolidayDate: IsHolidayDate | undefined,
+): RouteResult {
+  const { hops, segments, path, numStops, numTransfers, numTrainChanges } =
+    topology;
   const startInstantMs = departAt.getTime();
   let currentInstantMs = startInstantMs;
   const trips: (TripResult | null)[] = [];
@@ -478,17 +554,6 @@ export function findRoute(
   let transferWaitSeconds = 0;
   let trainChangeWaitSeconds = 0;
   let unserved = false;
-
-  const tripLookup =
-    opts?.tripLookup ??
-    ((args: TripLookupArgs): TripLookupResult =>
-      findTripDetailed(
-        args.fromId,
-        args.toId,
-        args.line,
-        args.afterMinutes,
-        args.dayType,
-      ));
 
   // Pending connection opened after leg k arrives; finalized once leg k+1's
   // lookup resolves (its departure/wait) or fails (no-service).
@@ -545,7 +610,7 @@ export function findRoute(
     // uses the pre-loaded sync resolver (local map, no I/O here).
     const parts = tehranParts(currentInstantMs);
     const holidayDayType = scheduleDayToDayType(
-      getMetroScheduleDayType(currentInstantMs, opts?.isHolidayDate),
+      getMetroScheduleDayType(currentInstantMs, isHolidayDate),
     );
     const lookup = tripLookup({
       fromId: segOrigin,
@@ -589,12 +654,7 @@ export function findRoute(
       // Fallback estimate advances the SAME ledger so later timetable legs
       // search from this leg's calculated arrival. Allowed only when schedule
       // data is missing — never when the timetable reports no service.
-      let segSeconds = 0;
-      for (let i = 0; i < seg.stations.length - 1; i++) {
-        const km = hopKm(seg.stations[i], seg.stations[i + 1]);
-        segSeconds += (km / AVG_SPEED_KMH) * 3600 + DWELL_S;
-      }
-      segSeconds = Math.round(segSeconds);
+      const segSeconds = estimateSegmentSeconds(seg.stations);
       rideSeconds += segSeconds;
       trips.push(null);
       legTiming.push("estimated");

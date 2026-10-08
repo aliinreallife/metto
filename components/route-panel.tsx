@@ -18,6 +18,7 @@ import { LINE_COLORS } from "@/lib/metro/lines";
 import { canBoardAtStation } from "@/lib/metro/selectors";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { formatTehranClock } from "@/lib/tehran-time";
 import { cn } from "@/lib/utils";
 import {
   getNextDepartures,
@@ -30,9 +31,12 @@ import { useScheduleData } from "@/lib/use-schedule-data";
 export function RoutePanel({
   route,
   lang,
+  plan,
 }: {
   route: RouteResult;
   lang: Lang;
+  /** Advanced time plan that produced this route (absent for "now"). */
+  plan?: { mode: "depart" | "arrive"; atMs: number };
 }) {
   const loaded = useScheduleData();
   const t = STRINGS[lang];
@@ -138,6 +142,40 @@ export function RoutePanel({
           label={isFa ? "رسیدن" : "arrival"}
         />
       </div>
+      {plan && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-medium">
+          <Clock aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
+          <span>
+            {t.beAtStationBy}{" "}
+            <span className="tnum font-bold">
+              {persianDigits(formatTehranClock(route.departedAtMs), lang)}
+            </span>
+          </span>
+          <span aria-hidden="true" className="text-muted-foreground">·</span>
+          <span>
+            {t.trainAt}{" "}
+            <span className="tnum font-bold">
+              {persianDigits(route.trips[0]?.departTime ?? "—", lang)}
+            </span>
+          </span>
+          <span aria-hidden="true" className="text-muted-foreground">·</span>
+          <span>
+            {t.arriveAt}{" "}
+            <span className="tnum font-bold">{persianDigits(eta, lang)}</span>
+          </span>
+          {plan.mode === "arrive" && (
+            <>
+              <span aria-hidden="true" className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">
+                {t.arriveBy}{" "}
+                <span className="tnum font-bold">
+                  {persianDigits(formatTehranClock(plan.atMs), lang)}
+                </span>
+              </span>
+            </>
+          )}
+        </div>
+      )}
       {topWarning && (
         <div
           role={topWarning.severity === "red" ? "alert" : "status"}
@@ -213,6 +251,7 @@ export function RoutePanel({
               lang={lang}
               showNextTrain={i === 0}
               trip={route.trips[i] ?? undefined}
+              isPlanned={plan !== undefined}
             />
           </li>
         ))}
@@ -249,6 +288,7 @@ function SegmentCard({
   lang,
   showNextTrain = false,
   trip,
+  isPlanned = false,
 }: {
   line: number;
   stations: string[];
@@ -257,6 +297,8 @@ function SegmentCard({
   lang: Lang;
   showNextTrain?: boolean;
   trip?: TripResult;
+  /** Planned (non-now) journey: "Then:" reflects live now, not the plan. */
+  isPlanned?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const loaded = useScheduleData();
@@ -315,6 +357,9 @@ function SegmentCard({
               ) : null}
             </p>
             {(() => {
+              // "Then:" reflects live departures from now — hide it on
+              // planned journeys where it would contradict the plan.
+              if (isPlanned) return null;
               // Find next departure with a different time than the main one
               const nextDifferent = next ? nextDep.find((d) => d.time !== next.time) : null;
               if (!nextDifferent) return null;

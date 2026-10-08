@@ -38,7 +38,8 @@ export const METRO_TOOL_ANNOTATIONS = {
 export const GET_ROUTE_DESCRIPTION =
   "Plan a metro route between two stations. Returns stops, transfers, travel time, and path. " +
   "Departure is an absolute instant: metto automatically derives the correct Iran (Asia/Tehran) " +
-  "weekday, Thursday, or Friday/official-holiday timetable from it — never pass a day type.";
+  "weekday, Thursday, or Friday/official-holiday timetable from it — never pass a day type. " +
+  "Pass arrive_by instead of depart_at to get the latest feasible journey arriving at or before a deadline.";
 
 export const LIST_STATIONS_DESCRIPTION =
   "List all metro stations. Optionally filter by line number or search query.";
@@ -62,6 +63,13 @@ export const DEPART_AT_DESCRIPTION =
   "(e.g. '2026-09-07T14:00:00+03:30'). Defaults to now. " +
   "metto derives the Iran (Asia/Tehran) weekday/Thursday/Friday-or-official-holiday timetable " +
   "automatically from this instant.";
+
+export const ARRIVE_BY_DESCRIPTION =
+  "ISO-8601 arrival deadline with explicit timezone offset or Z " +
+  "(e.g. '2026-09-07T14:00:00+03:30'). metto returns the latest feasible " +
+  "journey reaching the destination at or before this instant, derived from " +
+  "the real timetable (never duration subtraction). Mutually exclusive with " +
+  "depart_at.";
 
 export const LINE_FILTER_DESCRIPTION = "Filter by line number (1-7)";
 
@@ -91,6 +99,7 @@ export const GET_ROUTE_INPUT_SCHEMA: JsonInputSchema = {
     from: { type: "string", description: FROM_DESCRIPTION },
     to: { type: "string", description: TO_DESCRIPTION },
     depart_at: { type: "string", description: DEPART_AT_DESCRIPTION },
+    arrive_by: { type: "string", description: ARRIVE_BY_DESCRIPTION },
   },
   required: ["from", "to"],
   additionalProperties: false,
@@ -162,6 +171,12 @@ export function parseDepartAtParam(value: string): Date | null {
 
 export const INVALID_DEPART_AT_ERROR =
   "Invalid depart_at (expected ISO-8601 datetime with explicit timezone offset or Z, e.g. 2026-09-07T14:00:00+03:30)";
+
+export const INVALID_ARRIVE_BY_ERROR =
+  "Invalid arrive_by (expected ISO-8601 datetime with explicit timezone offset or Z, e.g. 2026-09-07T14:00:00+03:30)";
+
+export const CONFLICTING_TIMES_ERROR =
+  "Specify only one of depart_at / arrive_by, not both.";
 
 export function stationListNotFoundText(available: string[]): string {
   return `Station not found. Available: ${available.join(", ")}`;
