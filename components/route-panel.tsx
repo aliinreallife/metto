@@ -164,6 +164,10 @@ export function RoutePanel({
   );
   const longWait = !originNoService && !failedConn && firstWait > 60;
 
+  // NOTE: the no-service branch below is intentionally retained as a
+  // defensive fallback for direct/future RoutePanel reuse. The current web
+  // planner routes all no_service results to dedicated cards (NoServiceCard)
+  // before RoutePanel renders — do not remove this as dead code.
   // Pick the single most important warning (priority: no service > long transfer wait > long origin wait)
   const topWarning = useMemo(() => {
     // 1. No service for a leg (highest priority)
