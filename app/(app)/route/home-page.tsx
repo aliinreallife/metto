@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
-import { NoServiceCard, RoutePanel } from "@/components/route-panel";
+import { MissedDeadlineCard, NoServiceCard, RoutePanel } from "@/components/route-panel";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
 import {
@@ -31,6 +31,7 @@ import { TabLink } from "@/app/nav";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import {
   applyTimeParams,
+  getArriveByViewState,
   parseTimeModeParams,
   planRoute,
   type TimeMode,
@@ -258,6 +259,20 @@ export function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [originId, destId, loaded, isHolidayDate, timeMode, planAtMs, planTick]);
 
+  // Forward Now route for arrive-by comparison (classifies a null plan as
+  // missed / no_service / generic without inferring from the bare null).
+  const nowRoute = useMemo(() => {
+    if (timeMode !== "arrive" || isPastTime) return null;
+    if (!originId || !destId || originId === destId) return null;
+    return findRoute(originId, destId, { isHolidayDate });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originId, destId, loaded, isHolidayDate, timeMode, planTick]);
+
+  const arriveView =
+    timeMode === "arrive" && !isPastTime && planAtMs !== null
+      ? getArriveByViewState(route, nowRoute, planAtMs)
+      : null;
+
   function swap() {
     setOriginId(destId);
     setDestId(originId);
@@ -315,6 +330,7 @@ export function HomePage() {
           planAtMs={planAtMs}
           nowMs={nowMs}
           isPastTime={isPastTime}
+          arriveView={arriveView}
           setTimeMode={setTimeMode}
           setPlanAtMs={setPlanAtMs}
           onUseNow={useNow}
@@ -385,6 +401,7 @@ function RouteView({
   planAtMs,
   nowMs,
   isPastTime,
+  arriveView,
   setTimeMode,
   setPlanAtMs,
   onUseNow,
@@ -408,6 +425,7 @@ function RouteView({
   planAtMs: number | null;
   nowMs: number;
   isPastTime: boolean;
+  arriveView: ReturnType<typeof getArriveByViewState> | null;
   setTimeMode: (mode: TimeMode) => void;
   setPlanAtMs: (ms: number | null) => void;
   onUseNow: () => void;
@@ -639,6 +657,29 @@ function RouteView({
               </button>
             </div>
           </div>
+        ) : arriveView && arriveView.kind === "missed" && planAtMs !== null ? (
+          <MissedDeadlineCard
+            lang={lang}
+            deadlineMs={planAtMs}
+            earliestArrivalMs={arriveView.earliestArrivalMs}
+            onEditTime={() => setSheetOpen(true)}
+            onRouteFromNow={onUseNow}
+          />
+        ) : arriveView && arriveView.kind === "no_service" ? (
+          <>
+            <NoServiceCard
+              lang={lang}
+              stationName={stationDisplayName(arriveView.route.reachableUntilStationId)}
+              reachableUntil={arriveView.route.reachableUntil}
+              isOrigin={arriveView.route.reachableUntilStationId === originId}
+              onPlanAnotherTime={() => setSheetOpen(true)}
+            />
+            {originId && (() => {
+              const origin = STATION_MAP.get(originId);
+              if (!origin) return null;
+              return <RouteActions origin={origin} lang={lang} />;
+            })()}
+          </>
         ) : route && route.status === "no_service" ? (
           <>
             <NoServiceCard
@@ -690,7 +731,7 @@ function RouteView({
           </div>
         ) : null}
 
-        {originId && destId && originId !== destId && !route && !isPastTime && (
+        {originId && destId && originId !== destId && !route && !isPastTime && (!arriveView || arriveView.kind === "generic") && (
           <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
             {timeMode === "arrive" ? t.noJourneyBy : t.noRoute}
           </p>
@@ -732,48 +773,66 @@ function AdvancedRoutingSection({
   const t = STRINGS[lang];
   // An active shared/reloaded plan starts expanded so it stays visible.
   const [open, setOpen] = useState(() => timeMode !== "now");
-  const active =
+  const summary =
+    timeMode === "now" || planAtMs === null
+      ? t.timeNow
+      : timeMode === "depart"
+        ? `${t.beAtStationBy} ${formatPlanSummary(lang, planAtMs, nowMs).timeLabel}`
+        : `${t.arriveBy} ${formatPlanSummary(lang, planAtMs, nowMs).timeLabel}`;
+  const summaryDate =
     timeMode !== "now" && planAtMs !== null
-      ? formatPlanSummary(lang, planAtMs, nowMs)
+      ? formatPlanSummary(lang, planAtMs, nowMs).dateLabel
       : null;
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-background">
+    <div className="overflow-hidden rounded-xl border border-border bg-background">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls="advanced-routing-panel"
-        className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:py-2.5 md:text-base"
+        className="relative flex w-full items-center gap-2.5 py-2.5 pe-3 ps-4 text-sm transition-colors hover:bg-accent/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:text-base"
       >
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 start-0 w-[3px] bg-primary"
+        />
         <SlidersHorizontal
           aria-hidden="true"
-          className="size-4 shrink-0 text-muted-foreground"
+          className="size-4 shrink-0 text-primary"
         />
-        <span className="font-medium">{t.advancedRouting}</span>
-        {active && (
-          <span className="tnum min-w-0 flex-1 truncate text-start text-xs text-muted-foreground">
-            {active.dateLabel} · {active.timeLabel}
+        <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-start">
+          <span className="font-semibold text-primary">{t.advancedRouting}</span>
+          <span className="tnum truncate text-xs text-muted-foreground">
+            {summary}
+            {summaryDate && summaryDate !== t.today ? ` · ${summaryDate}` : ""}
           </span>
-        )}
+        </span>
         <ChevronDown
           aria-hidden="true"
           className={cn(
-            "ms-auto size-4 shrink-0 text-muted-foreground transition-transform",
+            "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
             open && "rotate-180",
           )}
         />
       </button>
-      {open && (
-        <div id="advanced-routing-panel" className="border-t border-border p-2">
-          <TimeControlButton
-            lang={lang}
-            timeMode={timeMode}
-            planAtMs={planAtMs}
-            nowMs={nowMs}
-            onOpen={onOpen}
-          />
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows,visibility] duration-200 ease-out",
+          open ? "grid-rows-[1fr] visible" : "grid-rows-[0fr] invisible",
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div id="advanced-routing-panel" className="border-t border-border p-2">
+            <TimeControlButton
+              lang={lang}
+              timeMode={timeMode}
+              planAtMs={planAtMs}
+              nowMs={nowMs}
+              onOpen={onOpen}
+            />
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import {
+  AlarmClock,
   ArrowRight,
   ChevronDown,
   Clock,
@@ -70,6 +71,63 @@ export function NoServiceCard({
       >
         {t.planAnotherTime}
       </button>
+    </div>
+  );
+}
+
+/**
+ * Arrive-by deadline is in the future, but even leaving now cannot make it
+ * (proven against the forward Now route, never inferred from a bare null).
+ * Reusable and mode-free like NoServiceCard.
+ */
+export function MissedDeadlineCard({
+  lang,
+  deadlineMs,
+  earliestArrivalMs,
+  onEditTime,
+  onRouteFromNow,
+}: {
+  lang: Lang;
+  deadlineMs: number;
+  earliestArrivalMs: number;
+  onEditTime: () => void;
+  onRouteFromNow: () => void;
+}) {
+  const t = STRINGS[lang];
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-4 py-6 text-center md:gap-3 md:px-6 md:py-8">
+      <span className="flex size-11 items-center justify-center rounded-full bg-muted md:size-13">
+        <AlarmClock aria-hidden="true" className="size-5 text-muted-foreground md:size-6" />
+      </span>
+      <h2 className="text-base font-bold md:text-lg">
+        {t.missedTitleA}{" "}
+        <span className="tnum">{persianDigits(formatTehranClock(deadlineMs), lang)}</span>{" "}
+        {t.missedTitleB}
+      </h2>
+      <p className="max-w-sm text-sm text-muted-foreground">
+        {t.missedBodyA}{" "}
+        <span className="tnum font-semibold text-foreground">
+          {persianDigits(formatTehranClock(earliestArrivalMs), lang)}
+        </span>
+        {t.missedBodyB}
+      </p>
+      <p className="max-w-sm text-xs text-muted-foreground">{t.otherTransportHint}</p>
+      <div className="mt-1 flex gap-2">
+        <button
+          type="button"
+          onClick={onEditTime}
+          className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {t.editTime}
+        </button>
+        <button
+          type="button"
+          onClick={onRouteFromNow}
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {t.routeFromNow}
+        </button>
+      </div>
     </div>
   );
 }
@@ -189,7 +247,7 @@ export function RoutePanel({
         />
       </div>
       {plan && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-medium">
+        <div data-testid="plan-banner" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-medium">
           <Clock aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
           <span>
             {t.beAtStationBy}{" "}

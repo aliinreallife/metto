@@ -19,6 +19,7 @@ import {
 } from "./lib/schedule-utils";
 import type { LineScheduleData } from "./lib/schedule-data";
 import {
+  getArriveByViewState,
   getDayTypeForServiceDate,
   parseTimeModeParams,
   applyTimeParams,
@@ -173,7 +174,7 @@ describe("depart-at planning", () => {
     const r = planRoute("tehran-sadeghiyeh", "tarasht", {
       mode: "depart-at",
       at: MON(8, 30),
-    }, { tripLookup: scriptForward(legs) });
+    }, { notBeforeMs: 0, tripLookup: scriptForward(legs) });
     expect(r).not.toBeNull();
     expect(r!.trips[0]?.departTime).toBe("08:34");
     expect(r!.initialWaitSeconds).toBe(240);
@@ -186,7 +187,7 @@ describe("depart-at planning", () => {
     const planned = planRoute("tehran-sadeghiyeh", "tarasht", {
       mode: "depart-at",
       at,
-    }, { tripLookup: scriptForward(legs) });
+    }, { notBeforeMs: 0, tripLookup: scriptForward(legs) });
     const direct = findRoute("tehran-sadeghiyeh", "tarasht", {
       departAt: at,
       tripLookup: scriptForward(legs),
@@ -233,7 +234,7 @@ describe("arrive-by planning (single leg)", () => {
     const r = planRoute("tehran-sadeghiyeh", "tarasht", {
       mode: "arrive-by",
       at: MON(9, 0),
-    }, { tripLookup: fwd(), reverseTripLookup: rev() });
+    }, { notBeforeMs: 0, tripLookup: fwd(), reverseTripLookup: rev() });
     expect(r).not.toBeNull();
     expect(r!.trips[0]?.departTime).toBe("08:30");
     expect(r!.estimatedArrival).toBe("08:50");
@@ -265,7 +266,7 @@ describe("arrive-by planning (single leg)", () => {
     const r = planRoute("tehran-sadeghiyeh", "tarasht", {
       mode: "arrive-by",
       at: MON(9, 0),
-    }, { tripLookup: scriptForward(trap), reverseTripLookup: scriptReverse(trap) });
+    }, { notBeforeMs: 0, tripLookup: scriptForward(trap), reverseTripLookup: scriptReverse(trap) });
     expect(r).not.toBeNull();
     // Duration subtraction (09:00 − 60 min) would board the 08:00 slow train.
     expect(r!.trips[0]?.departTime).toBe("08:30");
@@ -288,7 +289,7 @@ describe("arrive-by planning (single leg)", () => {
     const r = planRoute("tehran-sadeghiyeh", "tarasht", {
       mode: "arrive-by",
       at: MON(9, 0),
-    }, { tripLookup: scriptForward(tie), reverseTripLookup: scriptReverse(tie) });
+    }, { notBeforeMs: 0, tripLookup: scriptForward(tie), reverseTripLookup: scriptReverse(tie) });
     expect(r).not.toBeNull();
     expect(r!.trips[0]?.arriveTime).toBe("08:50");
   });
@@ -297,7 +298,7 @@ describe("arrive-by planning (single leg)", () => {
     const r = planRoute("tehran-sadeghiyeh", "tarasht", {
       mode: "arrive-by",
       at: MON(8, 0),
-    }, { tripLookup: fwd(), reverseTripLookup: rev() });
+    }, { notBeforeMs: 0, tripLookup: fwd(), reverseTripLookup: rev() });
     expect(r).toBeNull();
   });
 
@@ -308,7 +309,7 @@ describe("arrive-by planning (single leg)", () => {
     const r = planRoute("tehran-sadeghiyeh", "tarasht", {
       mode: "arrive-by",
       at: MON(9, 0),
-    }, { tripLookup: scriptForward(missing), reverseTripLookup: scriptReverse(missing) });
+    }, { notBeforeMs: 0, tripLookup: scriptForward(missing), reverseTripLookup: scriptReverse(missing) });
     expect(r).not.toBeNull();
     expect(r!.status).toBe("complete");
     expect(r!.legTiming).toEqual(["estimated"]);
@@ -345,7 +346,7 @@ describe("arrive-by planning (transfers)", () => {
     const r = planRoute("tajrish", "tehran-sadeghiyeh", {
       mode: "arrive-by",
       at: MON(8, 44),
-    }, { tripLookup: scriptForward(legs), reverseTripLookup: scriptReverse(legs) });
+    }, { notBeforeMs: 0, tripLookup: scriptForward(legs), reverseTripLookup: scriptReverse(legs) });
     expect(r).not.toBeNull();
     expect(r!.connections[0].nextDepartureAt).toBe("08:24");
     expect(r!.estimatedArrival).toBe("08:44");
@@ -366,7 +367,7 @@ describe("arrive-by planning (transfers)", () => {
     const r = planRoute("tajrish", "tehran-sadeghiyeh", {
       mode: "arrive-by",
       at: MON(8, 44),
-    }, { tripLookup: scriptForward(missed), reverseTripLookup: scriptReverse(missed) });
+    }, { notBeforeMs: 0, tripLookup: scriptForward(missed), reverseTripLookup: scriptReverse(missed) });
     // Reverse finds 08:23 (arrives 08:43 <= deadline) but forward
     // verification from 08:00 misses it after the walk -> infeasible.
     expect(r).toBeNull();
@@ -399,7 +400,7 @@ describe("arrive-by planning (transfers)", () => {
     const r = planRoute("tajrish", "karaj", {
       mode: "arrive-by",
       at: MON(9, 0),
-    }, { tripLookup: scriptForward(three), reverseTripLookup: scriptReverse(three) });
+    }, { notBeforeMs: 0, tripLookup: scriptForward(three), reverseTripLookup: scriptReverse(three) });
     expect(r).not.toBeNull();
     expect(r!.numTransfers).toBe(2);
     expect(r!.estimatedArrival).toBe("09:00");
@@ -422,7 +423,7 @@ describe("arrive-by planning (midnight)", () => {
     const r = planRoute("tehran-sadeghiyeh", "tarasht", {
       mode: "arrive-by",
       at: T("2026-09-08", 0, 10),
-    }, { tripLookup: scriptForward(legs), reverseTripLookup: scriptReverse(legs) });
+    }, { notBeforeMs: 0, tripLookup: scriptForward(legs), reverseTripLookup: scriptReverse(legs) });
     expect(r).not.toBeNull();
     expect(r!.trips[0]?.departTime).toBe("23:50");
     expect(r!.estimatedArrival).toBe("00:06");
@@ -590,6 +591,139 @@ describe("continuous picker datetime", () => {
       hh: 7,
       mm: 0,
     });
+  });
+});
+
+describe("arrive-by view classification", () => {
+  const legs: ScriptLeg[] = [
+    {
+      from: "tehran-sadeghiyeh",
+      to: "tarasht",
+      line: 2,
+      status: "found",
+      departures: [{ depart: "08:30", arrive: "08:50" }],
+    },
+  ];
+  const opts = {
+    tripLookup: scriptForward(legs),
+    reverseTripLookup: scriptReverse(legs),
+    notBeforeMs: 0,
+  };
+
+  it("passes a feasible plan through", () => {
+    const planned = planRoute("tehran-sadeghiyeh", "tarasht", {
+      mode: "arrive-by",
+      at: MON(9, 0),
+    }, opts);
+    const now = findRoute("tehran-sadeghiyeh", "tarasht", {
+      departAt: MON(8, 0),
+      tripLookup: scriptForward(legs),
+    });
+    const state = getArriveByViewState(planned, now, MON(9, 0).getTime());
+    expect(state.kind).toBe("planned");
+    if (state.kind !== "planned") throw new Error("expected planned");
+    expect(state.route).toBe(planned);
+  });
+
+  it("reports missed when even now cannot make the deadline", () => {
+    const planned = planRoute("tehran-sadeghiyeh", "tarasht", {
+      mode: "arrive-by",
+      at: MON(8, 40),
+    }, opts);
+    expect(planned).toBeNull();
+    const now = findRoute("tehran-sadeghiyeh", "tarasht", {
+      departAt: MON(8, 0),
+      tripLookup: scriptForward(legs),
+    });
+    const state = getArriveByViewState(planned, now, MON(8, 40).getTime());
+    expect(state.kind).toBe("missed");
+    if (state.kind !== "missed") throw new Error("expected missed");
+    // Earliest arrival is the 08:50 train, past the 08:40 deadline.
+    expect(state.earliestArrivalMs).toBe(MON(8, 50).getTime());
+  });
+
+  it("reuses no_service when the Now route itself has none", () => {
+    // One early train: over by the 07:45 deadline (reverse finds nothing)
+    // and already gone for a Now lookup from 08:00 (forward finds nothing).
+    const early: ScriptLeg[] = [
+      {
+        from: "tehran-sadeghiyeh",
+        to: "tarasht",
+        line: 2,
+        status: "found",
+        departures: [{ depart: "07:30", arrive: "07:50" }],
+      },
+    ];
+    const earlyOpts = {
+      tripLookup: scriptForward(early),
+      reverseTripLookup: scriptReverse(early),
+    };
+    const planned = planRoute("tehran-sadeghiyeh", "tarasht", {
+      mode: "arrive-by",
+      at: MON(7, 45),
+    }, earlyOpts);
+    expect(planned).toBeNull();
+    const now = findRoute("tehran-sadeghiyeh", "tarasht", {
+      departAt: MON(8, 0),
+      tripLookup: scriptForward(early),
+    });
+    expect(now?.status).toBe("no_service");
+    const state = getArriveByViewState(planned, now, MON(7, 45).getTime());
+    expect(state.kind).toBe("no_service");
+    if (state.kind !== "no_service") throw new Error("expected no_service");
+    expect(state.route).toBe(now);
+  });
+
+  it("stays generic without a Now route (no topology, no claims)", () => {
+    expect(getArriveByViewState(null, null, MON(9, 0).getTime())).toEqual({
+      kind: "generic",
+    });
+  });
+
+  it("stays generic when the Now arrival is fully estimated", () => {
+    const missing: ScriptLeg[] = [
+      { from: "tehran-sadeghiyeh", to: "tarasht", line: 2, status: "missing_schedule_data" },
+    ];
+    const now = findRoute("tehran-sadeghiyeh", "tarasht", {
+      departAt: MON(8, 0),
+      tripLookup: scriptForward(missing),
+    });
+    expect(now?.legTiming).toEqual(["estimated"]);
+    const state = getArriveByViewState(null, now, MON(8, 1).getTime());
+    expect(state.kind).toBe("generic");
+  });
+});
+
+describe("arrive-by origin floor (no time travel)", () => {
+  const legs: ScriptLeg[] = [
+    {
+      from: "tehran-sadeghiyeh",
+      to: "tarasht",
+      line: 2,
+      status: "found",
+      departures: [{ depart: "08:30", arrive: "08:50" }],
+    },
+  ];
+  const plan = (at: Date, notBeforeMs?: number) =>
+    planRoute("tehran-sadeghiyeh", "tarasht", { mode: "arrive-by", at }, {
+      tripLookup: scriptForward(legs),
+      reverseTripLookup: scriptReverse(legs),
+      ...(notBeforeMs === undefined ? {} : { notBeforeMs }),
+    });
+
+  it("returns null when the latest feasible departure is already gone", () => {
+    // Only journey departs 08:30; by 08:35 it cannot start anymore.
+    expect(plan(MON(9, 0), MON(8, 35).getTime())).toBeNull();
+  });
+
+  it("still plans when the departure is reachable", () => {
+    const r = plan(MON(9, 0), MON(8, 0).getTime());
+    expect(r?.trips[0]?.departTime).toBe("08:30");
+  });
+
+  it("tolerates sub-minute evaluation lag (minute-resolution boarding)", () => {
+    const r = plan(MON(9, 0), MON(8, 30).getTime() + 30_000);
+    expect(r?.trips[0]?.departTime).toBe("08:30");
   });
 });
 

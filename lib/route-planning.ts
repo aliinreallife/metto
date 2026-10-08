@@ -69,6 +69,13 @@ export type PlanRouteOptions = {
    * Same contract as findRoute: no storage/network calls inside planning.
    */
   isHolidayDate?: IsHolidayDate;
+  /**
+   * Arrive-by floor: origin departures before this instant are infeasible
+   * (a journey cannot start in the past). Defaults to evaluation time;
+   * injectable for deterministic tests. A 60s grace covers sub-minute
+   * evaluation lag — boarding semantics are minute-resolution.
+   */
+  notBeforeMs?: number;
 };
 
 /**
@@ -128,6 +135,9 @@ function planArriveBy(
       ));
 
   let best: RouteResult | null = null;
+  // Latest feasible overall may already be gone (deadline too close to now):
+  // every feasible departure is then in the past, so nothing can start now.
+  const notBeforeMs = opts?.notBeforeMs ?? Date.now();
   for (const topology of topologies) {
     const originMs = propagateBackward(
       topology,
@@ -136,6 +146,7 @@ function planArriveBy(
       opts?.isHolidayDate,
     );
     if (originMs === null) continue;
+    if (originMs < notBeforeMs - 60_000) continue;
     // Forward verification through the unchanged chronological engine: the
     // returned journey always satisfies production boarding semantics.
     const route = findRoute(fromId, toId, {
@@ -342,6 +353,48 @@ export function shiftTimeOfDay(
     date = shiftTehranDate(date, -1);
   }
   return { dateStr: date, hh: Math.floor(total / 60), mm: total % 60 };
+}
+
+// ---- Arrive-by result classification (pure, unit-tested) ----
+
+export type ArriveByViewState =
+  /** A feasible journey exists; render it. */
+  | { kind: "planned"; route: RouteResult }
+  /**
+   * No journey arrives by the deadline, but the forward Now route proves a
+   * later arrival is possible: even leaving now cannot make it.
+   */
+  | { kind: "missed"; earliestArrivalMs: number }
+  /** The Now route itself has no service: reuse the no-service state. */
+  | { kind: "no_service"; route: RouteResult }
+  /** Anything else (no topology, data gaps): generic fallback, no claims. */
+  | { kind: "generic" };
+
+/**
+ * Classify a null arrive-by plan against the normal forward Now route so
+ * the UI never infers "cannot make it" from a bare null. No routing here —
+ * both routes are computed by the caller (planned via reverse propagation,
+ * now via the forward engine) and only compared as instants.
+ */
+export function getArriveByViewState(
+  plannedRoute: RouteResult | null,
+  nowRoute: RouteResult | null,
+  deadlineMs: number,
+): ArriveByViewState {
+  if (plannedRoute) return { kind: "planned", route: plannedRoute };
+  if (!nowRoute) return { kind: "generic" };
+  if (nowRoute.status === "no_service") return { kind: "no_service", route: nowRoute };
+  if (nowRoute.status !== "complete") return { kind: "generic" };
+  // A fully estimated Now arrival is a geometric guess, not proof that the
+  // metro cannot make the deadline — never claim a miss on that basis.
+  if (!nowRoute.legTiming.some((t) => t === "timetable")) {
+    return { kind: "generic" };
+  }
+  const earliestArrivalMs = nowRoute.departedAtMs + nowRoute.totalSeconds * 1000;
+  if (earliestArrivalMs > deadlineMs) return { kind: "missed", earliestArrivalMs };
+  // Defensive: the Now journey arrives in time, so a plan should have been
+  // found — never claim a miss, fall back to the generic state.
+  return { kind: "generic" };
 }
 
 // ---- Shareable URL state (web planner) ----
