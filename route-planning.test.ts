@@ -24,6 +24,8 @@ import {
   parseTimeModeParams,
   applyTimeParams,
   planRoute,
+  seedNextFiveMinutes,
+  shiftPlanDay,
   shiftTehranDate,
   shiftTimeOfDay,
 } from "./lib/route-planning";
@@ -724,6 +726,42 @@ describe("arrive-by origin floor (no time travel)", () => {
   it("tolerates sub-minute evaluation lag (minute-resolution boarding)", () => {
     const r = plan(MON(9, 0), MON(8, 30).getTime() + 30_000);
     expect(r?.trips[0]?.departTime).toBe("08:30");
+  });
+});
+
+describe("planning seed (next strictly-future 5-minute boundary)", () => {
+  it("rounds up within the hour", () => {
+    expect(seedNextFiveMinutes(T(DATE, 8, 31).getTime())).toEqual({
+      dateStr: DATE,
+      hh: 8,
+      mm: 35,
+    });
+  });
+
+  it("never keeps the current instant, even on the boundary", () => {
+    expect(seedNextFiveMinutes(T(DATE, 8, 35).getTime())).toEqual({
+      dateStr: DATE,
+      hh: 8,
+      mm: 40,
+    });
+  });
+
+  it("rolls to tomorrow after the last boundary", () => {
+    expect(seedNextFiveMinutes(T(DATE, 23, 58).getTime())).toEqual({
+      dateStr: "2026-09-08",
+      hh: 0,
+      mm: 0,
+    });
+  });
+});
+
+describe("planned day shifts", () => {
+  it("keeps the wall-clock time across days and bounds", () => {
+    const at = T(DATE, 9, 0).getTime();
+    const next = shiftPlanDay(at, 1, DATE, "2026-10-07");
+    expect(next).toBe(T("2026-09-08", 9, 0).getTime());
+    expect(shiftPlanDay(at, -1, DATE, "2026-10-07")).toBeNull();
+    expect(shiftPlanDay(at, 31, DATE, "2026-10-07")).toBeNull();
   });
 });
 

@@ -40,11 +40,14 @@ import type { IsHolidayDate } from "./holidays/types";
 import { TRAIN_CHANGE_WALK_SECONDS } from "./metro/transfers";
 import { parseDepartAtParam } from "./mcp/tool-defs";
 import {
+  TEHRAN_TZ,
+  formatTehranClock,
   parseServiceTimeToMinutes,
   tehranMidnightEpoch,
   tehranMinuteToInstant,
   tehranParts,
 } from "./tehran-time";
+import { STRINGS, persianDigits, type Lang } from "./i18n";
 
 export type RouteTimePreference =
   | { mode: "now" }
@@ -395,6 +398,121 @@ export function getArriveByViewState(
   // Defensive: the Now journey arrives in time, so a plan should have been
   // found — never claim a miss, fall back to the generic state.
   return { kind: "generic" };
+}
+
+/**
+ * Initial planning instant for entering a custom mode from Now: the next
+ * strictly-future 5-minute Tehran boundary (never rounds down into the
+ * past). 08:31 → 08:35, 08:35:00 → 08:40, 23:58 → tomorrow 00:00.
+ * Uses Tehran wall-clock helpers only — never browser-local arithmetic.
+ */
+export function seedNextFiveMinutes(nowMs: number): {
+  dateStr: string;
+  hh: number;
+  mm: number;
+} {
+  const parts = tehranParts(nowMs);
+  const rounded = Math.ceil((parts.minuteOfDay + 1) / 5) * 5;
+  if (rounded >= 24 * 60) {
+    return { dateStr: nextTehranCalendarDate(parts.dateStr), hh: 0, mm: 0 };
+  }
+  return {
+    dateStr: parts.dateStr,
+    hh: Math.floor(rounded / 60),
+    mm: rounded % 60,
+  };
+}
+
+/**
+ * Shift a planned Tehran instant by N minutes as one continuous datetime,
+ * clamped to [minDateStr, maxDateStr]. Returns the new epoch ms, or null
+ * when the step would leave the horizon (callers disable at the bounds).
+ */
+export function shiftPlanTime(
+  atMs: number,
+  deltaMin: number,
+  minDateStr: string,
+  maxDateStr: string,
+): number | null {
+  const parts = tehranParts(atMs);
+  const next = shiftTimeOfDay(
+    parts.dateStr,
+    Math.floor(parts.minuteOfDay / 60),
+    parts.minuteOfDay % 60,
+    deltaMin,
+  );
+  if (next.dateStr < minDateStr || next.dateStr > maxDateStr) return null;
+  return tehranMinuteToInstant(next.dateStr, next.hh * 60 + next.mm);
+}
+
+/**
+ * Shift a planned Tehran instant by whole days, keeping the wall-clock time.
+ * Returns the new epoch ms, or null outside [minDateStr, maxDateStr].
+ */
+export function shiftPlanDay(
+  atMs: number,
+  deltaDays: number,
+  minDateStr: string,
+  maxDateStr: string,
+): number | null {
+  const parts = tehranParts(atMs);
+  const next = shiftTehranDate(parts.dateStr, deltaDays);
+  if (next < minDateStr || next > maxDateStr) return null;
+  return tehranMinuteToInstant(next, parts.minuteOfDay);
+}
+
+/** Compact summary of a planned instant: "Today · 08:30" parts. */
+export function formatPlanSummary(
+  lang: Lang,
+  atMs: number,
+  nowMs: number,
+): { dateLabel: string; timeLabel: string } {
+  const t = STRINGS[lang];
+  const today = tehranParts(nowMs).dateStr;
+  const tomorrow = nextTehranCalendarDate(today);
+  const dateStr = tehranParts(atMs).dateStr;
+  let dateLabel: string;
+  if (dateStr === today) dateLabel = t.today;
+  else if (dateStr === tomorrow) dateLabel = t.tomorrow;
+  else {
+    try {
+      dateLabel = new Intl.DateTimeFormat(lang === "fa" ? "fa-IR" : "en-GB", {
+        timeZone: TEHRAN_TZ,
+        day: "numeric",
+        month: "short",
+      }).format(new Date(atMs));
+    } catch {
+      dateLabel = dateStr;
+    }
+  }
+  return { dateLabel, timeLabel: persianDigits(formatTehranClock(atMs), lang) };
+}
+
+/** Jalali-aware display label for a Tehran calendar date. */
+export function formatDateLabel(
+  lang: Lang,
+  dateStr: string,
+  nowMs: number,
+): string {
+  const t = STRINGS[lang];
+  const today = tehranParts(nowMs).dateStr;
+  const relative =
+    dateStr === today
+      ? t.today
+      : dateStr === nextTehranCalendarDate(today)
+        ? t.tomorrow
+        : null;
+  let absolute: string;
+  try {
+    absolute = new Intl.DateTimeFormat(lang === "fa" ? "fa-IR" : "en-GB", {
+      timeZone: TEHRAN_TZ,
+      day: "numeric",
+      month: "short",
+    }).format(new Date(tehranMidnightEpoch(dateStr) + 12 * 3_600_000));
+  } catch {
+    absolute = dateStr;
+  }
+  return relative ? `${relative} · ${absolute}` : absolute;
 }
 
 // ---- Shareable URL state (web planner) ----

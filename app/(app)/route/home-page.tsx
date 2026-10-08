@@ -6,26 +6,19 @@ import { useSearchParams } from "next/navigation";
 import {
   ArrowUpDown,
   Building2,
-  ChevronDown,
-  ChevronRight,
-  Clock,
   History,
   Loader2,
   ExternalLink,
   Database,
   LocateFixed,
   Map as MapIcon,
-  SlidersHorizontal,
   X,
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
 import { MissedDeadlineCard, NoServiceCard, RoutePanel } from "@/components/route-panel";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
-import {
-  TimePreferenceSheet,
-  formatPlanSummary,
-} from "@/components/time-preference-sheet";
+import { TravelTimeCard } from "@/components/travel-time-card";
 import { useMetro } from "@/app/providers";
 import { TabLink } from "@/app/nav";
 import { STATION_MAP, findRoute } from "@/lib/route";
@@ -34,8 +27,10 @@ import {
   getArriveByViewState,
   parseTimeModeParams,
   planRoute,
+  seedNextFiveMinutes,
   type TimeMode,
 } from "@/lib/route-planning";
+import { tehranMinuteToInstant } from "@/lib/tehran-time";
 import { useScheduleData } from "@/lib/use-schedule-data";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
@@ -50,7 +45,6 @@ import {
   parsePlaceParam,
 } from "@/lib/geo";
 import { STRINGS, type Lang } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import { useConnectivity } from "@/lib/offline/use-connectivity";
 import {
   classifyGeoError,
@@ -449,9 +443,32 @@ function RouteView({
   };
   const [locating, setLocating] = useState(false);
   const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  // Inline travel-time card expansion (active plans start expanded).
+  // Edit-time entry points expand + scroll here instead of opening a modal.
+  const [timeExpanded, setTimeExpanded] = useState(() => timeMode !== "now");
+  const timeCardRef = useRef<HTMLDivElement>(null);
   const gpsLangRef = useRef(lang);
   gpsLangRef.current = lang;
+
+  function expandTimeCard(): void {
+    setTimeExpanded(true);
+    requestAnimationFrame(() => {
+      timeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }
+
+  function handleSelectMode(mode: TimeMode): void {
+    if (mode === "now") {
+      setTimeMode("now");
+      setPlanAtMs(null);
+      return;
+    }
+    if (planAtMs === null) {
+      const seed = seedNextFiveMinutes(Date.now());
+      setPlanAtMs(tehranMinuteToInstant(seed.dateStr, seed.hh * 60 + seed.mm));
+    }
+    setTimeMode(mode);
+  }
 
   async function locateOrigin() {
     if (!navigator.geolocation) {
@@ -598,13 +615,18 @@ function RouteView({
               onClear={clearDestPlace}
             />
           )}
-          <AdvancedRoutingSection
-            lang={lang}
-            timeMode={timeMode}
-            planAtMs={planAtMs}
-            nowMs={nowMs}
-            onOpen={() => setSheetOpen(true)}
-          />
+          <div ref={timeCardRef} className="scroll-mt-4">
+            <TravelTimeCard
+              lang={lang}
+              timeMode={timeMode}
+              planAtMs={planAtMs}
+              nowMs={nowMs}
+              expanded={timeExpanded}
+              onToggle={() => setTimeExpanded((o) => !o)}
+              onModeChange={handleSelectMode}
+              onPlanAtMs={setPlanAtMs}
+            />
+          </div>
           {showViewOnMap && (
             <Link
               href={mapHref}
@@ -650,7 +672,7 @@ function RouteView({
               </button>
               <button
                 type="button"
-                onClick={() => setSheetOpen(true)}
+                onClick={expandTimeCard}
                 className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {t.editTime}
@@ -662,7 +684,7 @@ function RouteView({
             lang={lang}
             deadlineMs={planAtMs}
             earliestArrivalMs={arriveView.earliestArrivalMs}
-            onEditTime={() => setSheetOpen(true)}
+            onEditTime={expandTimeCard}
             onRouteFromNow={onUseNow}
           />
         ) : arriveView && arriveView.kind === "no_service" ? (
@@ -672,7 +694,7 @@ function RouteView({
               stationName={stationDisplayName(arriveView.route.reachableUntilStationId)}
               reachableUntil={arriveView.route.reachableUntil}
               isOrigin={arriveView.route.reachableUntilStationId === originId}
-              onPlanAnotherTime={() => setSheetOpen(true)}
+              onPlanAnotherTime={expandTimeCard}
             />
             {originId && (() => {
               const origin = STATION_MAP.get(originId);
@@ -687,7 +709,7 @@ function RouteView({
               stationName={stationDisplayName(route.reachableUntilStationId)}
               reachableUntil={route.reachableUntil}
               isOrigin={route.reachableUntilStationId === originId}
-              onPlanAnotherTime={() => setSheetOpen(true)}
+              onPlanAnotherTime={expandTimeCard}
             />
             {originId && (() => {
               const origin = STATION_MAP.get(originId);
@@ -740,147 +762,10 @@ function RouteView({
         {/* clearance so scrolled-to-bottom content isn't hidden behind the fixed mobile credits */}
         <div aria-hidden className="h-7 shrink-0 md:hidden" />
       </div>
-      {sheetOpen && (
-        <TimePreferenceSheet
-          lang={lang}
-          mode={timeMode}
-          atMs={planAtMs}
-          onClose={() => setSheetOpen(false)}
-          onApply={(mode, nextAtMs) => {
-            setTimeMode(mode);
-            setPlanAtMs(nextAtMs);
-            setSheetOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 }
 
-function AdvancedRoutingSection({
-  lang,
-  timeMode,
-  planAtMs,
-  nowMs,
-  onOpen,
-}: {
-  lang: Lang;
-  timeMode: TimeMode;
-  planAtMs: number | null;
-  nowMs: number;
-  onOpen: () => void;
-}) {
-  const t = STRINGS[lang];
-  // An active shared/reloaded plan starts expanded so it stays visible.
-  const [open, setOpen] = useState(() => timeMode !== "now");
-  const summary =
-    timeMode === "now" || planAtMs === null
-      ? t.timeNow
-      : timeMode === "depart"
-        ? `${t.beAtStationBy} ${formatPlanSummary(lang, planAtMs, nowMs).timeLabel}`
-        : `${t.arriveBy} ${formatPlanSummary(lang, planAtMs, nowMs).timeLabel}`;
-  const summaryDate =
-    timeMode !== "now" && planAtMs !== null
-      ? formatPlanSummary(lang, planAtMs, nowMs).dateLabel
-      : null;
-  return (
-    <div className="overflow-hidden rounded-xl border border-border bg-background">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-controls="advanced-routing-panel"
-        className="relative flex w-full items-center gap-2.5 py-2.5 pe-3 ps-4 text-sm transition-colors hover:bg-accent/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:text-base"
-      >
-        <span
-          aria-hidden="true"
-          className="absolute inset-y-0 start-0 w-[3px] bg-primary"
-        />
-        <SlidersHorizontal
-          aria-hidden="true"
-          className="size-4 shrink-0 text-primary"
-        />
-        <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-start">
-          <span className="font-semibold text-primary">{t.advancedRouting}</span>
-          <span className="tnum truncate text-xs text-muted-foreground">
-            {summary}
-            {summaryDate && summaryDate !== t.today ? ` · ${summaryDate}` : ""}
-          </span>
-        </span>
-        <ChevronDown
-          aria-hidden="true"
-          className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
-            open && "rotate-180",
-          )}
-        />
-      </button>
-      <div
-        className={cn(
-          "grid transition-[grid-template-rows,visibility] duration-200 ease-out",
-          open ? "grid-rows-[1fr] visible" : "grid-rows-[0fr] invisible",
-        )}
-      >
-        <div className="min-h-0 overflow-hidden">
-          <div id="advanced-routing-panel" className="border-t border-border p-2">
-            <TimeControlButton
-              lang={lang}
-              timeMode={timeMode}
-              planAtMs={planAtMs}
-              nowMs={nowMs}
-              onOpen={onOpen}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TimeControlButton({
-  lang,
-  timeMode,
-  planAtMs,
-  nowMs,
-  onOpen,
-}: {
-  lang: Lang;
-  timeMode: TimeMode;
-  planAtMs: number | null;
-  nowMs: number;
-  onOpen: () => void;
-}) {
-  const t = STRINGS[lang];
-  const summary =
-    timeMode === "now" || planAtMs === null ? (
-      <span className="font-semibold">{t.timeNow}</span>
-    ) : (
-      <span className="min-w-0 flex-1 truncate">
-        <span className="font-semibold">
-          {timeMode === "depart" ? t.timeDepartChoice : t.timeArriveChoice}
-        </span>{" "}
-        <span className="tnum text-muted-foreground">
-          {formatPlanSummary(lang, planAtMs, nowMs).dateLabel} ·{" "}
-          {formatPlanSummary(lang, planAtMs, nowMs).timeLabel}
-        </span>
-      </span>
-    );
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={t.when}
-      className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:py-2.5 md:text-base"
-    >
-      <Clock aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-      {summary}
-      <ChevronRight
-        aria-hidden="true"
-        className="ms-auto size-4 shrink-0 text-muted-foreground rtl:rotate-180"
-      />
-    </button>
-  );
-}
 
 function PlaceCard({
   lang,

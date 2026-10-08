@@ -1,24 +1,24 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-// Advanced time routing: Now / at-station-at / arrive-by planning.
-// Stations ride in via shareable URL params; the time plan rides in via
-// ?timeMode=now|depart|arrive&at=ISO (legacy links without them mean now).
+// Travel-time card: Now / at-station / arrive-by planning, expanded inline
+// in the route form (no modal). Stations ride in via shareable URL params;
+// the time plan rides in via ?timeMode=now|depart|arrive&at=ISO (legacy
+// links without them mean now). Every change applies immediately.
 
 const FROM = "tajrish";
 const TO = "imam-khomeini";
 
-async function expandAdvanced(page: import("@playwright/test").Page) {
-  const header = page.getByRole("button", { name: /مسیریابی پیشرفته/ });
+function card(page: import("@playwright/test").Page) {
+  return page.getByTestId("travel-time-card");
+}
+
+async function expandCard(page: import("@playwright/test").Page) {
+  const header = card(page).getByRole("button", { name: /زمان سفر/ });
   if ((await header.getAttribute("aria-expanded")) === "false") {
     await header.click();
   }
-}
-
-async function openSheet(page: import("@playwright/test").Page) {
-  await expandAdvanced(page);
-  await page.getByRole("button", { name: "زمان" }).click();
-  await expect(page.getByRole("dialog", { name: "برنامه‌ریزی سفر" })).toBeVisible();
+  await expect(header).toHaveAttribute("aria-expanded", "true");
 }
 
 const FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
@@ -31,7 +31,7 @@ function faToEn(s: string): string {
 
 /** Drive the hour/minute steppers to an exact HH:MM (Persian-digit aware).
  * Minutes first: rolling :55 → :00 bumps the hour, so hours go last. */
-async function setSheetTime(page: import("@playwright/test").Page, target: string) {
+async function setCardTime(page: import("@playwright/test").Page, target: string) {
   const [th, tm] = target.split(":").map(Number);
   const hourVal = page.getByTestId("hour-value");
   const minVal = page.getByTestId("minute-value");
@@ -47,6 +47,21 @@ async function setSheetTime(page: import("@playwright/test").Page, target: strin
   await expect(minVal).toHaveText(enToFa(String(tm).padStart(2, "0")));
 }
 
+/** Step the date control until it reads tomorrow (from any nearby date). */
+async function pinTomorrow(page: import("@playwright/test").Page) {
+  const label = card(page).locator("p[aria-live]");
+  for (let i = 0; i < 4; i++) {
+    const text = (await label.textContent()) ?? "";
+    if (text.includes("فردا")) break;
+    if (text.includes("امروز")) {
+      await card(page).getByRole("button", { name: "روز بعد" }).click();
+    } else {
+      await card(page).getByRole("button", { name: "روز قبل" }).click();
+    }
+  }
+  await expect(label).toContainText("فردا");
+}
+
 /** Tomorrow as a Tehran YYYY-MM-DD string (for crafted plan URLs). */
 function tehranTomorrow(): string {
   const fmt = new Intl.DateTimeFormat("en-CA", {
@@ -58,25 +73,24 @@ function tehranTomorrow(): string {
   return fmt.format(Date.now() + 36 * 3_600_000);
 }
 
-test.describe("advanced time routing", () => {
+test.describe("travel time card", () => {
   test("legacy link without time params means Now", async ({ page }) => {
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
-    // Collapsed by default…
-    await expect(page.getByRole("button", { name: /مسیریابی پیشرفته/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: "زمان" })).toBeHidden();
-    // …and the plan inside is Now.
-    await expandAdvanced(page);
-    await expect(page.getByRole("button", { name: "زمان" })).toContainText("الان");
+    // Collapsed by default with a Now summary…
+    const header = card(page).getByRole("button", { name: /زمان سفر/ });
+    await expect(header).toBeVisible();
+    await expect(header).toHaveAttribute("aria-expanded", "false");
+    await expect(header).toContainText("الان · حرکت فوری");
     expect(new URL(page.url()).searchParams.has("timeMode")).toBe(false);
   });
 
   test("depart-at updates result, URL, and survives reload", async ({ page }) => {
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
-    await openSheet(page);
-    await page.getByRole("radio", { name: /رسیدن به ایستگاه مبدأ/ }).check();
-    await setSheetTime(page, "09:00");
-    await page.getByRole("button", { name: "فردا", exact: true }).click();
-    await page.getByRole("button", { name: "تأیید" }).click();
+    await expandCard(page);
+    // Segmented control applies immediately — no confirmation button.
+    await card(page).getByText("در مبدأ", { exact: true }).click();
+    await setCardTime(page, "09:00");
+    await pinTomorrow(page);
 
     const url = new URL(page.url());
     expect(url.searchParams.get("timeMode")).toBe("depart");
@@ -94,11 +108,10 @@ test.describe("advanced time routing", () => {
 
   test("arrive-by shows deadline banner and persists", async ({ page }) => {
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
-    await openSheet(page);
-    await page.getByRole("radio", { name: /رسیدن به مقصد/ }).check();
-    await setSheetTime(page, "09:00");
-    await page.getByRole("button", { name: "فردا", exact: true }).click();
-    await page.getByRole("button", { name: "تأیید" }).click();
+    await expandCard(page);
+    await card(page).getByText("رسیدن تا", { exact: true }).click();
+    await setCardTime(page, "09:00");
+    await pinTomorrow(page);
 
     expect(new URL(page.url()).searchParams.get("timeMode")).toBe("arrive");
     const arriveBanner = page.getByTestId("plan-banner");
@@ -110,28 +123,52 @@ test.describe("advanced time routing", () => {
     await expect(page.getByTestId("plan-banner")).toBeVisible({ timeout: 15_000 });
   });
 
+  test("active mode and collapse keep the chosen date and time", async ({ page }) => {
+    await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
+    await expandCard(page);
+    await card(page).getByText("در مبدأ", { exact: true }).click();
+    await setCardTime(page, "09:00");
+    await pinTomorrow(page);
+    const header = card(page).getByRole("button", { name: /زمان سفر/ });
+    // Clicking the already-selected mode is a no-op.
+    await card(page).getByText("در مبدأ", { exact: true }).click();
+    await expect(page.getByTestId("hour-value")).toHaveText(enToFa("09"));
+    // Collapse + reopen preserves everything.
+    await header.click();
+    await expect(header).toHaveAttribute("aria-expanded", "false");
+    await header.click();
+    await expect(header).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByTestId("hour-value")).toHaveText(enToFa("09"));
+    await expect(page.getByTestId("minute-value")).toHaveText(enToFa("00"));
+    await expect(card(page).locator("p[aria-live]")).toContainText("فردا");
+    expect(new URL(page.url()).searchParams.get("timeMode")).toBe("depart");
+  });
+
   test("past depart time shows notice with Use-now and Edit-time actions", async ({ page }) => {
     await page.goto(
       `/route?from=${FROM}&to=${TO}&timeMode=depart&at=2020-01-01T05:30:00.000Z`,
       { waitUntil: "domcontentloaded" },
     );
     await expect(page.getByText("آن زمان گذشته است")).toBeVisible({ timeout: 15_000 });
-    // Edit time reopens the sheet instead of forcing now.
+    // Edit time expands the inline card instead of forcing now.
     await page.getByRole("button", { name: "ویرایش زمان" }).click();
-    await expect(page.getByRole("dialog", { name: "برنامه‌ریزی سفر" })).toBeVisible();
-    await page.keyboard.press("Escape");
+    await expect(
+      card(page).getByRole("button", { name: /زمان سفر/ }),
+    ).toHaveAttribute("aria-expanded", "true");
     await page.getByRole("button", { name: "استفاده از الان" }).click();
-    await expandAdvanced(page);
-    await expect(page.getByRole("button", { name: "زمان" })).toContainText("الان");
+    await expect(card(page).getByRole("button", { name: /زمان سفر/ })).toContainText(
+      "الان · حرکت فوری",
+    );
     expect(new URL(page.url()).searchParams.has("timeMode")).toBe(false);
   });
 
-  test("past arrive-by shows passed state without routing", async ({ page }) => {
+  test("past arrive-by shows the new passed copy without routing", async ({ page }) => {
     await page.goto(
       `/route?from=${FROM}&to=${TO}&timeMode=arrive&at=2020-01-01T05:30:00.000Z`,
       { waitUntil: "domcontentloaded" },
     );
-    await expect(page.getByText("آن ساعت رسیدن گذشته است")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("این زمان گذشته است")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("دیگر دیر شده")).toBeVisible();
   });
 
   test("late-night depart shows the no-service card with a plan-ahead action", async ({ page }) => {
@@ -144,15 +181,17 @@ test.describe("advanced time routing", () => {
     );
     await expect(page.getByText("در حال حاضر با مترو نمی‌رسید")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("از این ایستگاه سرویسی در دسترس نیست")).toBeVisible();
-    // Primary action opens the time planner directly.
+    // Primary action expands the inline planner directly.
     await page.getByRole("button", { name: "برنامه‌ریزی برای زمان دیگر" }).click();
-    await expect(page.getByRole("dialog", { name: "برنامه‌ریزی سفر" })).toBeVisible();
+    await expect(
+      card(page).getByRole("button", { name: /زمان سفر/ }),
+    ).toHaveAttribute("aria-expanded", "true");
   });
 
   test("impossible arrive-by shows the missed-deadline card", async ({ page }) => {
     // Tajrish → Karaj takes ~1h on every timetable: a 20-minute deadline can
     // never be met. Overnight (no remaining service today) the same URL
-    // degrades to the no-service card instead — both open the planner.
+    // degrades to the no-service card instead — both expand the planner.
     const at = new Date(Date.now() + 20 * 60_000).toISOString();
     await page.goto(
       `/route?from=tajrish&to=karaj&timeMode=arrive&at=${encodeURIComponent(at)}`,
@@ -167,35 +206,46 @@ test.describe("advanced time routing", () => {
       // Missed branch: transport hint + both actions.
       await expect(page.getByText("روش دیگری برای رفت‌وآمد")).toBeVisible();
       await editTime.click();
-      await expect(page.getByRole("dialog", { name: "برنامه‌ریزی سفر" })).toBeVisible();
-      await page.keyboard.press("Escape");
+      await expect(
+        card(page).getByRole("button", { name: /زمان سفر/ }),
+      ).toHaveAttribute("aria-expanded", "true");
       await page.getByRole("button", { name: "مسیر از الان" }).click();
       expect(new URL(page.url()).searchParams.has("timeMode")).toBe(false);
     } else {
       // Overnight branch: no service at all right now.
       await planAhead.click();
-      await expect(page.getByRole("dialog", { name: "برنامه‌ریزی سفر" })).toBeVisible();
+      await expect(
+        card(page).getByRole("button", { name: /زمان سفر/ }),
+      ).toHaveAttribute("aria-expanded", "true");
     }
   });
 
-  test("keyboard: Enter opens, Escape closes", async ({ page }) => {
+  test("keyboard: header toggles, arrows move between modes", async ({ page }) => {
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: /مسیریابی پیشرفته/ }).focus();
+    const header = card(page).getByRole("button", { name: /زمان سفر/ });
+    await header.focus();
     await page.keyboard.press("Enter");
-    await page.getByRole("button", { name: "زمان" }).focus();
+    await expect(header).toHaveAttribute("aria-expanded", "true");
+    const nowRadio = card(page).getByRole("radio", { name: "الان", exact: true });
+    await nowRadio.focus();
+    // ArrowDown always advances in DOM order (direction-independent).
+    await page.keyboard.press("ArrowDown");
+    await expect(
+      card(page).getByRole("radio", { name: "در مبدأ", exact: true }),
+    ).toBeChecked();
+    expect(new URL(page.url()).searchParams.get("timeMode")).toBe("depart");
+    await header.focus();
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("dialog", { name: "برنامه‌ریزی سفر" })).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog", { name: "برنامه‌ریزی سفر" })).toBeHidden();
+    await expect(header).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("axe: open sheet has no serious/critical violations", async ({ page }) => {
+  test("axe: expanded card has no serious/critical violations", async ({ page }) => {
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
-    await openSheet(page);
-    // Scoped to the dialog: the route panel behind it has pre-existing
+    await expandCard(page);
+    // Scoped to the card: the route panel behind it has pre-existing
     // muted-foreground contrast notes outside this feature's scope.
     const results = await new AxeBuilder({ page })
-      .include('[role="dialog"]')
+      .include('[data-testid="travel-time-card"]')
       .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
       .analyze();
     const blocking = results.violations.filter(
@@ -205,7 +255,7 @@ test.describe("advanced time routing", () => {
   });
 });
 
-test.describe("advanced time routing (English)", () => {
+test.describe("travel time card (English)", () => {
   test.use({ locale: "en-US" });
 
   test("English labels and LTR layout", async ({ page }) => {
@@ -217,13 +267,13 @@ test.describe("advanced time routing (English)", () => {
       }
     });
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("button", { name: /Advanced routing/ })).toBeVisible();
-    await page.getByRole("button", { name: /Advanced routing/ }).click();
-    await expect(page.getByRole("button", { name: "When" })).toContainText("Now");
-    await page.getByRole("button", { name: "When" }).click();
-    await expect(page.getByRole("dialog", { name: "Plan your trip" })).toBeVisible();
-    await expect(page.getByRole("radio", { name: /At origin station at/ })).toBeVisible();
-    await expect(page.getByRole("radio", { name: /Arrive at destination by/ })).toBeVisible();
+    const header = card(page).getByRole("button", { name: /Travel time/ });
+    await expect(header).toBeVisible();
+    await expect(header).toContainText("Now · Leave now");
+    await header.click();
+    await expect(card(page).getByRole("radio", { name: "Now", exact: true })).toBeVisible();
+    await expect(card(page).getByRole("radio", { name: "At station", exact: true })).toBeVisible();
+    await expect(card(page).getByRole("radio", { name: "Arrive by", exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.dir)).toBe("ltr");
   });
 });
