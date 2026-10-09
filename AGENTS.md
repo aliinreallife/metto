@@ -65,7 +65,9 @@ user-visible Android/TWA behavior.
 ## Release flow (where your snippet goes)
 
 1. User-facing PRs carry bilingual snippets in the **PR body** (source of
-   truth). Do NOT edit `CHANGELOG.md` in feature/fix PRs.
+   truth). Do NOT edit `CHANGELOG.md` in feature/fix PRs. Keep the body in
+   sync: when follow-up commits change the user-visible scope, update the
+   snippet (and re-run the release-notes check) before requesting review.
 2. At release time a maintainer runs **Actions → Prepare Release**
    (`.github/workflows/prepare-release.yml`, input `vX.Y.Z`) — this is the
    normal path, not a local script run. It collects PRs merged since the
