@@ -131,8 +131,6 @@ const fa = {
     storyNote: "فقط زمان لحظه‌ای قطار بعدی به اینترنت نیاز دارد؛ مسیر و نقشه همیشه هستند.",
     install: "نصب وب‌اپ (PWA)",
     installPwaNote: "بدون دانلود، از خود مرورگر — فقط یک آیکون اضافه می‌شود",
-    installed: "روی این دستگاه نصب شده",
-    installedHint: "متو روی این دستگاه نصب شده و نیازی به کار دیگری نیست",
     installedPwa: "داری از نسخه نصب‌شده وب استفاده می‌کنی",
     installedPwaHint: "این صفحه داخل نسخه نصب‌شده وب (PWA) باز است — نیازی به کار دیگری نیست",
     installedTwa: "داری از اپ اندروید استفاده می‌کنی",
@@ -142,17 +140,11 @@ const fa = {
       "اپ اندروید (ir.metto.app) روی این دستگاه نصب است؛ الان داری نسخه مرورگر را می‌بینی. برای باز کردنش آیکون متو را در لیست برنامه‌ها بزن.",
     detectionNote:
       "مرورگر همیشه نمی‌تواند بفهمد چیزی نصب است یا نه: وقتی داخل نسخه نصب‌شده وب یا اپ اندروید باشی می‌فهمیم، و نصب بودن اپ اندروید را هم در کروم اندروید می‌پرسیم. اگر نصب کرده‌ای ولی اینجا نشان نمی‌دهد، آیکون متو را در صفحه اصلی یا لیست برنامه‌ها ببین.",
-    chooseTitle: "وب‌اپ یا APK؟ خود برنامه یکی است",
-    chooseDesc:
-      "هر دو دقیقاً همین سایت‌اند، هر دو آفلاین کار می‌کنند و هر دو با هر به‌روزرسانی سایت تازه می‌شوند. فقط راه نصب فرق دارد: وب‌اپ (PWA) هیچ دانلودی نمی‌خواهد و از مرورگر اضافه می‌شود؛ APK یک پوسته اندرویدی حدود ۱٫۳ مگابایتی (زیر ۲ مگ) است که همین سایت را تمام‌صفحه و بدون نوار مرورگر باز می‌کند.",
+    sameApp:
+      "وب‌اپ یا APK — خود برنامه یکی است و هر دو آفلاین‌اند: وب‌اپ بدون دانلود، از مرورگر · APK حدود ۱٫۳ مگ",
     noInstallTitle: "نصب اختیاری است؛ آفلاین بودن نه",
     noInstallDesc:
       "متو یک سایت است و همان‌طور که هست، آفلاین کار می‌کند. نصب کردن فقط یک آیکون به صفحه اصلی گوشی‌ات اضافه می‌کند تا سریع‌تر بازش کنی.",
-    waySite: "فقط سایت",
-    waySiteNote: "وب‌اپ (PWA) — بدون دانلود، از مرورگر",
-    wayApp: "برنامه روی گوشی",
-    wayAppNote: "اپ اندروید (APK) — حدود ۱٫۳ مگ، زیر ۲ مگ",
-    bothOffline: "هر دو حالت آفلاین کار می‌کنند",
     storesTitle: "اپ اندروید (APK) — همان برنامه",
     storesSubtitle: "اندروید می‌خواهی؟ یکی را انتخاب کن؛ وب‌اپ بالا بدون دانلود است",
     twa: "دانلود مستقیم (APK)",
@@ -349,8 +341,6 @@ const en: typeof fa = {
     storyNote: "Only the live next-train time needs a connection; routes and the map are always there.",
     install: "Install web app (PWA)",
     installPwaNote: "No download, straight from the browser — just adds an icon",
-    installed: "Already installed on this device",
-    installedHint: "metto is already installed on this device — nothing left to do",
     installedPwa: "You're using the installed web app",
     installedPwaHint: "This page is running inside the installed web app (PWA) — nothing left to do",
     installedTwa: "You're using the Android app",
@@ -360,17 +350,11 @@ const en: typeof fa = {
       "The Android app (ir.metto.app) is installed on this device; you're looking at the browser version right now. Open it from the metto icon in your app list.",
     detectionNote:
       "Browsers can't always tell what's installed: we detect it when you're running inside the installed web app or the Android app, and on Android Chrome we can also ask whether the Android app is installed. If you installed it but don't see it here, look for the metto icon on your home screen or app list.",
-    chooseTitle: "PWA or APK? It's the same app",
-    chooseDesc:
-      "Both are exactly this same website, both work offline, and both update the moment the site updates. Only the install differs: the web app (PWA) needs no download and is added from the browser; the APK is a ~1.3 MB Android wrapper (under 2 MB) that opens the same site fullscreen with no browser bar.",
+    sameApp:
+      "PWA or APK — same app, both offline: web app needs no download, from the browser · APK is ~1.3 MB",
     noInstallTitle: "Installing is optional. Offline isn't.",
     noInstallDesc:
       "metto is a website and it works offline exactly as it is. Installing only adds an icon to your home screen so you can open it faster.",
-    waySite: "Just the website",
-    waySiteNote: "Web app (PWA) — no download, from the browser",
-    wayApp: "An app on your phone",
-    wayAppNote: "Android app (APK) — about 1.3 MB, under 2 MB",
-    bothOffline: "Both work offline",
     storesTitle: "Android app (APK) — the same app",
     storesSubtitle: "Want Android? Pick one; the web app above needs no download",
     twa: "Direct APK download",

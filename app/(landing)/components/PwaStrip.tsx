@@ -38,7 +38,10 @@ const INSTALL_TARGETS = {
 } as const;
 
 /* ------------------------------------------------------------------ */
-/* Slim install section: headline + PWA install + all four store slots */
+/* Slim install section: headline + PWA install + APK slots. Stays compact */
+/* on purpose: the PWA/APK sameness is one line and the manual steps +    */
+/* detection limits live in a disclosure so the section keeps fitting     */
+/* roughly one viewport instead of growing into a wall of cards.          */
 /* ------------------------------------------------------------------ */
 
 export function PwaStrip() {
@@ -188,30 +191,29 @@ export function PwaStrip() {
             </Link>
           </div>
           <p className="mt-2.5 max-w-xl text-[11px] leading-5 text-muted-foreground">{hintLine}</p>
-          <p className="mt-1.5 max-w-xl text-[11px] leading-5 text-muted-foreground/80">{t.detectionNote}</p>
-
-          <div className="mt-6 max-w-2xl rounded-lg border border-border bg-card p-4">
-            <h3 className="text-sm font-black tracking-tight">{t.chooseTitle}</h3>
-            <p className="mt-1.5 text-xs leading-6 text-muted-foreground">{t.chooseDesc}</p>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-              <li className="rounded-lg border border-border px-3 py-2.5">
-                <p className="text-xs font-bold">{t.waySite}</p>
-                <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{t.waySiteNote}</p>
-              </li>
-              <li className="rounded-lg border border-border px-3 py-2.5">
-                <p className="text-xs font-bold">{t.wayApp}</p>
-                <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{t.wayAppNote}</p>
-              </li>
-            </ul>
-            <p className="mt-2.5 flex items-center gap-1.5 text-[11px] font-bold text-primary">
-              <OfflineIcon className="h-3.5 w-3.5" />
-              {t.bothOffline}
-            </p>
-          </div>
+          <p className="mt-2 flex max-w-xl items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
+            <OfflineIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+            {t.sameApp}
+          </p>
+          <details className="group mt-2.5 max-w-xl">
+            <summary className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline">
+              {t.hintTitle}
+            </summary>
+            <div className="mt-2 rounded-lg border border-border bg-card p-3">
+              <ol className="list-decimal space-y-1 ps-5 text-[11px] leading-5 text-muted-foreground">
+                {t.steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+              <p className="mt-2 border-t border-border pt-2 text-[11px] leading-5 text-muted-foreground/80">
+                {t.detectionNote}
+              </p>
+            </div>
+          </details>
         </Reveal>
 
         <Reveal delay={60}>
-          <div className="mt-10">
+          <div className="mt-8">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-base font-black tracking-tight">{t.storesTitle}</h3>
               <p className="text-[11px] text-muted-foreground">{t.storesSubtitle}</p>
