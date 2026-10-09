@@ -283,9 +283,9 @@ export function InstallButton({
         role="note"
         title={iosHintSteps}
         aria-label={iosHintSteps}
-        className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 py-2 text-sm font-medium text-primary-foreground"
+        className="flex items-center justify-center gap-1.5 rounded-lg border border-transparent bg-primary px-2.5 py-2 text-sm font-medium text-primary-foreground md:px-3 md:py-2.5 md:text-base"
       >
-        <Share className="size-4 shrink-0" />
+        <Share className="size-4 shrink-0 md:size-5" />
         <span className="hidden leading-none sm:inline">{iosHintLabel}</span>
       </span>
     )
@@ -302,9 +302,9 @@ export function InstallButton({
           setDeferred(null)
           await triggerDeferredInstall(d)
         }}
-        className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+        className="flex items-center justify-center gap-1.5 rounded-lg border border-transparent bg-primary px-2.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90 md:px-3 md:py-2.5 md:text-base"
       >
-        <Download className="size-4 shrink-0" />
+        <Download className="size-4 shrink-0 md:size-5" />
         <span className="hidden leading-none sm:inline">{label}</span>
       </button>
     )
@@ -329,9 +329,9 @@ export function InstallButton({
         role="note"
         title={iosHintSteps}
         aria-label={iosHintSteps}
-        className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 py-2 text-sm font-medium text-primary-foreground"
+        className="flex items-center justify-center gap-1.5 rounded-lg border border-transparent bg-primary px-2.5 py-2 text-sm font-medium text-primary-foreground md:px-3 md:py-2.5 md:text-base"
       >
-        <Share className="size-4 shrink-0" />
+        <Share className="size-4 shrink-0 md:size-5" />
         <span className="hidden leading-none sm:inline">{iosHintLabel}</span>
       </span>
     )
@@ -349,9 +349,9 @@ export function InstallButton({
   return (
     <span
       aria-hidden="true"
-      className="invisible pointer-events-none flex items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 py-2 text-sm font-medium text-primary-foreground select-none [@media(display-mode:standalone)]:hidden"
+      className="invisible pointer-events-none flex items-center justify-center gap-1.5 rounded-lg border border-transparent bg-primary px-2.5 py-2 text-sm font-medium text-primary-foreground select-none [@media(display-mode:standalone)]:hidden md:px-3 md:py-2.5 md:text-base"
     >
-      <Download className="size-4 shrink-0" />
+      <Download className="size-4 shrink-0 md:size-5" />
       <span className="hidden leading-none sm:inline">{label}</span>
     </span>
   )
