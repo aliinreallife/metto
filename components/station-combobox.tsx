@@ -30,7 +30,9 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const rawId = useId()
   const safeId = rawId.replace(/[^a-zA-Z0-9_-]/g, "")
   const triggerId = id ?? `station-trigger-${safeId}`
@@ -90,8 +92,14 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
       setPlaces([])
       setPlacesLoading(false)
       setQuery("")
+      setActiveIndex(null)
     }
   }, [open])
+
+  // Reset active descendant when the result set changes.
+  useEffect(() => {
+    setActiveIndex(null)
+  }, [query, open])
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -107,9 +115,80 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
 
   function closeAndRefocusTrigger() {
     setOpen(false)
+    setActiveIndex(null)
     // Focus restore so keyboard users don't lose their place after Escape.
     requestAnimationFrame(() => triggerRef.current?.focus())
   }
+
+  type ActiveOption =
+    | { kind: "station"; stationId: string }
+    | { kind: "place"; placeIndex: number }
+
+  const activeOptions: ActiveOption[] = [
+    ...results.map((s) => ({ kind: "station" as const, stationId: s.id })),
+    ...places.map((_, i) => ({ kind: "place" as const, placeIndex: i })),
+  ]
+
+  function optionId(index: number) {
+    return `${listboxId}-opt-${index}`
+  }
+  const activeId = activeIndex !== null && activeOptions[activeIndex] ? optionId(activeIndex) : undefined
+
+  function selectActive(index: number) {
+    const opt = activeOptions[index]
+    if (!opt) return
+    if (opt.kind === "station") {
+      onChange(opt.stationId)
+      setOpen(false)
+      setActiveIndex(null)
+      requestAnimationFrame(() => triggerRef.current?.focus())
+    } else {
+      const p = places[opt.placeIndex]
+      if (p) {
+        onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
+        setOpen(false)
+        setActiveIndex(null)
+        requestAnimationFrame(() => triggerRef.current?.focus())
+      }
+    }
+  }
+
+  function handleInputKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.stopPropagation()
+      closeAndRefocusTrigger()
+      return
+    }
+    if (!open) return
+    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Home" || e.key === "End") {
+      e.preventDefault()
+      if (activeOptions.length === 0) return
+      if (e.key === "ArrowDown") {
+        setActiveIndex((prev) => (prev === null ? 0 : (prev + 1) % activeOptions.length))
+      } else if (e.key === "ArrowUp") {
+        setActiveIndex((prev) =>
+          prev === null ? activeOptions.length - 1 : (prev - 1 + activeOptions.length) % activeOptions.length,
+        )
+      } else if (e.key === "Home") {
+        setActiveIndex(0)
+      } else if (e.key === "End") {
+        setActiveIndex(activeOptions.length - 1)
+      }
+      return
+    }
+    if (e.key === "Enter") {
+      if (activeIndex !== null && activeOptions[activeIndex]) {
+        e.preventDefault()
+        selectActive(activeIndex)
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (activeIndex === null || !open) return
+    const el = document.getElementById(optionId(activeIndex))
+    el?.scrollIntoView({ block: "nearest" })
+  }, [activeIndex, open, listboxId])
 
   function handleDropdownKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
@@ -153,7 +232,6 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
           }}
           aria-haspopup="listbox"
           aria-expanded={open}
-          aria-controls={listboxId}
           className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2.5 text-start transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:px-4 md:py-3"
         >
           <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden="true" />
@@ -178,28 +256,33 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
       {open && (
         <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-lg border border-border bg-popover shadow-lg" onKeyDown={handleDropdownKeyDown}>
           <div className="border-b border-border p-2">
+            <label htmlFor={inputId} className="sr-only">
+              {placeholder}
+            </label>
             <input
               ref={inputRef}
               id={inputId}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  e.stopPropagation()
-                  closeAndRefocusTrigger()
-                }
-              }}
+              onKeyDown={handleInputKeyDown}
               placeholder={placeholder}
               aria-label={placeholder}
               role="combobox"
               aria-expanded={open}
               aria-controls={listboxId}
               aria-autocomplete="list"
+              aria-activedescendant={activeId}
               dir={isFa ? "rtl" : "ltr"}
               className="ios-no-zoom-input w-full rounded-md bg-muted px-3 py-2 text-start text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background md:px-4 md:py-2.5 md:text-base"
             />
           </div>
-          <ul id={listboxId} role="listbox" aria-label={placeholder} className="max-h-64 overflow-y-auto py-1">
+          <ul
+            id={listboxId}
+            ref={listRef}
+            role="listbox"
+            aria-label={placeholder}
+            className="max-h-64 overflow-y-auto py-1"
+          >
             {query.length === 0 && onPlaceSelect && (
               <li role="presentation" dir={isFa ? "rtl" : "ltr"} className="px-3 py-2 text-center text-xs text-muted-foreground md:px-4 md:py-2.5 md:text-sm">
                 {STRINGS[lang].searchHintBefore}{" "}
@@ -224,20 +307,27 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
               </li>
             )}
             {/* Station results */}
-            {results.map((s) => (
+            {results.map((s, sIndex) => {
+              const isActive = activeIndex === sIndex
+              return (
               <li key={s.id} role="presentation">
                 <button
                   type="button"
+                  id={optionId(sIndex)}
                   role="option"
                   aria-selected={value === s.id}
+                  tabIndex={-1}
+                  onMouseEnter={() => setActiveIndex(sIndex)}
                   onClick={() => {
                     onChange(s.id)
                     setOpen(false)
+                    setActiveIndex(null)
                     triggerRef.current?.focus()
                   }}
                   className={cn(
                     "flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent focus:outline-none focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                     value === s.id && "bg-accent",
+                    isActive && "bg-accent",
                   )}
                 >
                   <span className="flex shrink-0 gap-1" aria-hidden="true">
@@ -258,7 +348,8 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                   <MapPin aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
                 </button>
               </li>
-            ))}
+              )
+            })}
 
             {/* Divider + place results (online-only enhancement) */}
             {query.length >= 3 && (hasPlaceResults || placesLoading || isOffline) && (
@@ -281,18 +372,28 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                         {t.searchingPlaces}
                       </li>
                     )}
-                    {places.map((p, i) => (
+                    {places.map((p, i) => {
+                      const placeOptionIndex = results.length + i
+                      const isActivePlace = activeIndex === placeOptionIndex
+                      return (
                       <li key={`${p.lat}-${p.lng}-${i}`} role="presentation">
                         <button
                           type="button"
+                          id={optionId(placeOptionIndex)}
                           role="option"
                           aria-selected="false"
+                          tabIndex={-1}
+                          onMouseEnter={() => setActiveIndex(placeOptionIndex)}
                           onClick={() => {
                             onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
                             setOpen(false)
+                            setActiveIndex(null)
                             triggerRef.current?.focus()
                           }}
-                          className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent focus:outline-none focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:px-4 md:py-2.5 md:text-base"
+                          className={cn(
+                            "flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent focus:outline-none focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:px-4 md:py-2.5 md:text-base",
+                            isActivePlace && "bg-accent",
+                          )}
                         >
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-medium">{p.displayName}</span>
@@ -300,7 +401,8 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                           <Building2 aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
                         </button>
                       </li>
-                    ))}
+                      )
+                    })}
                   </>
                 )}
               </>

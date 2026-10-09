@@ -142,7 +142,7 @@ export function AppNav() {
         </TabLink>
 
         {/* desktop tabs */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
           {NAV_ITEMS.map((item) => {
             const href = getHref(item.href);
             const active = currentPath === item.href;
@@ -151,6 +151,7 @@ export function AppNav() {
                 key={item.href}
                 href={href}
                 connectivity={connectivity}
+                ariaCurrent={active ? "page" : undefined}
                 className={cn(
                   "flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors touch-manipulation active:scale-[0.98] md:gap-2 md:px-4 md:py-2.5 md:text-base",
                   active
