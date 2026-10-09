@@ -112,12 +112,14 @@ test.describe("route search keyboard flow", () => {
     await searchInput.fill("تجریش");
     const firstOption = listbox.getByRole("option").first();
     await expect(firstOption).toBeVisible({ timeout: 10_000 });
-    await expect(firstOption).toHaveAttribute("aria-selected");
+    await expect(firstOption).toHaveAttribute("aria-selected", "false");
 
-    // Polite live region announces results.
+    // Polite live region announces results with localized digits.
     const status = page.locator("#origin-combobox-status");
     await expect(status).toHaveAttribute("aria-live", "polite");
-    await expect(status).not.toBeEmpty({ timeout: 10_000 });
+    await expect(status).toContainText("ایستگاه", { timeout: 10_000 });
+    // FA locale uses Persian digits (closes #43 live-count item).
+    await expect(status).toContainText(/[۰۱۲۳۴۵۶۷۸۹]/, { timeout: 10_000 });
 
     // Escape closes and restores focus to the trigger.
     await page.keyboard.press("Escape");
@@ -129,6 +131,13 @@ test.describe("route search keyboard flow", () => {
     await searchInput.fill("تجریش");
     await listbox.getByRole("option").first().click();
     await expect(originTrigger).not.toBeEmpty();
+
+    // Chosen option reports aria-selected=true on reopen.
+    await originTrigger.click();
+    await searchInput.fill("تجریش");
+    const selectedOption = listbox.getByRole("option", { selected: true });
+    await expect(selectedOption.first()).toBeVisible({ timeout: 10_000 });
+    await expect(selectedOption.first()).toHaveAttribute("aria-selected", "true");
 
     // No X/clear button in the selectors by design — selection changes
     // by picking another station.

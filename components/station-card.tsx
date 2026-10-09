@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { MapPin, Flag, Clock, Zap, Calendar, Ban } from "lucide-react";
 import { LINE_COLORS } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
@@ -42,7 +42,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
     }));
     return grouped.filter((g) => g.departures.length > 0);
   }, [station.id, lines.join(","), loaded, isHolidayDate]);
-  const constructionId = `station-card-${station.id}-construction`;
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const constructionId = `station-card-${station.id}-${uid}-construction`;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
