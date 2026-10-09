@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactElement } from "react";
 import Link from "next/link";
 import { useMetro } from "@/app/providers";
+import { isAndroidTwa, isTwaPackageInstalled } from "@/lib/twa";
 import { WELCOME_CONTENT } from "../content";
 import { cn } from "@/lib/utils";
 import { Reveal } from "./Reveal";
@@ -46,21 +47,43 @@ export function PwaStrip() {
   const heroCta = WELCOME_CONTENT[lang].hero.ctaPrimary;
   const isFa = lang === "fa";
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [installed, setInstalled] = useState(false);
+  // How we know what's installed (browsers can only tell us so much):
+  // - pwaStandalone: this page is running inside the installed web app
+  //   (display-mode: standalone / iOS navigator.standalone).
+  // - installedEvent: the PWA install prompt was accepted in this session.
+  // - inTwa: this page is running inside the installed Android app (TWA).
+  // - twaOnDevice: the Android package is installed on this device while we
+  //   are browsing (Chromium getInstalledRelatedApps, best-effort).
+  const [pwaStandalone, setPwaStandalone] = useState(false);
+  const [installedEvent, setInstalledEvent] = useState(false);
+  const [inTwa, setInTwa] = useState(false);
+  const [twaOnDevice, setTwaOnDevice] = useState(false);
 
   useEffect(() => {
-    setInstalled(isStandalone());
+    setPwaStandalone(isStandalone());
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setInstallEvent(e as BeforeInstallPromptEvent);
     };
     const onInstalled = () => {
-      setInstalled(true);
+      setInstalledEvent(true);
       setInstallEvent(null);
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
+    let cancelled = false;
+    void (async () => {
+      const twaNow = await isAndroidTwa();
+      if (cancelled) return;
+      setInTwa(twaNow);
+      if (twaNow) {
+        setTwaOnDevice(true);
+        return;
+      }
+      setTwaOnDevice(await isTwaPackageInstalled());
+    })();
     return () => {
+      cancelled = true;
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
@@ -70,9 +93,17 @@ export function PwaStrip() {
     if (!installEvent) return;
     await installEvent.prompt();
     const choice = await installEvent.userChoice;
-    if (choice.outcome === "accepted") setInstalled(true);
+    if (choice.outcome === "accepted") setInstalledEvent(true);
     setInstallEvent(null);
   };
+
+  // Running inside an installed surface: show the explicit status instead of
+  // the PWA button (which would be a dead second install).
+  const inInstalledContext = inTwa || pwaStandalone || installedEvent;
+  const statusTitle = inTwa ? t.installedTwa : pwaStandalone || installedEvent ? t.installedPwa : t.twaOnDevice;
+  const statusHint = inTwa ? t.installedTwaHint : pwaStandalone || installedEvent ? t.installedPwaHint : t.twaOnDeviceHint;
+  const showStatus = inInstalledContext || twaOnDevice;
+  const hintLine = inInstalledContext || twaOnDevice ? statusHint : installEvent ? t.installPwaNote : t.note;
 
   const stores: {
     key: string;
@@ -120,22 +151,23 @@ export function PwaStrip() {
           <p className="mt-4 max-w-xl text-sm leading-8 text-muted-foreground sm:text-base">{t.desc}</p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            {installed && !installEvent ? (
+            {showStatus && (
               <span
                 role="status"
-                title={t.installedHint}
-                aria-label={t.installedHint}
+                title={statusHint}
+                aria-label={statusHint}
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold sm:w-auto"
               >
-                <CheckIcon className="h-4 w-4 text-primary" />
-                {t.installed}
+                <CheckIcon className="h-4 w-4 shrink-0 text-primary" />
+                {statusTitle}
               </span>
-            ) : (
+            )}
+            {!inInstalledContext && (
               <button
                 type="button"
                 onClick={install}
-                disabled={!installEvent && !installed}
-                title={!installEvent && !installed ? t.note : undefined}
+                disabled={!installEvent}
+                title={!installEvent ? t.note : undefined}
                 className={cn(
                   "group inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg px-6 text-sm font-bold transition-all duration-200 sm:w-auto",
                   installEvent
@@ -143,8 +175,8 @@ export function PwaStrip() {
                     : "cursor-default border border-border text-muted-foreground",
                 )}
               >
-                {installed ? <CheckIcon className="h-4 w-4" /> : <PhoneIcon className="h-4 w-4" />}
-                {installed ? t.installed : t.install}
+                <PhoneIcon className="h-4 w-4" />
+                {t.install}
               </button>
             )}
             <Link
@@ -155,9 +187,27 @@ export function PwaStrip() {
               {heroCta}
             </Link>
           </div>
-          <p className="mt-2.5 text-[11px] text-muted-foreground">
-            {installed && !installEvent ? t.installedHint : t.note}
-          </p>
+          <p className="mt-2.5 max-w-xl text-[11px] leading-5 text-muted-foreground">{hintLine}</p>
+          <p className="mt-1.5 max-w-xl text-[11px] leading-5 text-muted-foreground/80">{t.detectionNote}</p>
+
+          <div className="mt-6 max-w-2xl rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-black tracking-tight">{t.chooseTitle}</h3>
+            <p className="mt-1.5 text-xs leading-6 text-muted-foreground">{t.chooseDesc}</p>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              <li className="rounded-lg border border-border px-3 py-2.5">
+                <p className="text-xs font-bold">{t.waySite}</p>
+                <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{t.waySiteNote}</p>
+              </li>
+              <li className="rounded-lg border border-border px-3 py-2.5">
+                <p className="text-xs font-bold">{t.wayApp}</p>
+                <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{t.wayAppNote}</p>
+              </li>
+            </ul>
+            <p className="mt-2.5 flex items-center gap-1.5 text-[11px] font-bold text-primary">
+              <OfflineIcon className="h-3.5 w-3.5" />
+              {t.bothOffline}
+            </p>
+          </div>
         </Reveal>
 
         <Reveal delay={60}>
