@@ -392,11 +392,11 @@ export function Hero() {
                 <button
                   type="button"
                   onClick={() => setLang(lang === "en" ? "fa" : "en")}
-                  className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-lg border border-border px-4 text-sm font-bold transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
+                  className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-lg border border-border px-4 text-sm font-bold transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto sm:min-w-[120px]"
                   aria-label={lang === "en" ? "فارسی — Toggle language" : "EN — تغییر زبان"}
                 >
-                  <Globe className="size-4" />
-                  {lang === "en" ? "فارسی" : "EN"}
+                  <Globe className="size-4 shrink-0" />
+                  <span className="leading-none">{lang === "en" ? "فارسی" : "EN"}</span>
                 </button>
               </div>
             </Reveal>
