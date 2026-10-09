@@ -310,26 +310,24 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
             {results.map((s, sIndex) => {
               const isActive = activeIndex === sIndex
               return (
-              <li key={s.id} role="presentation">
-                <button
-                  type="button"
-                  id={optionId(sIndex)}
-                  role="option"
-                  aria-selected={value === s.id}
-                  tabIndex={-1}
-                  onMouseEnter={() => setActiveIndex(sIndex)}
-                  onClick={() => {
-                    onChange(s.id)
-                    setOpen(false)
-                    setActiveIndex(null)
-                    triggerRef.current?.focus()
-                  }}
-                  className={cn(
-                    "flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent focus:outline-none focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                    value === s.id && "bg-accent",
-                    isActive && "bg-accent",
-                  )}
-                >
+              <li
+                key={s.id}
+                id={optionId(sIndex)}
+                role="option"
+                aria-selected={value === s.id}
+                onMouseEnter={() => setActiveIndex(sIndex)}
+                onClick={() => {
+                  onChange(s.id)
+                  setOpen(false)
+                  setActiveIndex(null)
+                  triggerRef.current?.focus()
+                }}
+                className={cn(
+                  "flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent",
+                  value === s.id && "bg-accent",
+                  isActive && "bg-accent",
+                )}
+              >
                   <span className="flex shrink-0 gap-1" aria-hidden="true">
                     {getStationLines(s.id).map((l) => (
                       <span
@@ -346,7 +344,6 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                   </span>
                   <span className="flex-1" aria-hidden="true" />
                   <MapPin aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-                </button>
               </li>
               )
             })}
@@ -376,30 +373,27 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                       const placeOptionIndex = results.length + i
                       const isActivePlace = activeIndex === placeOptionIndex
                       return (
-                      <li key={`${p.lat}-${p.lng}-${i}`} role="presentation">
-                        <button
-                          type="button"
-                          id={optionId(placeOptionIndex)}
-                          role="option"
-                          aria-selected="false"
-                          tabIndex={-1}
-                          onMouseEnter={() => setActiveIndex(placeOptionIndex)}
-                          onClick={() => {
-                            onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
-                            setOpen(false)
-                            setActiveIndex(null)
-                            triggerRef.current?.focus()
-                          }}
-                          className={cn(
-                            "flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent focus:outline-none focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:px-4 md:py-2.5 md:text-base",
-                            isActivePlace && "bg-accent",
-                          )}
-                        >
+                      <li
+                        key={`${p.lat}-${p.lng}-${i}`}
+                        id={optionId(placeOptionIndex)}
+                        role="option"
+                        aria-selected="false"
+                        onMouseEnter={() => setActiveIndex(placeOptionIndex)}
+                        onClick={() => {
+                          onPlaceSelect?.({ lat: p.lat, lng: p.lng, name: p.displayName })
+                          setOpen(false)
+                          setActiveIndex(null)
+                          triggerRef.current?.focus()
+                        }}
+                        className={cn(
+                          "flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent md:px-4 md:py-2.5 md:text-base",
+                          isActivePlace && "bg-accent",
+                        )}
+                      >
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-medium">{p.displayName}</span>
                           </span>
                           <Building2 aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-                        </button>
                       </li>
                       )
                     })}

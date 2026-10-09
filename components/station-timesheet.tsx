@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { X, Clock, Zap, ChevronDown } from "lucide-react";
-import { LINE_COLORS } from "@/lib/metro/lines";
+import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
 import { getStation, getStationLines } from "@/lib/metro/selectors";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
@@ -198,8 +198,8 @@ export function StationTimesheet({
               className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-muted/50"
             >
               <span
-                className="flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                style={{ backgroundColor: LINE_COLORS[lineData.line] }}
+                className="flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                style={{ backgroundColor: LINE_COLORS[lineData.line], color: lineOnColor(lineData.line) }}
               >
                 {persianDigits(lineData.line, lang)}
               </span>

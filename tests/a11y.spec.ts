@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-// Accessibility gate for the route-search flow (Phase 1 + Phase 3).
-// - Axe scans on /route, /stations, /nearby, /map — fails only on
-//   serious/critical impacts (moderate/minor are reported, not fatal,
-//   so deferred work like palette contrast tuning doesn't block quick wins).
+// Accessibility gate for the route-search flow.
+// - Axe scans on /route, /stations, /nearby, /map — fails on
+//   moderate/serious/critical impacts (minor only is reported, not fatal).
+//   Palette contrast was tuned (#43) so the moderate gate holds.
 // - Keyboard flow for the From/To comboboxes: labels associated,
 //   listbox/option semantics, Escape restores focus.
 
@@ -38,7 +38,7 @@ async function waitForAppReady(page: import("@playwright/test").Page, route: str
 }
 
 for (const route of ROUTES) {
-  test(`axe: ${route} has no serious/critical violations`, async ({ page }) => {
+  test(`axe: ${route} has no moderate+ violations`, async ({ page }) => {
     await waitForAppReady(page, route);
 
     const results = await new AxeBuilder({ page })
@@ -46,7 +46,7 @@ for (const route of ROUTES) {
       .analyze();
 
     const blocking = results.violations.filter(
-      (v) => v.impact === "serious" || v.impact === "critical",
+      (v) => v.impact === "moderate" || v.impact === "serious" || v.impact === "critical",
     );
 
     // Attach full report for debugging even on pass.
@@ -148,8 +148,10 @@ test.describe("route search keyboard flow", () => {
     const firstOption = listbox.getByRole("option").first();
     await expect(firstOption).toBeVisible({ timeout: 10_000 });
     await expect(firstOption).toHaveAttribute("aria-selected", "false");
-    // Options are not in the Tab order (roving via Arrow keys, #43).
-    await expect(firstOption).toHaveAttribute("tabindex", "-1");
+    // Options use the li[role=option] pattern (#43): not in the Tab order,
+    // navigated via Arrow keys with aria-activedescendant.
+    await expect(firstOption).toHaveJSProperty("tagName", "LI");
+    await expect(firstOption).not.toHaveAttribute("tabindex", "0");
 
     // Arrow-key navigation moves aria-activedescendant without moving focus (#43).
     await page.keyboard.press("ArrowDown");
@@ -209,6 +211,38 @@ test.describe("route search keyboard flow", () => {
     await skipLink.focus();
     await page.keyboard.press("Enter");
     await expect(page.locator("#main-content")).toBeFocused();
+  });
+
+  test("timetable sheet traps focus and restores it on close", async ({ page }) => {
+    await waitForAppReady(page, "/stations");
+    // Open the first station's timetable sheet (FA "برنامه" / EN "Timetable").
+    const sheetButton = page.getByRole("button", { name: /برنامه|Timetable/ }).first();
+    await expect(sheetButton).toBeVisible({ timeout: 15_000 });
+    await sheetButton.click();
+
+    const dialog = page.getByRole("dialog").first();
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await expect(dialog).toHaveAttribute("aria-modal", "true");
+    // Focus moved inside the dialog on open.
+    await expect(dialog.locator("button:not([disabled])").first()).toBeFocused({ timeout: 10_000 });
+
+    // Tab cycles inside the dialog instead of escaping to the page behind.
+    const focusedBefore: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      await page.keyboard.press("Tab");
+      const label = await page.evaluate(() => {
+        const el = document.activeElement;
+        return el ? `${el.tagName}#${el.id || ""}.${(el as HTMLElement).className?.toString().slice(0, 40)}` : "none";
+      });
+      focusedBefore.push(label);
+    }
+    const escaped = await page.evaluate(() => !document.querySelector('[role="dialog"]')?.contains(document.activeElement));
+    expect(escaped).toBe(false);
+
+    // Escape closes and restores focus to the opener.
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden({ timeout: 10_000 });
+    await expect(sheetButton).toBeFocused();
   });
 
   test("route warnings and departures use live regions", async ({ page }) => {
