@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { LINE_COLORS } from "@/lib/metro/lines";
 import { getAllStations } from "@/lib/metro/selectors";
@@ -29,15 +29,49 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
   const [lineFilter, setLineFilter] = useState<number | null>(null);
   const [branchIndex, setBranchIndex] = useState(0);
   const [timetableStation, setTimetableStation] = useState<MetroStation | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
 
-  // Backdrop click already closes the sheet; Escape covers keyboard users.
+  // Backdrop click closes the sheet; Escape covers keyboard users.
+  // Focus trap (#43): while open, Tab cycles inside the dialog and focus
+  // returns to the opener on close. No visual change for mouse users.
   useEffect(() => {
     if (!timetableStation) return;
+    prevFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setTimetableStation(null);
+      if (e.key === "Escape") {
+        setTimetableStation(null);
+        return;
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // Move focus into the dialog on open (first control, else the panel).
+    requestAnimationFrame(() => {
+      const first = dialogRef.current?.querySelector<HTMLElement>("button:not([disabled])");
+      (first ?? dialogRef.current)?.focus();
+    });
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      prevFocusRef.current?.focus();
+    };
   }, [timetableStation]);
 
   const lineOrder = useMemo(
@@ -163,7 +197,12 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
           onClick={() => setTimetableStation(null)}
         >
           <div
-            className="max-h-[85vh] w-full max-w-lg overflow-hidden"
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={isFa ? timetableStation.name.fa : timetableStation.name.en}
+            tabIndex={-1}
+            className="max-h-[85vh] w-full max-w-lg overflow-hidden outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             <StationTimesheet
