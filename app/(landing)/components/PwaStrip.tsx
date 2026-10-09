@@ -3,6 +3,14 @@
 import { useEffect, useState, type ReactElement } from "react";
 import Link from "next/link";
 import { useMetro } from "@/app/providers";
+import { isAndroidTwa, isTwaPackageInstalled } from "@/lib/twa";
+import {
+  readRememberedInstall,
+  selectInstallStatus,
+  shouldShowInstallBadge,
+  shouldShowPwaButton,
+  writeRememberedInstall,
+} from "./install-status";
 import { WELCOME_CONTENT } from "../content";
 import { cn } from "@/lib/utils";
 import { Reveal } from "./Reveal";
@@ -37,7 +45,10 @@ const INSTALL_TARGETS = {
 } as const;
 
 /* ------------------------------------------------------------------ */
-/* Slim install section: headline + PWA install + all four store slots */
+/* Slim install section: headline + PWA install + APK slots. Stays compact */
+/* on purpose: the PWA/APK sameness is one line and the manual steps +    */
+/* detection limits live in a disclosure so the section keeps fitting     */
+/* roughly one viewport instead of growing into a wall of cards.          */
 /* ------------------------------------------------------------------ */
 
 export function PwaStrip() {
@@ -46,21 +57,52 @@ export function PwaStrip() {
   const heroCta = WELCOME_CONTENT[lang].hero.ctaPrimary;
   const isFa = lang === "fa";
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [installed, setInstalled] = useState(false);
+  // How we know what's installed (browsers can only tell us so much):
+  // - pwaStandalone: this page is running inside the installed web app
+  //   (display-mode: standalone / iOS navigator.standalone).
+  // - installedEvent: the PWA install prompt was accepted in this session.
+  // - inTwa: this page is running inside the installed Android app (TWA).
+  // - twaOnDevice: the Android package is installed on this device while we
+  //   are browsing (Chromium getInstalledRelatedApps, best-effort).
+  const [pwaStandalone, setPwaStandalone] = useState(false);
+  const [installedEvent, setInstalledEvent] = useState(false);
+  const [inTwa, setInTwa] = useState(false);
+  const [twaOnDevice, setTwaOnDevice] = useState(false);
+  // This browser installed the PWA before (our own memory — see
+  // install-status.ts for why the browser itself can't always tell us).
+  const [remembered, setRemembered] = useState(false);
 
   useEffect(() => {
-    setInstalled(isStandalone());
+    setPwaStandalone(isStandalone());
+    setRemembered(readRememberedInstall());
     const onPrompt = (e: Event) => {
       e.preventDefault();
+      // A prompt firing proves it is NOT installed — forget the memory.
+      writeRememberedInstall(false);
+      setRemembered(false);
       setInstallEvent(e as BeforeInstallPromptEvent);
     };
     const onInstalled = () => {
-      setInstalled(true);
+      writeRememberedInstall(true);
+      setRemembered(true);
+      setInstalledEvent(true);
       setInstallEvent(null);
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
+    let cancelled = false;
+    void (async () => {
+      const twaNow = await isAndroidTwa();
+      if (cancelled) return;
+      setInTwa(twaNow);
+      if (twaNow) {
+        setTwaOnDevice(true);
+        return;
+      }
+      setTwaOnDevice(await isTwaPackageInstalled());
+    })();
     return () => {
+      cancelled = true;
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
@@ -70,9 +112,41 @@ export function PwaStrip() {
     if (!installEvent) return;
     await installEvent.prompt();
     const choice = await installEvent.userChoice;
-    if (choice.outcome === "accepted") setInstalled(true);
+    if (choice.outcome === "accepted") {
+      writeRememberedInstall(true);
+      setRemembered(true);
+      setInstalledEvent(true);
+    }
     setInstallEvent(null);
   };
+
+  const status = selectInstallStatus({
+    inTwa,
+    pwaStandalone,
+    installedEvent,
+    twaOnDevice,
+    hasPrompt: installEvent !== null,
+    remembered,
+  });
+  const showBadge = shouldShowInstallBadge(status);
+  const showButton = shouldShowPwaButton(status);
+  const badgeTitle =
+    status === "in-twa"
+      ? t.installedTwa
+      : status === "in-pwa"
+        ? t.installedPwa
+        : status === "twa-on-device"
+          ? t.twaOnDevice
+          : t.wasInstalled;
+  const badgeHint =
+    status === "in-twa"
+      ? t.installedTwaHint
+      : status === "in-pwa"
+        ? t.installedPwaHint
+        : status === "twa-on-device"
+          ? t.twaOnDeviceHint
+          : t.wasInstalledHint;
+  const hintLine = showBadge ? badgeHint : installEvent ? t.installPwaNote : t.note;
 
   const stores: {
     key: string;
@@ -120,22 +194,23 @@ export function PwaStrip() {
           <p className="mt-4 max-w-xl text-sm leading-8 text-muted-foreground sm:text-base">{t.desc}</p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            {installed && !installEvent ? (
+            {showBadge && (
               <span
                 role="status"
-                title={t.installedHint}
-                aria-label={t.installedHint}
+                title={badgeHint}
+                aria-label={badgeHint}
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold sm:w-auto"
               >
-                <CheckIcon className="h-4 w-4 text-primary" />
-                {t.installed}
+                <CheckIcon className="h-4 w-4 shrink-0 text-primary" />
+                {badgeTitle}
               </span>
-            ) : (
+            )}
+            {showButton && (
               <button
                 type="button"
                 onClick={install}
-                disabled={!installEvent && !installed}
-                title={!installEvent && !installed ? t.note : undefined}
+                disabled={!installEvent}
+                title={!installEvent ? t.note : undefined}
                 className={cn(
                   "group inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg px-6 text-sm font-bold transition-all duration-200 sm:w-auto",
                   installEvent
@@ -143,8 +218,8 @@ export function PwaStrip() {
                     : "cursor-default border border-border text-muted-foreground",
                 )}
               >
-                {installed ? <CheckIcon className="h-4 w-4" /> : <PhoneIcon className="h-4 w-4" />}
-                {installed ? t.installed : t.install}
+                <PhoneIcon className="h-4 w-4" />
+                {t.install}
               </button>
             )}
             <Link
@@ -155,13 +230,30 @@ export function PwaStrip() {
               {heroCta}
             </Link>
           </div>
-          <p className="mt-2.5 text-[11px] text-muted-foreground">
-            {installed && !installEvent ? t.installedHint : t.note}
+          <p className="mt-2.5 max-w-xl text-[11px] leading-5 text-muted-foreground">{hintLine}</p>
+          <p className="mt-2 flex max-w-xl items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
+            <OfflineIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+            {t.sameApp}
           </p>
+          <details className="group mt-2.5 max-w-xl">
+            <summary className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline">
+              {t.hintTitle}
+            </summary>
+            <div className="mt-2 rounded-lg border border-border bg-card p-3">
+              <ol className="list-decimal space-y-1 ps-5 text-[11px] leading-5 text-muted-foreground">
+                {t.steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+              <p className="mt-2 border-t border-border pt-2 text-[11px] leading-5 text-muted-foreground/80">
+                {t.detectionNote}
+              </p>
+            </div>
+          </details>
         </Reveal>
 
         <Reveal delay={60}>
-          <div className="mt-10">
+          <div className="mt-8">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-base font-black tracking-tight">{t.storesTitle}</h3>
               <p className="text-[11px] text-muted-foreground">{t.storesSubtitle}</p>
