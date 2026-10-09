@@ -138,6 +138,9 @@ const fa = {
     twaOnDevice: "اپ اندروید روی این گوشی نصب است",
     twaOnDeviceHint:
       "اپ اندروید (ir.metto.app) روی این دستگاه نصب است؛ الان داری نسخه مرورگر را می‌بینی. برای باز کردنش آیکون متو را در لیست برنامه‌ها بزن.",
+    wasInstalled: "وب‌اپ را قبلاً نصب کرده‌ای",
+    wasInstalledHint:
+      "این مرورگر قبلاً متو را به صفحه اصلی اضافه کرده — از آیکون متو بازش کن. اگر پاکش کرده‌ای، از منوی مرورگر دوباره اضافه‌اش کن (راهنما پایین).",
     detectionNote:
       "مرورگر همیشه نمی‌تواند بفهمد چیزی نصب است یا نه: وقتی داخل نسخه نصب‌شده وب یا اپ اندروید باشی می‌فهمیم، و نصب بودن اپ اندروید را هم در کروم اندروید می‌پرسیم. اگر نصب کرده‌ای ولی اینجا نشان نمی‌دهد، آیکون متو را در صفحه اصلی یا لیست برنامه‌ها ببین.",
     sameApp:
@@ -161,7 +164,7 @@ const fa = {
       "سافاری: دکمه اشتراک‌گذاری ← «افزودن به صفحه اصلی».",
       "بار اول که آنلاین است، داده ایستگاه‌ها ذخیره می‌شود.",
     ],
-    note: "اگر دکمه نصب را نمی‌بینی، از منوی مرورگرت استفاده کن.",
+    note: "دکمه نصب را نمی‌بینی؟ از منوی مرورگر استفاده کن — یا شاید قبلاً نصبش کرده‌ای؛ آیکون متو را در صفحه اصلی یا لیست برنامه‌ها ببین.",
   },
   faq: {
     eyebrow: "پرسش‌های رایج",
@@ -348,6 +351,9 @@ const en: typeof fa = {
     twaOnDevice: "Android app is installed on this phone",
     twaOnDeviceHint:
       "The Android app (ir.metto.app) is installed on this device; you're looking at the browser version right now. Open it from the metto icon in your app list.",
+    wasInstalled: "You already installed the web app",
+    wasInstalledHint:
+      "This browser added metto to the home screen before — open it from the metto icon. If you removed it, add it again from the browser menu (steps below).",
     detectionNote:
       "Browsers can't always tell what's installed: we detect it when you're running inside the installed web app or the Android app, and on Android Chrome we can also ask whether the Android app is installed. If you installed it but don't see it here, look for the metto icon on your home screen or app list.",
     sameApp:
@@ -371,7 +377,7 @@ const en: typeof fa = {
       "Safari: share button → “Add to Home Screen”.",
       "The first time you are online, station data is saved on the device.",
     ],
-    note: "If you don't see the install button, use your browser menu instead.",
+    note: "No install button? Use your browser menu — or you may already have it: look for the metto icon on your home screen or app list.",
   },
   faq: {
     eyebrow: "FAQ",

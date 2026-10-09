@@ -4,6 +4,13 @@ import { useEffect, useState, type ReactElement } from "react";
 import Link from "next/link";
 import { useMetro } from "@/app/providers";
 import { isAndroidTwa, isTwaPackageInstalled } from "@/lib/twa";
+import {
+  readRememberedInstall,
+  selectInstallStatus,
+  shouldShowInstallBadge,
+  shouldShowPwaButton,
+  writeRememberedInstall,
+} from "./install-status";
 import { WELCOME_CONTENT } from "../content";
 import { cn } from "@/lib/utils";
 import { Reveal } from "./Reveal";
@@ -61,14 +68,23 @@ export function PwaStrip() {
   const [installedEvent, setInstalledEvent] = useState(false);
   const [inTwa, setInTwa] = useState(false);
   const [twaOnDevice, setTwaOnDevice] = useState(false);
+  // This browser installed the PWA before (our own memory — see
+  // install-status.ts for why the browser itself can't always tell us).
+  const [remembered, setRemembered] = useState(false);
 
   useEffect(() => {
     setPwaStandalone(isStandalone());
+    setRemembered(readRememberedInstall());
     const onPrompt = (e: Event) => {
       e.preventDefault();
+      // A prompt firing proves it is NOT installed — forget the memory.
+      writeRememberedInstall(false);
+      setRemembered(false);
       setInstallEvent(e as BeforeInstallPromptEvent);
     };
     const onInstalled = () => {
+      writeRememberedInstall(true);
+      setRemembered(true);
       setInstalledEvent(true);
       setInstallEvent(null);
     };
@@ -96,17 +112,41 @@ export function PwaStrip() {
     if (!installEvent) return;
     await installEvent.prompt();
     const choice = await installEvent.userChoice;
-    if (choice.outcome === "accepted") setInstalledEvent(true);
+    if (choice.outcome === "accepted") {
+      writeRememberedInstall(true);
+      setRemembered(true);
+      setInstalledEvent(true);
+    }
     setInstallEvent(null);
   };
 
-  // Running inside an installed surface: show the explicit status instead of
-  // the PWA button (which would be a dead second install).
-  const inInstalledContext = inTwa || pwaStandalone || installedEvent;
-  const statusTitle = inTwa ? t.installedTwa : pwaStandalone || installedEvent ? t.installedPwa : t.twaOnDevice;
-  const statusHint = inTwa ? t.installedTwaHint : pwaStandalone || installedEvent ? t.installedPwaHint : t.twaOnDeviceHint;
-  const showStatus = inInstalledContext || twaOnDevice;
-  const hintLine = inInstalledContext || twaOnDevice ? statusHint : installEvent ? t.installPwaNote : t.note;
+  const status = selectInstallStatus({
+    inTwa,
+    pwaStandalone,
+    installedEvent,
+    twaOnDevice,
+    hasPrompt: installEvent !== null,
+    remembered,
+  });
+  const showBadge = shouldShowInstallBadge(status);
+  const showButton = shouldShowPwaButton(status);
+  const badgeTitle =
+    status === "in-twa"
+      ? t.installedTwa
+      : status === "in-pwa"
+        ? t.installedPwa
+        : status === "twa-on-device"
+          ? t.twaOnDevice
+          : t.wasInstalled;
+  const badgeHint =
+    status === "in-twa"
+      ? t.installedTwaHint
+      : status === "in-pwa"
+        ? t.installedPwaHint
+        : status === "twa-on-device"
+          ? t.twaOnDeviceHint
+          : t.wasInstalledHint;
+  const hintLine = showBadge ? badgeHint : installEvent ? t.installPwaNote : t.note;
 
   const stores: {
     key: string;
@@ -154,18 +194,18 @@ export function PwaStrip() {
           <p className="mt-4 max-w-xl text-sm leading-8 text-muted-foreground sm:text-base">{t.desc}</p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            {showStatus && (
+            {showBadge && (
               <span
                 role="status"
-                title={statusHint}
-                aria-label={statusHint}
+                title={badgeHint}
+                aria-label={badgeHint}
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold sm:w-auto"
               >
                 <CheckIcon className="h-4 w-4 shrink-0 text-primary" />
-                {statusTitle}
+                {badgeTitle}
               </span>
             )}
-            {!inInstalledContext && (
+            {showButton && (
               <button
                 type="button"
                 onClick={install}
