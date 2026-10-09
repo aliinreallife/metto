@@ -6,7 +6,7 @@ import { STATION_MAP, searchStations } from "@/lib/route"
 import { LINE_COLORS } from "@/lib/metro/lines"
 import { getStationLines } from "@/lib/metro/selectors"
 import { searchPlaces, type PlaceResult } from "@/lib/geocoding"
-import { STRINGS, type Lang } from "@/lib/i18n"
+import { STRINGS, persianDigits, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -130,9 +130,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
     : showNoResults
       ? t.noResults
       : open && query.length > 0
-        ? isFa
-          ? `${results.length} ایستگاه`
-          : `${results.length} stations`
+        ? `${persianDigits(results.length, lang)} ${isFa ? "ایستگاه" : "stations"}`
         : ""
 
   return (
