@@ -19,7 +19,7 @@
     "/api/route": {
       "get": {
         "summary": "Plan a metro route",
-        "description": "Find the fastest route between two stations. Supports station names or GPS coordinates.",
+        "description": "Find the fastest route between two stations. Supports station names or GPS coordinates. Time-aware: pass departAt for a departure time or arriveBy for an arrival deadline (mutually exclusive); omit both to route from now.",
         "operationId": "getRoute",
         "parameters": [
           {
@@ -63,9 +63,16 @@
           {
             "name": "departAt",
             "in": "query",
-            "description": "Optional ISO-8601 departure datetime with explicit timezone offset or Z (e.g. 2026-09-07T14:00:00+03:30). Defaults to now. metto automatically derives the Iran (Asia/Tehran) weekday/Thursday/Friday-or-official-holiday timetable from this instant.",
+            "description": "Optional ISO-8601 departure datetime with explicit timezone offset or Z (e.g. 2026-09-07T14:00:00+03:30). Defaults to now. Mutually exclusive with arriveBy. metto automatically derives the Iran (Asia/Tehran) weekday/Thursday/Friday-or-official-holiday timetable from this instant.",
             "schema": { "type": "string" },
             "example": "2026-09-07T14:00:00+03:30"
+          },
+          {
+            "name": "arriveBy",
+            "in": "query",
+            "description": "Optional ISO-8601 arrival deadline with explicit timezone offset or Z (e.g. 2026-09-07T15:00:00+03:30). Mutually exclusive with departAt. metto returns the latest feasible journey reaching the destination at or before this instant, derived from the real timetable.",
+            "schema": { "type": "string" },
+            "example": "2026-09-07T15:00:00+03:30"
           }
         ],
         "responses": {
@@ -78,13 +85,14 @@
                   "properties": {
                     "origin": { "$ref": "#/components/schemas/Station" },
                     "destination": { "$ref": "#/components/schemas/Station" },
+                    "timeMode": { "type": "string", "enum": ["now", "depart", "arrive"] },
                     "route": { "$ref": "#/components/schemas/RouteResult" }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Missing parameters" },
+          "400": { "description": "Missing/invalid parameters, or both departAt and arriveBy supplied" },
           "404": { "description": "Station not found or no route" }
         }
       }
