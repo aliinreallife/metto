@@ -38,6 +38,7 @@ import {
   TOOL_GET_STATION,
   TOOL_INPUT_SCHEMAS,
   TOOL_LIST_STATIONS,
+  buildRouteLegs,
   formatNearbyText,
   formatNoRouteText,
   formatRouteSummary,
@@ -103,6 +104,17 @@ export function createMettoMcpServer(): McpServer {
       travelTimeMinutes: z.number(),
       path: z.array(z.string()),
       hops: z.array(z.object({ from: z.string(), to: z.string(), line: z.number() })),
+      departedAt: z.string(),
+      estimatedArrival: z.string().nullable(),
+      legs: z.array(z.object({
+        from: z.string(),
+        to: z.string(),
+        line: z.number(),
+        departAt: z.string().nullable(),
+        arriveAt: z.string().nullable(),
+        timing: z.string(),
+        stops: z.array(z.object({ station: z.string(), time: z.string().nullable() })),
+      })),
     },
   }, async ({ from, to, depart_at, arrive_by }) => {
     const origin = STATION_MAP.get(from);
@@ -148,6 +160,8 @@ export function createMettoMcpServer(): McpServer {
           travelTimeMinutes: minutes,
           path: result.route.path,
           scheduleNote: result.scheduleNote,
+          departedAt: result.route.departedAt,
+          estimatedArrival: result.route.estimatedArrival,
         }),
       }],
       structuredContent: {
@@ -157,6 +171,9 @@ export function createMettoMcpServer(): McpServer {
         travelTimeMinutes: minutes,
         path: result.route.path,
         hops: result.route.hops.map((h) => ({ from: h.from, to: h.to, line: h.line })),
+        departedAt: result.route.departedAt,
+        estimatedArrival: result.route.estimatedArrival,
+        legs: buildRouteLegs(result.route),
       },
     };
   });
