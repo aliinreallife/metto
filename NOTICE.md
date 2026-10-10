@@ -48,6 +48,9 @@ respective licenses and terms, including but not limited to:
 * Vazirmatn font (SIL Open Font License 1.1). Note: `next/font/google`
   downloads the font at build time and self-hosts it with the built
   application, so distributed builds redistribute the font under OFL-1.1.
+  `assets/fonts/Vazirmatn-{Regular,Bold}.ttf` are the same OFL-1.1 font,
+  committed as TrueType (ImageResponse supports ttf/otf/woff, not woff2)
+  for server-rendered social preview images.
 * Lucide icons (ISC), including the train glyph incorporated into
   `public/icon.svg`.
 * shadcn/ui template code (MIT).

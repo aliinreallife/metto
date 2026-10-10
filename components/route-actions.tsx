@@ -5,6 +5,7 @@ import { Check, Copy, Navigation } from "lucide-react";
 import type { MetroStation } from "@/lib/metro/types";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { geoUrl, googleMapsDirectionsUrl } from "@/lib/geo";
+import { buildCopyShareUrl } from "@/lib/route-share";
 
 type NavigatorWithUserAgentData = Navigator & {
   userAgentData?: { mobile?: boolean };
@@ -107,7 +108,12 @@ export function RouteActions({
       });
 
   async function handleCopy() {
-    const ok = await copyTextWithFallback(window.location.href);
+    // Route-bearing planner URLs normalize to canonical /share links (full
+    // trip state incl. city, pins, planned time) so pastes unfurl rich
+    // previews; routeless pages keep copying the current URL as before.
+    const ok = await copyTextWithFallback(
+      buildCopyShareUrl(window.location.href),
+    );
     // copyTextWithFallback returns false both for "share cancelled" and for
     // "all methods failed". Only show the failure state when there was no
     // share sheet to fall back to — otherwise a cancelled sheet would flash
