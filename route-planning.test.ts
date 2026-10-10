@@ -19,11 +19,13 @@ import {
 } from "./lib/schedule-utils";
 import type { LineScheduleData } from "./lib/schedule-data";
 import {
+  describePlanDay,
   getArriveByViewState,
   getDayTypeForServiceDate,
   parseTimeModeParams,
   applyTimeParams,
   planRoute,
+  PLAN_HORIZON_DAYS,
   seedNextFiveMinutes,
   shiftPlanDay,
   shiftTehranDate,
@@ -597,6 +599,56 @@ describe("continuous picker datetime", () => {
       hh: 7,
       mm: 0,
     });
+  });
+});
+
+describe("plan day badges", () => {
+  // 2026-09-07 is a Monday; only 2026-03-23 is a listed holiday here.
+  const isHolidayDate = (d: string): boolean => d === "2026-03-23";
+
+  it("caps the picker horizon at one week", () => {
+    expect(PLAN_HORIZON_DAYS).toBe(7);
+  });
+
+  it("stays quiet on normal weekdays", () => {
+    expect(describePlanDay("en", "2026-09-07", isHolidayDate)).toBeNull();
+    expect(describePlanDay("fa", "2026-09-08", isHolidayDate)).toBeNull();
+  });
+
+  it("labels Thursday service days", () => {
+    expect(describePlanDay("en", "2026-09-10", isHolidayDate)).toBe(
+      "Thursday service",
+    );
+    expect(describePlanDay("fa", "2026-09-10", isHolidayDate)).toBe(
+      "سرویس پنجشنبه",
+    );
+  });
+
+  it("labels Friday by rule (not as an official holiday)", () => {
+    expect(describePlanDay("en", "2026-09-11", isHolidayDate)).toBe(
+      "Friday service",
+    );
+    expect(describePlanDay("fa", "2026-09-11", isHolidayDate)).toBe(
+      "سرویس جمعه",
+    );
+  });
+
+  it("labels listed holidays with their name when known", () => {
+    expect(
+      describePlanDay("en", "2026-03-23", isHolidayDate, {
+        fa: "نوروز",
+        en: "Nowruz",
+      }),
+    ).toBe("Holiday service · Nowruz");
+    expect(
+      describePlanDay("fa", "2026-03-23", isHolidayDate, {
+        fa: "نوروز",
+        en: "Nowruz",
+      }),
+    ).toBe("سرویس تعطیلات · نوروز");
+    expect(describePlanDay("en", "2026-03-23", isHolidayDate)).toBe(
+      "Holiday service",
+    );
   });
 });
 

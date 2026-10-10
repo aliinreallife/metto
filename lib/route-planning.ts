@@ -337,7 +337,7 @@ export function shiftTehranDate(tehranDateStr: string, deltaDays: number): strin
 /**
  * Pure continuous-datetime step for the time picker: 23:55 + 5 min becomes
  * tomorrow 00:00, and 00:00 − 5 min becomes yesterday 23:55. Bounds (today →
- * +30 days) are enforced by the caller, not here.
+ * +PLAN_HORIZON_DAYS) are enforced by the caller, not here.
  */
 export function shiftTimeOfDay(
   dateStr: string,
@@ -513,6 +513,37 @@ export function formatDateLabel(
     absolute = dateStr;
   }
   return relative ? `${relative} · ${absolute}` : absolute;
+}
+
+/** How far ahead the time picker lets the user plan (today → +7 days). */
+export const PLAN_HORIZON_DAYS = 7;
+
+/**
+ * Short badge for a planned Tehran calendar date whose timetable is not the
+ * normal weekday one: Thursday service, Friday service, or official-holiday
+ * service (with the holiday name when known). Returns null for normal days
+ * so the day row stays quiet most of the week.
+ */
+export function describePlanDay(
+  lang: Lang,
+  dateStr: string,
+  isHolidayDate: IsHolidayDate,
+  holidayName?: { fa: string; en: string } | null,
+): string | null {
+  const t = STRINGS[lang];
+  const scheduleDay = getMetroScheduleDayType(
+    tehranMidnightEpoch(dateStr),
+    isHolidayDate,
+  );
+  if (scheduleDay === "thursday") return t.scheduleThursday;
+  if (scheduleDay === "holiday") {
+    // Friday runs the holiday timetable by rule; only listed dates are
+    // official holidays (with a name to show).
+    if (isHolidayDate(dateStr) !== true) return t.scheduleFriday;
+    const name = holidayName?.[lang];
+    return name ? `${t.scheduleHoliday} · ${name}` : t.scheduleHoliday;
+  }
+  return null;
 }
 
 // ---- Shareable URL state (web planner) ----
