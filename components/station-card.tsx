@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { MapPin, Flag, Clock, Zap, Calendar, Ban } from "lucide-react";
-import { LINE_COLORS } from "@/lib/metro/lines";
+import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
 import { getStationLines } from "@/lib/metro/selectors";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
@@ -42,7 +42,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
     }));
     return grouped.filter((g) => g.departures.length > 0);
   }, [station.id, lines.join(","), loaded, isHolidayDate]);
-  const constructionId = `station-card-${station.id}-construction`;
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const constructionId = `station-card-${station.id}-${uid}-construction`;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -50,11 +51,11 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex shrink-0 gap-1">
           {lines.map((l) => (
-            <span
-              key={l}
-              className="flex size-8 items-center justify-center rounded-lg text-sm font-bold text-white"
-              style={{ backgroundColor: LINE_COLORS[l] }}
-            >
+              <span
+                key={l}
+                className="flex size-8 items-center justify-center rounded-lg text-sm font-bold"
+                style={{ backgroundColor: LINE_COLORS[l], color: lineOnColor(l) }}
+              >
               {persianDigits(l, lang)}
             </span>
           ))}
@@ -124,8 +125,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
               <div key={g.line} className="flex items-center gap-1.5 text-xs">
                 <span
                   aria-hidden="true"
-                  className="flex size-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-white"
-                  style={{ backgroundColor: LINE_COLORS[g.line] }}
+                  className="flex size-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold"
+                  style={{ backgroundColor: LINE_COLORS[g.line], color: lineOnColor(g.line) }}
                 >
                   {persianDigits(g.line, lang)}
                 </span>

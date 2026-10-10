@@ -16,7 +16,7 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { LINE_COLORS } from "@/lib/metro/lines";
+import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import { canBoardAtStation } from "@/lib/metro/selectors";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
@@ -434,7 +434,7 @@ function SegmentCard({
           className="flex items-center gap-3 px-4 py-3 md:gap-4 md:px-5 md:py-4"
           style={{ backgroundColor: `${color}11` }}
         >
-          <div aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white md:size-12 md:text-base" style={{ backgroundColor: color }}>
+          <div aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold md:size-12 md:text-base" style={{ backgroundColor: color, color: lineOnColor(line) }}>
             {persianDigits(line, lang)}
           </div>
           <div className="min-w-0 flex-1">
@@ -505,8 +505,8 @@ function SegmentCard({
         <div className="min-w-0 flex-1 flex flex-col gap-2 md:gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold text-white md:px-3 md:py-1.5 md:text-sm"
-              style={{ backgroundColor: color }}
+              className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold md:px-3 md:py-1.5 md:text-sm"
+              style={{ backgroundColor: color, color: lineOnColor(line) }}
             >
               {t.line} {persianDigits(line, lang)}
             </span>
@@ -542,8 +542,8 @@ function SegmentCard({
                 </div>
               ) : (
                 <span
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-bold text-white md:px-3 md:py-1.5 md:text-xs"
-                  style={{ backgroundColor: color }}
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-bold md:px-3 md:py-1.5 md:text-xs"
+                  style={{ backgroundColor: color, color: lineOnColor(line) }}
                 >
                   {persianDigits(stations.length - 2, lang)}
                 </span>

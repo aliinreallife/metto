@@ -32,6 +32,7 @@ import {
   TOOL_INPUT_SCHEMAS,
   TOOL_LIST_STATIONS,
   buildCanonicalRouteUrl,
+  buildRouteLegs,
   formatNearbyText,
   formatNoRouteText,
   formatRouteSummary,
@@ -155,6 +156,8 @@ function executeGetRoute(
     travelTimeMinutes: minutes,
     path: route.path,
     scheduleNote,
+    departedAt: route.departedAt,
+    estimatedArrival: route.estimatedArrival,
   });
   return textResult(`${summary}\nOpen in metto: ${canonicalUrl}`, {
     route: `${origin.name.fa} (${origin.name.en}) → ${dest.name.fa} (${dest.name.en})`,
@@ -164,6 +167,8 @@ function executeGetRoute(
     path: route.path,
     hops: route.hops.map((h) => ({ from: h.from, to: h.to, line: h.line })),
     departedAt: route.departedAt,
+    estimatedArrival: route.estimatedArrival,
+    legs: buildRouteLegs(route),
     scheduleNote,
     canonicalUrl,
   });

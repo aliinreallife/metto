@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { X, Clock, Zap, Ban } from "lucide-react";
-import { LINE_COLORS } from "@/lib/metro/lines";
+import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
 import { getStationLines } from "@/lib/metro/selectors";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
@@ -54,8 +54,8 @@ export function StationDetail({
             {lines.map((l) => (
               <span
                 key={l}
-                className="flex size-7 items-center justify-center rounded-full text-xs font-bold text-white"
-                style={{ backgroundColor: LINE_COLORS[l] }}
+                className="flex size-7 items-center justify-center rounded-full text-xs font-bold"
+                style={{ backgroundColor: LINE_COLORS[l], color: lineOnColor(l) }}
               >
                 {persianDigits(l, lang)}
               </span>
@@ -131,8 +131,8 @@ function DepartureRow({ dep, lang }: { dep: Departure; lang: Lang }) {
     <li className="flex items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs">
       <span
         aria-hidden="true"
-        className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-        style={{ backgroundColor: color }}
+        className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+        style={{ backgroundColor: color, color: lineOnColor(dep.line) }}
       >
         {persianDigits(dep.line, lang)}
       </span>

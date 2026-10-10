@@ -75,7 +75,9 @@ user-visible Android/TWA behavior.
 ## Release flow (where your snippet goes)
 
 1. User-facing PRs carry bilingual snippets in the **PR body** (source of
-   truth). Do NOT edit `CHANGELOG.md` in feature/fix PRs.
+   truth). Do NOT edit `CHANGELOG.md` in feature/fix PRs. Keep the body in
+   sync: when follow-up commits change the user-visible scope, update the
+   snippet (and re-run the release-notes check) before requesting review.
 2. At release time a maintainer runs **Actions → Prepare Release**
    (`.github/workflows/prepare-release.yml`, input `vX.Y.Z`) — this is the
    normal path, not a local script run. It collects PRs merged since the
@@ -104,3 +106,13 @@ approve pull requests** must be ON, otherwise PR creation fails with a 403
 - `node scripts/prepare-changelog.mjs --version vX.Y.Z --dry-run` — preview the next section.
 - `node scripts/extract-changelog-section.mjs vX.Y.Z` — print one released section.
 - `pnpm changelog:check | changelog:prepare | changelog:extract` — same via package scripts.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

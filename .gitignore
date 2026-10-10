@@ -45,7 +45,11 @@ android/app/build/
 android/app/release/
 
 # Local promo/store scratch (curated finals live under assets/)
-brag-output*/
+# brag launch-video output (local only, regenerated per run)
+brag-output/
+brag-output-*/
+# Store listing images (local only, uploaded via store consoles)
+store-assets/
 store-assets-*/
 dist/
 *.apk

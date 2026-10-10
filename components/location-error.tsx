@@ -55,20 +55,20 @@ export function LocationErrorActions({
             <button
               type="button"
               onClick={openAndroidLocationSettings}
-              className="flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:text-sm"
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:text-sm"
             >
-              <MapPin aria-hidden="true" className="size-3.5" />
-              {t.turnOnLocation}
+              <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+              <span className="leading-none">{t.turnOnLocation}</span>
             </button>
           )}
           {showRetry && (
             <button
               type="button"
               onClick={onRetry}
-              className="flex items-center gap-1.5 rounded-lg border border-destructive/40 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-destructive/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:text-sm"
+              className="flex items-center justify-center gap-1.5 rounded-lg border border-destructive/40 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-destructive/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:text-sm"
             >
-              <RotateCcw aria-hidden="true" className="size-3.5" />
-              {t.retry}
+              <RotateCcw aria-hidden="true" className="size-3.5 shrink-0" />
+              <span className="leading-none">{t.retry}</span>
             </button>
           )}
         </div>

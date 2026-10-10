@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <>
       <AppSkipLink />
       <AppNav />
-      <main id="main-content" className="relative min-h-0 flex-1 flex flex-col overflow-hidden pb-[60px] pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">
+      <main id="main-content" tabIndex={-1} className="relative min-h-0 flex-1 flex flex-col overflow-hidden pb-[60px] pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">
         {children}
       </main>
     </>
