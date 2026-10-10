@@ -69,6 +69,65 @@ test.describe("landing page", () => {
   });
 });
 
+test.describe("landing a11y improvements", () => {
+  test("unrevealed Reveal is inert and blocks focus until revealed", async ({
+    page,
+  }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#hero h1")).toBeVisible({ timeout: 15_000 });
+
+    // First Reveal in #install is below the fold on load: still hidden.
+    const reveal = page.locator("#install div.transition-all").first();
+    await expect(reveal).toHaveAttribute("inert", "");
+    const cta = page.locator('#install a[href="/route"]');
+    await expect(cta).toBeAttached();
+
+    // Direct focus must not land inside inert content.
+    const activeBefore = await page.evaluate(() => {
+      const el = document.querySelector(
+        '#install a[href="/route"]',
+      ) as HTMLElement | null;
+      el?.focus();
+      return document.activeElement?.tagName ?? "none";
+    });
+    expect(activeBefore).not.toBe("A");
+    await expect(cta).not.toBeFocused();
+
+    // Scrolling into view fires the observer, which removes inert.
+    await cta.scrollIntoViewIfNeeded();
+    await expect(reveal).not.toHaveAttribute("inert", "", { timeout: 10_000 });
+
+    // Now the same descendant can receive focus normally.
+    await cta.focus();
+    await expect(cta).toBeFocused();
+  });
+
+  test("disabled PWA install button is described by the visible hint", async ({
+    page,
+  }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#hero h1")).toBeVisible({ timeout: 15_000 });
+
+    // Default desktop run has no install prompt: native disabled button.
+    const button = page.getByRole("button", {
+      name: /نصب وب‌اپ|Install web app/,
+    });
+    await expect(button).toBeAttached();
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveAttribute(
+      "aria-describedby",
+      "pwa-install-hint",
+    );
+    await expect(button).not.toHaveAttribute("title", /./);
+
+    const hint = page.locator("#pwa-install-hint");
+    await expect(hint).toBeAttached();
+    await hint.scrollIntoViewIfNeeded();
+    await expect(hint).toBeVisible({ timeout: 10_000 });
+    await expect(hint).toContainText(/.+/, { timeout: 10_000 });
+  });
+});
+
 test.describe("old-link redirects", () => {
   test("/welcome redirects to /", async ({ page }) => {
     await page.goto("/welcome", { waitUntil: "domcontentloaded" });

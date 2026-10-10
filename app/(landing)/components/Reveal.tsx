@@ -40,6 +40,7 @@ export function Reveal({
   return (
     <div
       ref={ref}
+      inert={!shown}
       className={cn(
         "transition-all duration-700 ease-out",
         shown ? "translate-y-0 opacity-100" : "translate-y-[18px] opacity-0",
