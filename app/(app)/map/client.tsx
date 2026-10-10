@@ -275,10 +275,11 @@ export function MapPage() {
       </div>
 
       {/* Map mode toggle */}
-      <div className="absolute top-3 left-3 z-[500] flex overflow-hidden rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur">
+      <div className="absolute top-3 left-3 z-[500] flex overflow-hidden rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur" role="group" aria-label={t.mapMode}>
         <button
           type="button"
           onClick={() => setMapMode("satellite")}
+          aria-pressed={mapMode === "satellite"}
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors",
             mapMode === "satellite"
@@ -292,6 +293,7 @@ export function MapPage() {
         <button
           type="button"
           onClick={() => setMapMode("minimalist")}
+          aria-pressed={mapMode === "minimalist"}
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors",
             mapMode === "minimalist"

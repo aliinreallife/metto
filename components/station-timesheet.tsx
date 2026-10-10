@@ -117,6 +117,7 @@ export function StationTimesheet({
             key={dt}
             type="button"
             onClick={() => setDayType(dt)}
+            aria-pressed={dayType === dt}
             className={cn(
               "rounded-full px-3 py-1 text-xs font-medium transition-colors",
               dayType === dt
@@ -135,6 +136,7 @@ export function StationTimesheet({
           <button
             type="button"
             onClick={() => setSelectedDirection(null)}
+            aria-pressed={selectedDirection === null}
             className={cn(
               "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
               selectedDirection === null
@@ -149,6 +151,7 @@ export function StationTimesheet({
               key={dirId}
               type="button"
               onClick={() => setSelectedDirection(dirId)}
+              aria-pressed={selectedDirection === dirId}
               className={cn(
                 "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors whitespace-nowrap",
                 selectedDirection === dirId
@@ -195,6 +198,7 @@ export function StationTimesheet({
                   expandedLine === lineData.line ? null : lineData.line,
                 )
               }
+              aria-expanded={expandedLine === lineData.line}
               className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-muted/50"
             >
               <span

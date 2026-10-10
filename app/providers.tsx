@@ -138,6 +138,13 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     }, delay);
   }
 
+  // Keep <html lang/dir> in sync with app language on every app route.
+  // This is the shared boundary, so /stations, /nearby, and /map get it
+  // for free (previously only /route and the landing page synced it).
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "fa" ? "rtl" : "ltr";
+  }, [lang]);
   // Persist route + place selections so they stick across reloads.
   useEffect(() => {
     if (originId) localStorage.setItem("route.from", originId);

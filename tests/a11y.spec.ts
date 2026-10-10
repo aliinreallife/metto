@@ -258,3 +258,147 @@ test.describe("route search keyboard flow", () => {
     await expect(liveStatuses.first()).toBeAttached({ timeout: 30_000 });
   });
 });
+
+test.describe("a11y quick wins", () => {
+  test("/stations search has an accessible name and filter chips toggle pressed state", async ({
+    page,
+  }) => {
+    await page.goto("/stations", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1500);
+
+    // Search input exposes its localized name (not placeholder-only).
+    const search = page.getByRole("textbox", { name: /جستجوی ایستگاه/ });
+    await expect(search).toBeVisible();
+
+    // "All" chip starts pressed; picking a line flips pressed state.
+    const allChip = page.getByRole("button", { name: "همه", exact: true });
+    await expect(allChip).toHaveAttribute("aria-pressed", "true");
+
+    const lineChip = page.getByRole("button", { name: /خط ۱/ }).first();
+    await expect(lineChip).toHaveAttribute("aria-pressed", "false");
+    await lineChip.click();
+    await expect(lineChip).toHaveAttribute("aria-pressed", "true");
+    await expect(allChip).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("/stations timetable day selector exposes pressed state", async ({
+    page,
+  }) => {
+    await page.goto("/stations", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1500);
+
+    // Open the first station's timetable sheet.
+    await page.getByRole("button", { name: /برنامه|Timetable/ }).first().click();
+
+    const satWed = page.getByRole("button", { name: /شنبه تا چهارشنبه|Sat/ });
+    const thursday = page.getByRole("button", { name: /پنجشنبه|Thursday/ });
+    await expect(satWed.first()).toHaveAttribute("aria-pressed");
+    await thursday.first().click();
+    await expect(thursday.first()).toHaveAttribute("aria-pressed", "true");
+    await expect(satWed.first()).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("/nearby amenity chips expose pressed state once located", async ({
+    page,
+  }) => {
+    await page.goto("/nearby", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1500);
+
+    // Pick a station as the location so the amenity filter renders.
+    const trigger = page.locator('button[aria-haspopup="listbox"]').first();
+    await trigger.click();
+    const searchInput = page.locator('input[role="combobox"]');
+    await expect(searchInput).toBeFocused();
+    await searchInput.fill("تجریش");
+    const listboxId = await searchInput.getAttribute("aria-controls");
+    const firstOption = page.locator(`#${listboxId}`).getByRole("option").first();
+    await expect(firstOption).toBeVisible({ timeout: 10_000 });
+    await firstOption.click();
+
+    const nearestChip = page
+      .getByRole("button", { name: /نزدیک‌ترین ایستگاه‌ها|Nearest stations/ })
+      .first();
+    await expect(nearestChip).toHaveAttribute("aria-pressed", "true");
+
+    const wcChip = page
+      .getByRole("button", { name: /سرویس بهداشتی|Restroom/ })
+      .first();
+    await expect(wcChip).toHaveAttribute("aria-pressed", "false");
+    await wcChip.click();
+    await expect(wcChip).toHaveAttribute("aria-pressed", "true");
+    await expect(nearestChip).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("/map mode toggle exposes pressed state and toggles", async ({
+    page,
+  }) => {
+    await page.goto("/map", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(4000);
+
+    const satellite = page.getByRole("button", { name: /ماهواره‌ای|Satellite/ });
+    const minimalist = page.getByRole("button", { name: /مینیمال|Minimalist/ });
+    await expect(minimalist).toHaveAttribute("aria-pressed", "true");
+    await expect(satellite).toHaveAttribute("aria-pressed", "false");
+
+    await satellite.click();
+    await expect(satellite).toHaveAttribute("aria-pressed", "true");
+    await expect(minimalist).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("app routes expose a skip link targeting the main content", async ({
+    page,
+  }) => {
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1500);
+
+    const skip = page.getByRole("link", { name: /رفتن به محتوا|Skip to content/ });
+    await expect(skip).toHaveAttribute("href", "#main-content");
+    await expect(page.locator("main#main-content")).toHaveCount(1);
+
+    // Keyboard users can reach it: focusing reveals it without layout change.
+    await skip.focus();
+    await expect(skip).toBeFocused();
+    await skip.click();
+    await expect(page.locator("main#main-content")).toBeVisible();
+    await expect(page).toHaveURL(/#main-content/);
+  });
+
+  for (const route of ["/stations", "/nearby", "/map"] as const) {
+    test(`${route} syncs <html> lang/dir when switching FA/EN`, async ({
+      page,
+    }) => {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(route === "/map" ? 4000 : 1500);
+
+      // Default visit is Persian RTL.
+      await expect.poll(async () =>
+        page.evaluate(() => document.documentElement.lang),
+      ).toBe("fa");
+      await expect.poll(async () =>
+        page.evaluate(() => document.documentElement.dir),
+      ).toBe("rtl");
+
+      const langToggle = page.getByRole("button", {
+        name: /تغییر زبان|Toggle language/,
+      });
+      await langToggle.click();
+      await expect.poll(async () =>
+        page.evaluate(() => document.documentElement.lang),
+      ).toBe("en");
+      await expect.poll(async () =>
+        page.evaluate(() => document.documentElement.dir),
+      ).toBe("ltr");
+
+      // And back to Persian.
+      await page
+        .getByRole("button", { name: /تغییر زبان|Toggle language/ })
+        .click();
+      await expect.poll(async () =>
+        page.evaluate(() => document.documentElement.lang),
+      ).toBe("fa");
+      await expect.poll(async () =>
+        page.evaluate(() => document.documentElement.dir),
+      ).toBe("rtl");
+    });
+  }
+});
