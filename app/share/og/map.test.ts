@@ -2,6 +2,7 @@
 // (the card gives the map its own panel — nothing may escape into the text
 // section), pins clamp inside, invalid input never throws.
 import { describe, expect, it } from "vitest";
+import { computeRouteTopology } from "@/lib/route";
 import {
   buildShareMap,
   OG_HEIGHT,
@@ -69,6 +70,63 @@ describe("buildShareMap viewports", () => {
       expect(p.y).toBeGreaterThanOrEqual(0);
       expect(p.y).toBeLessThanOrEqual(OG_PANEL.h);
     }
+  });
+
+  it("declutters dots on long journeys to interchanges + endpoints", () => {
+    const topo = computeRouteTopology("abdol-abad", "iran-khodro");
+    expect(topo).not.toBeNull();
+    // Multi-line, many stops: proves the policy branch is exercised.
+    expect(topo!.path.length).toBeGreaterThan(8);
+    const m = buildShareMap("abdol-abad", "iran-khodro", {
+      viewport: OG_PANEL,
+    });
+    expect(m).not.toBeNull();
+    const interchanges = m!.interchangeIds.length;
+    expect(interchanges).toBeGreaterThan(0);
+    // Dots = interchange markers (2 each) + endpoints (2 each) — far
+    // fewer than one pearl per path station (no necklace).
+    expect(m!.dots.length).toBe(2 * interchanges + 2 * 2);
+    expect(m!.dots.length).toBeLessThan(2 * topo!.path.length);
+  });
+
+  it("keeps every stop dot on short journeys", () => {
+    const topo = computeRouteTopology("tajrish", "shahid-hemmat");
+    expect(topo).not.toBeNull();
+    expect(topo!.path.length).toBeLessThanOrEqual(8 + 2);
+    const m = buildShareMap("tajrish", "shahid-hemmat", {
+      viewport: OG_PANEL,
+    });
+    expect(m).not.toBeNull();
+    // Full necklace: one dot per non-endpoint path station (two at
+    // interchanges) plus the two endpoint markers.
+    const midIds = [...new Set(topo!.path.slice(1, -1))];
+    const expected =
+      midIds.reduce(
+        (a, id) => a + (m!.interchangeIds.includes(id) ? 2 : 1),
+        0,
+      ) + 2 * 2;
+    expect(m!.dots.length).toBe(expected);
+    expect(expected).toBeGreaterThan(2 * 2);
+  });
+
+  it("exposes legs, counts and interchange ids for the card", () => {
+    const m = buildShareMap("abdol-abad", "iran-khodro", {
+      viewport: OG_PANEL,
+    });
+    expect(m).not.toBeNull();
+    expect(m!.legs.length).toBeGreaterThan(0);
+    for (const leg of m!.legs) {
+      expect(leg.color).toMatch(/^#/);
+      expect(leg.label.length).toBeGreaterThan(0);
+      expect(leg.stops).toBeGreaterThan(0);
+    }
+    expect(m!.numStops).toBeGreaterThan(0);
+    expect(m!.numTransfers).toBeGreaterThanOrEqual(0);
+    // One interchange per segment boundary; legs merge same-line
+    // neighbours, so boundaries >= legs - 1.
+    expect(m!.interchangeIds.length).toBeGreaterThanOrEqual(
+      m!.legs.length - 1,
+    );
   });
 
   it("clamps far-away pins inside the panel instead of cropping", () => {

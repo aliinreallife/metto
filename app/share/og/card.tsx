@@ -16,7 +16,9 @@
 // placement never depends on Satori's direction handling.
 
 import type { CSSProperties, ReactNode } from "react";
-import { OG_PANEL, type ShareMapModel } from "./map";
+import { lineOnColor } from "@/lib/metro/lines";
+import { persianDigits } from "@/lib/i18n";
+import { OG_PANEL, type ShareLineLeg, type ShareMapModel } from "./map";
 
 const BRAND_RED = "#cc0e2d";
 const TEXT_COL_W = 520;
@@ -43,6 +45,140 @@ function RtlRow({
     >
       {children}
     </div>
+  );
+}
+
+// Schematic strip: origin dot — line-colored legs (width ∝ stops ridden)
+// — interchange dots — destination dot. Travel order reads right-to-left,
+// mirroring the names above. Widths are computed in JS against the known
+// column width (no flex-grow reliance — Satori-safe fixed boxes).
+function LineStrip({ legs, width }: { legs: ShareLineLeg[]; width: number }) {
+  if (legs.length === 0) return null;
+  const total = legs.reduce((a, l) => a + Math.max(l.stops, 1), 0);
+  const dotsSpace = 2 * 14 + Math.max(legs.length - 1, 0) * 10;
+  const avail = Math.max(width - dotsSpace, legs.length * 24);
+  let widths = legs.map((l) =>
+    Math.max(24, (avail * Math.max(l.stops, 1)) / total),
+  );
+  const sum = widths.reduce((a, w) => a + w, 0);
+  if (sum > avail) {
+    widths = widths.map((w) => Math.max(12, (w * avail) / sum));
+  }
+  const barH = 6;
+  const children: ReactNode[] = [
+    <div
+      key="o"
+      style={{
+        width: "14px",
+        height: "14px",
+        borderRadius: "50%",
+        background: BRAND_RED,
+        flexShrink: 0,
+      }}
+    />,
+  ];
+  legs.forEach((leg, i) => {
+    children.push(
+      <div
+        key={`b${i}`}
+        style={{
+          width: `${Math.round(widths[i])}px`,
+          height: `${barH}px`,
+          borderRadius: `${barH / 2}px`,
+          background: leg.color,
+          flexShrink: 0,
+        }}
+      />,
+    );
+    if (i < legs.length - 1) {
+      children.push(
+        <div
+          key={`x${i}`}
+          style={{
+            width: "10px",
+            height: "10px",
+            borderRadius: "50%",
+            background: "#e4e4e7",
+            flexShrink: 0,
+          }}
+        />,
+      );
+    }
+  });
+  children.push(
+    <div
+      key="d"
+      style={{
+        width: "14px",
+        height: "14px",
+        borderRadius: "50%",
+        background: BRAND_RED,
+        flexShrink: 0,
+      }}
+    />,
+  );
+  return <RtlRow>{children}</RtlRow>;
+}
+
+// Line chips in travel order (deduped): colored pills with audited
+// foreground contrast (lineOnColor). Labels come from the model (LINES
+// names, FA-only v1).
+function LineChips({ legs }: { legs: ShareLineLeg[] }) {
+  const seen = new Set<number>();
+  const unique = legs.filter((l) => {
+    if (seen.has(l.line)) return false;
+    seen.add(l.line);
+    return true;
+  });
+  if (unique.length === 0) return null;
+  return (
+    <RtlRow gap={10}>
+      {unique.map((l) => (
+        <div
+          key={l.line}
+          style={{
+            background: l.color,
+            color: lineOnColor(l.line),
+            borderRadius: "12px",
+            padding: "8px 16px",
+            fontSize: 26,
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
+          {l.label}
+        </div>
+      ))}
+    </RtlRow>
+  );
+}
+
+// Trip meta: boardable-stop and physical-transfer counts from the static
+// topology (never times or ETAs). Zero transfers reads as "بدون تعویض".
+function TripMeta({
+  numStops,
+  numTransfers,
+}: {
+  numStops: number;
+  numTransfers: number;
+}) {
+  const words: string[] = [
+    ...`${persianDigits(numStops, "fa")} ایستگاه`.split(" "),
+    "•",
+    ...(numTransfers === 0
+      ? ["بدون", "تعویض"]
+      : `${persianDigits(numTransfers, "fa")} تعویض`.split(" ")),
+  ];
+  return (
+    // Wide gaps: at card scale a tight "• ۱" merges into a "۱۰" lookalike.
+    <RtlRow gap={18}>
+      {words.map((w, i) => (
+        <div key={i} style={{ fontSize: 28, color: "#a1a1aa" }}>
+          {w}
+        </div>
+      ))}
+    </RtlRow>
   );
 }
 
@@ -254,7 +390,7 @@ export function renderShareCard(
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "24px",
+            gap: "18px",
           }}
         >
           {/* Names split into word nodes: a multi-word name in ONE text node
@@ -374,6 +510,19 @@ export function renderShareCard(
               }}
             />
           </RtlRow>
+          {/* Journey substance: schematic strip, line chips, stop/transfer
+              counts — all static topology from the map model. Skipped when
+              unroutable (legs empty): the card falls back to names + time. */}
+          {map && map.legs.length > 0 && (
+            <LineStrip legs={map.legs} width={TEXT_COL_W} />
+          )}
+          {map && map.legs.length > 0 && <LineChips legs={map.legs} />}
+          {map && map.legs.length > 0 && (
+            <TripMeta
+              numStops={map.numStops}
+              numTransfers={map.numTransfers}
+            />
+          )}
           {timePhrase !== "" && (
             <RtlRow
               gap={14}

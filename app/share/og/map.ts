@@ -8,7 +8,7 @@
 // Dijkstra path (computeRouteTopology), which never sees a clock.
 // Any failure -> null -> text-only card (the image endpoint never 500s).
 
-import { LINE_COLORS } from "@/lib/metro/lines";
+import { LINE_COLORS, LINES } from "@/lib/metro/lines";
 import {
   buildMapEdges,
   getAllStations,
@@ -53,6 +53,22 @@ export interface ShareMapModel {
   pins: MapDotView[];
   /** Walk connectors from each pin to its endpoint station. */
   connectors: MapEdgeView[];
+  /** Ride legs in travel order (consecutive same-line segments merged). */
+  legs: ShareLineLeg[];
+  /** Boardable stops / physical line changes (0 when unroutable). */
+  numStops: number;
+  numTransfers: number;
+  /** Segment-boundary stations worth marking on the map. */
+  interchangeIds: string[];
+}
+
+/** One colored leg of the schematic strip + line chips. */
+export interface ShareLineLeg {
+  line: number;
+  label: string;
+  color: string;
+  /** Stations ridden on this leg (edges, for proportional strip widths). */
+  stops: number;
 }
 
 /** Minimal pin coordinate surface (matches SharePin minus the label). */
@@ -157,8 +173,17 @@ export function buildShareMap(
     // highlight set simply renders the dim network alone).
     const pathKeys = new Set<string>();
     const pathStations: string[] = [];
+    // Segment boundaries (interchanges) in travel order, excluding the
+    // destination. Consecutive same-line legs merge for the strip.
+    const interchangeIds: string[] = [];
+    const legs: ShareLineLeg[] = [];
+    let numStops = 0;
+    let numTransfers = 0;
     if (topo) {
-      for (const seg of topo.segments) {
+      numStops = topo.numStops;
+      numTransfers = topo.numTransfers;
+      for (let si = 0; si < topo.segments.length; si++) {
+        const seg = topo.segments[si];
         for (let i = 0; i < seg.stations.length; i++) {
           const sid = seg.stations[i];
           if (pathStations[pathStations.length - 1] !== sid) {
@@ -167,6 +192,19 @@ export function buildShareMap(
           if (i + 1 < seg.stations.length) {
             pathKeys.add(edgeKey(sid, seg.stations[i + 1]));
           }
+        }
+        if (si < topo.segments.length - 1) {
+          interchangeIds.push(seg.stations[seg.stations.length - 1]);
+        }
+        const color = LINE_COLORS[seg.line] ?? "#E0001F";
+        const label =
+          LINES.find((l) => l.id === seg.line)?.name.fa ?? `خط ${seg.line}`;
+        const stops = Math.max(seg.stations.length - 1, 1);
+        const last = legs[legs.length - 1];
+        if (last && last.line === seg.line) {
+          last.stops += stops;
+        } else {
+          legs.push({ line: seg.line, label, color, stops });
         }
       }
     }
@@ -199,20 +237,33 @@ export function buildShareMap(
     }
     if (edges.length === 0) return null;
 
+    // Stop dots, decluttered: a pearl on EVERY stop looks noisy on long
+    // journeys, so intermediate dots appear only at interchanges — except
+    // on short rides (<= 8 path stations) where the full necklace reads
+    // well. Endpoints always get their red markers (drawn after, covering
+    // any grey dot beneath on looping routes).
     const dots: MapDotView[] = [];
     const seen = new Set<string>();
+    const interchangeSet = new Set<string>(interchangeIds);
+    const showAllStops = pathStations.length <= 8;
+    // Endpoints get red markers below (drawn after, so they would cover
+    // grey dots anyway) — skip them here to keep counts exact.
+    const first = pathStations[0];
+    const last = pathStations[pathStations.length - 1];
     for (const sid of pathStations) {
       if (seen.has(sid)) continue;
       seen.add(sid);
+      if (sid === first || sid === last) continue;
       const st = getStation(sid);
       if (!st) continue;
-      dots.push({
-        x: X(st.location.lng),
-        y: Y(st.location.lat),
-        r: 6,
-        fill: "#e4e4e7",
-        glow: null,
-      });
+      const x = X(st.location.lng);
+      const y = Y(st.location.lat);
+      if (interchangeSet.has(sid)) {
+        dots.push({ x, y, r: 7, fill: "#e4e4e7", glow: null });
+        dots.push({ x, y, r: 2.5, fill: "#ffffff", glow: null });
+      } else if (showAllStops) {
+        dots.push({ x, y, r: 5, fill: "#e4e4e7", glow: null });
+      }
     }
     for (const sid of [fromId, toId]) {
       const st = getStation(sid);
@@ -271,7 +322,16 @@ export function buildShareMap(
       });
       pins.push({ x: px, y: py, r: 3.5, fill: "#ffffff", glow: null });
     }
-    return { edges, dots, pins, connectors };
+    return {
+      edges,
+      dots,
+      pins,
+      connectors,
+      legs,
+      numStops,
+      numTransfers,
+      interchangeIds,
+    };
   } catch {
     return null;
   }
