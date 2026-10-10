@@ -1,11 +1,12 @@
+import path from "node:path";
 import { defineConfig } from "vitest/config";
-
-// Mirrors tsconfig.json "@/*" paths (tests run from the repo root).
-const root = process.cwd().replace(/\\/g, "/");
 
 export default defineConfig({
   resolve: {
-    alias: [{ find: /^@\//, replacement: `${root}/` }],
+    // Mirror tsconfig "@/*" so route-handler tests can import "@/lib/…".
+    alias: {
+      "@": path.resolve(__dirname, "."),
+    },
   },
   test: {
     // Playwright E2E lives in tests/ and needs a real browser + prod server.
