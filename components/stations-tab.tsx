@@ -83,6 +83,7 @@ export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t.searchStations}
+          aria-label={t.searchStations}
           className="ios-no-zoom-input w-full rounded-xl border border-border bg-card py-3 ps-9 pe-3 text-sm outline-none ring-primary/30 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         />
       </div>
@@ -192,6 +193,7 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
         active

@@ -410,6 +410,24 @@
   max-width: none !important;
 }
 
+/* Respect users who prefer reduced motion: stop decorative infinite
+   animations (ticker, train rail, pulses, drift) and smooth scrolling.
+   Useful non-motion state transitions (colors, opacity on interaction)
+   are left alone. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .ticker-track,
+  .run-rail,
+  .run-rail-v,
+  .soft-pulse,
+  .heart-beat,
+  .drift-y {
+    animation: none;
+  }
+}
+
 /* Prevent iOS Safari/WebKit auto-zoom on focus (<16px inputs).
    -webkit-touch-callout = iOS WebKit only (Safari, iOS Chrome, iOS PWA).
    any-pointer:coarse keeps the fix on iPads with mouse/trackpad attached. */

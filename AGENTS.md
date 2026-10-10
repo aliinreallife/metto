@@ -18,6 +18,16 @@ the `release notes (FA/EN)` CI check (`scripts/check-release-notes.mjs`).
   artifacts and publishes the GitHub Release.
 - Before submitting: `pnpm lint`, `pnpm typecheck`, `pnpm test`.
 
+## Accessibility
+
+- Whenever you add or change anything users see or operate, apply the
+  checklist in `docs/ACCESSIBILITY.md` (accessible name, keyboard,
+  focus-visible, semantics, `aria-pressed`/`expanded`/`selected` only where
+  true, live regions, FA/EN `lang`/`dir`, RTL-safe CSS, `prefers-reduced-motion`).
+- Reuse `lib/i18n.ts` strings in both languages; mirror the
+  `components/station-combobox.tsx` pattern for new pickers.
+- Do not add lint plugins or change axe thresholds in feature PRs.
+
 ## Bilingual changelog contract (required)
 
 Every PR must answer one question:
