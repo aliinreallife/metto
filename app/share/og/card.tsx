@@ -16,7 +16,6 @@
 // placement never depends on Satori's direction handling.
 
 import type { CSSProperties, ReactNode } from "react";
-import { lineOnColor } from "@/lib/metro/lines";
 import { persianDigits } from "@/lib/i18n";
 import { OG_PANEL, type ShareLineLeg, type ShareMapModel } from "./map";
 
@@ -48,109 +47,98 @@ function RtlRow({
   );
 }
 
-// Schematic strip: origin dot — line-colored legs (width ∝ stops ridden)
-// — interchange dots — destination dot. Travel order reads right-to-left,
-// mirroring the names above. Widths are computed in JS against the known
-// column width (no flex-grow reliance — Satori-safe fixed boxes).
+// Schematic strip: ONE continuous line — butt-jointed line-colored bars
+// (exact fill, rounding drift absorbed by the longest bar) with the origin,
+// interchange and destination dots overlaid on top. Dots in flow always
+// risk hairline gaps from flex packing/rounding, which reads as "not
+// connected". Travel order reads right-to-left, mirroring the names above.
 function LineStrip({ legs, width }: { legs: ShareLineLeg[]; width: number }) {
   if (legs.length === 0) return null;
   const total = legs.reduce((a, l) => a + Math.max(l.stops, 1), 0);
-  const dotsSpace = 2 * 14 + Math.max(legs.length - 1, 0) * 10;
-  const avail = Math.max(width - dotsSpace, legs.length * 24);
-  let widths = legs.map((l) =>
-    Math.max(24, (avail * Math.max(l.stops, 1)) / total),
-  );
-  const sum = widths.reduce((a, w) => a + w, 0);
-  if (sum > avail) {
-    widths = widths.map((w) => Math.max(12, (w * avail) / sum));
-  }
+  const raw = legs.map((l) => (width * Math.max(l.stops, 1)) / total);
+  const longest = raw.indexOf(Math.max(...raw));
+  const floored = raw.map((w) => Math.max(12, w));
+  const drift = width - floored.reduce((a, w) => a + w, 0);
+  floored[longest] = Math.max(12, floored[longest] + drift);
+  const widths = floored.map((w) => Math.max(0, Math.round(w)));
+  // Re-balance rounding drift onto the longest bar so bars butt-joint
+  // exactly with no hairline gaps.
+  widths[longest] += width - widths.reduce((a, w) => a + w, 0);
   const barH = 6;
-  const children: ReactNode[] = [
+  const stripH = 16;
+  const bars: ReactNode[] = legs.map((leg, i) => (
+    <div
+      key={`b${i}`}
+      style={{
+        width: `${widths[i]}px`,
+        height: `${barH}px`,
+        background: leg.color,
+        flexShrink: 0,
+      }}
+    />
+  ));
+  // Joint positions from the FINAL widths (right edge = travel origin).
+  const joints: number[] = [];
+  widths.slice(0, -1).reduce((cumRight, w) => {
+    const next = cumRight + w;
+    joints.push(width - next);
+    return next;
+  }, 0);
+  const dots: ReactNode[] = [
     <div
       key="o"
       style={{
+        position: "absolute",
+        left: `${width - 14}px`,
+        top: `${(stripH - 14) / 2}px`,
         width: "14px",
         height: "14px",
         borderRadius: "50%",
         background: BRAND_RED,
-        flexShrink: 0,
       }}
     />,
-  ];
-  legs.forEach((leg, i) => {
-    children.push(
+    ...joints.map((x, i) => (
       <div
-        key={`b${i}`}
+        key={`x${i}`}
         style={{
-          width: `${Math.round(widths[i])}px`,
-          height: `${barH}px`,
-          borderRadius: `${barH / 2}px`,
-          background: leg.color,
-          flexShrink: 0,
+          position: "absolute",
+          left: `${Math.round(x - 5)}px`,
+          top: `${(stripH - 10) / 2}px`,
+          width: "10px",
+          height: "10px",
+          borderRadius: "50%",
+          background: "#e4e4e7",
         }}
-      />,
-    );
-    if (i < legs.length - 1) {
-      children.push(
-        <div
-          key={`x${i}`}
-          style={{
-            width: "10px",
-            height: "10px",
-            borderRadius: "50%",
-            background: "#e4e4e7",
-            flexShrink: 0,
-          }}
-        />,
-      );
-    }
-  });
-  children.push(
+      />
+    )),
     <div
       key="d"
       style={{
+        position: "absolute",
+        left: "0px",
+        top: `${(stripH - 14) / 2}px`,
         width: "14px",
         height: "14px",
         borderRadius: "50%",
         background: BRAND_RED,
-        flexShrink: 0,
       }}
     />,
-  );
-  return <RtlRow>{children}</RtlRow>;
-}
-
-// Line chips in travel order (deduped): colored pills with audited
-// foreground contrast (lineOnColor). Labels come from the model (LINES
-// names, FA-only v1).
-function LineChips({ legs }: { legs: ShareLineLeg[] }) {
-  const seen = new Set<number>();
-  const unique = legs.filter((l) => {
-    if (seen.has(l.line)) return false;
-    seen.add(l.line);
-    return true;
-  });
-  if (unique.length === 0) return null;
+  ];
   return (
-    <RtlRow gap={10}>
-      {unique.map((l) => (
-        <div
-          key={l.line}
-          style={{
-            background: l.color,
-            color: lineOnColor(l.line),
-            borderRadius: "12px",
-            padding: "8px 16px",
-            fontSize: 26,
-            fontWeight: 700,
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
-          {l.label}
-        </div>
-      ))}
-    </RtlRow>
+    <div
+      style={{
+        width: `${width}px`,
+        height: `${stripH}px`,
+        position: "relative",
+        // Required by Satori for multi-child nodes.
+        display: "flex",
+      }}
+    >
+      <RtlRow style={{ width: `${width}px`, height: `${stripH}px` }}>
+        {bars}
+      </RtlRow>
+      {dots}
+    </div>
   );
 }
 
@@ -244,18 +232,12 @@ export function renderShareCard(
   timePhrase: string,
   map: ShareMapModel | null,
 ) {
-  // Text column is ~half the old full-bleed width: a single line only fits
-  // ~460px of type at ~0.6em average advance for Vazirmatn bold Persian.
-  // Short pairs stay commanding on one line; longer pairs stack origin over
-  // destination on two full-width lines (below ~40px a single line would
-  // look weak next to the time phrase). Adversarial lengths still hit the
-  // builder cap + ellipsis as a backstop.
-  const combined = originDisplay.length + destDisplay.length;
-  const singleSize = Math.min(
-    64,
-    Math.floor(450 / (0.68 * Math.max(combined, 1))),
-  );
-  const stacked = singleSize < 40;
+  // ONE consistent layout for every pair: origin (+ arrow, pointing at
+  // the line below) stacked over the destination, sized by the longest
+  // line. Single-line mode is gone — fitting two names beside the arrow
+  // needed per-pair size juggling that clipped ("شهر" lost its ر) and made
+  // long names look like a different card entirely. Adversarial lengths
+  // still hit the builder cap + ellipsis as a backstop.
   const maxLine = Math.max(originDisplay.length, destDisplay.length);
   const stackSize = maxLine <= 10 ? 56 : maxLine <= 16 ? 46 : 38;
   return (
@@ -395,110 +377,61 @@ export function renderShareCard(
         >
           {/* Names split into word nodes: a multi-word name in ONE text node
               lays out LTR internally ("عبدل آباد" would scan as "اباد عبدل").
-              Nested row-reverse sub-rows keep intra-name spacing tight while
-              the outer row separates origin / arrow / destination. Stacked
-              mode puts the full origin (+ arrow, pointing at the line below)
-              on line 1 and the destination on line 2. */}
-          {!stacked && (
+              Origin (+ arrow, pointing at the line below) on line 1,
+              destination on line 2 — the same arrangement for every pair. */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <RtlRow
-              gap={20}
+              gap={12}
               style={{
-                fontSize: singleSize,
+                fontSize: stackSize,
                 fontWeight: 700,
-                lineHeight: 1.25,
+                lineHeight: 1.3,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 maxWidth: "100%",
               }}
             >
-              <RtlRow gap={12} style={{ overflow: "hidden", minWidth: 0 }}>
-                {originDisplay.split(" ").map((w, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      minWidth: 0,
-                    }}
-                  >
-                    {w}
-                  </div>
-                ))}
-              </RtlRow>
-              <LeftArrow size={singleSize} />
-              <RtlRow gap={12} style={{ overflow: "hidden", minWidth: 0 }}>
-                {destDisplay.split(" ").map((w, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      minWidth: 0,
-                    }}
-                  >
-                    {w}
-                  </div>
-                ))}
-              </RtlRow>
+              {originDisplay.split(" ").map((w, i) => (
+                <div
+                  key={i}
+                  style={{
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    minWidth: 0,
+                  }}
+                >
+                  {w}
+                </div>
+              ))}
+              <LeftArrow size={stackSize} />
             </RtlRow>
-          )}
-          {stacked && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <RtlRow
-                gap={12}
-                style={{
-                  fontSize: stackSize,
-                  fontWeight: 700,
-                  lineHeight: 1.3,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  maxWidth: "100%",
-                }}
-              >
-                {originDisplay.split(" ").map((w, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      minWidth: 0,
-                    }}
-                  >
-                    {w}
-                  </div>
-                ))}
-                <LeftArrow size={stackSize} />
-              </RtlRow>
-              <RtlRow
-                gap={12}
-                style={{
-                  fontSize: stackSize,
-                  fontWeight: 700,
-                  lineHeight: 1.3,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  maxWidth: "100%",
-                }}
-              >
-                {destDisplay.split(" ").map((w, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      minWidth: 0,
-                    }}
-                  >
-                    {w}
-                  </div>
-                ))}
-              </RtlRow>
-            </div>
-          )}
+            <RtlRow
+              gap={12}
+              style={{
+                fontSize: stackSize,
+                fontWeight: 700,
+                lineHeight: 1.3,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                maxWidth: "100%",
+              }}
+            >
+              {destDisplay.split(" ").map((w, i) => (
+                <div
+                  key={i}
+                  style={{
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    minWidth: 0,
+                  }}
+                >
+                  {w}
+                </div>
+              ))}
+            </RtlRow>
+          </div>
           {/* Brand underline: anchors the route block to the RTL edge. */}
           <RtlRow>
             <div
@@ -510,13 +443,12 @@ export function renderShareCard(
               }}
             />
           </RtlRow>
-          {/* Journey substance: schematic strip, line chips, stop/transfer
-              counts — all static topology from the map model. Skipped when
+          {/* Journey substance: schematic strip plus stop/transfer counts —
+              all static topology from the map model. Skipped when
               unroutable (legs empty): the card falls back to names + time. */}
           {map && map.legs.length > 0 && (
             <LineStrip legs={map.legs} width={TEXT_COL_W} />
           )}
-          {map && map.legs.length > 0 && <LineChips legs={map.legs} />}
           {map && map.legs.length > 0 && (
             <TripMeta
               numStops={map.numStops}
@@ -524,17 +456,7 @@ export function renderShareCard(
             />
           )}
           {timePhrase !== "" && (
-            <RtlRow
-              gap={14}
-              style={{
-                background: "#2b0d14",
-                borderRadius: "16px",
-                padding: "10px 18px",
-                borderWidth: "2px",
-                borderStyle: "solid",
-                borderColor: "#661c2a",
-              }}
-            >
+            <RtlRow gap={14}>
               {timePhrase.split(" ").map((w, i) => (
                 <div
                   key={i}
@@ -551,7 +473,7 @@ export function renderShareCard(
             </RtlRow>
           )}
         </div>
-        <RtlRow gap={10}>
+        <RtlRow gap={6}>
           {"نقشه و مسیریابی مترو".split(" ").map((w, i) => (
             <div key={i} style={{ fontSize: 28, color: "#8e8e96" }}>
               {w}
