@@ -152,7 +152,7 @@ function ModeOption({
   return (
     <label
       className={cn(
-        "flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center text-[13px] font-semibold transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
+        "flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center text-[13px] font-semibold transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-background",
         checked
           ? "border-primary bg-primary/10 text-foreground"
           : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
