@@ -8,24 +8,24 @@
 // Dijkstra path (computeRouteTopology), which never sees a clock.
 // Any failure -> null -> text-only card (the image endpoint never 500s).
 
-import { LINE_COLORS, LINES } from "@/lib/metro/lines";
+import { LINE_COLORS } from "@/lib/metro/lines";
 import {
   buildMapEdges,
   getAllStations,
   getStation,
 } from "@/lib/metro/selectors";
 import { computeRouteTopology } from "@/lib/route";
+import { persianDigits } from "@/lib/i18n";
 
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
 
-// Dedicated map panel geometry inside the horizontal-split card (text column
-// is 520px, gap 48px, outer horizontal padding 60px each side, vertical
-// padding 48px: 60+512+48+520+60 = 1200 wide, 48+534+48 = 630 tall).
-// Single source of truth — card.tsx sizes its panel from these values and
-// passes them back as the projection viewport, so model coords always land
-// inside the visible panel.
-export const OG_PANEL = { w: 512, h: 534 };
+// Social-preview split: the map owns 720px of the 1200x630 canvas and runs
+// full-height; the remaining 480px belongs to the RTL route summary.
+// Single source of truth — card.tsx sizes its sections from these values
+// and passes the panel back as the projection viewport, so model coords
+// always land inside the visible map.
+export const OG_PANEL = { w: 720, h: 630 } as const;
 
 export interface MapEdgeView {
   cx: number;
@@ -63,6 +63,11 @@ export interface ShareMapModel {
   /** Seam dots welding highlight bars at plain vertices (leg-colored,
    *  invisible as dots — they read as rounded joints). */
   joints: MapDotView[];
+  /** Seam dots welding dim-network bars at multi-edge vertices (dim-colored,
+   *  rendered at dim opacity — they read as continuous track, never dots).
+   *  Stations already carrying a marker (endpoints, interchanges, highlight
+   *  joints) are excluded here. */
+  dimJoints: MapDotView[];
 }
 
 /** One colored leg of the schematic strip + line chips. */
@@ -80,8 +85,48 @@ export interface SharePinCoord {
   lng: number;
 }
 
-function edgeKey(a: string, b: string): string {
-  return a < b ? `${a}|${b}` : `${b}|${a}`;
+/** Line-aware edge identity: station pair + metro line. Shared/parallel
+ *  track across lines must never collide. Exported for unit testing. */
+export function edgeKey(a: string, b: string, line: number): string {
+  const pair = a < b ? `${a}|${b}` : `${b}|${a}`;
+  return `${pair}|${line}`;
+}
+
+/** Line-aware highlight check: a shared station pair must only light up on
+ *  the line actually ridden (parallel/shared track across lines). Pure so
+ *  the behavior is unit-testable with synthetic inputs. */
+export function isHotEdge(
+  a: string,
+  b: string,
+  line: number,
+  pathKeys: Set<string>,
+): boolean {
+  return pathKeys.has(edgeKey(a, b, line));
+}
+
+/** Viewport bleed for geometry culling (panel px). Culled nodes are never
+ *  visible — the panel clips — so they only cost Satori render time. */
+export const MAP_BLEED = 24;
+
+/** True when a segment lies completely outside the viewport (plus bleed).
+ *  A segment CROSSING the viewport is retained even when both endpoints sit
+ *  outside on opposite sides: only full containment outside culls. Pure for
+ *  unit testing. */
+export function isOutsideViewport(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  vw: number,
+  vh: number,
+  bleed: number = MAP_BLEED,
+): boolean {
+  return (
+    Math.max(x1, x2) < -bleed ||
+    Math.min(x1, x2) > vw + bleed ||
+    Math.max(y1, y2) < -bleed ||
+    Math.min(y1, y2) > vh + bleed
+  );
 }
 
 const PIN_COLOR = "#22d3ee";
@@ -147,18 +192,21 @@ export function buildShareMap(
       minLng = Math.min(minLng, s.location.lng);
       maxLng = Math.max(maxLng, s.location.lng);
     }
-    // Minimum span (adjacent stations must not zoom absurdly) + full-span
-    // margin: the journey sits centrally with network context around it,
-    // and endpoint markers never collide with the card chrome.
-    const MIN_SPAN = 0.09;
+    // Minimum span (adjacent stations must not zoom absurdly) + focus
+    // padding: the journey sits centrally with network context around it,
+    // and endpoint markers never collide with the card chrome. Padding is
+    // deliberately modest so short journeys still fill the panel (contain
+    // fit guarantees nothing ever crops).
+    const MIN_SPAN = 0.04;
+    const FOCUS_PADDING = 1.55;
     const spanLat = Math.max(maxLat - minLat, MIN_SPAN);
     const spanLng = Math.max(maxLng - minLng, MIN_SPAN);
     const cLat0 = (minLat + maxLat) / 2;
     const cLng0 = (minLng + maxLng) / 2;
-    minLat = cLat0 - (spanLat * 2.0) / 2;
-    maxLat = cLat0 + (spanLat * 2.0) / 2;
-    minLng = cLng0 - (spanLng * 2.0) / 2;
-    maxLng = cLng0 + (spanLng * 2.0) / 2;
+    minLat = cLat0 - (spanLat * FOCUS_PADDING) / 2;
+    maxLat = cLat0 + (spanLat * FOCUS_PADDING) / 2;
+    minLng = cLng0 - (spanLng * FOCUS_PADDING) / 2;
+    maxLng = cLng0 + (spanLng * FOCUS_PADDING) / 2;
     const kx = Math.cos((((minLat + maxLat) / 2) * Math.PI) / 180);
     const w = (maxLng - minLng) * kx;
     const h = maxLat - minLat;
@@ -197,15 +245,17 @@ export function buildShareMap(
             pathStations.push(sid);
           }
           if (i + 1 < seg.stations.length) {
-            pathKeys.add(edgeKey(sid, seg.stations[i + 1]));
+            pathKeys.add(edgeKey(sid, seg.stations[i + 1], seg.line));
             legColorByStation.set(sid, color);
           }
         }
         if (si < topo.segments.length - 1) {
           interchangeIds.push(seg.stations[seg.stations.length - 1]);
         }
-        const label =
-          LINES.find((l) => l.id === seg.line)?.name.fa ?? `خط ${seg.line}`;
+        // Line legend label in digit-first order ("۱ خط"), built from the
+        // line number via Persian digits — never from LINES display names
+        // (which use "خط ۱" order).
+        const label = `${persianDigits(seg.line, "fa")} خط`;
         const stops = Math.max(seg.stations.length - 1, 1);
         const last = legs[legs.length - 1];
         if (last && last.line === seg.line) {
@@ -217,6 +267,9 @@ export function buildShareMap(
     }
 
     const edges: MapEdgeView[] = [];
+    // Incident drawn-edge counts per station: drives the dim-network welds
+    // below (a lone terminus needs no weld — its round cap is the ending).
+    const incident = new Map<string, number>();
     for (const e of buildMapEdges()) {
       const a = getStation(e.a);
       const b = getStation(e.b);
@@ -227,19 +280,32 @@ export function buildShareMap(
       const y2 = Y(b.location.lat);
       const dx = x2 - x1;
       const dy = y2 - y1;
+      // Cull fully offscreen geometry before it costs Satori nodes: the
+      // panel would clip it anyway. Crossing segments stay (both endpoints
+      // outside on opposite sides still paints across the panel).
+      if (isOutsideViewport(x1, y1, x2, y2, vw, vh)) continue;
       const len = Math.hypot(dx, dy);
       if (!(len > 1)) continue;
-      const hot = pathKeys.has(edgeKey(e.a, e.b));
-      const color = hot ? (LINE_COLORS[e.line] ?? "#E0001F") : "#46464e";
+      const hot = isHotEdge(e.a, e.b, e.line, pathKeys);
+      const color = hot ? (LINE_COLORS[e.line] ?? "#E0001F") : "#3b3d46";
+      // Flat transit-schematic styling: the journey dominates by width and
+      // color alone (no glow — box-shadow blur is the dominant render cost).
+      // Dim track stays quiet context at low opacity.
+      const thick = hot ? 6 : 2;
+      incident.set(e.a, (incident.get(e.a) ?? 0) + 1);
+      incident.set(e.b, (incident.get(e.b) ?? 0) + 1);
       edges.push({
         cx: (x1 + x2) / 2,
         cy: (y1 + y2) / 2,
-        len,
+        // Overlap extension: each bar runs thick/2 past its vertices, so
+        // independently-rotated neighbours overlap instead of meeting
+        // tip-to-tip (the weld dots below then round off the outer wedge).
+        len: len + thick,
         deg: (Math.atan2(dy, dx) * 180) / Math.PI,
-        thick: hot ? 5 : 2.5,
+        thick,
         color,
-        opacity: hot ? 0.95 : 0.65,
-        glow: hot ? `0 0 10px ${color}` : null,
+        opacity: hot ? 1 : 0.35,
+        glow: null,
       });
     }
     if (edges.length === 0) return null;
@@ -247,8 +313,9 @@ export function buildShareMap(
     // Stop dots, decluttered: a pearl on EVERY stop looks noisy on long
     // journeys, so intermediate dots appear only at interchanges — except
     // on short rides (<= 8 path stations) where the full necklace reads
-    // well. Endpoints always get their red markers (drawn after, covering
-    // any grey dot beneath on looping routes).
+    // well. Endpoints get flat minimal markers (no glow): a red dot with a
+    // small white core, drawn after so they cover any dot beneath on
+    // looping routes.
     const dots: MapDotView[] = [];
     const seen = new Set<string>();
     const interchangeSet = new Set<string>(interchangeIds);
@@ -266,10 +333,10 @@ export function buildShareMap(
       const x = X(st.location.lng);
       const y = Y(st.location.lat);
       if (interchangeSet.has(sid)) {
-        dots.push({ x, y, r: 7, fill: "#e4e4e7", glow: null });
-        dots.push({ x, y, r: 2.5, fill: "#ffffff", glow: null });
+        dots.push({ x, y, r: 8, fill: "#e4e4e7", glow: null });
+        dots.push({ x, y, r: 3, fill: "#ffffff", glow: null });
       } else if (showAllStops) {
-        dots.push({ x, y, r: 5, fill: "#e4e4e7", glow: null });
+        dots.push({ x, y, r: 3, fill: "#f4f4f5", glow: null });
       }
     }
     for (const sid of [fromId, toId]) {
@@ -277,16 +344,19 @@ export function buildShareMap(
       if (!st) continue;
       const x = X(st.location.lng);
       const y = Y(st.location.lat);
-      dots.push({ x, y, r: 11, fill: "#E0001F", glow: "0 0 16px #E0001F" });
-      dots.push({ x, y, r: 4.5, fill: "#ffffff", glow: null });
+      dots.push({ x, y, r: 8, fill: "#E0001F", glow: null });
+      dots.push({ x, y, r: 3, fill: "#ffffff", glow: null });
     }
 
     // Seam welds: one leg-colored dot on every plain path vertex, so
     // independently-rotated highlight bars read as one continuous line.
     // Same color as the surrounding bars (no core, no glow) — invisible
     // as dots, visible only as rounded joints. Interchanges and endpoints
-    // already carry their own markers and are skipped here.
+    // already carry their own markers and are skipped here. Radius 3.5
+    // against half-thick 3: just rounds the joint (±0.5px, no beading) —
+    // the edge overlap above closes the wedge, so welds stay glowless.
     const joints: MapDotView[] = [];
+    const jointIds = new Set<string>();
     {
       const seenJoint = new Set<string>();
       for (const sid of pathStations) {
@@ -309,6 +379,35 @@ export function buildShareMap(
           fill: color,
           glow: null,
         });
+        jointIds.add(sid);
+      }
+    }
+
+    // Dim-network welds: the background track has the same wedge-gap
+    // problem at every multi-edge vertex, and no markers there by design —
+    // unwelded it reads as disconnected dashes. One dim-colored dot per
+    // multi-edge vertex, sized to just fill the wedge (r 1.5 vs half-thick
+    // 1: ±0.5px, invisible as dots) — the overlap extension closes the
+    // rest. Rendered at dim opacity in the card, so welds never read
+    // brighter than the track. Marker stations (endpoints, interchanges,
+    // highlight joints) already cover their vertices.
+    const dimJoints: MapDotView[] = [];
+    {
+      const covered = new Set<string>();
+      if (first !== undefined) covered.add(first);
+      if (last !== undefined) covered.add(last);
+      for (const id of interchangeSet) covered.add(id);
+      for (const id of jointIds) covered.add(id);
+      for (const [sid, n] of incident) {
+        if (n < 2 || covered.has(sid)) continue;
+        const st = getStation(sid);
+        if (!st) continue;
+        const x = X(st.location.lng);
+        const y = Y(st.location.lat);
+        // Cull fully off-panel welds (the panel clips them, like dim
+        // edges): keeps Satori node count to what is actually visible.
+        if (x < -2 || x > vw + 2 || y < -2 || y > vh + 2) continue;
+        dimJoints.push({ x, y, r: 1.5, fill: "#3b3d46", glow: null });
       }
     }
 
@@ -354,11 +453,12 @@ export function buildShareMap(
       pins.push({
         x: px,
         y: py,
-        r: 9,
+        r: 8,
         fill: PIN_COLOR,
-        glow: `0 0 14px ${PIN_COLOR}`,
+        // Flat: no glow (render cost + the map is no longer neon).
+        glow: null,
       });
-      pins.push({ x: px, y: py, r: 3.5, fill: "#ffffff", glow: null });
+      pins.push({ x: px, y: py, r: 3, fill: "#ffffff", glow: null });
     }
     return {
       edges,
@@ -370,6 +470,7 @@ export function buildShareMap(
       numTransfers,
       interchangeIds,
       joints,
+      dimJoints,
     };
   } catch {
     return null;

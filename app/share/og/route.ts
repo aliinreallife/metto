@@ -9,13 +9,11 @@ import {
 import { renderShareCard } from "./card";
 import { buildShareMap, OG_PANEL } from "./map";
 
-// Dynamic OG card (1200x630) for valid share states. Level-1 content
-// (station names + selected time phrase) plus a Level-1.5 schematic minimap:
-// dim full network with the planned *path geometry* highlighted per line
-// color (approved exception — topology only, never times/ETAs/trains).
-// Invalid states never reach the renderer (metadata points them at
-// /socialprev.png directly); any failure here still falls back to the static
-// image with a redirect, never a crawler-facing 500.
+// Dynamic 1200x630 social preview for valid route-share states. The image is
+// deliberately glanceable: origin, destination, lines used, and a topology-only
+// minimap. Timing/stops/transfers remain in the share URL and inside Metto, not
+// in the crawler image. Invalid states redirect to the static fallback; any
+// render/model failure still never becomes a crawler-facing 500.
 
 export const alt = "مسیر مترو در متو";
 export const size = {
@@ -24,9 +22,8 @@ export const size = {
 };
 export const contentType = "image/png";
 
-// Every render depends on the query (stations, pins, planned time): never
-// statically optimize. Per-URL edge caching (Cache-Control below) still
-// applies — this only opts out of prerendering, matching /api/mcp.
+// Every render depends on the query (stations and optional landmark pins), so
+// never statically optimize the route. Per-URL edge caching still applies.
 export const dynamic = "force-dynamic";
 
 // Satori/resvg renders take seconds (not minutes): fail fast on hangs
@@ -61,20 +58,18 @@ export async function GET(request: Request) {
       destPin: p.state.destPin,
     });
     return new ImageResponse(
-      renderShareCard(p.originDisplay, p.destDisplay, p.timePhrase, map),
+      renderShareCard(p.originDisplay, p.destDisplay, map),
       {
         ...size,
         fonts: [
           { name: "Vazirmatn", data: regular, style: "normal", weight: 400 },
           { name: "Vazirmatn", data: bold, style: "normal", weight: 700 },
         ],
-        // Bytes are deterministic per query: edge-cacheable so repeated
-        // scrapes of the same link never re-render (cost control).
-        // s-maxage keeps CDN copies without revalidating the function;
-        // stale-while-revalidate absorbs scrape bursts (Telegram +
-        // WhatsApp + iMessage fetch the same URL within seconds).
-        // Safe for timed links: `at` is an explicit instant (now-mode
-        // carries no time), so a 24h TTL can never serve a stale "now".
+        // The card intentionally does NOT render p.timePhrase, so its pixels
+        // no longer depend on relative today/tomorrow wording or Date.now().
+        // The route/pins are deterministic per URL and safe to edge-cache.
+        // SWR absorbs duplicate social-crawler fetches without changing the
+        // user-visible journey state when the link is opened in Metto.
         headers: {
           "Cache-Control":
             "public, max-age=86400, s-maxage=86400, stale-while-revalidate=86400",

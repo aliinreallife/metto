@@ -73,3 +73,36 @@ describe("share og image", () => {
     expect(res.headers.get("location")).toContain("/socialprev.png");
   });
 });
+
+describe("share og smoke renders", () => {
+  // Representative cases (spec §13): each must produce a 1200x630 PNG.
+  // Pixels are reviewed manually (ogN sets); here we pin the contract.
+  const CASES: Array<[string, string]> = [
+    // Short single-line route.
+    ["short", "https://metto.ir/share/og?city=tehran&from=tajrish&to=shahid-hemmat"],
+    // Long single-line route, explicit depart time.
+    [
+      "long-single",
+      "https://metto.ir/share/og?city=tehran&from=tehran-sadeghiyeh&to=farhangsara&timeMode=depart&at=2026-10-09T07:30:00Z",
+    ],
+    // Adversarial long Persian station names (adjacent pair).
+    [
+      "long-names",
+      "https://metto.ir/share/og?city=tehran&from=mehrabad-airport-terminal-1-2&to=mehrabad-airport-terminal-4-6",
+    ],
+  ];
+  for (const [name, url] of CASES) {
+    it(
+      `renders ${name}`,
+      async () => {
+        const res = await GET(new Request(url));
+        expect(res.status).toBe(200);
+        expect(res.headers.get("content-type")).toContain("image/png");
+        const buf = Buffer.from(await res.arrayBuffer());
+        expect(buf.length).toBeGreaterThan(10_000);
+        expect(pngDimensions(buf)).toEqual({ width: 1200, height: 630 });
+      },
+      30_000,
+    );
+  }
+});

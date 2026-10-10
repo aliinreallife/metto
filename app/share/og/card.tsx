@@ -1,26 +1,25 @@
-// OG card element tree (host elements only — Satori-compatible).
-// Rendered by app/share/og/route.ts via ImageResponse. Not a component:
-// exported as a builder returning the element so the route handler stays
-// JSX-free TypeScript.
+// Minimal route social-preview card (Satori-compatible host elements only).
 //
-// Layout: horizontal split — text column on the right (RTL leading side),
-// dedicated map panel on the left. The map NEVER sits behind text: each
-// section owns its box (text 520px, gap 48px, panel 512x534 — see OG_PANEL).
+// The 1200x630 canvas is intentionally split 720/480:
+// - 720px live route map on the left (full-height, divider drawn inside it
+//   so the canvas math stays exact: 720 + 480 = 1200)
+// - 480px RTL route summary on the right
 //
-// RTL note (verified against real renders): Satori implements no RTL
-// *paragraph* order — neither dir="rtl" nor direction:"rtl" changes word
-// order inside a text node. True RTL *visual* order is achieved structurally
-// instead: every line is a flex row-reverse whose children are individual
-// word nodes in logical order, so the first word lands rightmost. The outer
-// split itself is explicit LTR row order [map, text] so the section
-// placement never depends on Satori's direction handling.
+// Social previews answer only the glanceable questions: where from, where
+// to, and which lines. Stops/transfers/timing/strip/slogan stay in Metto —
+// the image is a teaser, and the share URL still carries the full state.
+//
+// RTL note: Satori does not reliably reorder Persian paragraphs. Multi-word
+// Persian is therefore rendered as explicit word nodes inside row-reverse
+// flex containers, preserving visual RTL without browser bidi assumptions.
 
 import type { CSSProperties, ReactNode } from "react";
-import { persianDigits } from "@/lib/i18n";
 import { OG_PANEL, type ShareLineLeg, type ShareMapModel } from "./map";
 
 const BRAND_RED = "#cc0e2d";
-const TEXT_COL_W = 520;
+const INFO_W = 480;
+const INFO_PAD_X = 48;
+const DIM_TRACK_OPACITY = 0.35;
 
 function RtlRow({
   children,
@@ -47,198 +46,241 @@ function RtlRow({
   );
 }
 
-// Schematic strip: ONE continuous line — butt-jointed line-colored bars
-// (exact fill, rounding drift absorbed by the longest bar) with the origin,
-// interchange and destination dots overlaid on top. Dots in flow always
-// risk hairline gaps from flex packing/rounding, which reads as "not
-// connected". Travel order reads right-to-left, mirroring the names above.
-function LineStrip({ legs, width }: { legs: ShareLineLeg[]; width: number }) {
-  if (legs.length === 0) return null;
-  const total = legs.reduce((a, l) => a + Math.max(l.stops, 1), 0);
-  const raw = legs.map((l) => (width * Math.max(l.stops, 1)) / total);
-  const longest = raw.indexOf(Math.max(...raw));
-  const floored = raw.map((w) => Math.max(12, w));
-  const drift = width - floored.reduce((a, w) => a + w, 0);
-  floored[longest] = Math.max(12, floored[longest] + drift);
-  const widths = floored.map((w) => Math.max(0, Math.round(w)));
-  // Re-balance rounding drift onto the longest bar so bars butt-joint
-  // exactly with no hairline gaps.
-  widths[longest] += width - widths.reduce((a, w) => a + w, 0);
-  const barH = 6;
-  const stripH = 16;
-  const bars: ReactNode[] = legs.map((leg, i) => (
-    <div
-      key={`b${i}`}
-      style={{
-        width: `${widths[i]}px`,
-        height: `${barH}px`,
-        background: leg.color,
-        flexShrink: 0,
-      }}
-    />
-  ));
-  // Joint positions from the FINAL widths (right edge = travel origin).
-  const joints: number[] = [];
-  widths.slice(0, -1).reduce((cumRight, w) => {
-    const next = cumRight + w;
-    joints.push(width - next);
-    return next;
-  }, 0);
-  const dots: ReactNode[] = [
-    <div
-      key="o"
-      style={{
-        position: "absolute",
-        left: `${width - 14}px`,
-        top: `${(stripH - 14) / 2}px`,
-        width: "14px",
-        height: "14px",
-        borderRadius: "50%",
-        background: BRAND_RED,
-      }}
-    />,
-    ...joints.map((x, i) => (
-      <div
-        key={`x${i}`}
-        style={{
-          position: "absolute",
-          left: `${Math.round(x - 5)}px`,
-          top: `${(stripH - 10) / 2}px`,
-          width: "10px",
-          height: "10px",
-          borderRadius: "50%",
-          background: "#e4e4e7",
-        }}
-      />
-    )),
-    <div
-      key="d"
-      style={{
-        position: "absolute",
-        left: "0px",
-        top: `${(stripH - 14) / 2}px`,
-        width: "14px",
-        height: "14px",
-        borderRadius: "50%",
-        background: BRAND_RED,
-      }}
-    />,
-  ];
-  return (
-    <div
-      style={{
-        width: `${width}px`,
-        height: `${stripH}px`,
-        position: "relative",
-        // Required by Satori for multi-child nodes.
-        display: "flex",
-      }}
-    >
-      <RtlRow style={{ width: `${width}px`, height: `${stripH}px` }}>
-        {bars}
-      </RtlRow>
-      {dots}
-    </div>
-  );
-}
-
-// Trip meta: boardable-stop and physical-transfer counts from the static
-// topology (never times or ETAs). Zero transfers reads as "بدون تعویض".
-function TripMeta({
-  numStops,
-  numTransfers,
+function RtlWords({
+  text,
+  gap = 10,
+  style,
 }: {
-  numStops: number;
-  numTransfers: number;
+  text: string;
+  gap?: number;
+  style?: CSSProperties;
 }) {
-  const words: string[] = [
-    ...`${persianDigits(numStops, "fa")} ایستگاه`.split(" "),
-    "•",
-    ...(numTransfers === 0
-      ? ["بدون", "تعویض"]
-      : `${persianDigits(numTransfers, "fa")} تعویض`.split(" ")),
-  ];
   return (
-    // Wide gaps: at card scale a tight "• ۱" merges into a "۱۰" lookalike.
-    <RtlRow gap={18}>
-      {words.map((w, i) => (
-        <div key={i} style={{ fontSize: 28, color: "#a1a1aa" }}>
-          {w}
+    <RtlRow gap={gap} style={style}>
+      {text.split(" ").map((word, i) => (
+        <div
+          key={`${word}-${i}`}
+          style={{
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            minWidth: 0,
+          }}
+        >
+          {word}
         </div>
       ))}
     </RtlRow>
   );
 }
 
-// Left-pointing arrow drawn from boxes, not a glyph: Vazirmatn ships no
-// arrow codepoints (U+2190 etc. are absent from both weights), so a "←"
-// character only renders via system-font fallback — which exists on dev
-// machines but NOT on the production function runtime. An SVG data-URI
-// <img> was tried first for extra crispness, but Satori silently drops it
-// (verified blank on real renders). Head is a 45°-rotated square inside an
-// overflow-hidden box, so only its left half (a triangle) shows. (The
-// classic zero-size border-triangle trick does NOT work in Satori either —
-// it paints a solid square.) Rotation + overflow-hidden are the same
-// primitives the map panel already relies on.
-function LeftArrow({ size }: { size: number }) {
-  const r1 = (n: number): number => Math.round(n * 10) / 10;
-  const barH = Math.max(6, Math.round(size * 0.15));
-  const barW = Math.round(size * 0.55);
-  const headH = Math.max(8, Math.round(size * 0.22));
-  const headW = headH * 2;
-  const sq = headH * Math.SQRT2;
-  const sqOff = headH - sq / 2;
+function BrandRow() {
   return (
-    <RtlRow style={{ flexShrink: 0 }}>
+    <RtlRow gap={12} style={{ width: "100%" }}>
       <div
         style={{
-          width: `${barW}px`,
-          height: `${barH}px`,
-          background: "#fafafa",
-          borderRadius: `${r1(barH / 2)}px`,
+          width: "30px",
+          height: "30px",
+          borderRadius: "9px",
+          background: BRAND_RED,
           flexShrink: 0,
         }}
       />
       <div
         style={{
-          width: `${headW}px`,
-          height: `${headH * 2}px`,
-          position: "relative",
-          overflow: "hidden",
-          flexShrink: 0,
-          display: "flex",
+          fontSize: 34,
+          fontWeight: 700,
+          lineHeight: 1,
+          color: "#fafafa",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            left: `${r1(sqOff)}px`,
-            top: `${r1(sqOff)}px`,
-            width: `${r1(sq)}px`,
-            height: `${r1(sq)}px`,
-            background: "#fafafa",
-            transform: "rotate(45deg)",
-          }}
-        />
+        متو
+      </div>
+      <div
+        style={{
+          width: "1px",
+          height: "24px",
+          background: "#34343a",
+          flexShrink: 0,
+          marginLeft: "3px",
+          marginRight: "3px",
+        }}
+      />
+      <div
+        dir="ltr"
+        style={{
+          fontSize: 24,
+          lineHeight: 1,
+          color: "#a1a1aa",
+          whiteSpace: "nowrap",
+        }}
+      >
+        metto.ir
       </div>
     </RtlRow>
   );
 }
 
+function StationBlock({
+  label,
+  name,
+  fontSize,
+}: {
+  label: "از" | "به";
+  name: string;
+  fontSize: number;
+}) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: "5px",
+      }}
+    >
+      <RtlRow style={{ width: "100%" }}>
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 400,
+            color: "#8d8d97",
+          }}
+        >
+          {label}
+        </div>
+      </RtlRow>
+      <RtlWords
+        text={name}
+        gap={10}
+        style={{
+          width: "100%",
+          fontSize,
+          fontWeight: 700,
+          lineHeight: 1.17,
+          color: "#fafafa",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          maxWidth: "100%",
+        }}
+      />
+    </div>
+  );
+}
+
+// Box-only down arrow: avoids relying on arrow glyphs that may be absent
+// from the embedded Vazirmatn fonts in the production ImageResponse
+// runtime. Shaft + two rotated caps, all muted so it stays subtle.
+function DownArrow() {
+  return (
+    <div
+      style={{
+        width: "30px",
+        height: "42px",
+        position: "relative",
+        display: "flex",
+        alignSelf: "center",
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: "13px",
+          top: 0,
+          width: "4px",
+          height: "29px",
+          borderRadius: "2px",
+          background: "#71717a",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: "7px",
+          top: "23px",
+          width: "4px",
+          height: "16px",
+          borderRadius: "2px",
+          background: "#71717a",
+          transform: "rotate(-45deg)",
+          transformOrigin: "center",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: "19px",
+          top: "23px",
+          width: "4px",
+          height: "16px",
+          borderRadius: "2px",
+          background: "#71717a",
+          transform: "rotate(45deg)",
+          transformOrigin: "center",
+        }}
+      />
+    </div>
+  );
+}
+
+// Compact line legend in travel order, straight from the map model's legs
+// (line/label/color — no topology logic duplicated here). Dots only, never
+// pills.
+function LineLegend({ legs }: { legs: ShareLineLeg[] }) {
+  if (legs.length === 0) return null;
+  return (
+    <RtlRow
+      gap={18}
+      style={{
+        width: "100%",
+        minHeight: "34px",
+      }}
+    >
+      {legs.map((leg) => (
+        <RtlRow key={leg.line} gap={9}>
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 400,
+              color: "#d4d4d8",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {leg.label}
+          </div>
+          <div
+            style={{
+              width: "14px",
+              height: "14px",
+              borderRadius: "50%",
+              background: leg.color,
+              flexShrink: 0,
+            }}
+          />
+        </RtlRow>
+      ))}
+    </RtlRow>
+  );
+}
+
+function stationFontSize(origin: string, destination: string): number {
+  const longest = Math.max(origin.length, destination.length);
+  // Tiers verified against renders: 14-char names (e.g. تهران (صادقیه))
+  // already overflow 384px at 55px, so the 55px tier stops at 12 chars.
+  if (longest <= 9) return 62;
+  if (longest <= 12) return 55;
+  if (longest <= 20) return 47;
+  return 39;
+}
+
 export function renderShareCard(
   originDisplay: string,
   destDisplay: string,
-  timePhrase: string,
   map: ShareMapModel | null,
 ) {
-  // ONE consistent layout for every pair: origin (+ arrow, pointing at
-  // the line below) stacked over the destination, sized by the longest
-  // line. Single-line mode is gone — fitting two names beside the arrow
-  // needed per-pair size juggling that clipped ("شهر" lost its ر) and made
-  // long names look like a different card entirely. Adversarial lengths
-  // still hit the builder cap + ellipsis as a backstop.
-  const maxLine = Math.max(originDisplay.length, destDisplay.length);
-  const stackSize = maxLine <= 10 ? 56 : maxLine <= 16 ? 46 : 38;
+  const nameSize = stationFontSize(originDisplay, destDisplay);
+
   return (
     <div
       style={{
@@ -247,30 +289,21 @@ export function renderShareCard(
         display: "flex",
         flexDirection: "row",
         direction: "ltr",
-        background: "#0a0a0a",
+        background: "#08090b",
         color: "#fafafa",
-        padding: "48px 60px",
-        gap: "48px",
         fontFamily: "Vazirmatn",
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* Map panel: its own section (left). All geometry is panel-local
-          (see buildShareMap viewport) — nothing here can cover the text. */}
+      {/* Full-height live map: the route is the visual hook in social feeds. */}
       <div
         style={{
           width: `${OG_PANEL.w}px`,
           height: `${OG_PANEL.h}px`,
           position: "relative",
-          // Required by Satori for multi-child nodes (children are all
-          // absolutely positioned, so flex layout itself is a no-op).
           display: "flex",
-          background: "#131316",
-          borderRadius: "24px",
-          borderWidth: "2px",
-          borderStyle: "solid",
-          borderColor: "#26262b",
+          background: "#0d0e11",
           overflow: "hidden",
           flexShrink: 0,
         }}
@@ -279,7 +312,7 @@ export function renderShareCard(
           <div style={{ display: "flex" }}>
             {map.edges.map((e, i) => (
               <div
-                key={i}
+                key={`e${i}`}
                 style={{
                   position: "absolute",
                   left: e.cx - e.len / 2,
@@ -290,7 +323,7 @@ export function renderShareCard(
                   opacity: e.opacity,
                   borderRadius: e.thick / 2,
                   transform: `rotate(${e.deg}deg)`,
-                  ...(e.glow ? { boxShadow: e.glow } : {}),
+                  transformOrigin: "center",
                 }}
               />
             ))}
@@ -307,6 +340,22 @@ export function renderShareCard(
                   opacity: e.opacity,
                   borderRadius: e.thick / 2,
                   transform: `rotate(${e.deg}deg)`,
+                  transformOrigin: "center",
+                }}
+              />
+            ))}
+            {map.dimJoints.map((d, i) => (
+              <div
+                key={`w${i}`}
+                style={{
+                  position: "absolute",
+                  left: d.x - d.r,
+                  top: d.y - d.r,
+                  width: d.r * 2,
+                  height: d.r * 2,
+                  borderRadius: "50%",
+                  background: d.fill,
+                  opacity: DIM_TRACK_OPACITY,
                 }}
               />
             ))}
@@ -321,7 +370,6 @@ export function renderShareCard(
                   height: d.r * 2,
                   borderRadius: "50%",
                   background: d.fill,
-                  ...(d.glow ? { boxShadow: d.glow } : {}),
                 }}
               />
             ))}
@@ -350,161 +398,55 @@ export function renderShareCard(
                   height: d.r * 2,
                   borderRadius: "50%",
                   background: d.fill,
-                  ...(d.glow ? { boxShadow: d.glow } : {}),
                 }}
               />
             ))}
           </div>
         )}
+        {/* Divider drawn INSIDE the map panel so the canvas math stays
+            exact (720 map + 480 info = 1200); a border would add width. */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: "1px",
+            background: "#191a1f",
+          }}
+        />
       </div>
-      {/* Text column (right = RTL leading side). */}
+
+      {/* Minimal route summary: details are intentionally deferred to Metto. */}
       <div
         dir="rtl"
         style={{
-          width: `${TEXT_COL_W}px`,
-          height: `${OG_PANEL.h}px`,
+          width: `${INFO_W}px`,
+          height: "630px",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
+          padding: `44px ${INFO_PAD_X}px 42px`,
+          background: "#08090b",
           flexShrink: 0,
+          overflow: "hidden",
         }}
       >
-        <RtlRow gap={14}>
-          <div
-            style={{
-              width: "28px",
-              height: "28px",
-              borderRadius: "8px",
-              background: BRAND_RED,
-            }}
-          />
-          <div style={{ fontSize: 40, fontWeight: 700 }}>متو</div>
-          <div style={{ fontSize: 28, color: "#a1a1aa" }}>metto.ir</div>
-        </RtlRow>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "18px",
-          }}
-        >
-          {/* Names split into word nodes: a multi-word name in ONE text node
-              lays out LTR internally ("عبدل آباد" would scan as "اباد عبدل").
-              Origin (+ arrow, pointing at the line below) on line 1,
-              destination on line 2 — the same arrangement for every pair. */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <RtlRow
-              gap={12}
-              style={{
-                fontSize: stackSize,
-                fontWeight: 700,
-                lineHeight: 1.3,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                maxWidth: "100%",
-              }}
-            >
-              {originDisplay.split(" ").map((w, i) => (
-                <div
-                  key={i}
-                  style={{
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    minWidth: 0,
-                  }}
-                >
-                  {w}
-                </div>
-              ))}
-              <LeftArrow size={stackSize} />
-            </RtlRow>
-            <RtlRow
-              gap={12}
-              style={{
-                fontSize: stackSize,
-                fontWeight: 700,
-                lineHeight: 1.3,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                maxWidth: "100%",
-              }}
-            >
-              {destDisplay.split(" ").map((w, i) => (
-                <div
-                  key={i}
-                  style={{
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    minWidth: 0,
-                  }}
-                >
-                  {w}
-                </div>
-              ))}
-            </RtlRow>
-          </div>
-          {/* Brand underline: anchors the route block to the RTL edge. */}
-          <RtlRow>
-            <div
-              style={{
-                width: "72px",
-                height: "8px",
-                borderRadius: "4px",
-                background: BRAND_RED,
-              }}
-            />
-          </RtlRow>
-          {/* Journey substance: schematic strip plus stop/transfer counts —
-              all static topology from the map model. Skipped when
-              unroutable (legs empty): the card falls back to names + time. */}
-          {map && map.legs.length > 0 && (
-            <LineStrip legs={map.legs} width={TEXT_COL_W} />
-          )}
-          {map && map.legs.length > 0 && (
-            <TripMeta
-              numStops={map.numStops}
-              numTransfers={map.numTransfers}
-            />
-          )}
-          {timePhrase !== "" && (
-            <RtlRow gap={14}>
-              {timePhrase.split(" ").map((w, i) => (
-                <div
-                  key={i}
-                  style={{
-                    fontSize: 40,
-                    fontWeight: 700,
-                    color: "#f4a3b2",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {w}
-                </div>
-              ))}
-            </RtlRow>
-          )}
-        </div>
-        <RtlRow gap={6}>
-          {"نقشه و مسیریابی مترو".split(" ").map((w, i) => (
-            <div key={i} style={{ fontSize: 28, color: "#8e8e96" }}>
-              {w}
-            </div>
-          ))}
-        </RtlRow>
+        <BrandRow />
+
+        <div style={{ height: "58px", flexShrink: 0 }} />
+
+        <StationBlock label="از" name={originDisplay} fontSize={nameSize} />
+
+        <div style={{ height: "18px", flexShrink: 0 }} />
+        <DownArrow />
+        <div style={{ height: "12px", flexShrink: 0 }} />
+
+        <StationBlock label="به" name={destDisplay} fontSize={nameSize} />
+
+        <div style={{ flexGrow: 1, display: "flex" }} />
+
+        {map && <LineLegend legs={map.legs} />}
       </div>
-      {/* Leading-edge accent (right edge in RTL reading). */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          right: 0,
-          width: "12px",
-          background: BRAND_RED,
-        }}
-      />
     </div>
   );
 }
