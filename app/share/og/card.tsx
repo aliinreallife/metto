@@ -185,14 +185,14 @@ export function renderShareCard(
         <RtlRow gap={14}>
           <div
             style={{
-              width: "26px",
-              height: "26px",
+              width: "28px",
+              height: "28px",
               borderRadius: "8px",
               background: BRAND_RED,
             }}
           />
-          <div style={{ fontSize: 36, fontWeight: 700 }}>متو</div>
-          <div style={{ fontSize: 26, color: "#a1a1aa" }}>metto.ir</div>
+          <div style={{ fontSize: 40, fontWeight: 700 }}>متو</div>
+          <div style={{ fontSize: 28, color: "#a1a1aa" }}>metto.ir</div>
         </RtlRow>
         <div
           style={{
@@ -307,13 +307,34 @@ export function renderShareCard(
               </RtlRow>
             </div>
           )}
+          {/* Brand underline: anchors the route block to the RTL edge. */}
+          <RtlRow>
+            <div
+              style={{
+                width: "72px",
+                height: "8px",
+                borderRadius: "4px",
+                background: BRAND_RED,
+              }}
+            />
+          </RtlRow>
           {timePhrase !== "" && (
-            <RtlRow gap={14}>
+            <RtlRow
+              gap={14}
+              style={{
+                background: "#2b0d14",
+                borderRadius: "16px",
+                padding: "10px 18px",
+                borderWidth: "2px",
+                borderStyle: "solid",
+                borderColor: "#661c2a",
+              }}
+            >
               {timePhrase.split(" ").map((w, i) => (
                 <div
                   key={i}
                   style={{
-                    fontSize: 44,
+                    fontSize: 40,
                     fontWeight: 700,
                     color: "#f4a3b2",
                     whiteSpace: "nowrap",
