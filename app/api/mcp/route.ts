@@ -9,16 +9,31 @@ import { createMettoMcpServer } from "@/lib/mcp/create-server";
 const transports = new Map<string, WebStandardStreamableHTTPServerTransport>();
 
 export async function GET(request: Request) {
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
-    onsessioninitialized: (sessionId) => {
-      transports.set(sessionId, transport);
-    },
-  });
+  // GET opens the standalone SSE notification stream on an *existing*
+  // session (MCP Streamable HTTP). Delegate to the live transport that owns
+  // the session id — a fresh transport here would fail session validation
+  // with 400 and strict clients (Cursor) treat the server as broken.
+  const sessionId = request.headers.get("mcp-session-id");
+  const existing = sessionId ? transports.get(sessionId) : undefined;
 
-  const server = createMettoMcpServer();
-  await server.connect(transport);
-  return transport.handleRequest(request);
+  if (existing) {
+    return existing.handleRequest(request);
+  }
+
+  // No (or unknown) session: there is nothing to stream. Return 404 per the
+  // MCP spec (unknown session) instead of 400 so clients keep the server
+  // listed instead of marking the connection failed.
+  return new Response(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      error: {
+        code: -32000,
+        message: "Not Found: unknown or missing session ID",
+      },
+      id: null,
+    }),
+    { status: 404, headers: { "Content-Type": "application/json" } }
+  );
 }
 
 export async function POST(request: Request) {
