@@ -210,7 +210,7 @@ export function PwaStrip() {
                 type="button"
                 onClick={install}
                 disabled={!installEvent}
-                title={!installEvent ? t.note : undefined}
+                aria-describedby="pwa-install-hint"
                 className={cn(
                   "group inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg px-6 text-sm font-bold transition-all duration-200 sm:w-auto",
                   installEvent
@@ -230,7 +230,7 @@ export function PwaStrip() {
               {heroCta}
             </Link>
           </div>
-          <p className="mt-2.5 max-w-xl text-[11px] leading-5 text-muted-foreground">{hintLine}</p>
+          <p id="pwa-install-hint" className="mt-2.5 max-w-xl text-[11px] leading-5 text-muted-foreground">{hintLine}</p>
           <p className="mt-2 flex max-w-xl items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
             <OfflineIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
             {t.sameApp}
