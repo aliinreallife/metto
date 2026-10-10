@@ -109,6 +109,12 @@ export function parseShareParams(sp: URLSearchParams): ShareTripState {
   // the planner (lib/route-planning parseTimeModeParams).
   const { mode, at } = parseTimeModeParams(sp);
 
+  // Minute-floor the instant: planner input is minute-precision, so seconds
+  // carry no display meaning — but every distinct `at` is a distinct OG
+  // image URL (CDN cache key). Flooring keeps canonical share URLs stable
+  // and raises edge hit rates without changing any rendered time phrase.
+  const atMs = at ? Math.floor(at.getTime() / 60000) * 60000 : null;
+
   return {
     city,
     cityKnown,
@@ -117,7 +123,7 @@ export function parseShareParams(sp: URLSearchParams): ShareTripState {
     originPin,
     destPin,
     timeMode: mode,
-    atMs: at ? at.getTime() : null,
+    atMs,
   };
 }
 

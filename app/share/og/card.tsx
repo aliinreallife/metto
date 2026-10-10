@@ -3,19 +3,23 @@
 // exported as a builder returning the element so the route handler stays
 // JSX-free TypeScript.
 //
+// Layout: horizontal split — text column on the right (RTL leading side),
+// dedicated map panel on the left. The map NEVER sits behind text: each
+// section owns its box (text 520px, gap 48px, panel 512x534 — see OG_PANEL).
+//
 // RTL note (verified against real renders): Satori implements no RTL
 // *paragraph* order — neither dir="rtl" nor direction:"rtl" changes word
 // order inside a text node. True RTL *visual* order is achieved structurally
 // instead: every line is a flex row-reverse whose children are individual
-// word nodes in logical order, so the first word lands rightmost. With real
-// visual RTL restored, the metadata title form "مبدأ ← مقصد" is correct
-// again (origin right, arrow pointing left at the destination) and the card
-// matches the text title exactly.
+// word nodes in logical order, so the first word lands rightmost. The outer
+// split itself is explicit LTR row order [map, text] so the section
+// placement never depends on Satori's direction handling.
 
 import type { CSSProperties, ReactNode } from "react";
-import type { ShareMapModel } from "./map";
+import { OG_PANEL, type ShareMapModel } from "./map";
 
 const BRAND_RED = "#cc0e2d";
+const TEXT_COL_W = 520;
 
 function RtlRow({
   children,
@@ -48,88 +52,287 @@ export function renderShareCard(
   timePhrase: string,
   map: ShareMapModel | null,
 ) {
-  // Single-line route at 84px fits ~18 combined chars; step down for longer
-  // names so typical pairs stay commanding while long pins shrink instead of
-  // ellipsizing. Adversarial lengths still hit the builder cap + ellipsis.
+  // Text column is ~half the old full-bleed width: a single line only fits
+  // ~460px of type at ~0.6em average advance for Vazirmatn bold Persian.
+  // Short pairs stay commanding on one line; longer pairs stack origin over
+  // destination on two full-width lines (below ~40px a single line would
+  // look weak next to the time phrase). Adversarial lengths still hit the
+  // builder cap + ellipsis as a backstop.
   const combined = originDisplay.length + destDisplay.length;
-  const routeSize = combined <= 18 ? 84 : combined <= 26 ? 68 : combined <= 36 ? 56 : 44;
+  const singleSize = Math.min(
+    64,
+    Math.floor(450 / (0.68 * Math.max(combined, 1))),
+  );
+  const stacked = singleSize < 40;
+  const maxLine = Math.max(originDisplay.length, destDisplay.length);
+  const stackSize = maxLine <= 10 ? 56 : maxLine <= 16 ? 46 : 38;
   return (
     <div
-      dir="rtl"
       style={{
         width: "100%",
         height: "100%",
         display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
+        flexDirection: "row",
+        direction: "ltr",
         background: "#0a0a0a",
         color: "#fafafa",
-        padding: "72px 84px 64px 84px",
+        padding: "48px 60px",
+        gap: "48px",
         fontFamily: "Vazirmatn",
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {map && (
+      {/* Map panel: its own section (left). All geometry is panel-local
+          (see buildShareMap viewport) — nothing here can cover the text. */}
+      <div
+        style={{
+          width: `${OG_PANEL.w}px`,
+          height: `${OG_PANEL.h}px`,
+          position: "relative",
+          // Required by Satori for multi-child nodes (children are all
+          // absolutely positioned, so flex layout itself is a no-op).
+          display: "flex",
+          background: "#131316",
+          borderRadius: "24px",
+          borderWidth: "2px",
+          borderStyle: "solid",
+          borderColor: "#26262b",
+          overflow: "hidden",
+          flexShrink: 0,
+        }}
+      >
+        {map && (
+          <div style={{ display: "flex" }}>
+            {map.edges.map((e, i) => (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  left: e.cx - e.len / 2,
+                  top: e.cy - e.thick / 2,
+                  width: e.len,
+                  height: e.thick,
+                  background: e.color,
+                  opacity: e.opacity,
+                  borderRadius: e.thick / 2,
+                  transform: `rotate(${e.deg}deg)`,
+                  ...(e.glow ? { boxShadow: e.glow } : {}),
+                }}
+              />
+            ))}
+            {map.connectors.map((e, i) => (
+              <div
+                key={`c${i}`}
+                style={{
+                  position: "absolute",
+                  left: e.cx - e.len / 2,
+                  top: e.cy - e.thick / 2,
+                  width: e.len,
+                  height: e.thick,
+                  background: e.color,
+                  opacity: e.opacity,
+                  borderRadius: e.thick / 2,
+                  transform: `rotate(${e.deg}deg)`,
+                }}
+              />
+            ))}
+            {map.dots.map((d, i) => (
+              <div
+                key={`d${i}`}
+                style={{
+                  position: "absolute",
+                  left: d.x - d.r,
+                  top: d.y - d.r,
+                  width: d.r * 2,
+                  height: d.r * 2,
+                  borderRadius: "50%",
+                  background: d.fill,
+                  ...(d.glow ? { boxShadow: d.glow } : {}),
+                }}
+              />
+            ))}
+            {map.pins.map((d, i) => (
+              <div
+                key={`p${i}`}
+                style={{
+                  position: "absolute",
+                  left: d.x - d.r,
+                  top: d.y - d.r,
+                  width: d.r * 2,
+                  height: d.r * 2,
+                  borderRadius: "50%",
+                  background: d.fill,
+                  ...(d.glow ? { boxShadow: d.glow } : {}),
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Text column (right = RTL leading side). */}
+      <div
+        dir="rtl"
+        style={{
+          width: `${TEXT_COL_W}px`,
+          height: `${OG_PANEL.h}px`,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          flexShrink: 0,
+        }}
+      >
+        <RtlRow gap={14}>
+          <div
+            style={{
+              width: "26px",
+              height: "26px",
+              borderRadius: "8px",
+              background: BRAND_RED,
+            }}
+          />
+          <div style={{ fontSize: 36, fontWeight: 700 }}>متو</div>
+          <div style={{ fontSize: 26, color: "#a1a1aa" }}>metto.ir</div>
+        </RtlRow>
         <div
           style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: "100%",
-            height: "100%",
-            // Required by Satori for multi-child nodes (children are all
-            // absolutely positioned, so flex layout itself is a no-op).
             display: "flex",
+            flexDirection: "column",
+            gap: "24px",
           }}
         >
-          {map.edges.map((e, i) => (
-            <div
-              key={i}
+          {/* Names split into word nodes: a multi-word name in ONE text node
+              lays out LTR internally ("عبدل آباد" would scan as "اباد عبدل").
+              Nested row-reverse sub-rows keep intra-name spacing tight while
+              the outer row separates origin / arrow / destination. Stacked
+              mode puts the full origin (+ arrow, pointing at the line below)
+              on line 1 and the destination on line 2. */}
+          {!stacked && (
+            <RtlRow
+              gap={20}
               style={{
-                position: "absolute",
-                left: e.cx - e.len / 2,
-                top: e.cy - e.thick / 2,
-                width: e.len,
-                height: e.thick,
-                background: e.color,
-                opacity: e.opacity,
-                borderRadius: e.thick / 2,
-                transform: `rotate(${e.deg}deg)`,
-                ...(e.glow ? { boxShadow: e.glow } : {}),
+                fontSize: singleSize,
+                fontWeight: 700,
+                lineHeight: 1.25,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                maxWidth: "100%",
               }}
-            />
-          ))}
-          {map.dots.map((d, i) => (
-            <div
-              key={`d${i}`}
-              style={{
-                position: "absolute",
-                left: d.x - d.r,
-                top: d.y - d.r,
-                width: d.r * 2,
-                height: d.r * 2,
-                borderRadius: "50%",
-                background: d.fill,
-                ...(d.glow ? { boxShadow: d.glow } : {}),
-              }}
-            />
-          ))}
+            >
+              <RtlRow gap={12} style={{ overflow: "hidden", minWidth: 0 }}>
+                {originDisplay.split(" ").map((w, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      minWidth: 0,
+                    }}
+                  >
+                    {w}
+                  </div>
+                ))}
+              </RtlRow>
+              <div style={{ flexShrink: 0 }}>←</div>
+              <RtlRow gap={12} style={{ overflow: "hidden", minWidth: 0 }}>
+                {destDisplay.split(" ").map((w, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      minWidth: 0,
+                    }}
+                  >
+                    {w}
+                  </div>
+                ))}
+              </RtlRow>
+            </RtlRow>
+          )}
+          {stacked && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <RtlRow
+                gap={12}
+                style={{
+                  fontSize: stackSize,
+                  fontWeight: 700,
+                  lineHeight: 1.3,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  maxWidth: "100%",
+                }}
+              >
+                {originDisplay.split(" ").map((w, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      minWidth: 0,
+                    }}
+                  >
+                    {w}
+                  </div>
+                ))}
+                <div style={{ flexShrink: 0 }}>←</div>
+              </RtlRow>
+              <RtlRow
+                gap={12}
+                style={{
+                  fontSize: stackSize,
+                  fontWeight: 700,
+                  lineHeight: 1.3,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  maxWidth: "100%",
+                }}
+              >
+                {destDisplay.split(" ").map((w, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      minWidth: 0,
+                    }}
+                  >
+                    {w}
+                  </div>
+                ))}
+              </RtlRow>
+            </div>
+          )}
+          {timePhrase !== "" && (
+            <RtlRow gap={14}>
+              {timePhrase.split(" ").map((w, i) => (
+                <div
+                  key={i}
+                  style={{
+                    fontSize: 44,
+                    fontWeight: 700,
+                    color: "#f4a3b2",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {w}
+                </div>
+              ))}
+            </RtlRow>
+          )}
         </div>
-      )}
-      {/* Legibility scrim: keeps thin network lines behind the type quiet. */}
-      {map && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(10, 10, 10, 0.45)",
-          }}
-        />
-      )}
+        <RtlRow gap={10}>
+          {"نقشه و مسیریابی مترو".split(" ").map((w, i) => (
+            <div key={i} style={{ fontSize: 28, color: "#8e8e96" }}>
+              {w}
+            </div>
+          ))}
+        </RtlRow>
+      </div>
       {/* Leading-edge accent (right edge in RTL reading). */}
       <div
         style={{
@@ -141,97 +344,6 @@ export function renderShareCard(
           background: BRAND_RED,
         }}
       />
-      <RtlRow gap={18}>
-        <div
-          style={{
-            width: "30px",
-            height: "30px",
-            borderRadius: "9px",
-            background: BRAND_RED,
-          }}
-        />
-        <div style={{ fontSize: 44, fontWeight: 700 }}>متو</div>
-        <div style={{ fontSize: 32, color: "#a1a1aa" }}>metto.ir</div>
-      </RtlRow>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "28px",
-        }}
-      >
-        {/* Names split into word nodes: a multi-word name in ONE text node
-            lays out LTR internally ("عبدل آباد" would scan as "اباد عبدل").
-            Nested row-reverse sub-rows keep intra-name spacing tight while
-            the outer row separates origin / arrow / destination. */}
-        <RtlRow
-          gap={28}
-          style={{
-            fontSize: routeSize,
-            fontWeight: 700,
-            lineHeight: 1.25,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            maxWidth: "100%",
-          }}
-        >
-          <RtlRow gap={14} style={{ overflow: "hidden", minWidth: 0 }}>
-            {originDisplay.split(" ").map((w, i) => (
-              <div
-                key={i}
-                style={{
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  minWidth: 0,
-                }}
-              >
-                {w}
-              </div>
-            ))}
-          </RtlRow>
-          <div style={{ flexShrink: 0 }}>←</div>
-          <RtlRow gap={14} style={{ overflow: "hidden", minWidth: 0 }}>
-            {destDisplay.split(" ").map((w, i) => (
-              <div
-                key={i}
-                style={{
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  minWidth: 0,
-                }}
-              >
-                {w}
-              </div>
-            ))}
-          </RtlRow>
-        </RtlRow>
-        {timePhrase !== "" && (
-          <RtlRow gap={16}>
-            {timePhrase.split(" ").map((w, i) => (
-              <div
-                key={i}
-                style={{
-                  fontSize: 50,
-                  fontWeight: 700,
-                  color: "#f4a3b2",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {w}
-              </div>
-            ))}
-          </RtlRow>
-        )}
-      </div>
-      <RtlRow gap={10}>
-        {"نقشه و مسیریابی مترو".split(" ").map((w, i) => (
-          <div key={i} style={{ fontSize: 30, color: "#8e8e96" }}>
-            {w}
-          </div>
-        ))}
-      </RtlRow>
     </div>
   );
 }

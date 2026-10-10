@@ -70,6 +70,16 @@ describe("parseShareParams", () => {
     ).destPin;
     expect(legacy?.label).toBe("Foo");
   });
+
+  it("floors at to the minute for stable share URLs / OG cache keys", () => {
+    const s = parseShareParams(
+      sp(`from=${FROM}&to=${TO}&timeMode=arrive&at=2026-10-09T10:05:45Z`),
+    );
+    expect(s.atMs).toBe(Date.parse("2026-10-09T10:05:00Z"));
+    expect(serializeShareParams(s)).toContain(
+      encodeURIComponent("2026-10-09T10:05:00.000Z"),
+    );
+  });
 });
 
 describe("buildSharePresentation titles (FA v1)", () => {

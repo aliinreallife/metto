@@ -45,6 +45,26 @@ describe("share og image", () => {
     30_000,
   );
 
+  it(
+    "renders landmark pins with edge-cache headers",
+    async () => {
+      const res = await GET(
+        new Request(
+          "https://metto.ir/share/og?city=tehran&from=abdol-abad&to=iran-khodro&dp=35.7538,51.1926,بازار بزرگ ایران",
+        ),
+      );
+      expect(res.status).toBe(200);
+      const buf = Buffer.from(await res.arrayBuffer());
+      expect(pngDimensions(buf)).toEqual({ width: 1200, height: 630 });
+      // Cost control: CDN-cached per URL so scrape bursts never re-render.
+      const cc = res.headers.get("cache-control") ?? "";
+      expect(cc).toContain("public");
+      expect(cc).toContain("s-maxage=86400");
+      expect(cc).toContain("stale-while-revalidate");
+    },
+    30_000,
+  );
+
   it("redirects invalid states to the static image (no 500)", async () => {
     const res = await GET(
       new Request("https://metto.ir/share/og?from=nope&to=nada"),

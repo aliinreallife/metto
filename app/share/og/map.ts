@@ -19,6 +19,14 @@ import { computeRouteTopology } from "@/lib/route";
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
 
+// Dedicated map panel geometry inside the horizontal-split card (text column
+// is 520px, gap 48px, outer horizontal padding 60px each side, vertical
+// padding 48px: 60+512+48+520+60 = 1200 wide, 48+534+48 = 630 tall).
+// Single source of truth — card.tsx sizes its panel from these values and
+// passes them back as the projection viewport, so model coords always land
+// inside the visible panel.
+export const OG_PANEL = { w: 512, h: 534 };
+
 export interface MapEdgeView {
   cx: number;
   cy: number;
@@ -41,24 +49,50 @@ export interface MapDotView {
 export interface ShareMapModel {
   edges: MapEdgeView[];
   dots: MapDotView[];
+  /** Landmark pin markers (cyan), panel-local coords, clamped inside. */
+  pins: MapDotView[];
+  /** Walk connectors from each pin to its endpoint station. */
+  connectors: MapEdgeView[];
+}
+
+/** Minimal pin coordinate surface (matches SharePin minus the label). */
+export interface SharePinCoord {
+  lat: number;
+  lng: number;
 }
 
 function edgeKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
 }
 
+const PIN_COLOR = "#22d3ee";
+const PIN_MARGIN = 16;
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, v));
+}
+
 export function buildShareMap(
   fromId: string,
   toId: string,
+  opts?: {
+    /** Projection viewport (panel-local coords). Defaults to full canvas. */
+    viewport?: { w: number; h: number };
+    /** Landmark pins: drawn as markers + connectors, never routed. */
+    originPin?: SharePinCoord | null;
+    destPin?: SharePinCoord | null;
+  },
 ): ShareMapModel | null {
   try {
+    const vw = opts?.viewport?.w ?? OG_WIDTH;
+    const vh = opts?.viewport?.h ?? OG_HEIGHT;
     const stations = getAllStations().filter(
       (s) =>
         Number.isFinite(s.location.lat) && Number.isFinite(s.location.lng),
     );
     if (stations.length === 0) return null;
 
-    // Equirectangular fit with latitude correction, cover-fit + padding.
+    // Equirectangular fit with latitude correction, contain-fit + margin.
     // Topology once: drives both the viewport focus (below) and the path
     // highlight (further below). Null when unroutable — the card then shows
     // the dim network alone, never an error.
@@ -112,14 +146,12 @@ export function buildShareMap(
     if (w <= 0 || h <= 0) return null;
     // Contain (not cover): the journey viewport must NEVER crop — cover-fit
     // would eat the margin whenever viewport and canvas aspects differ,
-    // clipping endpoint markers. Letterbox bands show the dark base.
-    const s = Math.min(OG_WIDTH / w, OG_HEIGHT / h);
+    // clipping endpoint markers. Letterbox bands show the panel base.
+    const s = Math.min(vw / w, vh / h);
     const cLng = (minLng + maxLng) / 2;
     const cLat = (minLat + maxLat) / 2;
-    const X = (lng: number): number =>
-      OG_WIDTH / 2 + (lng - cLng) * kx * s;
-    const Y = (lat: number): number =>
-      OG_HEIGHT / 2 - (lat - cLat) * s;
+    const X = (lng: number): number => vw / 2 + (lng - cLng) * kx * s;
+    const Y = (lat: number): number => vh / 2 - (lat - cLat) * s;
 
     // Planned path geometry from the shared topology (null-safe: an empty
     // highlight set simply renders the dim network alone).
@@ -190,7 +222,56 @@ export function buildShareMap(
       dots.push({ x, y, r: 11, fill: "#E0001F", glow: "0 0 16px #E0001F" });
       dots.push({ x, y, r: 4.5, fill: "#ffffff", glow: null });
     }
-    return { edges, dots };
+
+    // Landmark pins: presentation-only markers. Projected with the same
+    // transform, clamped inside the panel (a far landmark must never push
+    // the journey viewport or escape its section), each with a walk
+    // connector to its endpoint station. Cyan = place, red = station.
+    const pins: MapDotView[] = [];
+    const connectors: MapEdgeView[] = [];
+    const pinJobs = [
+      { pin: opts?.originPin ?? null, stationId: fromId },
+      { pin: opts?.destPin ?? null, stationId: toId },
+    ];
+    for (const { pin, stationId } of pinJobs) {
+      if (
+        !pin ||
+        !Number.isFinite(pin.lat) ||
+        !Number.isFinite(pin.lng)
+      ) {
+        continue;
+      }
+      const st = getStation(stationId);
+      if (!st) continue;
+      const sx = X(st.location.lng);
+      const sy = Y(st.location.lat);
+      const px = clamp(X(pin.lng), PIN_MARGIN, vw - PIN_MARGIN);
+      const py = clamp(Y(pin.lat), PIN_MARGIN, vh - PIN_MARGIN);
+      const dx = sx - px;
+      const dy = sy - py;
+      const len = Math.hypot(dx, dy);
+      if (len > 4) {
+        connectors.push({
+          cx: (px + sx) / 2,
+          cy: (py + sy) / 2,
+          len,
+          deg: (Math.atan2(dy, dx) * 180) / Math.PI,
+          thick: 3,
+          color: PIN_COLOR,
+          opacity: 0.75,
+          glow: null,
+        });
+      }
+      pins.push({
+        x: px,
+        y: py,
+        r: 9,
+        fill: PIN_COLOR,
+        glow: `0 0 14px ${PIN_COLOR}`,
+      });
+      pins.push({ x: px, y: py, r: 3.5, fill: "#ffffff", glow: null });
+    }
+    return { edges, dots, pins, connectors };
   } catch {
     return null;
   }
