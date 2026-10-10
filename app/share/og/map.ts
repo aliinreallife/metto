@@ -60,6 +60,9 @@ export interface ShareMapModel {
   numTransfers: number;
   /** Segment-boundary stations worth marking on the map. */
   interchangeIds: string[];
+  /** Seam dots welding highlight bars at plain vertices (leg-colored,
+   *  invisible as dots — they read as rounded joints). */
+  joints: MapDotView[];
 }
 
 /** One colored leg of the schematic strip + line chips. */
@@ -177,6 +180,9 @@ export function buildShareMap(
     // destination. Consecutive same-line legs merge for the strip.
     const interchangeIds: string[] = [];
     const legs: ShareLineLeg[] = [];
+    // Leg color per station (segment's last station excluded: it is the
+    // next segment's first — a boundary, never a plain vertex).
+    const legColorByStation = new Map<string, string>();
     let numStops = 0;
     let numTransfers = 0;
     if (topo) {
@@ -184,6 +190,7 @@ export function buildShareMap(
       numTransfers = topo.numTransfers;
       for (let si = 0; si < topo.segments.length; si++) {
         const seg = topo.segments[si];
+        const color = LINE_COLORS[seg.line] ?? "#E0001F";
         for (let i = 0; i < seg.stations.length; i++) {
           const sid = seg.stations[i];
           if (pathStations[pathStations.length - 1] !== sid) {
@@ -191,12 +198,12 @@ export function buildShareMap(
           }
           if (i + 1 < seg.stations.length) {
             pathKeys.add(edgeKey(sid, seg.stations[i + 1]));
+            legColorByStation.set(sid, color);
           }
         }
         if (si < topo.segments.length - 1) {
           interchangeIds.push(seg.stations[seg.stations.length - 1]);
         }
-        const color = LINE_COLORS[seg.line] ?? "#E0001F";
         const label =
           LINES.find((l) => l.id === seg.line)?.name.fa ?? `خط ${seg.line}`;
         const stops = Math.max(seg.stations.length - 1, 1);
@@ -274,6 +281,37 @@ export function buildShareMap(
       dots.push({ x, y, r: 4.5, fill: "#ffffff", glow: null });
     }
 
+    // Seam welds: one leg-colored dot on every plain path vertex, so
+    // independently-rotated highlight bars read as one continuous line.
+    // Same color as the surrounding bars (no core, no glow) — invisible
+    // as dots, visible only as rounded joints. Interchanges and endpoints
+    // already carry their own markers and are skipped here.
+    const joints: MapDotView[] = [];
+    {
+      const seenJoint = new Set<string>();
+      for (const sid of pathStations) {
+        if (
+          seenJoint.has(sid) ||
+          sid === first ||
+          sid === last ||
+          interchangeSet.has(sid)
+        ) {
+          continue;
+        }
+        seenJoint.add(sid);
+        const color = legColorByStation.get(sid);
+        const st = getStation(sid);
+        if (!color || !st) continue;
+        joints.push({
+          x: X(st.location.lng),
+          y: Y(st.location.lat),
+          r: 3.5,
+          fill: color,
+          glow: null,
+        });
+      }
+    }
+
     // Landmark pins: presentation-only markers. Projected with the same
     // transform, clamped inside the panel (a far landmark must never push
     // the journey viewport or escape its section), each with a walk
@@ -331,6 +369,7 @@ export function buildShareMap(
       numStops,
       numTransfers,
       interchangeIds,
+      joints,
     };
   } catch {
     return null;

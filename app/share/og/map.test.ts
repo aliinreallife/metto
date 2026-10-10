@@ -109,8 +109,7 @@ describe("buildShareMap viewports", () => {
     expect(expected).toBeGreaterThan(2 * 2);
   });
 
-  it("exposes legs, counts and interchange ids for the card", () => {
-    const m = buildShareMap("abdol-abad", "iran-khodro", {
+  it("exposes legs, counts and interchange ids for the card", () => {    const m = buildShareMap("abdol-abad", "iran-khodro", {
       viewport: OG_PANEL,
     });
     expect(m).not.toBeNull();
@@ -141,6 +140,30 @@ describe("buildShareMap viewports", () => {
       expect(p.x).toBeLessThanOrEqual(OG_PANEL.w);
       expect(p.y).toBeGreaterThanOrEqual(0);
       expect(p.y).toBeLessThanOrEqual(OG_PANEL.h);
+    }
+  });
+
+  it("welds highlight joints with leg-colored dots", () => {
+    const topo = computeRouteTopology("abdol-abad", "iran-khodro");
+    expect(topo).not.toBeNull();
+    const m = buildShareMap("abdol-abad", "iran-khodro", {
+      viewport: OG_PANEL,
+    });
+    expect(m).not.toBeNull();
+    // One joint per plain vertex: path stations minus endpoints minus
+    // interchanges (those carry their own markers).
+    const pathIds = new Set(topo!.path);
+    pathIds.delete(topo!.path[0]);
+    pathIds.delete(topo!.path[topo!.path.length - 1]);
+    for (const id of m!.interchangeIds) pathIds.delete(id);
+    expect(m!.joints.length).toBe(pathIds.size);
+    const legColors = new Set(m!.legs.map((l) => l.color));
+    for (const j of m!.joints) {
+      expect(legColors.has(j.fill)).toBe(true);
+      expect(j.x).toBeGreaterThanOrEqual(0);
+      expect(j.x).toBeLessThanOrEqual(OG_PANEL.w);
+      expect(j.y).toBeGreaterThanOrEqual(0);
+      expect(j.y).toBeLessThanOrEqual(OG_PANEL.h);
     }
   });
 

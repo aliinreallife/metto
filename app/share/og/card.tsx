@@ -173,14 +173,13 @@ function TripMeta({
 // Left-pointing arrow drawn from boxes, not a glyph: Vazirmatn ships no
 // arrow codepoints (U+2190 etc. are absent from both weights), so a "←"
 // character only renders via system-font fallback — which exists on dev
-// machines but NOT on the production function runtime. A missing glyph
-// renders as nothing (verified: the arrow silently vanished from the
-// split-layout card). Boxes render identically everywhere.
-//
-// Head is a 45°-rotated square inside an overflow-hidden box, so only its
-// left half (a triangle) shows. (The classic zero-size border-triangle
-// trick does NOT work in Satori — it paints a solid square.) Rotation +
-// overflow-hidden are the same primitives the map panel already relies on.
+// machines but NOT on the production function runtime. An SVG data-URI
+// <img> was tried first for extra crispness, but Satori silently drops it
+// (verified blank on real renders). Head is a 45°-rotated square inside an
+// overflow-hidden box, so only its left half (a triangle) shows. (The
+// classic zero-size border-triangle trick does NOT work in Satori either —
+// it paints a solid square.) Rotation + overflow-hidden are the same
+// primitives the map panel already relies on.
 function LeftArrow({ size }: { size: number }) {
   const r1 = (n: number): number => Math.round(n * 10) / 10;
   const barH = Math.max(6, Math.round(size * 0.15));
@@ -323,6 +322,20 @@ export function renderShareCard(
                   borderRadius: "50%",
                   background: d.fill,
                   ...(d.glow ? { boxShadow: d.glow } : {}),
+                }}
+              />
+            ))}
+            {map.joints.map((d, i) => (
+              <div
+                key={`j${i}`}
+                style={{
+                  position: "absolute",
+                  left: d.x - d.r,
+                  top: d.y - d.r,
+                  width: d.r * 2,
+                  height: d.r * 2,
+                  borderRadius: "50%",
+                  background: d.fill,
                 }}
               />
             ))}
