@@ -46,6 +46,62 @@ function RtlRow({
   );
 }
 
+// Left-pointing arrow drawn from boxes, not a glyph: Vazirmatn ships no
+// arrow codepoints (U+2190 etc. are absent from both weights), so a "←"
+// character only renders via system-font fallback — which exists on dev
+// machines but NOT on the production function runtime. A missing glyph
+// renders as nothing (verified: the arrow silently vanished from the
+// split-layout card). Boxes render identically everywhere.
+//
+// Head is a 45°-rotated square inside an overflow-hidden box, so only its
+// left half (a triangle) shows. (The classic zero-size border-triangle
+// trick does NOT work in Satori — it paints a solid square.) Rotation +
+// overflow-hidden are the same primitives the map panel already relies on.
+function LeftArrow({ size }: { size: number }) {
+  const r1 = (n: number): number => Math.round(n * 10) / 10;
+  const barH = Math.max(6, Math.round(size * 0.15));
+  const barW = Math.round(size * 0.55);
+  const headH = Math.max(8, Math.round(size * 0.22));
+  const headW = headH * 2;
+  const sq = headH * Math.SQRT2;
+  const sqOff = headH - sq / 2;
+  return (
+    <RtlRow style={{ flexShrink: 0 }}>
+      <div
+        style={{
+          width: `${barW}px`,
+          height: `${barH}px`,
+          background: "#fafafa",
+          borderRadius: `${r1(barH / 2)}px`,
+          flexShrink: 0,
+        }}
+      />
+      <div
+        style={{
+          width: `${headW}px`,
+          height: `${headH * 2}px`,
+          position: "relative",
+          overflow: "hidden",
+          flexShrink: 0,
+          display: "flex",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: `${r1(sqOff)}px`,
+            top: `${r1(sqOff)}px`,
+            width: `${r1(sq)}px`,
+            height: `${r1(sq)}px`,
+            background: "#fafafa",
+            transform: "rotate(45deg)",
+          }}
+        />
+      </div>
+    </RtlRow>
+  );
+}
+
 export function renderShareCard(
   originDisplay: string,
   destDisplay: string,
@@ -234,7 +290,7 @@ export function renderShareCard(
                   </div>
                 ))}
               </RtlRow>
-              <div style={{ flexShrink: 0 }}>←</div>
+              <LeftArrow size={singleSize} />
               <RtlRow gap={12} style={{ overflow: "hidden", minWidth: 0 }}>
                 {destDisplay.split(" ").map((w, i) => (
                   <div
@@ -278,7 +334,7 @@ export function renderShareCard(
                     {w}
                   </div>
                 ))}
-                <div style={{ flexShrink: 0 }}>←</div>
+                <LeftArrow size={stackSize} />
               </RtlRow>
               <RtlRow
                 gap={12}
