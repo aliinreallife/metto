@@ -527,7 +527,11 @@ describe("reverse lookup against real schedule data", () => {
     expect(
       findTripArrivingByDetailed("a", "b", 9, 540, "saturday_wednesday"),
     ).toEqual({ status: "missing_schedule_data" });
-    expect(findTripArrivingByDetailed("a", "b", 2, 540)).toEqual({
+    // NOTE: no omitted-dayType assertion here — the lookup defaults an
+    // omitted dayType to today (getCurrentDayType), so that case passes on
+    // Thu/Fri and fails Sat–Wed when the fixture has matching trains.
+    // A day with no fixture trains covers the branch deterministically.
+    expect(findTripArrivingByDetailed("a", "b", 2, 540, "friday")).toEqual({
       status: "missing_schedule_data",
     });
   });

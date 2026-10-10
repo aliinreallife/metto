@@ -39,7 +39,8 @@ export const GET_ROUTE_DESCRIPTION =
   "Plan a metro route between two stations. Returns stops, transfers, travel time, and path. " +
   "Departure is an absolute instant: metto automatically derives the correct Iran (Asia/Tehran) " +
   "weekday, Thursday, or Friday/official-holiday timetable from it — never pass a day type. " +
-  "Pass arrive_by instead of depart_at to get the latest feasible journey arriving at or before a deadline.";
+  "Pass arrive_by instead of depart_at to get the latest feasible journey arriving at or before a deadline. " +
+  "Each leg also reports per-stop arrival times (Tehran HH:MM) from the timetable when available.";
 
 export const LIST_STATIONS_DESCRIPTION =
   "List all metro stations. Optionally filter by line number or search query.";
@@ -196,15 +197,80 @@ export function formatRouteSummary(args: {
   travelTimeMinutes: number;
   path: string[];
   scheduleNote: string;
+  departedAt?: string;
+  estimatedArrival?: string | null;
 }): string {
   return [
     `Route: ${args.originFa} (${args.originEn}) → ${args.destFa} (${args.destEn})`,
     `Stops: ${args.stops}`,
     `Transfers: ${args.transfers}`,
     `Travel time: ~${args.travelTimeMinutes} min`,
+    ...(args.departedAt !== undefined
+      ? [`Depart: ${args.departedAt} → Arrive: ${args.estimatedArrival ?? "—"}`]
+      : []),
     `Path: ${args.path.join(" → ")}`,
     `Departure schedule: ${args.scheduleNote}`,
   ].join("\n");
+}
+
+// ---- Per-stop times for get_route legs (additive output fields) ----
+
+// Structural mirror of the planner result — deliberately dependency-free
+// (no domain imports) so this stays client-safe. Accepts RouteResult.
+export type RouteLegStop = { station: string; time: string | null };
+
+export type RouteLeg = {
+  from: string;
+  to: string;
+  line: number;
+  /** Boarding time (Tehran HH:MM), null when estimated/unserved. */
+  departAt: string | null;
+  /** Alighting time (Tehran HH:MM), null when estimated/unserved. */
+  arriveAt: string | null;
+  /** How this leg's timing was derived (timetable/estimated/…). */
+  timing: string;
+  /** Every station on the leg with its timetable time (null when unknown). */
+  stops: RouteLegStop[];
+};
+
+type LegTimingSource = {
+  segments: { stations: string[]; line: number }[];
+  trips: (
+    | {
+        departTime: string;
+        arriveTime: string;
+        train: { stops: { stationId: string; time: string }[] };
+      }
+    | null
+  )[];
+  legTiming: string[];
+};
+
+/**
+ * Build per-leg arrival/departure details from a planner result. Purely
+ * additive: legs without timetable data keep null times instead of failing.
+ */
+export function buildRouteLegs(route: LegTimingSource): RouteLeg[] {
+  return route.segments.map((segment, i) => {
+    const stations = segment.stations;
+    const trip = route.trips[i] ?? null;
+    const timeByStation = new Map(
+      (trip?.train.stops ?? []).map((s) => [s.stationId, s.time]),
+    );
+    const stops: RouteLegStop[] = stations.map((id) => ({
+      station: id,
+      time: timeByStation.get(id) ?? null,
+    }));
+    return {
+      from: stations[0],
+      to: stations[stations.length - 1],
+      line: segment.line,
+      departAt: stops[0]?.time ?? trip?.departTime ?? null,
+      arriveAt: stops[stops.length - 1]?.time ?? trip?.arriveTime ?? null,
+      timing: route.legTiming[i] ?? "estimated",
+      stops,
+    };
+  });
 }
 
 export function formatNoRouteText(
