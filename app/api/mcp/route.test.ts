@@ -1,6 +1,8 @@
-// Regression: GET /api/mcp must open the SSE stream on a live session
-// (200) and return 404 — never 400 — without a valid session id.
-// Strict clients (Cursor) mark the whole server failed on a 400 here.
+// GET /api/mcp must decline standalone SSE streams with 405 — never 400
+// and never a hanging stream. The SDK client treats 405 as "no stream,
+// continue over POST"; anything else marks the server failed (Cursor).
+// This stack only delivers a response once its stream closes, so offering
+// a never-ending stream would hang instead of connecting.
 import { describe, expect, it } from "vitest";
 import { DELETE, GET, POST } from "./route";
 
@@ -40,38 +42,24 @@ async function initializeSession(): Promise<string> {
   return sessionId as string;
 }
 
-describe("GET /api/mcp session handling", () => {
-  it("returns 404 (not 400) without a session id", async () => {
-    const res = await GET(new Request("http://localhost/api/mcp"));
-    expect(res.status).toBe(404);
+describe("GET /api/mcp declines standalone streams with 405", () => {
+  it("returns 405 (not 400) without a session id", async () => {
+    const res = await GET();
+    expect(res.status).toBe(405);
     const body = (await res.json()) as { error: { message: string } };
-    expect(body.error.message).toMatch(/session/i);
+    expect(body.error.message).toMatch(/SSE streams are not supported/);
   });
 
-  it("returns 404 for an unknown session id", async () => {
-    const res = await GET(
-      new Request("http://localhost/api/mcp", {
-        headers: { "mcp-session-id": "00000000-0000-0000-0000-000000000000" },
-      })
-    );
-    expect(res.status).toBe(404);
+  it("returns 405 for an unknown session id", async () => {
+    const res = await GET();
+    expect(res.status).toBe(405);
   });
 
-  it("opens the SSE stream (200) on a live session", async () => {
+  it("returns 405 immediately (no hang) on a live session", async () => {
     const sessionId = await initializeSession();
     try {
-      const res = await GET(
-        new Request("http://localhost/api/mcp", {
-          headers: {
-            Accept: "text/event-stream",
-            "mcp-session-id": sessionId,
-          },
-        })
-      );
-      expect(res.status).toBe(200);
-      expect(res.headers.get("content-type")).toMatch(/text\/event-stream/);
-      // Close the stream; the server keeps it open for notifications.
-      await res.body?.cancel();
+      const res = await GET();
+      expect(res.status).toBe(405);
     } finally {
       await DELETE(
         new Request("http://localhost/api/mcp", {
@@ -82,7 +70,7 @@ describe("GET /api/mcp session handling", () => {
     }
   });
 
-  it("still serves tools/list on the session after the fix", async () => {
+  it("still serves tools/list on the session over POST", async () => {
     const sessionId = await initializeSession();
     try {
       const res = await POST(

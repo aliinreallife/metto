@@ -8,31 +8,33 @@ import { createMettoMcpServer } from "@/lib/mcp/create-server";
 // Store transports by session ID
 const transports = new Map<string, WebStandardStreamableHTTPServerTransport>();
 
-export async function GET(request: Request) {
-  // GET opens the standalone SSE notification stream on an *existing*
-  // session (MCP Streamable HTTP). Delegate to the live transport that owns
-  // the session id — a fresh transport here would fail session validation
-  // with 400 and strict clients (Cursor) treat the server as broken.
-  const sessionId = request.headers.get("mcp-session-id");
-  const existing = sessionId ? transports.get(sessionId) : undefined;
+// MCP handlers must never be statically optimized: every method depends on
+// request headers/body (session id, JSON-RPC payload) and GET returns a
+// never-ending stream. Without this, Next.js may buffer the SSE stream
+// until it closes instead of flushing it progressively.
+export const dynamic = "force-dynamic";
 
-  if (existing) {
-    return existing.handleRequest(request);
-  }
-
-  // No (or unknown) session: there is nothing to stream. Return 404 per the
-  // MCP spec (unknown session) instead of 400 so clients keep the server
-  // listed instead of marking the connection failed.
+export async function GET() {
+  // Standalone SSE streams are intentionally not offered: this stack only
+  // delivers a response once its stream closes, so a never-ending stream
+  // would hang instead of connecting. Per the MCP spec, 405 tells clients
+  // to continue in plain request/response mode over POST (which is how
+  // opencode already works); a 400 here makes strict clients (Cursor) mark
+  // the whole server failed.
   return new Response(
     JSON.stringify({
       jsonrpc: "2.0",
       error: {
         code: -32000,
-        message: "Not Found: unknown or missing session ID",
+        message:
+          "Method not allowed: standalone SSE streams are not supported, use POST",
       },
       id: null,
     }),
-    { status: 404, headers: { "Content-Type": "application/json" } }
+    {
+      status: 405,
+      headers: { "Content-Type": "application/json", Allow: "POST, DELETE" },
+    }
   );
 }
 
