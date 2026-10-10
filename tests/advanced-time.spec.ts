@@ -144,6 +144,34 @@ test.describe("travel time card", () => {
     expect(new URL(page.url()).searchParams.get("timeMode")).toBe("depart");
   });
 
+  test("day stepping caps at one week and labels non-normal days", async ({ page }) => {
+    await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
+    await expandCard(page);
+    await card(page).locator("fieldset").getByText("حرکت در ساعت مشخص", { exact: true }).click();
+    const next = card(page).getByRole("button", { name: "روز بعد" });
+    const badge = card(page).locator("p[aria-live] span");
+    // Any 8 consecutive days include a Thursday and a Friday: stepping
+    // through the whole week must surface a service badge.
+    let sawBadge = false;
+    for (let i = 0; i < 8; i++) {
+      const text = ((await badge.textContent()) ?? "").trim();
+      if (/سرویس/.test(text)) {
+        sawBadge = true;
+        break;
+      }
+      if (await next.isDisabled()) break;
+      await next.click();
+    }
+    expect(sawBadge).toBe(true);
+    // The horizon caps at +7 days: the next-day button ends disabled.
+    for (let i = 0; i < 8; i++) {
+      if (await next.isDisabled()) break;
+      await next.click();
+    }
+    await expect(next).toBeDisabled();
+    expect(new URL(page.url()).searchParams.get("timeMode")).toBe("depart");
+  });
+
   test("past depart time shows notice with Use-now and Edit-time actions", async ({ page }) => {
     await page.goto(
       `/route?from=${FROM}&to=${TO}&timeMode=depart&at=2020-01-01T05:30:00.000Z`,

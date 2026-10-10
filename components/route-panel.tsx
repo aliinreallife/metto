@@ -251,36 +251,22 @@ export function RoutePanel({
         />
       </div>
       {plan && (
-        <div data-testid="plan-banner" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-medium">
-          <Clock aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
-          <span>
-            {t.beAtStationBy}{" "}
-            <span className="tnum font-bold">
-              {persianDigits(formatTehranClock(route.departedAtMs), lang)}
-            </span>
-          </span>
-          <span aria-hidden="true" className="text-muted-foreground">·</span>
-          <span>
-            {t.trainAt}{" "}
-            <span className="tnum font-bold">
-              {persianDigits(route.trips[0]?.departTime ?? "—", lang)}
-            </span>
-          </span>
-          <span aria-hidden="true" className="text-muted-foreground">·</span>
-          <span>
-            {t.arriveAt}{" "}
-            <span className="tnum font-bold">{persianDigits(eta, lang)}</span>
-          </span>
+        <div data-testid="plan-banner" className="flex flex-wrap gap-2 rounded-xl border border-primary/40 bg-primary/10 p-2">
+          <PlanTime
+            label={t.beAtStationBy}
+            value={persianDigits(formatTehranClock(route.departedAtMs), lang)}
+          />
+          <PlanTime
+            label={t.trainAt}
+            value={persianDigits(route.trips[0]?.departTime ?? "—", lang)}
+          />
+          <PlanTime label={t.arriveAt} value={persianDigits(eta, lang)} />
           {plan.mode === "arrive" && (
-            <>
-              <span aria-hidden="true" className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground">
-                {t.arriveBy}{" "}
-                <span className="tnum font-bold">
-                  {persianDigits(formatTehranClock(plan.atMs), lang)}
-                </span>
-              </span>
-            </>
+            <PlanTime
+              label={t.arriveBy}
+              value={persianDigits(formatTehranClock(plan.atMs), lang)}
+              muted
+            />
           )}
         </div>
       )}
@@ -388,6 +374,23 @@ function Stat({
   );
 }
 
+function PlanTime({
+  label,
+  value,
+  muted = false,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+}) {
+  return (
+    <div className="flex min-w-28 flex-1 flex-col items-center gap-0.5 rounded-lg bg-background/70 px-2 py-2 text-center">
+      <span className="text-[11px] font-medium text-muted-foreground md:text-xs">{label}</span>
+      <span className={cn("tnum text-xl font-bold leading-tight md:text-2xl", muted && "text-muted-foreground")}>{value}</span>
+    </div>
+  );
+}
+
 function SegmentCard({
   line,
   stations,
@@ -421,6 +424,7 @@ function SegmentCard({
   const nextDep = useMemo(() => {
     const deps = getNextDepartures(board, line, getCurrentDayType(undefined, isHolidayDate), 10);
     return deps;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `loaded` retriggers this memo after the async timetable finishes loading; it is intentionally not read inside.
   }, [board, line, loaded, isHolidayDate]);
 
   const next = nextDep[0] ?? null;

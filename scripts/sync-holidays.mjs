@@ -193,7 +193,10 @@ async function main() {
     if (!cursor) cursor = tehranDateStr(Date.now());
     const days = Math.min(Number(getArg("--days", max)) || max, max);
     targets = [];
-    for (let i = 0; i < days; i++) targets.push(cursor), (cursor = addDays(cursor, 1));
+    for (let i = 0; i < days; i++) {
+      targets.push(cursor);
+      cursor = addDays(cursor, 1);
+    }
     mkdirSync(path.dirname(LOCK_PATH), { recursive: true });
     writeFileSync(LOCK_PATH, String(process.pid));
     process.on("exit", () => { try { rmSync(LOCK_PATH, { force: true }); } catch {} });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { X, Clock, Zap, ChevronDown } from "lucide-react";
+import { X, Zap, ChevronDown } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
 import { getStation, getStationLines } from "@/lib/metro/selectors";
@@ -9,7 +9,6 @@ import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import {
   getAllDepartures,
   getCurrentDayType,
-  type Departure,
   type DayType,
 } from "@/lib/schedule-utils";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
@@ -74,6 +73,7 @@ export function StationTimesheet({
     }
 
     return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `loaded` retriggers this memo after the async timetable finishes loading; it is intentionally not read inside.
   }, [station.id, dayType, loaded]);
 
   // Collect all unique directions across all lines
@@ -146,7 +146,7 @@ export function StationTimesheet({
           >
             {isFa ? "همه" : "All"}
           </button>
-          {allDirections.map(([dirId, dirName]) => (
+          {allDirections.map(([dirId]) => (
             <button
               key={dirId}
               type="button"

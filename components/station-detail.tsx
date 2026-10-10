@@ -36,6 +36,7 @@ export function StationDetail({
   const departures = useMemo(() => {
     const grouped = getStationDepartures(station.id, getCurrentDayType(undefined, isHolidayDate), 3);
     return grouped.flatMap((g) => g.departures);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `loaded` retriggers this memo after the async timetable finishes loading; it is intentionally not read inside.
   }, [station.id, loaded, isHolidayDate]);
 
   return (

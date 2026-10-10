@@ -21,7 +21,6 @@ export function NearbyPage() {
       <div className="relative min-h-0 flex-1">
         <NearbyTab
           lang={lang}
-          onSetOrigin={(id) => router.push(`/?from=${id}`)}
           onSetDest={(id) => router.push(`/?to=${id}`)}
         />
       </div>

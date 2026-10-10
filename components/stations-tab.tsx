@@ -18,11 +18,10 @@ const LINE_NUMBERS = Object.keys(LINE_COLORS)
 
 type Props = {
   lang: Lang;
-  onSetOrigin: (id: string) => void;
   onSetDest: (id: string) => void;
 };
 
-export function StationsTab({ lang, onSetOrigin, onSetDest }: Props) {
+export function StationsTab({ lang, onSetDest }: Props) {
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const [query, setQuery] = useState("");

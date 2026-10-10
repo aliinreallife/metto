@@ -4,14 +4,21 @@ import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Clock, Minus, Plus } 
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
+  describePlanDay,
   formatDateLabel,
   formatPlanSummary,
+  PLAN_HORIZON_DAYS,
   shiftPlanDay,
   shiftPlanTime,
   shiftTehranDate,
   type TimeMode,
 } from "@/lib/route-planning";
 import { tehranParts } from "@/lib/tehran-time";
+import {
+  getLocalHolidayDataset,
+  getLocalIsHolidayDate,
+} from "@/lib/holidays/use-holiday-data";
+import { upcomingHolidays } from "@/lib/holidays/local-resolver";
 
 /**
  * Compact "travel time" control: a collapsed summary card expanding inline
@@ -195,7 +202,7 @@ function PlannerControls({
 }) {
   const t = STRINGS[lang];
   const todayStr = tehranParts(nowMs).dateStr;
-  const maxDateStr = shiftTehranDate(todayStr, 30);
+  const maxDateStr = shiftTehranDate(todayStr, PLAN_HORIZON_DAYS);
   const parts = tehranParts(atMs);
   const hh = Math.floor(parts.minuteOfDay / 60);
   const mm = parts.minuteOfDay % 60;
@@ -264,6 +271,20 @@ function DayRow({
   onShiftDay: (delta: number) => void;
 }) {
   const t = STRINGS[lang];
+  // Non-normal timetable days (Thursday / Friday / official holiday) get a
+  // small badge under the date. Sync read over the shared in-memory holiday
+  // dataset — no I/O. Stays null (and the line blank) on normal days.
+  const holidayRec = upcomingHolidays(
+    getLocalHolidayDataset(),
+    dateStr,
+    5,
+  ).find((r) => r.gregorianDate === dateStr);
+  const dayBadge = describePlanDay(
+    lang,
+    dateStr,
+    getLocalIsHolidayDate(),
+    holidayRec ? { fa: holidayRec.faName, en: holidayRec.enName } : null,
+  );
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-1" role="group" aria-label={t.pickDate}>
@@ -279,6 +300,9 @@ function DayRow({
         </button>
         <p aria-live="polite" className="min-w-0 flex-1 truncate text-center text-sm font-bold">
           {formatDateLabel(lang, dateStr, nowMs)}
+          <span className="block truncate text-[11px] font-medium text-primary">
+            {dayBadge ?? " "}
+          </span>
         </p>
         <button
           type="button"

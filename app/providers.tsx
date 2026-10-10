@@ -65,6 +65,24 @@ export function MetroProvider({ children }: { children: ReactNode }) {
   const [originPlace, setOriginPlace] = useState<PlacePin | null>(null);
   const [destPlace, setDestPlace] = useState<PlacePin | null>(null);
 
+  // Bounded retry chain for the initial timetable load. Runs only while
+  // schedule data is still inactive (each success activates + notifies).
+  // Stable identity so the mount-once primer effect below never refires.
+  const primeScheduleWithRetry = useCallback(function prime(attempt: number) {
+    const delays = [2000, 5000, 15000, 30000, 60000];
+    const delay = delays[Math.min(attempt, delays.length - 1)];
+    window.setTimeout(() => {
+      void loadScheduleData().then(
+        () => {
+          void refreshScheduleData();
+        },
+        () => {
+          if (attempt + 1 < delays.length) prime(attempt + 1);
+        },
+      );
+    }, delay);
+  }, []);
+
   // Hydrate from localStorage + preload schedule data.
   // Route + place selections survive tab switches via context already;
   // localStorage additionally survives full reloads (URL params win when
@@ -119,24 +137,7 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("online", onOnline);
     };
-  }, []);
-
-  // Bounded retry chain for the initial timetable load. Runs only while
-  // schedule data is still inactive (each success activates + notifies).
-  function primeScheduleWithRetry(attempt: number) {
-    const delays = [2000, 5000, 15000, 30000, 60000];
-    const delay = delays[Math.min(attempt, delays.length - 1)];
-    window.setTimeout(() => {
-      void loadScheduleData().then(
-        () => {
-          void refreshScheduleData();
-        },
-        () => {
-          if (attempt + 1 < delays.length) primeScheduleWithRetry(attempt + 1);
-        },
-      );
-    }, delay);
-  }
+  }, [primeScheduleWithRetry]);
 
   // Keep <html lang/dir> in sync with app language on every app route.
   // This is the shared boundary, so /stations, /nearby, and /map get it
