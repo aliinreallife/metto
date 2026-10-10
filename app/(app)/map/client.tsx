@@ -130,6 +130,7 @@ export function MapPage() {
   useEffect(() => {
     try {
       if (localStorage.getItem("metto.mapSaveNoticeSeen") !== "1") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration localStorage read; the `true` initializer above keeps SSR/client markup identical.
         setSaveNoticeSeen(false);
       }
     } catch {
@@ -157,9 +158,12 @@ export function MapPage() {
   }
 
   // A dismissed card stays dismissed for this search; a new search (URL change) brings cards back.
-  useEffect(() => {
+  // Render-adjust (not an effect) so the reset applies before paint.
+  const [prevSearchParams, setPrevSearchParams] = useState(searchParams);
+  if (prevSearchParams !== searchParams) {
+    setPrevSearchParams(searchParams);
     setDismissedKeys(new Set());
-  }, [searchParams]);
+  }
 
   const visiblePlaceInfos = ENABLE_PLACE_CARD_DISMISS
     ? placeInfos.filter((p) => !dismissedKeys.has(`${p.role}:${p.label}`))

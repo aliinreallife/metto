@@ -65,11 +65,15 @@ export function OfflineStatus({ lang }: { lang: Lang }) {
   // still offline-incomplete after the grace. Recovery inside the window
   // means it never renders.
   const [warningArmed, setWarningArmed] = useState(false);
+  // Disarm immediately when the phase changes (render-adjust so the warning
+  // never flashes for a frame); the grace timer below re-arms if needed.
+  const [prevPhase, setPrevPhase] = useState(phase);
+  if (prevPhase !== phase) {
+    setPrevPhase(phase);
+    setWarningArmed(false);
+  }
   useEffect(() => {
-    if (phase !== "offline-incomplete") {
-      setWarningArmed(false);
-      return;
-    }
+    if (phase !== "offline-incomplete") return;
     const timer = window.setTimeout(() => setWarningArmed(true), 1750);
     return () => window.clearTimeout(timer);
   }, [phase]);

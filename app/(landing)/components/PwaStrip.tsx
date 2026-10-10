@@ -73,6 +73,7 @@ export function PwaStrip() {
   const [remembered, setRemembered] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount hydration from browser-only APIs (display-mode/localStorage); initializers would crash on the server or hydrate mismatched UI.
     setPwaStandalone(isStandalone());
     setRemembered(readRememberedInstall());
     const onPrompt = (e: Event) => {
