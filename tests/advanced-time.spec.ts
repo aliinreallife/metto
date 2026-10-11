@@ -96,13 +96,11 @@ test.describe("travel time card", () => {
     expect(url.searchParams.get("timeMode")).toBe("depart");
     expect(url.searchParams.get("at")).toBeTruthy();
 
-    // Plan banner communicates be-at-station / train / arrival.
-    const banner = page.getByTestId("plan-banner");
-    await expect(banner).toBeVisible({ timeout: 15_000 });
-    await expect(banner.getByText("حضور در ایستگاه تا ساعت")).toBeVisible();
+    // Plan banner is arrive-only: depart mode shows no banner.
+    await expect(page.getByTestId("plan-banner")).toHaveCount(0);
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("plan-banner")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("plan-banner")).toHaveCount(0);
     expect(new URL(page.url()).searchParams.get("timeMode")).toBe("depart");
   });
 
@@ -116,7 +114,9 @@ test.describe("travel time card", () => {
     expect(new URL(page.url()).searchParams.get("timeMode")).toBe("arrive");
     const arriveBanner = page.getByTestId("plan-banner");
     await expect(arriveBanner).toBeVisible({ timeout: 15_000 });
-    await expect(arriveBanner.getByText("رسیدن تا ساعت")).toBeVisible();
+    // Arrive mode shows the countdown-only hero with live seconds.
+    await expect(arriveBanner.getByText(/وقت داری/)).toBeVisible();
+    await expect(arriveBanner.getByText(/[۰-۹]+ ثانیه/)).toBeVisible();
 
     await page.reload({ waitUntil: "domcontentloaded" });
     expect(new URL(page.url()).searchParams.get("timeMode")).toBe("arrive");
@@ -141,6 +141,37 @@ test.describe("travel time card", () => {
     await expect(page.getByTestId("hour-value")).toHaveText(enToFa("09"));
     await expect(page.getByTestId("minute-value")).toHaveText(enToFa("00"));
     await expect(card(page).locator("p[aria-live]")).toContainText("فردا");
+    expect(new URL(page.url()).searchParams.get("timeMode")).toBe("depart");
+  });
+
+  test("day stepping caps at one week and labels non-normal days", async ({ page }) => {
+    await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
+    await expandCard(page);
+    await card(page).locator("fieldset").getByText("حرکت در ساعت مشخص", { exact: true }).click();
+    const next = card(page).getByRole("button", { name: "روز بعد" });
+    const badge = card(page).getByTestId("day-badge");
+    // Any 8 consecutive days include a Thursday and a Friday: stepping
+    // through the whole week must surface a weekday pill (a holiday-name
+    // pill on an earlier day does not stop the walk).
+    let sawWeekday = false;
+    for (let i = 0; i < 8; i++) {
+      if (await badge.isVisible()) {
+        const text = ((await badge.textContent()) ?? "").trim();
+        if (/پنجشنبه|جمعه/.test(text)) {
+          sawWeekday = true;
+          break;
+        }
+      }
+      if (await next.isDisabled()) break;
+      await next.click();
+    }
+    expect(sawWeekday).toBe(true);
+    // The horizon caps at +7 days: the next-day button ends disabled.
+    for (let i = 0; i < 8; i++) {
+      if (await next.isDisabled()) break;
+      await next.click();
+    }
+    await expect(next).toBeDisabled();
     expect(new URL(page.url()).searchParams.get("timeMode")).toBe("depart");
   });
 

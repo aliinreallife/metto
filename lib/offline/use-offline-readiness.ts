@@ -105,13 +105,9 @@ export function useOfflineReadiness(): OfflineReadiness {
     const markChecked = () => {
       if (!cancelled) setScheduleChecked(true);
     };
-    if (isScheduleDataLoaded()) {
-      setScheduleLoaded(true);
-      markChecked();
-      return () => {
-        cancelled = true;
-      };
-    }
+    // onScheduleDataReady fires immediately when the data is already
+    // loaded, so both the initial and the render→effect race are covered
+    // without a synchronous setState.
     const unsubscribe = onScheduleDataReady(() => {
       if (cancelled) return;
       setScheduleLoaded(true);
@@ -206,17 +202,11 @@ export function useOfflineReadiness(): OfflineReadiness {
   }, []);
 
   useEffect(() => {
-    // Holiday dataset ships bundled, so the sync read below settles the
-    // check immediately in practice; errors count as settled too. The poll
-    // covers the LKG-storage path resolving after mount and only affects
+    // Holiday dataset ships bundled, so the state initializer above already
+    // settled the loaded flag in practice; errors count as settled too. The
+    // poll covers the LKG-storage path resolving after mount and only affects
     // the loaded flag, never verification.
-    try {
-      if (getLocalHolidayDataset() !== null) {
-        setHolidayLoaded(true);
-      }
-    } catch {
-      // Sync read failed — still a completed pass.
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-once completion flag: a `true` useState initializer would render a different first pass on the client than on the server (hydration mismatch).
     setHolidayChecked(true);
     const t = window.setInterval(() => {
       try {

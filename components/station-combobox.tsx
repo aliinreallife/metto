@@ -33,6 +33,15 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
   const listRef = useRef<HTMLUListElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  // Reset the active descendant when the query or open state changes. Done
+  // during render (adjusting state from the previous render) so keyboard
+  // users never see a stale highlight for a frame.
+  const [prevQueryOpen, setPrevQueryOpen] = useState<string | null>(null)
+  const queryOpenKey = `${open}:${query}`
+  if (prevQueryOpen !== queryOpenKey) {
+    setPrevQueryOpen(queryOpenKey)
+    setActiveIndex(null)
+  }
   const rawId = useId()
   const safeId = rawId.replace(/[^a-zA-Z0-9_-]/g, "")
   const triggerId = id ?? `station-trigger-${safeId}`
@@ -61,6 +70,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
   // Debounced place search (online-only; station search stays local/offline).
   useEffect(() => {
     if (query.length < 3 || isOffline) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced async search orchestration with synchronous reset branches; equivalent render-derived state would desync the abort/timeout lifecycle.
       setPlaces([])
       setPlacesLoading(false)
       return
@@ -86,20 +96,17 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
     }
   }, [query, lang, isOffline])
 
-  // Clear places when dropdown closes
+  // Clear places when dropdown closes (transient search state must not
+  // survive into the next opening).
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset-on-close for transient search state; the close originates from many handlers (outside click, Escape, selection, toggle), so a single effect is the reliable reset point.
       setPlaces([])
       setPlacesLoading(false)
       setQuery("")
       setActiveIndex(null)
     }
   }, [open])
-
-  // Reset active descendant when the result set changes.
-  useEffect(() => {
-    setActiveIndex(null)
-  }, [query, open])
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -186,7 +193,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
 
   useEffect(() => {
     if (activeIndex === null || !open) return
-    const el = document.getElementById(optionId(activeIndex))
+    const el = document.getElementById(`${listboxId}-opt-${activeIndex}`)
     el?.scrollIntoView({ block: "nearest" })
   }, [activeIndex, open, listboxId])
 

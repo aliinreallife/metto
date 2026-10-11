@@ -19,6 +19,7 @@ export function Reveal({
     const node = ref.current;
     if (!node) return;
     if (typeof IntersectionObserver === "undefined") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- no-observer fallback (SSR/old browsers); a `true` initializer would hydrate mismatched visibility on clients that do observe.
       setShown(true);
       return;
     }

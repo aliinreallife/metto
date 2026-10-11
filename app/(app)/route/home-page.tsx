@@ -156,6 +156,7 @@ export function HomePage() {
       localStorage.setItem("route.seen", "1");
       if (!searchParams.get("from")) {
         const saved = localStorage.getItem("route.from");
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- mount hydration from localStorage (URL wins); initializers would crash on the server or hydrate mismatched selections.
         if (saved) setOriginId(saved);
       }
       if (!searchParams.get("to")) {
@@ -448,7 +449,10 @@ function RouteView({
   const [timeExpanded, setTimeExpanded] = useState(() => timeMode !== "now");
   const timeCardRef = useRef<HTMLDivElement>(null);
   const gpsLangRef = useRef(lang);
-  gpsLangRef.current = lang;
+  // Latest lang for the async reverse-geocode callback (read long after render).
+  useEffect(() => {
+    gpsLangRef.current = lang;
+  }, [lang]);
 
   function expandTimeCard(): void {
     setTimeExpanded(true);

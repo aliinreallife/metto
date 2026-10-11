@@ -29,6 +29,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const lines = getStationLines(station.id);
+  const linesKey = lines.join(",");
   const underConstruction = station.status !== "operational";
 
   const activeAmenities = Object.entries(station.amenities).filter(
@@ -41,7 +42,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
       departures: getNextDepartures(station.id, line, getCurrentDayType(undefined, isHolidayDate), 2),
     }));
     return grouped.filter((g) => g.departures.length > 0);
-  }, [station.id, lines.join(","), loaded, isHolidayDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- linesKey stands in for the lines array and `loaded` retriggers after the async timetable finishes loading; neither is read inside.
+  }, [station.id, linesKey, loaded, isHolidayDate]);
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const constructionId = `station-card-${station.id}-${uid}-construction`;
 

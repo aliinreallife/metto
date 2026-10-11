@@ -19,11 +19,14 @@ import {
 } from "./lib/schedule-utils";
 import type { LineScheduleData } from "./lib/schedule-data";
 import {
+  describePlanDay,
+  formatCountdown,
   getArriveByViewState,
   getDayTypeForServiceDate,
   parseTimeModeParams,
   applyTimeParams,
   planRoute,
+  PLAN_HORIZON_DAYS,
   seedNextFiveMinutes,
   shiftPlanDay,
   shiftTehranDate,
@@ -597,6 +600,78 @@ describe("continuous picker datetime", () => {
       hh: 7,
       mm: 0,
     });
+  });
+});
+
+describe("arrive-by countdown line", () => {
+  it("counts minutes and seconds to the origin station", () => {
+    expect(formatCountdown("en", "Tajrish", (23 * 60 + 14) * 1000)).toBe(
+      "You've got 23 min and 14 sec to reach Tajrish",
+    );
+    expect(formatCountdown("fa", "تجریش", (23 * 60 + 14) * 1000)).toBe(
+      "۲۳ دقیقه و ۱۴ ثانیه وقت داری تا برسی تجریش",
+    );
+  });
+
+  it("shows seconds alone below one minute", () => {
+    expect(formatCountdown("en", "Tajrish", 30_000)).toBe(
+      "You've got 30 sec to reach Tajrish",
+    );
+    expect(formatCountdown("fa", "تجریش", 30_000)).toBe(
+      "۳۰ ثانیه وقت داری تا برسی تجریش",
+    );
+  });
+
+  it("hides the line when time is up", () => {
+    expect(formatCountdown("en", "Tajrish", 0)).toBeNull();
+    expect(formatCountdown("fa", "تجریش", -1000)).toBeNull();
+    expect(formatCountdown("en", "Tajrish", Number.NaN)).toBeNull();
+  });
+});
+
+describe("plan day badges", () => {
+  // 2026-09-07 is a Monday; only 2026-03-23 is a listed holiday here.
+  const isHolidayDate = (d: string): boolean => d === "2026-03-23";
+
+  it("caps the picker horizon at one week", () => {
+    expect(PLAN_HORIZON_DAYS).toBe(7);
+  });
+
+  it("stays quiet on normal weekdays", () => {
+    expect(describePlanDay("en", "2026-09-07", isHolidayDate)).toBeNull();
+    expect(describePlanDay("fa", "2026-09-08", isHolidayDate)).toBeNull();
+  });
+
+  it("badges Thursday with the weekday name", () => {
+    expect(describePlanDay("en", "2026-09-10", isHolidayDate)).toBe(
+      "Thursday",
+    );
+    expect(describePlanDay("fa", "2026-09-10", isHolidayDate)).toBe(
+      "پنجشنبه",
+    );
+  });
+
+  it("badges Friday with the weekday name (not as an official holiday)", () => {
+    expect(describePlanDay("en", "2026-09-11", isHolidayDate)).toBe("Friday");
+    expect(describePlanDay("fa", "2026-09-11", isHolidayDate)).toBe("جمعه");
+  });
+
+  it("badges listed holidays with their name when known", () => {
+    expect(
+      describePlanDay("en", "2026-03-23", isHolidayDate, {
+        fa: "نوروز",
+        en: "Nowruz",
+      }),
+    ).toBe("Nowruz");
+    expect(
+      describePlanDay("fa", "2026-03-23", isHolidayDate, {
+        fa: "نوروز",
+        en: "Nowruz",
+      }),
+    ).toBe("نوروز");
+    // Unknown name falls back to the weekday (2026-03-23 is a Monday).
+    expect(describePlanDay("en", "2026-03-23", isHolidayDate)).toBe("Monday");
+    expect(describePlanDay("fa", "2026-03-23", isHolidayDate)).toBe("دوشنبه");
   });
 });
 

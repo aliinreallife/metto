@@ -25,7 +25,6 @@ import { LocationErrorActions } from "@/components/location-error";
 
 type Props = {
   lang: Lang;
-  onSetOrigin: (id: string) => void;
   onSetDest: (id: string) => void;
 };
 
@@ -38,16 +37,19 @@ type LocState =
 
 const AMENITY_KEYS = Object.keys(AMENITY_LABELS) as AmenityKey[];
 
-export function NearbyTab({ lang, onSetOrigin, onSetDest }: Props) {
+export function NearbyTab({ lang, onSetDest }: Props) {
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const [loc, setLoc] = useState<LocState>({ kind: "none" });
   const [selectedAmenities, setSelectedAmenities] = useState<AmenityKey[]>([]);
 
-  const coords =
-    loc.kind === "gps" || loc.kind === "station"
-      ? { lat: loc.lat, lng: loc.lng }
-      : null;
+  const coords = useMemo(
+    () =>
+      loc.kind === "gps" || loc.kind === "station"
+        ? { lat: loc.lat, lng: loc.lng }
+        : null,
+    [loc],
+  );
 
   const results = useMemo(() => {
     if (!coords) return [];

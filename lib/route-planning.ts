@@ -337,7 +337,7 @@ export function shiftTehranDate(tehranDateStr: string, deltaDays: number): strin
 /**
  * Pure continuous-datetime step for the time picker: 23:55 + 5 min becomes
  * tomorrow 00:00, and 00:00 − 5 min becomes yesterday 23:55. Bounds (today →
- * +30 days) are enforced by the caller, not here.
+ * +PLAN_HORIZON_DAYS) are enforced by the caller, not here.
  */
 export function shiftTimeOfDay(
   dateStr: string,
@@ -513,6 +513,70 @@ export function formatDateLabel(
     absolute = dateStr;
   }
   return relative ? `${relative} · ${absolute}` : absolute;
+}
+
+/** How far ahead the time picker lets the user plan (today → +7 days). */
+export const PLAN_HORIZON_DAYS = 7;
+
+/**
+ * Pill-badge text for a planned Tehran calendar date: the localized weekday
+ * for Thursday/Friday service days, the official holiday name for listed
+ * holidays (weekday fallback when the name is unknown). Returns null for
+ * normal days so the day row stays quiet most of the week.
+ */
+export function describePlanDay(
+  lang: Lang,
+  dateStr: string,
+  isHolidayDate: IsHolidayDate,
+  holidayName?: { fa: string; en: string } | null,
+): string | null {
+  const scheduleDay = getMetroScheduleDayType(
+    tehranMidnightEpoch(dateStr),
+    isHolidayDate,
+  );
+  if (scheduleDay !== "thursday" && scheduleDay !== "holiday") return null;
+  if (scheduleDay === "holiday" && isHolidayDate(dateStr) === true) {
+    const name = holidayName?.[lang];
+    if (name) return name;
+  }
+  try {
+    return new Intl.DateTimeFormat(lang === "fa" ? "fa-IR" : "en-GB", {
+      timeZone: TEHRAN_TZ,
+      weekday: "long",
+    }).format(new Date(tehranMidnightEpoch(dateStr) + 12 * 3_600_000));
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Live countdown line for the arrive-by hero: time left to reach the origin
+ * station, with seconds so it reads as ticking, not frozen. Null when the
+ * be-at-station instant has passed (callers hide the line; past plans never
+ * route, so this is only race armor).
+ */
+export function formatCountdown(
+  lang: Lang,
+  stationName: string,
+  remainingMs: number,
+): string | null {
+  if (!(remainingMs > 0)) return null;
+  const t = STRINGS[lang];
+  const num = (n: number) => persianDigits(n, lang);
+  const totalSec = Math.floor(remainingMs / 1000);
+  // FA «۲۲ دقیقه و ۱۴ ثانیه وقت داری تا برسی تجریش» / EN equivalent below.
+  // Word order differs per language, so each branch assembles its own order.
+  if (totalSec < 60) {
+    const secPart = `${num(totalSec)} ${t.countdownSec}`;
+    return lang === "fa"
+      ? `${secPart} ${t.countdownHave} ${t.countdownReach} ${stationName}`
+      : `${t.countdownHave} ${secPart} ${t.countdownReach} ${stationName}`;
+  }
+  const minPart = `${num(Math.floor(totalSec / 60))} ${t.minEst}`;
+  const secPart = `${num(totalSec % 60)} ${t.countdownSec}`;
+  return lang === "fa"
+    ? `${minPart} ${t.countdownAnd} ${secPart} ${t.countdownHave} ${t.countdownReach} ${stationName}`
+    : `${t.countdownHave} ${minPart} ${t.countdownAnd} ${secPart} ${t.countdownReach} ${stationName}`;
 }
 
 // ---- Shareable URL state (web planner) ----

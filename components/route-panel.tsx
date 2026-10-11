@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   AlarmClock,
   ArrowRight,
@@ -21,6 +21,7 @@ import { canBoardAtStation } from "@/lib/metro/selectors";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatTehranClock } from "@/lib/tehran-time";
+import { formatCountdown } from "@/lib/route-planning";
 import { cn } from "@/lib/utils";
 import {
   getNextDepartures,
@@ -219,6 +220,20 @@ export function RoutePanel({
           {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
         </div>
       )}
+      {plan && plan.mode === "arrive" && route.path[0] && (
+        <div data-testid="plan-banner" className="flex items-center gap-2.5 rounded-xl bg-primary px-3.5 py-2.5 text-primary-foreground">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20">
+            <AlarmClock aria-hidden="true" className="size-4" />
+          </span>
+          <p className="min-w-0 flex-1 truncate text-sm font-medium md:text-base">
+            <CountdownLine
+              lang={lang}
+              stationName={name(route.path[0])}
+              targetMs={route.departedAtMs}
+            />
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-3 md:gap-4">
         <Stat
           icon={<TrainFront aria-hidden="true" className="size-5 md:size-6" />}
@@ -250,40 +265,6 @@ export function RoutePanel({
           label={isFa ? "رسیدن" : "arrival"}
         />
       </div>
-      {plan && (
-        <div data-testid="plan-banner" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-medium">
-          <Clock aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
-          <span>
-            {t.beAtStationBy}{" "}
-            <span className="tnum font-bold">
-              {persianDigits(formatTehranClock(route.departedAtMs), lang)}
-            </span>
-          </span>
-          <span aria-hidden="true" className="text-muted-foreground">·</span>
-          <span>
-            {t.trainAt}{" "}
-            <span className="tnum font-bold">
-              {persianDigits(route.trips[0]?.departTime ?? "—", lang)}
-            </span>
-          </span>
-          <span aria-hidden="true" className="text-muted-foreground">·</span>
-          <span>
-            {t.arriveAt}{" "}
-            <span className="tnum font-bold">{persianDigits(eta, lang)}</span>
-          </span>
-          {plan.mode === "arrive" && (
-            <>
-              <span aria-hidden="true" className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground">
-                {t.arriveBy}{" "}
-                <span className="tnum font-bold">
-                  {persianDigits(formatTehranClock(plan.atMs), lang)}
-                </span>
-              </span>
-            </>
-          )}
-        </div>
-      )}
       {topWarning && (
         <div
           role={topWarning.severity === "red" ? "alert" : "status"}
@@ -388,6 +369,34 @@ function Stat({
   );
 }
 
+/**
+ * Self-ticking countdown line: re-renders only itself every second so the
+ * seconds visibly tick. Mount-gated (renders nothing on first paint) so SSR
+ * and hydration markup agree on the live clock value.
+ */
+function CountdownLine({
+  lang,
+  stationName,
+  targetMs,
+}: {
+  lang: Lang;
+  stationName: string;
+  targetMs: number;
+}) {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount gate for client-only live content; rendering the clock on first paint would hydrate mismatched seconds.
+    setMounted(true);
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  if (!mounted) return null;
+  const text = formatCountdown(lang, stationName, targetMs - nowMs);
+  if (text === null) return null;
+  return <span className="tnum">{text}</span>;
+}
+
 function SegmentCard({
   line,
   stations,
@@ -421,6 +430,7 @@ function SegmentCard({
   const nextDep = useMemo(() => {
     const deps = getNextDepartures(board, line, getCurrentDayType(undefined, isHolidayDate), 10);
     return deps;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `loaded` retriggers this memo after the async timetable finishes loading; it is intentionally not read inside.
   }, [board, line, loaded, isHolidayDate]);
 
   const next = nextDep[0] ?? null;

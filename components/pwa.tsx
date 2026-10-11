@@ -224,6 +224,7 @@ export function InstallButton({
         navigatorStandalone:
           (nav as Navigator & { standalone?: boolean }).standalone === true,
       })
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only detection from browser-only APIs (userAgent/matchMedia); a useState initializer would crash on the server or hydrate mismatched UI.
       setIsStandalone(standalone)
       setIsIosStandaloneHint(isIos && !standalone)
     } catch {

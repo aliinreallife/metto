@@ -39,29 +39,7 @@ async function mockTiles(context: BrowserContext) {
   );
 }
 
-async function waitForOfflineReady(page: Page) {
-  const status = page.getByTestId("offline-status");
-  await expect(status).toBeAttached({ timeout: 60_000 });
-  await expect
-    .poll(
-      async () =>
-        status.getAttribute("data-phase").then((p) => p ?? "unknown"),
-      { timeout: 60_000 },
-    )
-    .not.toBe("preparing");
-  const phase = await status.getAttribute("data-phase");
-  expect(["ready", "offline-ready"]).toContain(phase);
-}
-
-/** The mobile bottom tab bar. */
-function bottomNav(page: Page) {
-  return page.locator("footer.fixed.bottom-0 nav");
-}
-
-function tabLink(page: Page, name: string) {
-  return bottomNav(page).getByRole("link", { name, exact: true });
-}
-
+/** Reads the effective connectivity from the page. */
 async function connectivityOf(page: Page): Promise<string | null> {
   return page.evaluate(
     () =>

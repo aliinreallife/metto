@@ -146,15 +146,21 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const scheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: MetroStation; radius: number }>>(new Map())
   const initialMapModeRef = useRef(mapMode)
+  // Render-write is load-bearing: the mount effect below reads this before
+  // any effect could run, so an effect assignment could arrive too late.
+  // eslint-disable-next-line react-hooks/refs -- latest-value mirror for the imperative mount effect.
   initialMapModeRef.current = mapMode
   const onSelectRef = useRef(onSelect)
-  onSelectRef.current = onSelect
+  // Read only in marker click handlers (user-event time), so an effect
+  // assignment is always in place before any read.
+  useEffect(() => {
+    onSelectRef.current = onSelect
+  })
   const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null, hoveredId: null as string | null, lang: lang as Lang })
   // Landmark labels (searched-place pins, GPS dot) rendered through the same
   // engine as station labels. Keys are namespaced ("place:origin", "gps")
   // so they never collide with station ids.
   const extraLabelStateRef = useRef<Array<{ key: string; lat: number; lng: number; text: string }>>([])
-  const [hasGps, setHasGps] = useState(false)
   const [gpsPos, setGpsPos] = useState<[number, number] | null>(null)
   const [locating, setLocating] = useState(false)
   const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null)
@@ -180,7 +186,10 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     return set
   }, [route])
 
-  // Keep label state ref in sync
+  // Keep label state ref in sync. Render-write is load-bearing: the label
+  // engine (called from mount and view-settle effects) must see the current
+  // render's values before any effect runs.
+  // eslint-disable-next-line react-hooks/refs -- latest-value mirror for the imperative label engine.
   labelStateRef.current = { routeStations, originId, destId, selectedId, hoveredId: hoveredRef.current, lang }
   // Landmark label inputs for the engine (short pin names + GPS dot).
   {
@@ -198,6 +207,9 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         text: lang === "fa" ? "شما اینجا هستید" : "You are here",
       })
     }
+    // Render-write is load-bearing (see labelStateRef above): the mount
+    // effect's initial placement must see this render's extras.
+    // eslint-disable-next-line react-hooks/refs -- latest-value mirror for the imperative label engine.
     extraLabelStateRef.current = extras
   }
 
@@ -205,6 +217,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current)
     if (immediate) {
       scheduleTimerRef.current = null
+      // eslint-disable-next-line react-hooks/immutability -- both are hoisted function declarations; the call executes post-render.
       updateStationLabels()
       return
     }
@@ -218,6 +231,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   // Re-run placement when landmark labels change (pins, GPS, language).
   useEffect(() => {
     scheduleLabels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleLabels is an imperative Leaflet helper (new identity every render); the listed inputs are the real triggers.
   }, [placeMarkers, gpsPos, lang])
 
   function updateStationLabels() {
@@ -445,6 +459,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     // Leaflet needs a size invalidation after layout settles.
     setTimeout(() => map.invalidateSize(), 100)
+    // Copied for cleanup: these Maps live for the effect's lifetime, so the
+    // copies below are the same objects the cleanup clears.
+    const labelNodes = labelNodesRef.current
+    const prevAnchors = prevAnchorRef.current
+    const markers = markersRef.current
     return () => {
       fontsCancelled = true
       map.off("zoomend", relayout)
@@ -455,8 +474,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       mapRef.current = null
       overlayRef.current = null
       stationLabelsRef.current = null
-      labelNodesRef.current.clear()
-      prevAnchorRef.current.clear()
+      labelNodes.clear()
+      prevAnchors.clear()
       if (measureEl) {
         measureEl.remove()
         measureEl = null
@@ -466,8 +485,9 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       minimalistLayerRef.current = null
       gpsMarkerRef.current = null
       placeLayerRef.current = null
-      markersRef.current.clear()
+      markers.clear()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once Leaflet initialization; inputs are read through refs/handlers so the map is never rebuilt.
   }, [])
 
   // Toggle basemap layers when mapMode changes (mutually exclusive).
@@ -592,6 +612,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     // Re-add GPS marker on top if it exists
     if (gpsMarkerRef.current) gpsMarkerRef.current.addTo(layer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleLabels is an imperative Leaflet helper (new identity every render); the listed inputs are the real triggers.
   }, [edges, route, routeStations, routeEdgeKeys, originId, destId, selectedId, isFa, onSelect])
 
   // Fit to the route bounds when it changes (no place pins: keep old behavior).
@@ -687,7 +708,6 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       // No hover tooltip: the always-visible engine label (via gpsPos)
       // is the single label for the dot.
       gpsMarkerRef.current = marker
-      setHasGps(true)
       setGpsPos([lat, lng])
 
       // Pan to location

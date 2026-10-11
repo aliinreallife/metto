@@ -85,6 +85,7 @@ export function RouteActions({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only device detection from browser APIs; a useState initializer would crash on the server or hydrate mismatched links.
     setIsMobile(isMobileDevice());
   }, []);
 

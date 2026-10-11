@@ -4,14 +4,21 @@ import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Clock, Flag, Minus, P
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
+  describePlanDay,
   formatDateLabel,
   formatPlanSummary,
+  PLAN_HORIZON_DAYS,
   shiftPlanDay,
   shiftPlanTime,
   shiftTehranDate,
   type TimeMode,
 } from "@/lib/route-planning";
 import { tehranParts } from "@/lib/tehran-time";
+import {
+  getLocalHolidayDataset,
+  getLocalIsHolidayDate,
+} from "@/lib/holidays/use-holiday-data";
+import { upcomingHolidays } from "@/lib/holidays/local-resolver";
 
 /**
  * Compact "travel time" control: a collapsed summary card expanding inline
@@ -192,7 +199,7 @@ function PlannerControls({
 }) {
   const t = STRINGS[lang];
   const todayStr = tehranParts(nowMs).dateStr;
-  const maxDateStr = shiftTehranDate(todayStr, 30);
+  const maxDateStr = shiftTehranDate(todayStr, PLAN_HORIZON_DAYS);
   const parts = tehranParts(atMs);
   const hh = Math.floor(parts.minuteOfDay / 60);
   const mm = parts.minuteOfDay % 60;
@@ -261,6 +268,20 @@ function DayRow({
   onShiftDay: (delta: number) => void;
 }) {
   const t = STRINGS[lang];
+  // Non-normal timetable days (Thursday / Friday / official holiday) get a
+  // small pill badge in front of the date. Sync read over the shared
+  // in-memory holiday dataset — no I/O. Absent on normal days.
+  const holidayRec = upcomingHolidays(
+    getLocalHolidayDataset(),
+    dateStr,
+    5,
+  ).find((r) => r.gregorianDate === dateStr);
+  const dayBadge = describePlanDay(
+    lang,
+    dateStr,
+    getLocalIsHolidayDate(),
+    holidayRec ? { fa: holidayRec.faName, en: holidayRec.enName } : null,
+  );
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-1" role="group" aria-label={t.pickDate}>
@@ -274,8 +295,13 @@ function DayRow({
         >
           <ChevronLeft aria-hidden="true" className="size-4 rtl:rotate-180" />
         </button>
-        <p aria-live="polite" className="min-w-0 flex-1 truncate text-center text-sm font-bold">
-          {formatDateLabel(lang, dateStr, nowMs)}
+        <p aria-live="polite" className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-center text-sm font-bold">
+          {dayBadge && (
+            <span data-testid="day-badge" className="max-w-[55%] shrink-0 truncate rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-semibold text-primary">
+              {dayBadge}
+            </span>
+          )}
+          <span className="min-w-0 truncate">{formatDateLabel(lang, dateStr, nowMs)}</span>
         </p>
         <button
           type="button"

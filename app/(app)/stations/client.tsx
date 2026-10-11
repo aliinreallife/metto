@@ -21,7 +21,6 @@ export function StationsPage() {
       <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
         <StationsTab
           lang={lang}
-          onSetOrigin={(id) => router.push(`/?from=${id}`)}
           onSetDest={(id) => router.push(`/?to=${id}`)}
         />
       </div>

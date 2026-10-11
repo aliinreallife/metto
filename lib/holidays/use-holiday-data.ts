@@ -143,6 +143,7 @@ export function useHolidayData(): HolidayUiState {
 
   return useMemo(() => {
     const isHolidayDate = createLocalIsHolidayDate(dataset);
+    // eslint-disable-next-line react-hooks/purity -- wall-clock snapshot for "today"; re-evaluated whenever the dataset (or justUpdated) changes, which is the only freshness this UI needs.
     const nowMs = Date.now();
     const todayStr = tehranParts(nowMs).dateStr;
     const state = getHolidayState(dataset, todayStr);
