@@ -169,6 +169,7 @@ export const STRINGS = {
     otherTransportHint: "Consider another method of transport if you need to arrive on time.",
     routeFromNow: "Route from now",
     beAtStationBy: "Be at the station",
+    arriveBy: "Arrival deadline",
     noJourneyBy: "No journey arrives by that time.",
   },
   fa: {
@@ -339,6 +340,7 @@ export const STRINGS = {
     otherTransportHint: "اگر باید سر وقت برسید، روش دیگری برای رفت‌وآمد را در نظر بگیرید.",
     routeFromNow: "مسیر از الان",
     beAtStationBy: "حضور در ایستگاه",
+    arriveBy: "مهلت رسیدن",
     noJourneyBy: "هیچ سفری تا آن ساعت نمی‌رسد.",
   },
 } as const;
