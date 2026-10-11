@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2, Layers, Satellite, Building2, AlertTriangle, X, WifiOff } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
@@ -16,9 +16,12 @@ import {
   formatWalkTime,
   isTooFarToWalk,
   parsePlaceParam,
+  encodePlacePin,
+  nearestStations,
 } from "@/lib/geo";
-import { shortPlaceLabel } from "@/lib/geocoding";
+import { shortPlaceLabel, reverseGeocode } from "@/lib/geocoding";
 import { StationDetail } from "@/components/station-detail";
+import { MapPickCard } from "@/components/map-pick-card";
 import { cn } from "@/lib/utils";
 
 // Feature flag: dismiss buttons on the map place info/warning cards.
@@ -43,7 +46,18 @@ const RealMap = dynamic(
 
 export function MapPage() {
   const searchParams = useSearchParams();
-  const { lang, mapMode, setMapMode, originPlace: ctxOriginPlace, destPlace: ctxDestPlace } = useMetro();
+  const router = useRouter();
+  const {
+    lang,
+    mapMode,
+    setMapMode,
+    originPlace: ctxOriginPlace,
+    destPlace: ctxDestPlace,
+    setOriginId: setCtxOriginId,
+    setDestId: setCtxDestId,
+    setOriginPlace: setCtxOriginPlace,
+    setDestPlace: setCtxDestPlace,
+  } = useMetro();
   const { isHolidayDate } = useHolidayData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
@@ -53,6 +67,29 @@ export function MapPage() {
     const suffix = isFa ? " | متو" : " | metto";
     document.title = title + suffix;
   }, [isFa]);
+
+  // Map-local clear gate: after an explicit clear, context place pins must
+  // not resurrect as ghost pins. Context itself is never nulled here — that
+  // would wipe the planner's persisted route state via provider effects.
+  const [routeCleared, setRouteCleared] = useState(false);
+  // Pending arbitrary pick (exact coordinates) + async resolved label.
+  const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(null);
+  const [resolved, setResolved] = useState<{ lat: number; lng: number; label: string } | null>(null);
+
+  // Reverse-geocode the pending pick (coords fallback until it resolves).
+  // Only the async callback writes state, guarded by coordinate identity so
+  // a late result can never overwrite a newer pick.
+  useEffect(() => {
+    if (!picked) return;
+    const { lat, lng } = picked;
+    let cancelled = false;
+    reverseGeocode(lat, lng, lang).then((name) => {
+      if (!cancelled && name) setResolved({ lat, lng, label: name });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [picked, lang]);
 
   const initialParams = useMemo(() => {
     const mapParam = searchParams.get("map");
@@ -69,9 +106,10 @@ export function MapPage() {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
     // Prefer shareable URL params (compact op/dp, legacy oPlat… fallback);
-    // fall back to in-session context (SPA nav).
-    const originPin = parsePlaceParam(searchParams, "oP") ?? ctxOriginPlace;
-    const destPin = parsePlaceParam(searchParams, "dP") ?? ctxDestPlace;
+    // fall back to in-session context (SPA nav) unless the user explicitly
+    // cleared this map view (routeCleared gate against ghost pins).
+    const originPin = parsePlaceParam(searchParams, "oP") ?? (routeCleared ? null : ctxOriginPlace);
+    const destPin = parsePlaceParam(searchParams, "dP") ?? (routeCleared ? null : ctxDestPlace);
     return { center, zoom, station, from, to, originPin, destPlace: destPin };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -110,6 +148,30 @@ export function MapPage() {
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
   }, [placeMarkers, isFa, lang]);
+
+  // Walking context for the pending pick (nearest station only informs the
+  // card + route endpoints; the exact point stays the visible endpoint).
+  const pickedInfo = useMemo(() => {
+    if (!picked) return null;
+    const nearest = nearestStations(picked.lat, picked.lng, { limit: 1 })[0];
+    if (!nearest) return null;
+    const km = haversineKm(picked.lat, picked.lng, nearest.station.location.lat, nearest.station.location.lng);
+    const walkMin = estimateWalkMinutes(km);
+    return {
+      station: nearest.station,
+      stationName: isFa ? nearest.station.name.fa : nearest.station.name.en,
+      distanceText: formatDistance(km, lang),
+      walkText: formatWalkTime(walkMin, lang),
+      tooFar: isTooFarToWalk(km),
+    };
+  }, [picked, isFa, lang]);
+
+  const pickedLabel =
+    picked && resolved && resolved.lat === picked.lat && resolved.lng === picked.lng
+      ? shortPlaceLabel(resolved.label)
+      : picked
+        ? `${picked.lat.toFixed(4)}, ${picked.lng.toFixed(4)}`
+        : null;
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
   const [dismissedKeys, setDismissedKeys] = useState<ReadonlySet<string>>(new Set());
@@ -179,6 +241,82 @@ export function MapPage() {
     setMapView({ center, zoom });
   }, []);
 
+  // Arbitrary-point pick: keep exact coords, drop station selection so only
+  // one bottom card shows. Event-handler writes (no lint hazard).
+  function handlePick(lat: number, lng: number) {
+    setPicked({ lat, lng });
+    setResolved(null);
+    setSelectedId(null);
+  }
+
+  function handleSelect(id: string | null) {
+    setSelectedId(id);
+    if (id) setPicked(null);
+  }
+
+  // Legacy + compact route/selection params cleared by map-local clear.
+  // `map` (viewport) is intentionally preserved.
+  function clearedParams(): URLSearchParams {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const k of [
+      "from", "to", "op", "dp",
+      "oPlat", "oPlng", "oPlabel",
+      "dPlat", "dPlng", "dPlabel",
+      "station",
+    ]) {
+      params.delete(k);
+    }
+    return params;
+  }
+
+  // Map-local clear: route overlay, pins, selection and URL params go away.
+  // Context + localStorage are untouched, so the planner keeps its state.
+  function clearRoute() {
+    setPicked(null);
+    setResolved(null);
+    setSelectedId(null);
+    setRouteCleared(true);
+    const params = clearedParams();
+    const qs = params.toString();
+    router.replace(qs ? `/map?${qs}` : "/map");
+  }
+
+  // Set the pending exact point as an endpoint: nearest station drives the
+  // metro route, the exact coordinate rides along as the place pin.
+  function chooseEndpoint(role: "origin" | "dest") {
+    if (!picked || !pickedLabel) return;
+    const nearest = nearestStations(picked.lat, picked.lng, { limit: 1 })[0];
+    if (!nearest) return;
+    const pin = { lat: picked.lat, lng: picked.lng, label: pickedLabel };
+    const params = new URLSearchParams(searchParams.toString());
+    if (role === "origin") {
+      params.set("from", nearest.station.id);
+      params.set("op", encodePlacePin(pin));
+      for (const k of ["oPlat", "oPlng", "oPlabel"]) params.delete(k);
+      setCtxOriginId(nearest.station.id);
+      setCtxOriginPlace(pin);
+    } else {
+      params.set("to", nearest.station.id);
+      params.set("dp", encodePlacePin(pin));
+      for (const k of ["dPlat", "dPlng", "dPlabel"]) params.delete(k);
+      setCtxDestId(nearest.station.id);
+      setCtxDestPlace(pin);
+    }
+    setRouteCleared(false);
+    setPicked(null);
+    setResolved(null);
+    router.replace(`/map?${params.toString()}`);
+  }
+
+  const hasRouteState = !!(
+    initialParams.from ||
+    initialParams.to ||
+    initialParams.originPin ||
+    initialParams.destPlace ||
+    selectedId ||
+    picked
+  );
+
   return (
     <div className="relative isolate z-0 flex flex-1 min-h-0 flex-col overflow-hidden">
       <RealMap
@@ -188,11 +326,13 @@ export function MapPage() {
         originId={initialParams.from}
         destId={initialParams.to}
         selectedId={selectedId}
-        onSelect={setSelectedId}
+        onSelect={handleSelect}
+        onPickPoint={handlePick}
         initialCenter={mapView.center}
         initialZoom={mapView.zoom}
         onViewChange={handleViewChange}
         placeMarkers={placeMarkers}
+        pendingPick={picked && pickedLabel ? { ...picked, label: pickedLabel } : null}
       />
 
       {/* Top overlay stack: banner/notice/place cards lay out in normal
@@ -310,12 +450,46 @@ export function MapPage() {
         </button>
       </div>
 
+      {hasRouteState && (
+        <div className="absolute top-3 right-3 z-[500]">
+          <button
+            type="button"
+            data-testid="map-clear-route"
+            onClick={clearRoute}
+            aria-label={t.clearRoute}
+            className="flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <X aria-hidden="true" className="size-3.5" />
+            {t.clearRoute}
+          </button>
+        </div>
+      )}
+
       {selected && (
-        <div className="absolute inset-x-3 bottom-3 z-[500] mx-auto max-w-md">
+        <div data-testid="map-station-card" className="absolute inset-x-3 bottom-3 z-[500] mx-auto max-w-md">
           <StationDetail
             station={selected}
             lang={lang}
             onClose={() => setSelectedId(null)}
+          />
+        </div>
+      )}
+      {picked && pickedInfo && pickedLabel && (
+        <div className="absolute inset-x-3 bottom-3 z-[500] mx-auto max-w-md">
+          <MapPickCard
+            lang={lang}
+            title={pickedLabel}
+            stationName={pickedInfo.stationName}
+            distanceText={pickedInfo.distanceText}
+            walkText={pickedInfo.walkText}
+            tooFar={pickedInfo.tooFar}
+            destPrimary={!!initialParams.from}
+            onChooseOrigin={() => chooseEndpoint("origin")}
+            onChooseDest={() => chooseEndpoint("dest")}
+            onClose={() => {
+              setPicked(null);
+              setResolved(null);
+            }}
           />
         </div>
       )}

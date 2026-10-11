@@ -34,6 +34,10 @@ type Props = {
   destId: string | null
   selectedId: string | null
   onSelect: (id: string | null) => void
+  /** Arbitrary-point picking (map page): plain clicks on empty map. */
+  onPickPoint?: (lat: number, lng: number) => void
+  /** Pending exact pick: rendered distinctly, labelled via the engine. */
+  pendingPick?: { lat: number; lng: number; label: string } | null
   initialCenter?: [number, number]
   initialZoom?: number
   onViewChange?: (center: [number, number], zoom: number) => void
@@ -130,7 +134,7 @@ function buildLabelIcon(
   })
 }
 
-export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, initialCenter, initialZoom, onViewChange, placeMarkers }: Props) {
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
@@ -139,6 +143,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const minimalistLayerRef = useRef<L.TileLayer | null>(null)
   const gpsMarkerRef = useRef<L.CircleMarker | null>(null)
   const placeLayerRef = useRef<L.LayerGroup | null>(null)
+  const pendingLayerRef = useRef<L.LayerGroup | null>(null)
   const stationLabelsRef = useRef<L.LayerGroup | null>(null)
   const labelNodesRef = useRef<Map<string, { marker: L.Marker; key: string }>>(new Map())
   const prevAnchorRef = useRef<Map<string, Anchor>>(new Map())
@@ -155,6 +160,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   // assignment is always in place before any read.
   useEffect(() => {
     onSelectRef.current = onSelect
+  })
+  const onPickPointRef = useRef(onPickPoint)
+  // Same latest-value mirror contract as onSelectRef above.
+  useEffect(() => {
+    onPickPointRef.current = onPickPoint
   })
   const labelStateRef = useRef({ routeStations: new Set<string>(), originId: null as string | null, destId: null as string | null, selectedId: null as string | null, hoveredId: null as string | null, lang: lang as Lang })
   // Landmark labels (searched-place pins, GPS dot) rendered through the same
@@ -207,6 +217,14 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         text: lang === "fa" ? "شما اینجا هستید" : "You are here",
       })
     }
+    if (pendingPick) {
+      extras.push({
+        key: "pending",
+        lat: pendingPick.lat,
+        lng: pendingPick.lng,
+        text: pendingPick.label,
+      })
+    }
     // Render-write is load-bearing (see labelStateRef above): the mount
     // effect's initial placement must see this render's extras.
     // eslint-disable-next-line react-hooks/refs -- latest-value mirror for the imperative label engine.
@@ -228,11 +246,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     }, 50)
   }
 
-  // Re-run placement when landmark labels change (pins, GPS, language).
+  // Re-run placement when landmark labels change (pins, GPS, pick, language).
   useEffect(() => {
     scheduleLabels()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleLabels is an imperative Leaflet helper (new identity every render); the listed inputs are the real triggers.
-  }, [placeMarkers, gpsPos, lang])
+  }, [placeMarkers, gpsPos, pendingPick, lang])
 
   function updateStationLabels() {
     const map = mapRef.current
@@ -429,6 +447,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     overlayRef.current = L.layerGroup().addTo(map)
     stationLabelsRef.current = L.layerGroup().addTo(map)
     placeLayerRef.current = L.layerGroup().addTo(map)
+    pendingLayerRef.current = L.layerGroup().addTo(map)
     mapRef.current = map
 
     // Screen-space label placement: recompute only when the view settles,
@@ -457,6 +476,24 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       onViewChangeRef.current?.([map.getCenter().lat, map.getCenter().lng], map.getZoom())
     })
 
+    // Arbitrary-point picking (map page): plain clicks on empty map select
+    // the exact point. Station dots/labels have their own handlers and are
+    // excluded below; display-only layers are non-interactive. (Buttons sit
+    // outside the Leaflet container so they never reach this listener; the
+    // button guard below is defense-in-depth.)
+    const handlePick = (e: L.LeafletMouseEvent) => {
+      const target = e.originalEvent.target as Element | null
+      if (
+        target &&
+        typeof target.closest === "function" &&
+        target.closest("button, a, .leaflet-marker-icon, .metro-station-dot")
+      ) {
+        return
+      }
+      onPickPointRef.current?.(e.latlng.lat, e.latlng.lng)
+    }
+    map.on("click", handlePick)
+
     // Leaflet needs a size invalidation after layout settles.
     setTimeout(() => map.invalidateSize(), 100)
     // Copied for cleanup: these Maps live for the effect's lifetime, so the
@@ -469,6 +506,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       map.off("zoomend", relayout)
       map.off("moveend", relayout)
       map.off("resize", relayout)
+      map.off("click", handlePick)
       if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current)
       map.remove()
       mapRef.current = null
@@ -485,6 +523,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       minimalistLayerRef.current = null
       gpsMarkerRef.current = null
       placeLayerRef.current = null
+      pendingLayerRef.current = null
       markers.clear()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once Leaflet initialization; inputs are read through refs/handlers so the map is never rebuilt.
@@ -587,6 +626,9 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         fillOpacity: underConstruction ? 0 : dim ? 0.3 : 1,
         opacity: dim ? 0.4 : 1,
         interactive: true,
+        // Guard hook for the map click-to-pick handler below: station taps
+        // must select the station, never an arbitrary point.
+        className: "metro-station-dot",
       })
       marker.on("click", () => onSelect(s.id))
       marker.on("mouseover", () => {
@@ -656,6 +698,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
             weight: 3,
             opacity: 0.9,
             dashArray: "6 6",
+            // Display-only connector: clicks pass through to point picking.
+            interactive: false,
           },
         ).addTo(layer)
         pts.push([st.location.lat, st.location.lng])
@@ -678,6 +722,32 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     }
   }, [placeMarkers, route])
 
+  // Pending arbitrary pick: exact-coordinate marker in its own layer. The
+  // label goes through the shared engine (pendingPick extra above), so it
+  // collides, measures and localizes like every other label. The camera is
+  // deliberately untouched — the user just tapped there.
+  useEffect(() => {
+    const map = mapRef.current
+    const layer = pendingLayerRef.current
+    if (!map || !layer) return
+    layer.clearLayers()
+    if (!pendingPick) {
+      scheduleLabels()
+      return
+    }
+    L.circleMarker([pendingPick.lat, pendingPick.lng], {
+      radius: 8,
+      color: "#cc0e2d",
+      weight: 3,
+      fillColor: "#ffffff",
+      fillOpacity: 1,
+      opacity: 1,
+      interactive: false,
+    }).addTo(layer)
+    scheduleLabels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleLabels is an imperative Leaflet helper (new identity every render); pendingPick is the real trigger.
+  }, [pendingPick])
+
   async function locateMe() {
     if (!mapRef.current || !navigator.geolocation) {
       setGpsError("unsupported")
@@ -696,7 +766,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         gpsMarkerRef.current = null
       }
 
-      // Create pulsing GPS marker
+      // Create pulsing GPS marker (display-only: clicks pass through).
       const marker = L.circleMarker([lat, lng], {
         radius: 8,
         color: "#3b82f6",
@@ -704,6 +774,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         fillColor: "#60a5fa",
         fillOpacity: 0.9,
         opacity: 1,
+        interactive: false,
       }).addTo(map)
       // No hover tooltip: the always-visible engine label (via gpsPos)
       // is the single label for the dot.
