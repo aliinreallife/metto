@@ -251,7 +251,7 @@ export function RoutePanel({
         />
       </div>
       {plan && plan.mode === "arrive" && (
-        <div data-testid="plan-banner" className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3">
+        <div data-testid="plan-banner" className="flex items-center gap-3 px-1 py-1">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
             <AlarmClock aria-hidden="true" className="size-5 text-primary" />
           </span>
