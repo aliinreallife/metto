@@ -78,9 +78,9 @@ export interface SharePresentation {
   /** FA description: selection statement + CTA, never computed claims. */
   description: string;
   locale: "fa_IR";
-  /** "/share/og?..." when valid, "/socialprev.png" otherwise. */
+  /** Dynamic OG path built only from pixel-affecting state; time is excluded. */
   imagePath: string;
-  /** Canonical share path+query (serializer output). */
+  /** Canonical share path+query (serializer output, including selected time). */
   sharePath: string;
   /** Absolute planner-root canonical. */
   canonical: string;
@@ -110,9 +110,9 @@ export function parseShareParams(sp: URLSearchParams): ShareTripState {
   const { mode, at } = parseTimeModeParams(sp);
 
   // Minute-floor the instant: planner input is minute-precision, so seconds
-  // carry no display meaning — but every distinct `at` is a distinct OG
-  // image URL (CDN cache key). Flooring keeps canonical share URLs stable
-  // and raises edge hit rates without changing any rendered time phrase.
+  // carry no display meaning. This keeps canonical share URLs stable without
+  // changing the selected-time phrase. OG cache identity is intentionally
+  // separate and excludes time entirely (see serializeShareImagePath).
   const atMs = at ? Math.floor(at.getTime() / 60000) * 60000 : null;
 
   return {
@@ -222,7 +222,7 @@ export function buildSharePresentation(
     timePhrase,
     description,
     locale: "fa_IR",
-    imagePath: `${SHARE_OG_PATH}${sharePath.slice(SHARE_PATH.length)}`,
+    imagePath: serializeShareImagePath(state),
     sharePath,
     canonical: SHARE_PLANNER_ROOT,
   };
@@ -245,6 +245,21 @@ export function serializeShareParams(s: ShareTripState): string {
     p.set("at", new Date(s.atMs).toISOString());
   }
   return `${SHARE_PATH}?${p.toString()}`;
+}
+
+/**
+ * Serialize only state that can change OG pixels. The social card deliberately
+ * omits planned-time copy, so timeMode/at must NOT fragment the image cache.
+ * Pins stay in the key because both their label and coordinates are rendered.
+ */
+export function serializeShareImagePath(s: ShareTripState): string {
+  const p = new URLSearchParams();
+  p.set("city", s.city);
+  if (s.from) p.set("from", s.from);
+  if (s.to) p.set("to", s.to);
+  if (s.originPin) p.set("op", encodePlacePin(s.originPin));
+  if (s.destPin) p.set("dp", encodePlacePin(s.destPin));
+  return `${SHARE_OG_PATH}?${p.toString()}`;
 }
 
 /**
