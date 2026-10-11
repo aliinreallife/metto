@@ -1,6 +1,6 @@
 // Schematic minimap model for the OG card (Level 1.5, approved exception).
 //
-// What this computes: dim full-network edges + the planned *path geometry*
+// What this computes: dim route-neighborhood context + the planned *path geometry*
 // highlighted per line color + origin/destination markers — projected from
 // station geo-coordinates into 1200x630 card space. Pure static data only:
 // no timetable, no schedule data, no holiday/Redis I/O, no ETAs or durations
@@ -22,9 +22,7 @@ export const OG_HEIGHT = 630;
 
 // Social-preview split: the map owns 720px of the 1200x630 canvas and runs
 // full-height; the remaining 480px belongs to the RTL route summary.
-// Single source of truth — card.tsx sizes its sections from these values
-// and passes the panel back as the projection viewport, so model coords
-// always land inside the visible map.
+// card.tsx and the projection model share this single geometry contract.
 export const OG_PANEL = { w: 720, h: 630 } as const;
 
 export interface MapEdgeView {
@@ -93,20 +91,44 @@ export function edgeKey(a: string, b: string, line: number): string {
 }
 
 /** Line-aware highlight check: a shared station pair must only light up on
- *  the line actually ridden (parallel/shared track across lines). Pure so
- *  the behavior is unit-testable with synthetic inputs. */
+ *  the line actually ridden. Pure so the behavior is unit-testable. */
 export function isHotEdge(
   a: string,
   b: string,
   line: number,
-  pathKeys: Set<string>,
+  pathKeys: ReadonlySet<string>,
 ): boolean {
   return pathKeys.has(edgeKey(a, b, line));
 }
 
-/** Viewport bleed for geometry culling (panel px). Culled nodes are never
- *  visible — the panel clips — so they only cost Satori render time. */
+/** Viewport bleed for geometry culling (panel px). */
 export const MAP_BLEED = 24;
+
+export const MAP_CONTEXT_HOPS = 2;
+
+/** Expand the selected path by a small number of graph hops. Only this local
+ *  neighborhood is needed as faint context in a social preview; rendering the
+ *  full visible Tehran graph adds Satori nodes without improving legibility. */
+export function buildRouteContextIds(
+  pathStations: readonly string[],
+  edges: readonly { a: string; b: string }[],
+  hops: number = MAP_CONTEXT_HOPS,
+): Set<string> {
+  const seen = new Set(pathStations);
+  let frontier = new Set(pathStations);
+
+  for (let step = 0; step < hops && frontier.size > 0; step++) {
+    const next = new Set<string>();
+    for (const e of edges) {
+      if (frontier.has(e.a) && !seen.has(e.b)) next.add(e.b);
+      if (frontier.has(e.b) && !seen.has(e.a)) next.add(e.a);
+    }
+    for (const id of next) seen.add(id);
+    frontier = next;
+  }
+
+  return seen;
+}
 
 /** True when a segment lies completely outside the viewport (plus bleed).
  *  A segment CROSSING the viewport is retained even when both endpoints sit
@@ -192,13 +214,11 @@ export function buildShareMap(
       minLng = Math.min(minLng, s.location.lng);
       maxLng = Math.max(maxLng, s.location.lng);
     }
-    // Minimum span (adjacent stations must not zoom absurdly) + focus
-    // padding: the journey sits centrally with network context around it,
-    // and endpoint markers never collide with the card chrome. Padding is
-    // deliberately modest so short journeys still fill the panel (contain
-    // fit guarantees nothing ever crops).
+    // Minimum span (adjacent stations must not zoom absurdly) + full-span
+    // margin: the journey sits centrally with network context around it,
+    // and endpoint markers never collide with the card chrome.
     const MIN_SPAN = 0.04;
-    const FOCUS_PADDING = 1.55;
+    const FOCUS_PADDING = 1.28;
     const spanLat = Math.max(maxLat - minLat, MIN_SPAN);
     const spanLng = Math.max(maxLng - minLng, MIN_SPAN);
     const cLat0 = (minLat + maxLat) / 2;
@@ -252,9 +272,8 @@ export function buildShareMap(
         if (si < topo.segments.length - 1) {
           interchangeIds.push(seg.stations[seg.stations.length - 1]);
         }
-        // Line legend label in digit-first order ("۱ خط"), built from the
-        // line number via Persian digits — never from LINES display names
-        // (which use "خط ۱" order).
+        // Kept for model consumers; the card renders a compact shared
+        // "خطوط" legend from leg.line to avoid repeated words.
         const label = `${persianDigits(seg.line, "fa")} خط`;
         const stops = Math.max(seg.stations.length - 1, 1);
         const last = legs[legs.length - 1];
@@ -266,31 +285,45 @@ export function buildShareMap(
       }
     }
 
+    const allEdges = buildMapEdges();
+    const contextIds =
+      pathStations.length > 0
+        ? buildRouteContextIds(pathStations, allEdges)
+        : null;
+
     const edges: MapEdgeView[] = [];
     // Incident drawn-edge counts per station: drives the dim-network welds
     // below (a lone terminus needs no weld — its round cap is the ending).
+    // Counts derive ONLY from retained edges so pruned network never leaves
+    // orphan weld dots.
     const incident = new Map<string, number>();
-    for (const e of buildMapEdges()) {
+    for (const e of allEdges) {
       const a = getStation(e.a);
       const b = getStation(e.b);
       if (!a || !b) continue;
+      const hot = isHotEdge(e.a, e.b, e.line, pathKeys);
+      // Hot geometry is always retained. Dim context is intentionally limited
+      // to a two-hop neighborhood around the journey, which cuts Satori nodes
+      // substantially while preserving enough surrounding network to read as
+      // a metro map rather than an isolated polyline.
+      if (
+        !hot &&
+        contextIds !== null &&
+        !(contextIds.has(e.a) && contextIds.has(e.b))
+      ) {
+        continue;
+      }
+
       const x1 = X(a.location.lng);
       const y1 = Y(a.location.lat);
       const x2 = X(b.location.lng);
       const y2 = Y(b.location.lat);
+      if (!hot && isOutsideViewport(x1, y1, x2, y2, vw, vh)) continue;
       const dx = x2 - x1;
       const dy = y2 - y1;
-      // Cull fully offscreen geometry before it costs Satori nodes: the
-      // panel would clip it anyway. Crossing segments stay (both endpoints
-      // outside on opposite sides still paints across the panel).
-      if (isOutsideViewport(x1, y1, x2, y2, vw, vh)) continue;
       const len = Math.hypot(dx, dy);
       if (!(len > 1)) continue;
-      const hot = isHotEdge(e.a, e.b, e.line, pathKeys);
       const color = hot ? (LINE_COLORS[e.line] ?? "#E0001F") : "#3b3d46";
-      // Flat transit-schematic styling: the journey dominates by width and
-      // color alone (no glow — box-shadow blur is the dominant render cost).
-      // Dim track stays quiet context at low opacity.
       const thick = hot ? 6 : 2;
       incident.set(e.a, (incident.get(e.a) ?? 0) + 1);
       incident.set(e.b, (incident.get(e.b) ?? 0) + 1);
@@ -353,8 +386,8 @@ export function buildShareMap(
     // Same color as the surrounding bars (no core, no glow) — invisible
     // as dots, visible only as rounded joints. Interchanges and endpoints
     // already carry their own markers and are skipped here. Radius 3.5
-    // against half-thick 3: just rounds the joint (±0.5px, no beading) —
-    // the edge overlap above closes the wedge, so welds stay glowless.
+    // slightly exceeds the 3px half-thickness so independently rotated bars
+    // read as one continuous route without any glow or blur cost.
     const joints: MapDotView[] = [];
     const jointIds = new Set<string>();
     {
@@ -386,11 +419,10 @@ export function buildShareMap(
     // Dim-network welds: the background track has the same wedge-gap
     // problem at every multi-edge vertex, and no markers there by design —
     // unwelded it reads as disconnected dashes. One dim-colored dot per
-    // multi-edge vertex, sized to just fill the wedge (r 1.5 vs half-thick
-    // 1: ±0.5px, invisible as dots) — the overlap extension closes the
-    // rest. Rendered at dim opacity in the card, so welds never read
-    // brighter than the track. Marker stations (endpoints, interchanges,
-    // highlight joints) already cover their vertices.
+    // multi-edge vertex, sized to just fill the wedge around a 2px dim
+    // track. Rendered at the same low opacity as the network in card.tsx.
+    // Marker stations (endpoints, interchanges, highlight joints) already
+    // cover their vertices.
     const dimJoints: MapDotView[] = [];
     {
       const covered = new Set<string>();
@@ -455,7 +487,6 @@ export function buildShareMap(
         y: py,
         r: 8,
         fill: PIN_COLOR,
-        // Flat: no glow (render cost + the map is no longer neon).
         glow: null,
       });
       pins.push({ x: px, y: py, r: 3, fill: "#ffffff", glow: null });
