@@ -23,7 +23,6 @@ export const STRINGS = {
     transferTo: "Transfer to Line",
     walkToLine: "Walk to Line",
     about: "about",
-    arriveAt: "Arrive at destination",
     routeFrom: "Route",
     pickBoth: "Pick an origin and destination to plan a route.",
     sameStation: "Origin and destination are the same.",
@@ -170,8 +169,6 @@ export const STRINGS = {
     otherTransportHint: "Consider another method of transport if you need to arrive on time.",
     routeFromNow: "Route from now",
     beAtStationBy: "Be at the station",
-    trainAt: "Train departs",
-    arriveBy: "Arrival deadline",
     noJourneyBy: "No journey arrives by that time.",
   },
   fa: {
@@ -196,7 +193,6 @@ export const STRINGS = {
     transferTo: "تعویض به خط",
     walkToLine: "پیاده‌روی برای خط",
     about: "حدود",
-    arriveAt: "رسیدن به مقصد",
     routeFrom: "مسیر",
     pickBoth: "برای برنامه‌ریزی مسیر، مبدأ و مقصد را انتخاب کنید.",
     sameStation: "مبدأ و مقصد یکسان هستند.",
@@ -343,8 +339,6 @@ export const STRINGS = {
     otherTransportHint: "اگر باید سر وقت برسید، روش دیگری برای رفت‌وآمد را در نظر بگیرید.",
     routeFromNow: "مسیر از الان",
     beAtStationBy: "حضور در ایستگاه",
-    trainAt: "حرکت قطار",
-    arriveBy: "مهلت رسیدن",
     noJourneyBy: "هیچ سفری تا آن ساعت نمی‌رسد.",
   },
 } as const;
