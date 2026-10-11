@@ -63,14 +63,13 @@ test.describe("map label movement", () => {
     const posA = await labelBox(page, titleA!.slice(0, 7));
     expect(posA).not.toBeNull();
 
-    // Close (pending marker stays), pick far away. Camera must not move.
-    await page.getByTestId("map-pick-card").getByRole("button", { name: "بستن" }).click();
-    await expect(page.getByTestId("map-pick-card")).toHaveCount(0);
+    // Re-pick directly while the card is still open: the same logical
+    // label node is reused (no removal in between), so this deterministically
+    // exercises the in-place update path — not the recreate path.
     await page.mouse.click(box!.x + box!.width * 0.75, box!.y + box!.height * 0.7);
-    await expect(page.getByTestId("map-pick-card")).toBeVisible({
-      timeout: 10_000,
-    });
-    const titleB = await page.getByTestId("map-pick-card").locator("h3").textContent();
+    const card = page.getByTestId("map-pick-card");
+    await expect(card.locator("h3")).not.toHaveText(titleA!, { timeout: 10_000 });
+    const titleB = await card.locator("h3").textContent();
     expect(titleB).toMatch(/^\d{2}\.\d{4}, \d{2}\.\d{4}$/);
     expect(titleB).not.toBe(titleA);
     const posB = await labelBox(page, titleB!.slice(0, 7));
