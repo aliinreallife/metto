@@ -269,7 +269,7 @@ function DayRow({
 }) {
   const t = STRINGS[lang];
   // Non-normal timetable days (Thursday / Friday / official holiday) get a
-  // small pill badge in front of the date. Sync read over the shared
+  // small pill badge after the centered date. Sync read over the shared
   // in-memory holiday dataset — no I/O. Absent on normal days.
   const holidayRec = upcomingHolidays(
     getLocalHolidayDataset(),
@@ -296,12 +296,12 @@ function DayRow({
           <ChevronLeft aria-hidden="true" className="size-4 rtl:rotate-180" />
         </button>
         <p aria-live="polite" className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-center text-sm font-bold">
+          <span className="min-w-0 truncate">{formatDateLabel(lang, dateStr, nowMs)}</span>
           {dayBadge && (
-            <span data-testid="day-badge" className="max-w-[55%] shrink-0 truncate rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-semibold text-primary">
+            <span data-testid="day-badge" title={dayBadge} className="max-w-[45%] shrink-0 truncate text-[11px] font-semibold text-primary">
               {dayBadge}
             </span>
           )}
-          <span className="min-w-0 truncate">{formatDateLabel(lang, dateStr, nowMs)}</span>
         </p>
         <button
           type="button"
