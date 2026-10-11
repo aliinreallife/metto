@@ -80,7 +80,7 @@ test.describe("travel time card", () => {
     const header = card(page).getByRole("button", { name: /زمان سفر/ });
     await expect(header).toBeVisible();
     await expect(header).toHaveAttribute("aria-expanded", "false");
-    await expect(header).toContainText("الان · حرکت فوری");
+    await expect(header).toContainText("الان · حرکت همین الان");
     expect(new URL(page.url()).searchParams.has("timeMode")).toBe(false);
   });
 
@@ -88,7 +88,7 @@ test.describe("travel time card", () => {
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
     await expandCard(page);
     // Segmented control applies immediately — no confirmation button.
-    await card(page).locator("fieldset").getByText("حرکت در ساعت مشخص", { exact: true }).click();
+    await card(page).locator("fieldset").getByText("حرکت در ساعت", { exact: true }).click();
     await setCardTime(page, "09:00");
     await pinTomorrow(page);
 
@@ -109,7 +109,7 @@ test.describe("travel time card", () => {
   test("arrive-by shows deadline banner and persists", async ({ page }) => {
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
     await expandCard(page);
-    await card(page).locator("fieldset").getByText("رسیدن تا ساعت مشخص", { exact: true }).click();
+    await card(page).locator("fieldset").getByText("رسیدن تا ساعت", { exact: true }).click();
     await setCardTime(page, "09:00");
     await pinTomorrow(page);
 
@@ -126,12 +126,12 @@ test.describe("travel time card", () => {
   test("active mode and collapse keep the chosen date and time", async ({ page }) => {
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
     await expandCard(page);
-    await card(page).locator("fieldset").getByText("حرکت در ساعت مشخص", { exact: true }).click();
+    await card(page).locator("fieldset").getByText("حرکت در ساعت", { exact: true }).click();
     await setCardTime(page, "09:00");
     await pinTomorrow(page);
     const header = card(page).getByRole("button", { name: /زمان سفر/ });
     // Clicking the already-selected mode is a no-op.
-    await card(page).locator("fieldset").getByText("حرکت در ساعت مشخص", { exact: true }).click();
+    await card(page).locator("fieldset").getByText("حرکت در ساعت", { exact: true }).click();
     await expect(page.getByTestId("hour-value")).toHaveText(enToFa("09"));
     // Collapse + reopen preserves everything.
     await header.click();
@@ -157,7 +157,7 @@ test.describe("travel time card", () => {
     ).toHaveAttribute("aria-expanded", "true");
     await page.getByRole("button", { name: "استفاده از الان" }).click();
     await expect(card(page).getByRole("button", { name: /زمان سفر/ })).toContainText(
-      "الان · حرکت فوری",
+      "الان · حرکت همین الان",
     );
     expect(new URL(page.url()).searchParams.has("timeMode")).toBe(false);
   });
@@ -226,12 +226,12 @@ test.describe("travel time card", () => {
     await header.focus();
     await page.keyboard.press("Enter");
     await expect(header).toHaveAttribute("aria-expanded", "true");
-    const nowRadio = card(page).getByRole("radio", { name: "حرکت فوری" });
+    const nowRadio = card(page).getByRole("radio", { name: "حرکت همین الان" });
     await nowRadio.focus();
     // ArrowDown always advances in DOM order (direction-independent).
     await page.keyboard.press("ArrowDown");
     await expect(
-      card(page).getByRole("radio", { name: "حرکت در ساعت مشخص" }),
+      card(page).getByRole("radio", { name: "حرکت در ساعت" }),
     ).toBeChecked();
     expect(new URL(page.url()).searchParams.get("timeMode")).toBe("depart");
     await header.focus();
@@ -272,8 +272,8 @@ test.describe("travel time card (English)", () => {
     await expect(header).toContainText("Now · Leave now");
     await header.click();
     await expect(card(page).getByRole("radio", { name: "Leave now" })).toBeVisible();
-    await expect(card(page).getByRole("radio", { name: "Leave at a specific time" })).toBeVisible();
-    await expect(card(page).getByRole("radio", { name: "Arrive by a specific time" })).toBeVisible();
+    await expect(card(page).getByRole("radio", { name: "Leave at" })).toBeVisible();
+    await expect(card(page).getByRole("radio", { name: "Arrive by" })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.dir)).toBe("ltr");
   });
 });

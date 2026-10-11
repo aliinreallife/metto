@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Clock, Minus, Plus } from "lucide-react";
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Clock, Flag, Minus, Plus, Zap, type LucideIcon } from "lucide-react";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -15,7 +15,7 @@ import { tehranParts } from "@/lib/tehran-time";
 
 /**
  * Compact "travel time" control: a collapsed summary card expanding inline
- * to a segmented now/depart/arrive picker with date + time steppers.
+ * to a now/depart/arrive picker (three separate mode cards) with date + time steppers.
  * Presentational — HomePage owns timeMode/planAtMs; every change applies
  * immediately (no confirmation step) through the existing routing state.
  */
@@ -88,25 +88,27 @@ export function TravelTimeCard({
           <div id="travel-time-panel" className="flex flex-col gap-3 border-t border-border p-3">
             <fieldset>
               <legend className="sr-only">{t.travelTimeModes}</legend>
-              <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1" role="presentation">
+              <div className="grid grid-cols-3 gap-2" role="presentation">
                 <ModeOption
                   name="travel-time-mode"
                   checked={timeMode === "now"}
                   onChange={() => onModeChange("now")}
                   label={t.leaveNow}
-                  sub={t.defaultBadge}
+                  icon={Zap}
                 />
                 <ModeOption
                   name="travel-time-mode"
                   checked={timeMode === "depart"}
                   onChange={() => onModeChange("depart")}
                   label={t.departLong}
+                  icon={Clock}
                 />
                 <ModeOption
                   name="travel-time-mode"
                   checked={timeMode === "arrive"}
                   onChange={() => onModeChange("arrive")}
                   label={t.arriveLong}
+                  icon={Flag}
                 />
               </div>
             </fieldset>
@@ -139,21 +141,21 @@ function ModeOption({
   checked,
   onChange,
   label,
-  sub,
+  icon: Icon,
 }: {
   name: string;
   checked: boolean;
   onChange: () => void;
   label: string;
-  sub?: string;
+  icon: LucideIcon;
 }) {
   return (
     <label
       className={cn(
-        "flex min-h-12 cursor-pointer items-center justify-center rounded-lg px-1 py-1.5 text-center text-[13px] font-semibold transition-colors focus-within:ring-2 focus-within:ring-ring",
+        "flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center text-[13px] font-semibold transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-background",
         checked
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground",
+          ? "border-primary bg-primary/10 text-foreground"
+          : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
       )}
     >
       <input
@@ -163,19 +165,14 @@ function ModeOption({
         onChange={onChange}
         className="sr-only"
       />
-      <span className="flex flex-col items-center leading-snug">
-        <span>{label}</span>
-        {sub && (
-          <span
-            className={cn(
-              "text-[10px] font-medium",
-              checked ? "text-primary-foreground" : "text-muted-foreground",
-            )}
-          >
-            {sub}
-          </span>
+      <Icon
+        aria-hidden="true"
+        className={cn(
+          "size-4 shrink-0",
+          checked ? "text-primary" : "text-muted-foreground",
         )}
-      </span>
+      />
+      <span className="leading-snug">{label}</span>
     </label>
   );
 }
