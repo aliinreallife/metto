@@ -147,7 +147,7 @@ test.describe("travel time card", () => {
   test("day stepping caps at one week and labels non-normal days", async ({ page }) => {
     await page.goto(`/route?from=${FROM}&to=${TO}`, { waitUntil: "domcontentloaded" });
     await expandCard(page);
-    await card(page).locator("fieldset").getByText("حرکت در ساعت مشخص", { exact: true }).click();
+    await card(page).locator("fieldset").getByText("حرکت در ساعت", { exact: true }).click();
     const next = card(page).getByRole("button", { name: "روز بعد" });
     const badge = card(page).getByTestId("day-badge");
     // Any 8 consecutive days include a Thursday and a Friday: stepping
