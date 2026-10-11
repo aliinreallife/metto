@@ -372,6 +372,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       if (existing && existing.key === key) continue
       const icon = buildLabelIcon(text, currentLang, { x: pl.x, y: pl.y, w: c.width, h: c.height, anchor: pl.anchor }, { x: p.x, y: p.y })
       if (existing) {
+        // Reused nodes must move too: the icon is anchored relative to the
+        // marker position, so a setIcon-only update leaves moved labels
+        // rendering at their first position (setLatLng is a no-op for
+        // static stations, which never change src).
+        existing.marker.setLatLng([src.lat, src.lng])
         existing.marker.setIcon(icon)
         existing.key = key
       } else {

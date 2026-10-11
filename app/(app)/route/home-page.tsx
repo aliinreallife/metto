@@ -42,6 +42,7 @@ import {
   estimateWalkMinutes,
   formatWalkTime,
   buildMapHref,
+  directWalk,
   encodePlacePin,
   parsePlaceParam,
 } from "@/lib/geo";
@@ -757,7 +758,24 @@ function RouteView({
             })()}
           </>
         ) : !selected ? (
-          <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground md:px-5 md:py-8 md:text-base">
+          <>
+            {originId && destId && originId === destId && (() => {
+              // Same-station short-circuit never routes, so distinct exact
+              // pins would otherwise get no walk comparison at all.
+              const originStation = STATION_MAP.get(originId);
+              const destStation = STATION_MAP.get(destId);
+              const walk = directWalk(
+                originPlaceInfo
+                  ? { lat: originPlaceInfo.lat, lng: originPlaceInfo.lng }
+                  : originStation?.location,
+                destPlaceInfo
+                  ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng }
+                  : destStation?.location,
+              );
+              if (!walk) return null;
+              return <WalkSuggestCard lang={lang} walkMin={walk.walkMin} distanceKm={walk.walkKm} />;
+            })()}
+            <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground md:px-5 md:py-8 md:text-base">
             <p>
               {originId && destId && originId === destId
                 ? t.sameStation
@@ -773,6 +791,7 @@ function RouteView({
               </p>
             )}
           </div>
+          </>
         ) : null}
 
         {originId && destId && originId !== destId && !route && !isPastTime && (!arriveView || arriveView.kind === "generic") && (

@@ -77,6 +77,23 @@ export function isTooFarToWalk(
   return Number.isFinite(distanceKm) && distanceKm > thresholdKm;
 }
 
+/**
+ * Direct walk between two exact points (place pins or station locations).
+ * Null when either point is missing or both are the same point — there is
+ * no walk to suggest then. Used by the same-station short-circuit, which
+ * never produces a metro route to compare against.
+ */
+export function directWalk(
+  origin: { lat: number; lng: number } | null | undefined,
+  dest: { lat: number; lng: number } | null | undefined,
+): { walkKm: number; walkMin: number } | null {
+  if (!origin || !dest) return null;
+  if (origin.lat === dest.lat && origin.lng === dest.lng) return null;
+  const walkKm = haversineKm(origin.lat, origin.lng, dest.lat, dest.lng);
+  if (!(walkKm > 0)) return null;
+  return { walkKm, walkMin: estimateWalkMinutes(walkKm) };
+}
+
 export function formatWalkTime(minutes: number, lang: Lang): string {
   const rounded = Math.round(minutes);
   if (rounded < 1) return lang === "fa" ? "کمتر از ۱ دقیقه" : "<1 min";
