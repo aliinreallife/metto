@@ -298,7 +298,7 @@ function DayRow({
         <p aria-live="polite" className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-center text-sm font-bold">
           <span className="min-w-0 truncate">{formatDateLabel(lang, dateStr, nowMs)}</span>
           {dayBadge && (
-            <span data-testid="day-badge" title={dayBadge} className="max-w-[45%] shrink-0 truncate rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-semibold text-primary">
+            <span data-testid="day-badge" title={dayBadge} className="max-w-[45%] shrink-0 truncate text-[11px] font-semibold text-primary">
               {dayBadge}
             </span>
           )}
