@@ -21,6 +21,7 @@ import { canBoardAtStation } from "@/lib/metro/selectors";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatTehranClock } from "@/lib/tehran-time";
+import { formatCountdown } from "@/lib/route-planning";
 import { cn } from "@/lib/utils";
 import {
   getNextDepartures,
@@ -136,11 +137,14 @@ export function RoutePanel({
   route,
   lang,
   plan,
+  nowMs,
 }: {
   route: RouteResult;
   lang: Lang;
   /** Advanced time plan that produced this route (absent for "now"). */
   plan?: { mode: "depart" | "arrive"; atMs: number };
+  /** Client clock for the arrive-by countdown (absent on static surfaces). */
+  nowMs?: number;
 }) {
   const loaded = useScheduleData();
   const t = STRINGS[lang];
@@ -211,6 +215,13 @@ export function RoutePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route, firstWait, isFa, lang]);
 
+  // Live countdown to the origin station for arrive-by plans. Null without a
+  // client clock (static surfaces), without an origin, or once time is up.
+  const countdown =
+    plan?.mode === "arrive" && nowMs !== undefined && route.path[0]
+      ? formatCountdown(lang, name(route.path[0]), route.departedAtMs - nowMs)
+      : null;
+
   return (
     <div className="flex flex-col gap-3 md:gap-4">
       {scheduleLoading && (
@@ -232,6 +243,11 @@ export function RoutePanel({
             <span className="tnum text-xs font-medium md:text-sm">
               {t.arriveBy}{" "}{persianDigits(formatTehranClock(plan.atMs), lang)}
             </span>
+            {countdown !== null && (
+              <span className="tnum text-xs font-medium md:text-sm">
+                {countdown}
+              </span>
+            )}
           </span>
         </div>
       )}

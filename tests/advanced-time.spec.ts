@@ -116,6 +116,8 @@ test.describe("travel time card", () => {
     await expect(arriveBanner).toBeVisible({ timeout: 15_000 });
     // Arrive mode shows the single be-at-station cell.
     await expect(arriveBanner.getByText("حضور در ایستگاه")).toBeVisible();
+    // Live countdown to the origin station (plan is tomorrow: always ahead).
+    await expect(arriveBanner.getByText(/وقت داری/)).toBeVisible();
 
     await page.reload({ waitUntil: "domcontentloaded" });
     expect(new URL(page.url()).searchParams.get("timeMode")).toBe("arrive");

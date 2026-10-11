@@ -731,6 +731,7 @@ function RouteView({
                   ? { mode: timeMode, atMs: planAtMs }
                   : undefined
               }
+              nowMs={timeMode === "now" ? undefined : nowMs}
             />
             {originId && (() => {
               const origin = STATION_MAP.get(originId);

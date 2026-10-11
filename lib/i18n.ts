@@ -170,6 +170,9 @@ export const STRINGS = {
     routeFromNow: "Route from now",
     beAtStationBy: "Be at the station",
     arriveBy: "Arrival deadline",
+    countdownHave: "You've got",
+    countdownReach: "to reach",
+    countdownSoon: "less than a minute",
     noJourneyBy: "No journey arrives by that time.",
   },
   fa: {
@@ -341,6 +344,9 @@ export const STRINGS = {
     routeFromNow: "مسیر از الان",
     beAtStationBy: "حضور در ایستگاه",
     arriveBy: "مهلت رسیدن",
+    countdownHave: "وقت داری",
+    countdownReach: "تا برسی",
+    countdownSoon: "کمتر از یک دقیقه",
     noJourneyBy: "هیچ سفری تا آن ساعت نمی‌رسد.",
   },
 } as const;

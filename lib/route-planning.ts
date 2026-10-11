@@ -549,6 +549,29 @@ export function describePlanDay(
   }
 }
 
+/**
+ * Live countdown line for the arrive-by hero: time left to reach the origin
+ * station. Null when the be-at-station instant has passed (callers hide the
+ * line; past plans never route, so this is only race armor).
+ */
+export function formatCountdown(
+  lang: Lang,
+  stationName: string,
+  remainingMs: number,
+): string | null {
+  if (!(remainingMs > 0)) return null;
+  const t = STRINGS[lang];
+  if (remainingMs < 60_000) {
+    return lang === "fa"
+      ? `${t.countdownSoon} ${t.countdownHave} ${t.countdownReach} ${stationName}`
+      : `${t.countdownHave} ${t.countdownSoon} ${t.countdownReach} ${stationName}`;
+  }
+  const num = persianDigits(Math.floor(remainingMs / 60_000), lang);
+  return lang === "fa"
+    ? `${num} ${t.minEst} ${t.countdownHave} ${t.countdownReach} ${stationName}`
+    : `${t.countdownHave} ${num} ${t.minEst} ${t.countdownReach} ${stationName}`;
+}
+
 // ---- Shareable URL state (web planner) ----
 
 export type TimeMode = "now" | "depart" | "arrive";

@@ -20,6 +20,7 @@ import {
 import type { LineScheduleData } from "./lib/schedule-data";
 import {
   describePlanDay,
+  formatCountdown,
   getArriveByViewState,
   getDayTypeForServiceDate,
   parseTimeModeParams,
@@ -599,6 +600,32 @@ describe("continuous picker datetime", () => {
       hh: 7,
       mm: 0,
     });
+  });
+});
+
+describe("arrive-by countdown line", () => {
+  it("counts whole minutes to the origin station", () => {
+    expect(formatCountdown("en", "Tajrish", 23 * 60_000)).toBe(
+      "You've got 23 min to reach Tajrish",
+    );
+    expect(formatCountdown("fa", "تجریش", 23 * 60_000)).toBe(
+      "۲۳ دقیقه وقت داری تا برسی تجریش",
+    );
+  });
+
+  it("uses the sub-minute form below 60 seconds", () => {
+    expect(formatCountdown("en", "Tajrish", 30_000)).toBe(
+      "You've got less than a minute to reach Tajrish",
+    );
+    expect(formatCountdown("fa", "تجریش", 30_000)).toBe(
+      "کمتر از یک دقیقه وقت داری تا برسی تجریش",
+    );
+  });
+
+  it("hides the line when time is up", () => {
+    expect(formatCountdown("en", "Tajrish", 0)).toBeNull();
+    expect(formatCountdown("fa", "تجریش", -1000)).toBeNull();
+    expect(formatCountdown("en", "Tajrish", Number.NaN)).toBeNull();
   });
 });
 
