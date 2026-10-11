@@ -23,13 +23,22 @@
 # impossible against an immutable remote deployment). The full local suite
 # stays available as `test:e2e:offline`.
 #
+# Speed without cutting coverage: the suite is sharded across 3 parallel jobs
+# (`--shard`), and Playwright browsers are cached. Sharding is safe here even
+# though local runs stay serial (playwright.config.ts: workers 1): preview
+# runs hit an immutable deployment, every test gets an isolated browser
+# context (service worker, cache storage and localStorage are all
+# per-context), and the disk-mutating @local-only tests are excluded — so no
+# shard can observe another shard's side effects.
+#
 # PR visibility: `repository_dispatch` runs anchor to the default branch, so
 # GitHub never shows them in a PR's Checks tab. This workflow therefore posts
-# its own commit status (context `Metto Preview E2E`) to the deployed SHA:
-# pending when the suite starts, success/failure at the end, error when the
-# run is cancelled — so a stuck pending is impossible and the context can be
-# made a required branch-protection check. Production dispatches are skipped
-# by the job-level `if` below and post nothing.
+# its own commit status (context `Metto Preview E2E`) to the deployed SHA.
+# Each shard posts pending at start (idempotent); the `report` job posts the
+# single aggregate result at the end — so a stuck pending is impossible, one
+# failing shard can never be overwritten by another shard, and the context
+# can be made a required branch-protection check. Production dispatches are
+# skipped by the job-level `if`s and post nothing.
 #
 # Deployment Protection: Preview deployments sit behind Vercel Authentication,
 # so the suite authenticates as a Vercel Trusted Source with a short-lived
@@ -60,9 +69,15 @@ on:
 
 jobs:
   e2e:
-    name: playwright offline suite (vercel preview)
+    name: playwright offline suite (vercel preview, shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Sharded for wall-clock speed; fail-fast off so one slow shard never
+    # hides the other shards' signal.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     # OIDC minting needs an explicitly granted token permission; checkout
     # needs repo read; commit statuses need statuses write so the result is
     # visible on the PR. (Least privilege — no other scopes.)
@@ -156,18 +171,28 @@ jobs:
           echo "deployment root with OIDC identity header -> HTTP $(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -H "x-vercel-trusted-oidc-idp-token: $VERCEL_TRUSTED_OIDC_TOKEN" "$BASE_URL/")"
           echo "deployment root anonymous -> HTTP $(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BASE_URL/")"
 
+      - name: Cache Playwright browsers
+        # Browsers (~170 MB download) are the slow part of setup; the cache
+        # key follows the lockfile so a Playwright bump re-downloads. System
+        # dependencies below still install via apt on every run (fresh
+        # runners have no OS package cache). Miss path == today's behavior.
+        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Install Chromium (with OS deps)
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Preview E2E suite
-        # Serial by design (playwright.config.ts: workers 1 — specs share
-        # server-side SW expectations and assert timing-sensitive cache
-        # contents). No local build/server/wait: BASE_URL above is the
-        # already-live Vercel deployment under test. Runs the
-        # remote-compatible subset (excludes @local-only disk-mutation tests).
+      - name: Preview E2E suite (shard ${{ matrix.shard }}/3)
+        # Serial within this shard (playwright.config.ts: workers 1); shards
+        # run in parallel jobs — safe on preview (immutable deployment,
+        # isolated browser contexts, @local-only excluded; see header).
         env:
           # Short-lived GitHub OIDC identity for this run only (masked at
           # mint; never printed, never persisted). Playwright sends it as
@@ -177,69 +202,68 @@ jobs:
           # hardcoded, never printed). Playwright sends it as
           # x-vercel-protection-bypass when present; locally unset.
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: pnpm test:e2e:preview
+        run: pnpm exec playwright test --grep-invert "@local-only" --shard=${{ matrix.shard }}/3
 
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-failure-artifacts
+          name: playwright-failure-artifacts-shard-${{ matrix.shard }}
           if-no-files-found: ignore
           retention-days: 7
           path: |
             playwright-report/
             test-results/
 
-      # Exactly one of these fires (success/failure/cancelled are mutually
-      # exclusive), so a finished run can never leave the status pending.
-      # Cancelled/aborted runs report `error` — neither green nor red.
-      - name: Report Metto Preview E2E success
-        if: success() && steps.target.outputs.sha != ''
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          TARGET_SHA: ${{ steps.target.outputs.sha }}
-        with:
-          script: |
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: process.env.TARGET_SHA,
-              state: 'success',
-              context: 'Metto Preview E2E',
-              description: 'Preview E2E suite passed',
-              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            });
+  report:
+    name: report preview E2E status
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [e2e]
+    # Always report, but only for preview runs: production dispatches skip
+    # the matrix above and must report nothing.
+    if: >-
+      always() &&
+      (github.event_name == 'workflow_dispatch' ||
+      github.event.client_payload.environment == 'preview')
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Resolve status SHA
+        id: target
+        # Same rule as the matrix job: exact deployed commit for Vercel
+        # events, dispatched branch head for manual runs.
+        run: |
+          SHA="${{ github.event.client_payload.git.sha }}"
+          if [ -z "$SHA" ]; then SHA="${{ github.sha }}"; fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
-      - name: Report Metto Preview E2E failure
-        if: failure() && steps.target.outputs.sha != ''
+      - name: Report aggregate Metto Preview E2E status
+        # needs.e2e.result aggregates every shard: success only when all
+        # three shards succeeded. Cancelled maps to error (neither green nor
+        # red), matching the previous per-job behavior.
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           TARGET_SHA: ${{ steps.target.outputs.sha }}
+          MATRIX_RESULT: ${{ needs.e2e.result }}
         with:
           script: |
+            const result = process.env.MATRIX_RESULT;
+            const state =
+              result === 'success' ? 'success' : result === 'cancelled' ? 'error' : 'failure';
+            const description =
+              result === 'success'
+                ? 'Preview E2E suite passed (3/3 shards)'
+                : result === 'cancelled'
+                  ? 'Preview E2E run was cancelled'
+                  : `Preview E2E suite ${result} (aggregate of 3 shards)`;
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: process.env.TARGET_SHA,
-              state: 'failure',
+              state,
               context: 'Metto Preview E2E',
-              description: 'Preview E2E suite failed',
-              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            });
-
-      - name: Report Metto Preview E2E cancelled
-        if: cancelled() && steps.target.outputs.sha != ''
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          TARGET_SHA: ${{ steps.target.outputs.sha }}
-        with:
-          script: |
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: process.env.TARGET_SHA,
-              state: 'error',
-              context: 'Metto Preview E2E',
-              description: 'Preview E2E run was cancelled',
+              description,
               target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });
