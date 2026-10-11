@@ -251,11 +251,16 @@ export function RoutePanel({
         />
       </div>
       {plan && plan.mode === "arrive" && (
-        <div data-testid="plan-banner" className="flex flex-wrap gap-2 rounded-xl border border-primary/40 bg-primary/10 p-2">
-          <PlanTime
-            label={t.beAtStationBy}
-            value={persianDigits(formatTehranClock(route.departedAtMs), lang)}
-          />
+        <div data-testid="plan-banner" className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+            <AlarmClock aria-hidden="true" className="size-5 text-primary" />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+            <span className="text-xs font-medium text-muted-foreground md:text-sm">{t.beAtStationBy}</span>
+            <span className="tnum text-2xl font-bold leading-none md:text-3xl">
+              {persianDigits(formatTehranClock(route.departedAtMs), lang)}
+            </span>
+          </span>
         </div>
       )}
       {topWarning && (
@@ -358,21 +363,6 @@ function Stat({
       <span aria-hidden="true" className="text-muted-foreground">{icon}</span>
       <span className="tnum text-2xl font-bold leading-none md:text-3xl" title={tooltip}>{value}</span>
       <span className="text-sm text-muted-foreground md:text-base">{label}</span>
-    </div>
-  );
-}
-
-function PlanTime({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex min-w-28 flex-1 flex-col items-center gap-0.5 rounded-lg bg-background/70 px-2 py-2 text-center">
-      <span className="text-[11px] font-medium text-muted-foreground md:text-xs">{label}</span>
-      <span className="tnum text-xl font-bold leading-tight md:text-2xl">{value}</span>
     </div>
   );
 }
