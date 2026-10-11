@@ -3,6 +3,7 @@ import {
   buildMapHref,
   buildTabHref,
   decodePlacePin,
+  directWalk,
   encodePlacePin,
   estimateWalkMinutes,
   isTooFarToWalk,
@@ -85,5 +86,24 @@ describe("walk estimates", () => {
     expect(Math.round(estimateWalkMinutes(1.5))).toBe(18);
     expect(isTooFarToWalk(1.5)).toBe(false);
     expect(isTooFarToWalk(1.5001)).toBe(true);
+  });
+
+  it("measures a direct walk between distinct close pins", () => {
+    const w = directWalk(
+      { lat: 35.7265, lng: 51.2427 },
+      { lat: 35.7265, lng: 51.2426 },
+    );
+    expect(w).not.toBeNull();
+    expect(w!.walkKm).toBeGreaterThan(0);
+    expect(w!.walkKm).toBeLessThan(0.05);
+    expect(w!.walkMin).toBeGreaterThan(0);
+  });
+
+  it("returns null for identical or missing points", () => {
+    const p = { lat: 35.7265, lng: 51.2427 };
+    expect(directWalk(p, { ...p })).toBeNull();
+    expect(directWalk(null, p)).toBeNull();
+    expect(directWalk(p, null)).toBeNull();
+    expect(directWalk(null, null)).toBeNull();
   });
 });

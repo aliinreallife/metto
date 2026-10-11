@@ -49,4 +49,31 @@ test.describe("walk suggestion", () => {
     await page.waitForTimeout(3_000);
     await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
   });
+
+  test("same station with distinct close pins still suggests walking", async ({
+    page,
+  }) => {
+    // from === to short-circuits routing, but two exact pins ~9 m apart
+    // still deserve the walk comparison.
+    await page.goto(
+      `/route?from=chitgar&to=chitgar&op=35.7265,51.2427,${encodeURIComponent("کوهک")}&dp=35.7265,51.2426,${encodeURIComponent("کوهک")}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    const card = page.getByTestId("walk-suggest");
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await expect(card).toContainText("پیاده‌روی سریع‌تر است");
+    // The same-station notice stays too.
+    await expect(page.getByText("مبدأ و مقصد یکسان هستند.")).toBeVisible();
+  });
+
+  test("same station with identical points stays quiet", async ({ page }) => {
+    await page.goto(`/route?from=chitgar&to=chitgar`, {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(
+      page.getByTestId("travel-time-card"),
+    ).toBeVisible({ timeout: 15_000 });
+    await page.waitForTimeout(3_000);
+    await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
+  });
 });
