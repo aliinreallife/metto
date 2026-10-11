@@ -604,21 +604,21 @@ describe("continuous picker datetime", () => {
 });
 
 describe("arrive-by countdown line", () => {
-  it("counts whole minutes to the origin station", () => {
-    expect(formatCountdown("en", "Tajrish", 23 * 60_000)).toBe(
-      "You've got 23 min to reach Tajrish",
+  it("counts minutes and seconds to the origin station", () => {
+    expect(formatCountdown("en", "Tajrish", (23 * 60 + 14) * 1000)).toBe(
+      "You've got 23 min and 14 sec to reach Tajrish",
     );
-    expect(formatCountdown("fa", "تجریش", 23 * 60_000)).toBe(
-      "۲۳ دقیقه وقت داری تا برسی تجریش",
+    expect(formatCountdown("fa", "تجریش", (23 * 60 + 14) * 1000)).toBe(
+      "۲۳ دقیقه و ۱۴ ثانیه وقت داری تا برسی تجریش",
     );
   });
 
-  it("uses the sub-minute form below 60 seconds", () => {
+  it("shows seconds alone below one minute", () => {
     expect(formatCountdown("en", "Tajrish", 30_000)).toBe(
-      "You've got less than a minute to reach Tajrish",
+      "You've got 30 sec to reach Tajrish",
     );
     expect(formatCountdown("fa", "تجریش", 30_000)).toBe(
-      "کمتر از یک دقیقه وقت داری تا برسی تجریش",
+      "۳۰ ثانیه وقت داری تا برسی تجریش",
     );
   });
 

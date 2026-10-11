@@ -551,8 +551,9 @@ export function describePlanDay(
 
 /**
  * Live countdown line for the arrive-by hero: time left to reach the origin
- * station. Null when the be-at-station instant has passed (callers hide the
- * line; past plans never route, so this is only race armor).
+ * station, with seconds so it reads as ticking, not frozen. Null when the
+ * be-at-station instant has passed (callers hide the line; past plans never
+ * route, so this is only race armor).
  */
 export function formatCountdown(
   lang: Lang,
@@ -561,15 +562,21 @@ export function formatCountdown(
 ): string | null {
   if (!(remainingMs > 0)) return null;
   const t = STRINGS[lang];
-  if (remainingMs < 60_000) {
+  const num = (n: number) => persianDigits(n, lang);
+  const totalSec = Math.floor(remainingMs / 1000);
+  // FA «۲۲ دقیقه و ۱۴ ثانیه وقت داری تا برسی تجریش» / EN equivalent below.
+  // Word order differs per language, so each branch assembles its own order.
+  if (totalSec < 60) {
+    const secPart = `${num(totalSec)} ${t.countdownSec}`;
     return lang === "fa"
-      ? `${t.countdownSoon} ${t.countdownHave} ${t.countdownReach} ${stationName}`
-      : `${t.countdownHave} ${t.countdownSoon} ${t.countdownReach} ${stationName}`;
+      ? `${secPart} ${t.countdownHave} ${t.countdownReach} ${stationName}`
+      : `${t.countdownHave} ${secPart} ${t.countdownReach} ${stationName}`;
   }
-  const num = persianDigits(Math.floor(remainingMs / 60_000), lang);
+  const minPart = `${num(Math.floor(totalSec / 60))} ${t.minEst}`;
+  const secPart = `${num(totalSec % 60)} ${t.countdownSec}`;
   return lang === "fa"
-    ? `${num} ${t.minEst} ${t.countdownHave} ${t.countdownReach} ${stationName}`
-    : `${t.countdownHave} ${num} ${t.minEst} ${t.countdownReach} ${stationName}`;
+    ? `${minPart} ${t.countdownAnd} ${secPart} ${t.countdownHave} ${t.countdownReach} ${stationName}`
+    : `${t.countdownHave} ${minPart} ${t.countdownAnd} ${secPart} ${t.countdownReach} ${stationName}`;
 }
 
 // ---- Shareable URL state (web planner) ----

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   AlarmClock,
   ArrowRight,
@@ -137,14 +137,11 @@ export function RoutePanel({
   route,
   lang,
   plan,
-  nowMs,
 }: {
   route: RouteResult;
   lang: Lang;
   /** Advanced time plan that produced this route (absent for "now"). */
   plan?: { mode: "depart" | "arrive"; atMs: number };
-  /** Client clock for the arrive-by countdown (absent on static surfaces). */
-  nowMs?: number;
 }) {
   const loaded = useScheduleData();
   const t = STRINGS[lang];
@@ -215,13 +212,6 @@ export function RoutePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route, firstWait, isFa, lang]);
 
-  // Live countdown to the origin station for arrive-by plans. Null without a
-  // client clock (static surfaces), without an origin, or once time is up.
-  const countdown =
-    plan?.mode === "arrive" && nowMs !== undefined && route.path[0]
-      ? formatCountdown(lang, name(route.path[0]), route.departedAtMs - nowMs)
-      : null;
-
   return (
     <div className="flex flex-col gap-3 md:gap-4">
       {scheduleLoading && (
@@ -230,22 +220,17 @@ export function RoutePanel({
           {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
         </div>
       )}
-      {plan && plan.mode === "arrive" && (
+      {plan && plan.mode === "arrive" && route.path[0] && (
         <div data-testid="plan-banner" className="flex items-center gap-2.5 rounded-xl bg-primary px-3.5 py-2.5 text-primary-foreground">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20">
             <AlarmClock aria-hidden="true" className="size-4" />
           </span>
-          <p className="min-w-0 flex-1 truncate text-sm md:text-base">
-            <span className="font-medium">{t.beAtStationBy}</span>{" "}
-            <span className="tnum text-base font-bold md:text-lg">
-              {persianDigits(formatTehranClock(route.departedAtMs), lang)}
-            </span>
-            {countdown !== null && (
-              <>
-                <span aria-hidden="true"> · </span>
-                <span>{countdown}</span>
-              </>
-            )}
+          <p className="min-w-0 flex-1 truncate text-sm font-medium md:text-base">
+            <CountdownLine
+              lang={lang}
+              stationName={name(route.path[0])}
+              targetMs={route.departedAtMs}
+            />
           </p>
         </div>
       )}
@@ -382,6 +367,34 @@ function Stat({
       <span className="text-sm text-muted-foreground md:text-base">{label}</span>
     </div>
   );
+}
+
+/**
+ * Self-ticking countdown line: re-renders only itself every second so the
+ * seconds visibly tick. Mount-gated (renders nothing on first paint) so SSR
+ * and hydration markup agree on the live clock value.
+ */
+function CountdownLine({
+  lang,
+  stationName,
+  targetMs,
+}: {
+  lang: Lang;
+  stationName: string;
+  targetMs: number;
+}) {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount gate for client-only live content; rendering the clock on first paint would hydrate mismatched seconds.
+    setMounted(true);
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  if (!mounted) return null;
+  const text = formatCountdown(lang, stationName, targetMs - nowMs);
+  if (text === null) return null;
+  return <span className="tnum">{text}</span>;
 }
 
 function SegmentCard({
