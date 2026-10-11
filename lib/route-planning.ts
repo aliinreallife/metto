@@ -579,6 +579,20 @@ export function formatCountdown(
     : `${t.countdownHave} ${minPart} ${t.countdownAnd} ${secPart} ${t.countdownReach} ${stationName}`;
 }
 
+/**
+ * True when walking the whole way beats the metro journey: suggest walking
+ * instead of forcing a slower ride. Strictly-less keeps ties on metro.
+ */
+export function shouldSuggestWalk(
+  walkMinutes: number,
+  metroTotalSeconds: number,
+): boolean {
+  if (!Number.isFinite(walkMinutes) || !Number.isFinite(metroTotalSeconds)) {
+    return false;
+  }
+  return walkMinutes < metroTotalSeconds / 60;
+}
+
 // ---- Shareable URL state (web planner) ----
 
 export type TimeMode = "now" | "depart" | "arrive";

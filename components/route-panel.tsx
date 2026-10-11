@@ -22,6 +22,7 @@ import { STATION_MAP, type RouteResult } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatTehranClock } from "@/lib/tehran-time";
 import { formatCountdown } from "@/lib/route-planning";
+import { formatDistance, formatWalkTime } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import {
   getNextDepartures,
@@ -129,6 +130,39 @@ export function MissedDeadlineCard({
           {t.routeFromNow}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Walking beats the metro for this journey: a compact nudge with the walk
+ * time and distance. Rendered by the planner above the metro result — the
+ * metro route itself stays visible below.
+ */
+export function WalkSuggestCard({
+  lang,
+  walkMin,
+  distanceKm,
+}: {
+  lang: Lang;
+  walkMin: number;
+  distanceKm: number;
+}) {
+  const t = STRINGS[lang];
+  return (
+    <div
+      data-testid="walk-suggest"
+      className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+        <Footprints aria-hidden="true" className="size-5 text-primary" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+        <span className="text-sm font-bold md:text-base">{t.walkFaster}</span>
+        <span className="tnum text-xs text-muted-foreground md:text-sm">
+          {formatWalkTime(walkMin, lang)} · {formatDistance(distanceKm, lang)} {t.walkDistance}
+        </span>
+      </span>
     </div>
   );
 }

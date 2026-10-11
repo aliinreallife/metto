@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
-import { MissedDeadlineCard, NoServiceCard, RoutePanel } from "@/components/route-panel";
+import { MissedDeadlineCard, NoServiceCard, RoutePanel, WalkSuggestCard } from "@/components/route-panel";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
 import { TravelTimeCard } from "@/components/travel-time-card";
@@ -28,6 +28,7 @@ import {
   parseTimeModeParams,
   planRoute,
   seedNextFiveMinutes,
+  shouldSuggestWalk,
   type TimeMode,
 } from "@/lib/route-planning";
 import { tehranMinuteToInstant } from "@/lib/tehran-time";
@@ -723,6 +724,23 @@ function RouteView({
           </>
         ) : route ? (
           <>
+            {(() => {
+              // Walk-vs-metro nudge: exact place coords when pinned, else
+              // station coords. Suggests walking only when strictly faster.
+              const originStation = originId ? STATION_MAP.get(originId) : null;
+              const destStation = destId ? STATION_MAP.get(destId) : null;
+              const oPt = originPlaceInfo
+                ? { lat: originPlaceInfo.lat, lng: originPlaceInfo.lng }
+                : originStation?.location;
+              const dPt = destPlaceInfo
+                ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng }
+                : destStation?.location;
+              if (!oPt || !dPt) return null;
+              const walkKm = haversineKm(oPt.lat, oPt.lng, dPt.lat, dPt.lng);
+              const walkMin = estimateWalkMinutes(walkKm);
+              if (!shouldSuggestWalk(walkMin, route.totalSeconds)) return null;
+              return <WalkSuggestCard lang={lang} walkMin={walkMin} distanceKm={walkKm} />;
+            })()}
             <RoutePanel
               route={route}
               lang={lang}
