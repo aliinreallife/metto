@@ -219,6 +219,19 @@ export function RoutePanel({
           {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
         </div>
       )}
+      {plan && plan.mode === "arrive" && (
+        <div data-testid="plan-banner" className="flex items-center gap-3 px-1 py-1">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+            <AlarmClock aria-hidden="true" className="size-5 text-primary" />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+            <span className="text-xs font-medium text-muted-foreground md:text-sm">{t.beAtStationBy}</span>
+            <span className="tnum text-2xl font-bold leading-none md:text-3xl">
+              {persianDigits(formatTehranClock(route.departedAtMs), lang)}
+            </span>
+          </span>
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-3 md:gap-4">
         <Stat
           icon={<TrainFront aria-hidden="true" className="size-5 md:size-6" />}
@@ -250,19 +263,6 @@ export function RoutePanel({
           label={isFa ? "رسیدن" : "arrival"}
         />
       </div>
-      {plan && plan.mode === "arrive" && (
-        <div data-testid="plan-banner" className="flex items-center gap-3 px-1 py-1">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
-            <AlarmClock aria-hidden="true" className="size-5 text-primary" />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-            <span className="text-xs font-medium text-muted-foreground md:text-sm">{t.beAtStationBy}</span>
-            <span className="tnum text-2xl font-bold leading-none md:text-3xl">
-              {persianDigits(formatTehranClock(route.departedAtMs), lang)}
-            </span>
-          </span>
-        </div>
-      )}
       {topWarning && (
         <div
           role={topWarning.severity === "red" ? "alert" : "status"}
