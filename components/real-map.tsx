@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
-import { Plus, Minus, LocateFixed, Loader2 } from "lucide-react"
+import { Plus, Minus, LocateFixed, Loader2, X } from "lucide-react"
 import { LINE_COLORS } from "@/lib/metro/lines";
 import {
   buildMapEdges,
@@ -20,7 +20,7 @@ import {
 } from "@/lib/map/label-placement";
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
-import { type Lang } from "@/lib/i18n"
+import { STRINGS, type Lang } from "@/lib/i18n"
 import { classifyGeoError, getCurrentPositionTolerant, type GeoErrorKind } from "@/lib/geolocation"
 import { LocationErrorActions } from "@/components/location-error"
 import { useConnectivity, type ConnectivityState } from "@/lib/offline/use-connectivity"
@@ -38,6 +38,9 @@ type Props = {
   onPickPoint?: (lat: number, lng: number) => void
   /** Pending exact pick: rendered distinctly, labelled via the engine. */
   pendingPick?: { lat: number; lng: number; label: string } | null
+  /** Map-local clear control (rendered with the zoom/locate stack). */
+  onClearRoute?: () => void
+  showClearRoute?: boolean
   initialCenter?: [number, number]
   initialZoom?: number
   onViewChange?: (center: [number, number], zoom: number) => void
@@ -134,7 +137,7 @@ function buildLabelIcon(
   })
 }
 
-export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick }: Props) {
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
@@ -175,6 +178,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const [locating, setLocating] = useState(false)
   const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null)
   const isFa = lang === "fa"
+  const t = STRINGS[lang]
   const { state: connectivity } = useConnectivity()
   // Tracks the previous SETTLED connectivity state so only a real
   // offline → online transition triggers a retry. The machine always
@@ -809,6 +813,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         </div>
       )}
       <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-1.5">
+        {showClearRoute && onClearRoute && (
+          <MapBtn label={t.clearRoute} onClick={onClearRoute} testId="map-clear-route">
+            <X aria-hidden="true" className="size-4" />
+          </MapBtn>
+        )}
         <MapBtn label="Zoom in" onClick={() => mapRef.current?.zoomIn()}>
           <Plus className="size-4" />
         </MapBtn>
@@ -828,11 +837,13 @@ function MapBtn({
   label,
   onClick,
   disabled,
+  testId,
 }: {
   children: React.ReactNode
   label: string
   onClick: () => void
   disabled?: boolean
+  testId?: string
 }) {
   return (
     <button
@@ -840,6 +851,7 @@ function MapBtn({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
+      data-testid={testId}
       className={cn(
         "flex size-9 items-center justify-center rounded-lg border border-border bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent disabled:opacity-50",
       )}

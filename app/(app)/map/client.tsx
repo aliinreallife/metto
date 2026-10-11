@@ -328,6 +328,8 @@ export function MapPage() {
         selectedId={selectedId}
         onSelect={handleSelect}
         onPickPoint={handlePick}
+        onClearRoute={clearRoute}
+        showClearRoute={hasRouteState}
         initialCenter={mapView.center}
         initialZoom={mapView.zoom}
         onViewChange={handleViewChange}
@@ -449,21 +451,6 @@ export function MapPage() {
           {t.minimalist}
         </button>
       </div>
-
-      {hasRouteState && (
-        <div className="absolute top-3 right-3 z-[500]">
-          <button
-            type="button"
-            data-testid="map-clear-route"
-            onClick={clearRoute}
-            aria-label={t.clearRoute}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <X aria-hidden="true" className="size-3.5" />
-            {t.clearRoute}
-          </button>
-        </div>
-      )}
 
       {selected && (
         <div data-testid="map-station-card" className="absolute inset-x-3 bottom-3 z-[500] mx-auto max-w-md">

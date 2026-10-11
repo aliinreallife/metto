@@ -99,7 +99,7 @@ test.describe("map route controls", () => {
     });
     const clearBtn = page.getByTestId("map-clear-route");
     await expect(clearBtn).toBeVisible();
-    await expect(clearBtn).toContainText("پاک کردن مسیر");
+    await expect(clearBtn).toHaveAttribute("aria-label", "پاک کردن مسیر");
 
     await clearBtn.click();
 
