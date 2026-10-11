@@ -31,6 +31,7 @@ import {
   shiftPlanDay,
   shiftTehranDate,
   shiftTimeOfDay,
+  shouldSuggestWalk,
 } from "./lib/route-planning";
 import {
   parseServiceTimeToMinutes,
@@ -600,6 +601,19 @@ describe("continuous picker datetime", () => {
       hh: 7,
       mm: 0,
     });
+  });
+});
+
+describe("walk suggestion rule", () => {
+  it("suggests walking only when strictly faster than metro", () => {
+    expect(shouldSuggestWalk(7, 17 * 60)).toBe(true);
+    expect(shouldSuggestWalk(7, 7 * 60)).toBe(false);
+    expect(shouldSuggestWalk(30, 20 * 60)).toBe(false);
+  });
+
+  it("never suggests on non-finite input", () => {
+    expect(shouldSuggestWalk(Number.NaN, 600)).toBe(false);
+    expect(shouldSuggestWalk(5, Number.POSITIVE_INFINITY)).toBe(false);
   });
 });
 
