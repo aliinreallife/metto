@@ -615,40 +615,36 @@ describe("plan day badges", () => {
     expect(describePlanDay("fa", "2026-09-08", isHolidayDate)).toBeNull();
   });
 
-  it("labels Thursday service days", () => {
+  it("badges Thursday with the weekday name", () => {
     expect(describePlanDay("en", "2026-09-10", isHolidayDate)).toBe(
-      "Thursday service",
+      "Thursday",
     );
     expect(describePlanDay("fa", "2026-09-10", isHolidayDate)).toBe(
-      "سرویس پنجشنبه",
+      "پنجشنبه",
     );
   });
 
-  it("labels Friday by rule (not as an official holiday)", () => {
-    expect(describePlanDay("en", "2026-09-11", isHolidayDate)).toBe(
-      "Friday service",
-    );
-    expect(describePlanDay("fa", "2026-09-11", isHolidayDate)).toBe(
-      "سرویس جمعه",
-    );
+  it("badges Friday with the weekday name (not as an official holiday)", () => {
+    expect(describePlanDay("en", "2026-09-11", isHolidayDate)).toBe("Friday");
+    expect(describePlanDay("fa", "2026-09-11", isHolidayDate)).toBe("جمعه");
   });
 
-  it("labels listed holidays with their name when known", () => {
+  it("badges listed holidays with their name when known", () => {
     expect(
       describePlanDay("en", "2026-03-23", isHolidayDate, {
         fa: "نوروز",
         en: "Nowruz",
       }),
-    ).toBe("Holiday service · Nowruz");
+    ).toBe("Nowruz");
     expect(
       describePlanDay("fa", "2026-03-23", isHolidayDate, {
         fa: "نوروز",
         en: "Nowruz",
       }),
-    ).toBe("سرویس تعطیلات · نوروز");
-    expect(describePlanDay("en", "2026-03-23", isHolidayDate)).toBe(
-      "Holiday service",
-    );
+    ).toBe("نوروز");
+    // Unknown name falls back to the weekday (2026-03-23 is a Monday).
+    expect(describePlanDay("en", "2026-03-23", isHolidayDate)).toBe("Monday");
+    expect(describePlanDay("fa", "2026-03-23", isHolidayDate)).toBe("دوشنبه");
   });
 });
 

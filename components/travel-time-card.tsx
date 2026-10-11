@@ -300,8 +300,14 @@ function DayRow({
         </button>
         <p aria-live="polite" className="min-w-0 flex-1 truncate text-center text-sm font-bold">
           {formatDateLabel(lang, dateStr, nowMs)}
-          <span className="block truncate text-[11px] font-medium text-primary">
-            {dayBadge ?? " "}
+          <span className="mt-0.5 block truncate text-center">
+            {dayBadge ? (
+              <span className="inline-block max-w-full truncate rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-semibold text-primary">
+                {dayBadge}
+              </span>
+            ) : (
+              " "
+            )}
           </span>
         </p>
         <button

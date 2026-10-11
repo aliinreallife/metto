@@ -519,10 +519,10 @@ export function formatDateLabel(
 export const PLAN_HORIZON_DAYS = 7;
 
 /**
- * Short badge for a planned Tehran calendar date whose timetable is not the
- * normal weekday one: Thursday service, Friday service, or official-holiday
- * service (with the holiday name when known). Returns null for normal days
- * so the day row stays quiet most of the week.
+ * Pill-badge text for a planned Tehran calendar date: the localized weekday
+ * for Thursday/Friday service days, the official holiday name for listed
+ * holidays (weekday fallback when the name is unknown). Returns null for
+ * normal days so the day row stays quiet most of the week.
  */
 export function describePlanDay(
   lang: Lang,
@@ -530,20 +530,23 @@ export function describePlanDay(
   isHolidayDate: IsHolidayDate,
   holidayName?: { fa: string; en: string } | null,
 ): string | null {
-  const t = STRINGS[lang];
   const scheduleDay = getMetroScheduleDayType(
     tehranMidnightEpoch(dateStr),
     isHolidayDate,
   );
-  if (scheduleDay === "thursday") return t.scheduleThursday;
-  if (scheduleDay === "holiday") {
-    // Friday runs the holiday timetable by rule; only listed dates are
-    // official holidays (with a name to show).
-    if (isHolidayDate(dateStr) !== true) return t.scheduleFriday;
+  if (scheduleDay !== "thursday" && scheduleDay !== "holiday") return null;
+  if (scheduleDay === "holiday" && isHolidayDate(dateStr) === true) {
     const name = holidayName?.[lang];
-    return name ? `${t.scheduleHoliday} · ${name}` : t.scheduleHoliday;
+    if (name) return name;
   }
-  return null;
+  try {
+    return new Intl.DateTimeFormat(lang === "fa" ? "fa-IR" : "en-GB", {
+      timeZone: TEHRAN_TZ,
+      weekday: "long",
+    }).format(new Date(tehranMidnightEpoch(dateStr) + 12 * 3_600_000));
+  } catch {
+    return dateStr;
+  }
 }
 
 // ---- Shareable URL state (web planner) ----
