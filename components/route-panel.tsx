@@ -237,15 +237,12 @@ export function RoutePanel({
           </span>
           <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
             <span className="text-xs font-medium md:text-sm">{t.beAtStationBy}</span>
-            <span className="tnum text-3xl font-bold leading-none md:text-4xl">
+            <span className="tnum text-2xl font-bold leading-none md:text-4xl">
               {persianDigits(formatTehranClock(route.departedAtMs), lang)}
-            </span>
-            <span className="tnum text-xs font-medium md:text-sm">
-              {t.arriveBy}{" "}{persianDigits(formatTehranClock(plan.atMs), lang)}
             </span>
           </span>
           {countdown !== null && (
-            <span className="flex max-w-[48%] shrink-0 items-center gap-1.5 text-end">
+            <span className="flex max-w-[42%] shrink-0 items-center gap-1.5 text-end">
               <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-primary-foreground" />
               <span className="tnum min-w-0 text-xs font-medium md:text-sm">
                 {countdown}
