@@ -21,6 +21,8 @@ import {
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
 import { STRINGS, type Lang } from "@/lib/i18n"
+import { haversineKm, estimateWalkMinutes } from "@/lib/geo"
+import { shouldSuggestWalk } from "@/lib/route-planning"
 import { classifyGeoError, getCurrentPositionTolerant, type GeoErrorKind } from "@/lib/geolocation"
 import { LocationErrorActions } from "@/components/location-error"
 import { useConnectivity, type ConnectivityState } from "@/lib/offline/use-connectivity"
@@ -690,28 +692,62 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     // No pin markers: places are marked by their engine label plus the
     // dashed walk connector below. GPS keeps its blue dot.
+    // Direct pin-to-pin walk line when walking beats the metro: same-station
+    // endpoints always (no metro route to compare), otherwise under the same
+    // strictly-faster rule as the planner suggestion. It replaces the two
+    // pin-to-station stubs, which would otherwise route the picture back
+    // into a slower metro ride.
+    const originPm = placeMarkers.find((pm) => pm.role === "origin")
+    const destPm = placeMarkers.find((pm) => pm.role === "dest")
+    const directWalkLine = (() => {
+      if (!originPm || !destPm) return null
+      const line = { from: originPm, to: destPm }
+      if (originId !== null && originId === destId) return line
+      if (!route) return null
+      const walkKm = haversineKm(originPm.lat, originPm.lng, destPm.lat, destPm.lng)
+      return shouldSuggestWalk(estimateWalkMinutes(walkKm), route.totalSeconds) ? line : null
+    })()
     const pts: [number, number][] = []
-    for (const pm of placeMarkers) {
-      pts.push([pm.lat, pm.lng])
+    if (directWalkLine) {
+      pts.push([directWalkLine.from.lat, directWalkLine.from.lng])
+      pts.push([directWalkLine.to.lat, directWalkLine.to.lng])
+      L.polyline(
+        [
+          [directWalkLine.from.lat, directWalkLine.from.lng],
+          [directWalkLine.to.lat, directWalkLine.to.lng],
+        ],
+        {
+          color: "#a3a3a3",
+          weight: 3,
+          opacity: 0.9,
+          dashArray: "6 6",
+          // Display-only connector: clicks pass through to point picking.
+          interactive: false,
+        },
+      ).addTo(layer)
+    } else {
+      for (const pm of placeMarkers) {
+        pts.push([pm.lat, pm.lng])
 
-      // Dashed "walk" connector from the searched place to its station.
-      const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
-      if (st) {
-        L.polyline(
-          [
-            [pm.lat, pm.lng],
-            [st.location.lat, st.location.lng],
-          ],
-          {
-            color: pm.role === "origin" ? "#22c55e" : "#ef4444",
-            weight: 3,
-            opacity: 0.9,
-            dashArray: "6 6",
-            // Display-only connector: clicks pass through to point picking.
-            interactive: false,
-          },
-        ).addTo(layer)
-        pts.push([st.location.lat, st.location.lng])
+        // Dashed "walk" connector from the searched place to its station.
+        const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
+        if (st) {
+          L.polyline(
+            [
+              [pm.lat, pm.lng],
+              [st.location.lat, st.location.lng],
+            ],
+            {
+              color: pm.role === "origin" ? "#22c55e" : "#ef4444",
+              weight: 3,
+              opacity: 0.9,
+              dashArray: "6 6",
+              // Display-only connector: clicks pass through to point picking.
+              interactive: false,
+            },
+          ).addTo(layer)
+          pts.push([st.location.lat, st.location.lng])
+        }
       }
     }
 
@@ -729,7 +765,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     } else if (pts.length > 1) {
       map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
     }
-  }, [placeMarkers, route])
+  }, [placeMarkers, route, originId, destId])
 
   // Pending arbitrary pick: exact-coordinate marker in its own layer. The
   // label goes through the shared engine (pendingPick extra above), so it

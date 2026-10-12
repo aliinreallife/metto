@@ -277,4 +277,74 @@ test.describe("map route controls", () => {
     await page.waitForTimeout(1_500);
     await expect(pick).toHaveCount(0);
   });
+
+  test("same-station pins draw one direct walk line, no station stubs", async ({
+    page,
+  }) => {
+    await suppressSaveNotice(page);
+    await page.goto(
+      `/map?from=chitgar&to=chitgar&op=35.7265,51.2427,${encodeURIComponent("کوهک")}&dp=35.7265,51.2426,${encodeURIComponent("کوهک")}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await mapReady(page);
+    const overlay = ".leaflet-overlay-pane";
+    // Single neutral pin-to-pin line…
+    await expect(
+      page.locator(`${overlay} path[stroke="#a3a3a3"]`),
+    ).toHaveCount(1, { timeout: 15_000 });
+    // …instead of the green/red pin-to-station stubs.
+    await expect(
+      page.locator(`${overlay} path[stroke="#22c55e"]`),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(`${overlay} path[stroke="#ef4444"]`),
+    ).toHaveCount(0);
+  });
+
+  test("close pins on different stations draw the direct walk line", async ({
+    page,
+  }) => {
+    // Pins ~150 m apart whose stations are a 57-minute metro ride apart:
+    // walking wins, so the picture walks straight instead of into metro.
+    await suppressSaveNotice(page);
+    await page.goto(
+      `/map?from=shahid-ashrafi-esfahani&to=tehran-sadeghiyeh&op=35.7275,51.3346,${encodeURIComponent("مرزداران")}&dp=35.7261,51.3345,${encodeURIComponent("اباذر")}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await mapReady(page);
+    const overlay = ".leaflet-overlay-pane";
+    await expect(
+      page.locator(`${overlay} path[stroke="#a3a3a3"]`),
+    ).toHaveCount(1, { timeout: 15_000 });
+    await expect(
+      page.locator(`${overlay} path[stroke="#22c55e"]`),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(`${overlay} path[stroke="#ef4444"]`),
+    ).toHaveCount(0);
+    // Both place cards still describe their own stations.
+    await expect(page.getByTestId("map-place-card")).toHaveCount(2);
+  });
+
+  test("far pins keep pin-to-station stubs, no direct line", async ({
+    page,
+  }) => {
+    await suppressSaveNotice(page);
+    await page.goto(routeUrl(), { waitUntil: "domcontentloaded" });
+    await mapReady(page);
+    const overlay = ".leaflet-overlay-pane";
+    await expect(page.getByTestId("map-place-card")).toHaveCount(2, {
+      timeout: 15_000,
+    });
+    await expect(
+      page.locator(`${overlay} path[stroke="#a3a3a3"]`),
+    ).toHaveCount(0);
+    // Both stubs render (origin green + destination red).
+    await expect(
+      page.locator(`${overlay} path[stroke="#22c55e"]`),
+    ).not.toHaveCount(0, { timeout: 15_000 });
+    await expect(
+      page.locator(`${overlay} path[stroke="#ef4444"]`),
+    ).not.toHaveCount(0, { timeout: 15_000 });
+  });
 });
