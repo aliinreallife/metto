@@ -55,6 +55,8 @@ export const STRINGS = {
     tabNearby: "Nearby",
     nearby: "Near me",
     useMyLocation: "Use my location",
+    locationUseNote:
+      "Your location is only used to find nearby stations. You can pick a station manually instead.",
     locating: "Locating…",
     orPickStation: "or pick a station as your location",
     yourLocation: "Your location",
@@ -112,6 +114,7 @@ export const STRINGS = {
     builtBy: "Built by",
     dataBy: "Metro data by",
     aboutLink: "About",
+    privacyLink: "Privacy",
     supportLink: "Support",
     searchHintBefore: "you could also search places like",
     searchHintExample: "Iran Mall",
@@ -232,6 +235,8 @@ export const STRINGS = {
     tabNearby: "نزدیک من",
     nearby: "نزدیک من",
     useMyLocation: "استفاده از موقعیت من",
+    locationUseNote:
+      "موقعیت مکانی فقط برای پیدا کردن ایستگاه‌های نزدیک استفاده می‌شود؛ می‌توانید به‌جای آن ایستگاه را دستی انتخاب کنید.",
     locating: "در حال یافتن موقعیت…",
     orPickStation: "یا یک ایستگاه را به‌عنوان موقعیت خود انتخاب کنید",
     yourLocation: "موقعیت شما",
@@ -289,6 +294,7 @@ export const STRINGS = {
     builtBy: "ساخته‌شده توسط",
     dataBy: "داده‌های مترو از",
     aboutLink: "درباره متو",
+    privacyLink: "حریم خصوصی",
     supportLink: "حمایت",
     searchHintBefore: "می‌توانید مکان‌هایی مثل",
     searchHintExample: "ایران مال",

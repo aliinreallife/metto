@@ -12,6 +12,23 @@ const VAL = join(REPO, "scripts", "validate-assetlinks.mjs");
 const FP1 = Array(32).fill("AB").join(":");
 const FP2 = Array(32).fill("CD").join(":");
 
+const ANDROID_STATEMENT = {
+  relation: ["delegate_permission/common.handle_all_urls"],
+  target: {
+    namespace: "android_app",
+    package_name: "ir.metto.app",
+    sha256_cert_fingerprints: [FP1],
+  },
+};
+
+const BAZAAR_STATEMENT = {
+  relation: ["check_validation"],
+  target: {
+    namespace: "cafebazaar_twa",
+    package_name: "ir.metto.app",
+  },
+};
+
 function run(nodeArgs: string[], opts?: { env?: NodeJS.ProcessEnv }): { status: number; out: string } {
   try {
     const out = execFileSync("node", nodeArgs, {
@@ -27,7 +44,7 @@ function run(nodeArgs: string[], opts?: { env?: NodeJS.ProcessEnv }): { status: 
 }
 
 describe("generate-assetlinks.mjs", () => {
-  it("emits the expected TWA structure for a single fingerprint", () => {
+  it("emits both the Android and the Bazaar TWA statements", () => {
     const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
     const dest = join(dir, "assetlinks.json");
     const r = run([GEN, "--fingerprint", FP1, "--output", dest]);
@@ -42,7 +59,34 @@ describe("generate-assetlinks.mjs", () => {
           sha256_cert_fingerprints: [FP1],
         },
       },
+      {
+        relation: ["check_validation"],
+        target: {
+          namespace: "cafebazaar_twa",
+          package_name: "ir.metto.app",
+        },
+      },
     ]);
+  });
+
+  it("never puts fingerprints on the Bazaar statement", () => {
+    const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
+    const dest = join(dir, "assetlinks.json");
+    const r = run([GEN, "--fingerprint", FP1, "--output", dest]);
+    expect(r.status).toBe(0);
+    const data = JSON.parse(readFileSync(dest, "utf8"));
+    const bazaar = data.find(
+      (e: { target?: { namespace?: string } }) => e.target?.namespace === "cafebazaar_twa",
+    );
+    expect(bazaar).toBeDefined();
+    expect(bazaar.target.sha256_cert_fingerprints).toBeUndefined();
+  });
+
+  it("generated output passes the validator (round-trip)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
+    const dest = join(dir, "assetlinks.json");
+    expect(run([GEN, "--fingerprint", FP1, "--output", dest]).status).toBe(0);
+    expect(run([VAL, "--file", dest]).status).toBe(0);
   });
 
   it("supports multiple fingerprints (upload + Play signing)", () => {
@@ -69,7 +113,7 @@ describe("generate-assetlinks.mjs", () => {
 });
 
 describe("validate-assetlinks.mjs", () => {
-  it("accepts a valid multi-fingerprint file", () => {
+  it("accepts a valid mixed file (Android + Bazaar statements)", () => {
     const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
     const f = join(dir, "assetlinks.json");
     writeFileSync(
@@ -81,6 +125,121 @@ describe("validate-assetlinks.mjs", () => {
             namespace: "android_app",
             package_name: "ir.metto.app",
             sha256_cert_fingerprints: [FP1, FP2],
+          },
+        },
+        BAZAAR_STATEMENT,
+      ]),
+    );
+    expect(run([VAL, "--file", f]).status).toBe(0);
+  });
+
+  it("accepts multiple Bazaar statements (at least one is required, not exactly one)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
+    const f = join(dir, "assetlinks.json");
+    writeFileSync(f, JSON.stringify([ANDROID_STATEMENT, BAZAAR_STATEMENT, BAZAAR_STATEMENT]));
+    expect(run([VAL, "--file", f]).status).toBe(0);
+  });
+
+  it("rejects a file missing the Bazaar statement", () => {
+    const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
+    const f = join(dir, "assetlinks.json");
+    writeFileSync(f, JSON.stringify([ANDROID_STATEMENT]));
+    const r = run([VAL, "--file", f]);
+    expect(r.status).not.toBe(0);
+    expect(r.out).toMatch(/cafebazaar_twa/);
+  });
+
+  it("rejects a file missing the Android statement", () => {
+    const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
+    const f = join(dir, "assetlinks.json");
+    writeFileSync(f, JSON.stringify([BAZAAR_STATEMENT]));
+    const r = run([VAL, "--file", f]);
+    expect(r.status).not.toBe(0);
+    expect(r.out).toMatch(/android_app/);
+  });
+
+  it("rejects a wrong Bazaar package name", () => {
+    const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
+    const f = join(dir, "assetlinks.json");
+    writeFileSync(
+      f,
+      JSON.stringify([
+        ANDROID_STATEMENT,
+        {
+          relation: ["check_validation"],
+          target: { namespace: "cafebazaar_twa", package_name: "com.example.wrong" },
+        },
+      ]),
+    );
+    const r = run([VAL, "--file", f]);
+    expect(r.status).not.toBe(0);
+    expect(r.out).toMatch(/cafebazaar_twa/);
+  });
+
+  it("rejects a wrong Bazaar relation", () => {
+    const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
+    const f = join(dir, "assetlinks.json");
+    writeFileSync(
+      f,
+      JSON.stringify([
+        ANDROID_STATEMENT,
+        {
+          relation: ["delegate_permission/common.handle_all_urls"],
+          target: { namespace: "cafebazaar_twa", package_name: "ir.metto.app" },
+        },
+      ]),
+    );
+    const r = run([VAL, "--file", f]);
+    expect(r.status).not.toBe(0);
+    expect(r.out).toMatch(/check_validation/);
+  });
+
+  it("accepts a valid Bazaar statement with extra harmless fields (open shape)", () => {
+    // Required semantics only: namespace + our package + a relation list
+    // containing check_validation. Extra fields must not fail CI, so future
+    // valid DAL extensions keep validating. The generator still emits the
+    // clean minimal statement (see the generator tests above).
+    const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
+    const f = join(dir, "assetlinks.json");
+    writeFileSync(
+      f,
+      JSON.stringify([
+        ANDROID_STATEMENT,
+        {
+          relation: ["check_validation", "example/extension"],
+          note: "harmless top-level field",
+          target: {
+            namespace: "cafebazaar_twa",
+            package_name: "ir.metto.app",
+            extra: "harmless target field",
+            sha256_cert_fingerprints: [FP1],
+          },
+        },
+      ]),
+    );
+    expect(run([VAL, "--file", f]).status).toBe(0);
+  });
+
+  it("ignores unrelated legitimate statements (other namespaces and packages)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "metto-al-"));
+    const f = join(dir, "assetlinks.json");
+    writeFileSync(
+      f,
+      JSON.stringify([
+        ANDROID_STATEMENT,
+        BAZAAR_STATEMENT,
+        // Site-to-site delegation: valid DAL, not ours — must not fail.
+        {
+          relation: ["delegate_permission/common.handle_all_urls"],
+          target: { namespace: "web", site: "https://example.com" },
+        },
+        // Another publisher's app statement: valid DAL, not ours.
+        {
+          relation: ["delegate_permission/common.handle_all_urls"],
+          target: {
+            namespace: "android_app",
+            package_name: "com.example.other",
+            sha256_cert_fingerprints: [FP2],
           },
         },
       ]),

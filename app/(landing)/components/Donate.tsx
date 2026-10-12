@@ -133,6 +133,7 @@ export function Donate() {
             </a>
           </div>
           <p className="mt-2.5 text-[11px] text-muted-foreground">{t.primaryNote}</p>
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{t.voluntaryNote}</p>
 
           <div className="mt-7 border-t border-border pt-5">
             <p className="text-xs font-bold text-muted-foreground">{t.altTitle}</p>
