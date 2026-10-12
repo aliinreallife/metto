@@ -1,4 +1,4 @@
-import { getAllStations } from "./metro/selectors";
+import { getAllStations, canBoardAtStation } from "./metro/selectors";
 import type { MetroStation, StationAmenities } from "./metro/types";
 import { type Lang, persianDigits } from "./i18n";
 
@@ -25,18 +25,24 @@ export function haversineKm(
 export type NearbyResult = { station: MetroStation; km: number };
 
 // Nearest stations to a coordinate, optionally requiring all listed amenities.
+// Only boardable stations count by default (a closed station is never the
+// answer for travel/location resolution); pass operationalOnly: false to opt
+// out. Name search and station lists are unaffected — disabled stations stay
+// discoverable there.
 export function nearestStations(
   lat: number,
   lng: number,
-  opts?: { amenities?: AmenityKey[]; limit?: number },
+  opts?: { amenities?: AmenityKey[]; limit?: number; operationalOnly?: boolean },
 ) {
   const limit = opts?.limit ?? 12;
   const required = opts?.amenities ?? [];
+  const operationalOnly = opts?.operationalOnly ?? true;
   const all = getAllStations();
-  const list =
-    required.length > 0
-      ? all.filter((s) => required.every((k) => s.amenities[k] === true))
-      : all;
+  const list = all.filter(
+    (s) =>
+      (required.length === 0 || required.every((k) => s.amenities[k] === true)) &&
+      (!operationalOnly || canBoardAtStation(s.id)),
+  );
   return list
     .map((s) => ({
       station: s,

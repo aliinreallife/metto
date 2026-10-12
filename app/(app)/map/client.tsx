@@ -22,6 +22,8 @@ import {
 import { shortPlaceLabel, reverseGeocode } from "@/lib/geocoding";
 import { StationDetail } from "@/components/station-detail";
 import { MapPickCard } from "@/components/map-pick-card";
+import { WalkSuggestCard } from "@/components/route-panel";
+import { directWalkVerdict } from "@/lib/route-planning";
 import { cn } from "@/lib/utils";
 
 // Feature flag: dismiss buttons on the map place info/warning cards.
@@ -162,7 +164,6 @@ export function MapPage() {
       stationName: isFa ? nearest.station.name.fa : nearest.station.name.en,
       distanceText: formatDistance(km, lang),
       walkText: formatWalkTime(walkMin, lang),
-      tooFar: isTooFarToWalk(km),
     };
   }, [picked, isFa, lang]);
 
@@ -339,6 +340,36 @@ export function MapPage() {
     picked
   );
 
+  // Shared walk verdict (same helper as the planner): when walking directly
+  // between the pins beats the metro, the map draws the walk line and shows
+  // one toast saying so. The merged same-station card already carries that
+  // message, so the toast only appears for the beats-metro case.
+  const walkGuide = useMemo(() => {
+    const origin = placeMarkers.find((m) => m.role === "origin");
+    const dest = placeMarkers.find((m) => m.role === "dest");
+    if (!origin || !dest) return null;
+    const legKm = (m: { lat: number; lng: number; stationId: string | null }) => {
+      const st = m.stationId ? STATION_MAP.get(m.stationId) : null;
+      return st ? haversineKm(m.lat, m.lng, st.location.lat, st.location.lng) : 0;
+    };
+    const verdict = directWalkVerdict({
+      origin: { lat: origin.lat, lng: origin.lng },
+      dest: { lat: dest.lat, lng: dest.lng },
+      sameStation:
+        initialParams.from !== null && initialParams.from === initialParams.to,
+      metroTotalSeconds: route ? route.totalSeconds : null,
+      accessMinutes: estimateWalkMinutes(legKm(origin) + legKm(dest)),
+    });
+    if (!verdict) return null;
+    return {
+      verdict,
+      line: {
+        from: { lat: origin.lat, lng: origin.lng },
+        to: { lat: dest.lat, lng: dest.lng },
+      },
+    };
+  }, [placeMarkers, initialParams.from, initialParams.to, route]);
+
   return (
     <div className="relative isolate z-0 flex flex-1 min-h-0 flex-col overflow-hidden">
       <RealMap
@@ -357,6 +388,7 @@ export function MapPage() {
         onViewChange={handleViewChange}
         placeMarkers={placeMarkers}
         pendingPick={picked && pickedLabel ? { ...picked, label: pickedLabel } : null}
+        directWalk={walkGuide ? walkGuide.line : null}
       />
 
       {/* Top overlay stack: banner/notice/place cards lay out in normal
@@ -377,6 +409,14 @@ export function MapPage() {
               <p className="mt-0.5 text-muted-foreground">{t.mapOfflineBody}</p>
             </div>
           </div>
+        )}
+
+        {walkGuide?.verdict.kind === "beats-metro" && !mergedPlaceInfo && (
+          <WalkSuggestCard
+            lang={lang}
+            walkMin={walkGuide.verdict.walkMin}
+            distanceKm={walkGuide.verdict.walkKm}
+          />
         )}
 
         {/* One-time save notice: informational only, online only, never
@@ -518,7 +558,6 @@ export function MapPage() {
             stationName={pickedInfo.stationName}
             distanceText={pickedInfo.distanceText}
             walkText={pickedInfo.walkText}
-            tooFar={pickedInfo.tooFar}
             destPrimary={!!initialParams.from}
             onChooseOrigin={() => chooseEndpoint("origin")}
             onChooseDest={() => chooseEndpoint("dest")}

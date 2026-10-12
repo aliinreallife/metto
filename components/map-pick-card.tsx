@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, AlertTriangle, X } from "lucide-react";
+import { Building2, X } from "lucide-react";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,6 @@ export function MapPickCard({
   stationName,
   distanceText,
   walkText,
-  tooFar,
   destPrimary,
   onChooseOrigin,
   onChooseDest,
@@ -27,7 +26,6 @@ export function MapPickCard({
   stationName: string;
   distanceText: string;
   walkText: string;
-  tooFar: boolean;
   /** True to emphasize "destination" (an origin already exists). */
   destPrimary: boolean;
   onChooseOrigin: () => void;
@@ -41,11 +39,7 @@ export function MapPickCard({
       className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 shadow-sm"
     >
       <div className="flex items-start gap-2">
-        {tooFar ? (
-          <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-500" />
-        ) : (
-          <Building2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
-        )}
+        <Building2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {t.useThisPoint}
@@ -54,11 +48,6 @@ export function MapPickCard({
           <p className="mt-0.5 text-xs text-muted-foreground">
             {t.nearestStation}: {stationName} · {distanceText} · ~{walkText} {t.walkTime}
           </p>
-          {tooFar && (
-            <p className="mt-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-              {t.tooFarFromStation} (~{walkText})
-            </p>
-          )}
         </div>
         <button
           type="button"

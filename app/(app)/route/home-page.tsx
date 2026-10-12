@@ -24,11 +24,11 @@ import { TabLink } from "@/app/nav";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import {
   applyTimeParams,
+  directWalkVerdict,
   getArriveByViewState,
   parseTimeModeParams,
   planRoute,
   seedNextFiveMinutes,
-  shouldSuggestWalk,
   type TimeMode,
 } from "@/lib/route-planning";
 import { tehranMinuteToInstant } from "@/lib/tehran-time";
@@ -42,7 +42,6 @@ import {
   estimateWalkMinutes,
   formatWalkTime,
   buildMapHref,
-  directWalk,
   encodePlacePin,
   parsePlaceParam,
 } from "@/lib/geo";
@@ -379,6 +378,7 @@ export function HomePage() {
         <TabLink
           href="/#donate"
           connectivity={connectivity}
+          prefetch={false}
           className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           {t.supportLink}
@@ -726,26 +726,24 @@ function RouteView({
         ) : route ? (
           <>
             {(() => {
-              // Walk-vs-metro nudge: exact place coords when pinned, else
-              // station coords. Suggests walking only when strictly faster —
-              // counting the station access walks too, since they are part
-              // of the journey the metro option forces.
-              const originStation = originId ? STATION_MAP.get(originId) : null;
-              const destStation = destId ? STATION_MAP.get(destId) : null;
-              const oPt = originPlaceInfo
-                ? { lat: originPlaceInfo.lat, lng: originPlaceInfo.lng }
-                : originStation?.location;
-              const dPt = destPlaceInfo
-                ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng }
-                : destStation?.location;
-              if (!oPt || !dPt) return null;
-              const walkKm = haversineKm(oPt.lat, oPt.lng, dPt.lat, dPt.lng);
-              const walkMin = estimateWalkMinutes(walkKm);
-              const accessEgressMin = estimateWalkMinutes(
-                (originPlaceInfo?.distanceKm ?? 0) + (destPlaceInfo?.distanceKm ?? 0),
-              );
-              if (!shouldSuggestWalk(walkMin, route.totalSeconds, accessEgressMin)) return null;
-              return <WalkSuggestCard lang={lang} walkMin={walkMin} distanceKm={walkKm} />;
+              // Walk-vs-metro nudge through the shared verdict helper (same
+              // rule as the map): exact place coords when pinned, else
+              // station coords.
+              const verdict = directWalkVerdict({
+                origin: originPlaceInfo
+                  ? { lat: originPlaceInfo.lat, lng: originPlaceInfo.lng }
+                  : originId ? STATION_MAP.get(originId)?.location ?? null : null,
+                dest: destPlaceInfo
+                  ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng }
+                  : destId ? STATION_MAP.get(destId)?.location ?? null : null,
+                sameStation: false,
+                metroTotalSeconds: route.totalSeconds,
+                accessMinutes: estimateWalkMinutes(
+                  (originPlaceInfo?.distanceKm ?? 0) + (destPlaceInfo?.distanceKm ?? 0),
+                ),
+              });
+              if (!verdict) return null;
+              return <WalkSuggestCard lang={lang} walkMin={verdict.walkMin} distanceKm={verdict.walkKm} />;
             })()}
             <RoutePanel
               route={route}
@@ -767,18 +765,19 @@ function RouteView({
             {originId && destId && originId === destId && (() => {
               // Same-station short-circuit never routes, so distinct exact
               // pins would otherwise get no walk comparison at all.
-              const originStation = STATION_MAP.get(originId);
-              const destStation = STATION_MAP.get(destId);
-              const walk = directWalk(
-                originPlaceInfo
+              const verdict = directWalkVerdict({
+                origin: originPlaceInfo
                   ? { lat: originPlaceInfo.lat, lng: originPlaceInfo.lng }
-                  : originStation?.location,
-                destPlaceInfo
+                  : originId ? STATION_MAP.get(originId)?.location ?? null : null,
+                dest: destPlaceInfo
                   ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng }
-                  : destStation?.location,
-              );
-              if (!walk) return null;
-              return <WalkSuggestCard lang={lang} walkMin={walk.walkMin} distanceKm={walk.walkKm} />;
+                  : destId ? STATION_MAP.get(destId)?.location ?? null : null,
+                sameStation: true,
+                metroTotalSeconds: null,
+                accessMinutes: 0,
+              });
+              if (!verdict) return null;
+              return <WalkSuggestCard lang={lang} walkMin={verdict.walkMin} distanceKm={verdict.walkKm} />;
             })()}
             <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground md:px-5 md:py-8 md:text-base">
             <p>
