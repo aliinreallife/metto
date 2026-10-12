@@ -234,6 +234,9 @@ test.describe("map route controls", () => {
     await expect(pick.locator("h3")).toContainText("نارمک", {
       timeout: 15_000,
     });
+    // The pick card stays neutral: nearest-station context, never a
+    // too-far warning (that decision belongs to routing, not picking).
+    await expect(pick.getByText("برای پیاده‌روی دور است")).toHaveCount(0);
   });
 
   test("station dot click opens detail, never a pick card", async ({
@@ -324,6 +327,14 @@ test.describe("map route controls", () => {
     ).toHaveCount(0);
     // Both place cards still describe their own stations.
     await expect(page.getByTestId("map-place-card")).toHaveCount(2);
+    // One walk toast says it, first in the top stack.
+    const toast = page.getByTestId("walk-suggest");
+    await expect(toast).toBeVisible({ timeout: 15_000 });
+    await expect(toast).toContainText("پیاده‌روی سریع‌تر است");
+    const toastBox = await toast.boundingBox();
+    const firstCardBox = await page.getByTestId("map-place-card").first().boundingBox();
+    expect(toastBox && firstCardBox).toBeTruthy();
+    expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(firstCardBox!.y + 2);
   });
 
   test("far pins keep pin-to-station stubs, no direct line", async ({
@@ -369,5 +380,38 @@ test.describe("map route controls", () => {
     await expect(
       page.locator(`${overlay} path[stroke="#ef4444"]`),
     ).toHaveCount(0);
+    await expect(page.getByTestId("walk-suggest")).toBeVisible({
+      timeout: 15_000,
+    });
+  });
+
+  test("haram/kahrizak control: far pins, no toast, metro stays", async ({
+    page,
+  }) => {
+    // Pins ~5.6 km apart with a short adjacent ride: walking loses big, so
+    // the map keeps stubs + metro and says nothing about walking.
+    await suppressSaveNotice(page);
+    await page.goto(
+      `/map?from=haram-e-hazrat-e-abdol-azim&to=kahrizak&op=35.4757,51.5577,${encodeURIComponent("35.4757, 51.5577")}&dp=35.4251,51.5558,${encodeURIComponent("35.4251, 51.5558")}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await mapReady(page);
+    const overlay = ".leaflet-overlay-pane";
+    await expect(page.getByTestId("map-place-card")).toHaveCount(2, {
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
+    await expect(
+      page.locator(`${overlay} path[stroke="#a3a3a3"]`),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(`${overlay} path[stroke="#22c55e"]`),
+    ).not.toHaveCount(0, { timeout: 15_000 });
+    await expect(
+      page.locator(`${overlay} path[stroke="#ef4444"]`),
+    ).not.toHaveCount(0, { timeout: 15_000 });
+    await expect(endpointStrokes(page)).not.toHaveCount(0, {
+      timeout: 15_000,
+    });
   });
 });

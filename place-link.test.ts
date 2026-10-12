@@ -7,6 +7,7 @@ import {
   encodePlacePin,
   estimateWalkMinutes,
   isTooFarToWalk,
+  nearestStations,
   parsePlaceParam,
 } from "./lib/geo";
 
@@ -105,5 +106,24 @@ describe("walk estimates", () => {
     expect(directWalk(null, p)).toBeNull();
     expect(directWalk(p, null)).toBeNull();
     expect(directWalk(null, null)).toBeNull();
+  });
+
+  it("skips non-boardable stations by default", () => {
+    // Vavan is under construction: standing on top of it must resolve to
+    // an operational station instead.
+    const results = nearestStations(35.5145, 51.3001, { limit: 3 });
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0].station.id).not.toBe("vavan");
+    expect(
+      results.every((r) => r.station.status === "operational"),
+    ).toBe(true);
+  });
+
+  it("returns non-operational stations only on explicit opt-out", () => {
+    const results = nearestStations(35.5145, 51.3001, {
+      limit: 1,
+      operationalOnly: false,
+    });
+    expect(results[0]?.station.id).toBe("vavan");
   });
 });

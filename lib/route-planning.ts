@@ -48,6 +48,7 @@ import {
   tehranParts,
 } from "./tehran-time";
 import { STRINGS, persianDigits, type Lang } from "./i18n";
+import { directWalk } from "./geo";
 
 export type RouteTimePreference =
   | { mode: "now" }
@@ -597,6 +598,43 @@ export function shouldSuggestWalk(
   return (
     walkMinutes < metroTotalSeconds / 60 || walkMinutes < accessEgressMinutes
   );
+}
+
+export type DirectWalkVerdict =
+  /** Same station both ends: no metro to compare, walk data only. */
+  | { kind: "same-station"; walkKm: number; walkMin: number; metroMin: null; accessMin: number }
+  /** Walking beats the metro journey under the shared rule. */
+  | { kind: "beats-metro"; walkKm: number; walkMin: number; metroMin: number; accessMin: number };
+
+/**
+ * Single shared walk verdict for the planner and the map. Null when either
+ * point is missing, when both are the same point (no walk to suggest), or —
+ * outside same-station — when the metro wins. Callers render from the data;
+ * nobody re-derives the rule.
+ */
+export function directWalkVerdict(args: {
+  origin: { lat: number; lng: number } | null | undefined;
+  dest: { lat: number; lng: number } | null | undefined;
+  sameStation: boolean;
+  metroTotalSeconds: number | null;
+  accessMinutes: number;
+}): DirectWalkVerdict | null {
+  const walk = directWalk(args.origin ?? null, args.dest ?? null);
+  if (!walk) return null;
+  if (args.sameStation) {
+    return { kind: "same-station", walkKm: walk.walkKm, walkMin: walk.walkMin, metroMin: null, accessMin: 0 };
+  }
+  if (args.metroTotalSeconds === null) return null;
+  if (!shouldSuggestWalk(walk.walkMin, args.metroTotalSeconds, args.accessMinutes)) {
+    return null;
+  }
+  return {
+    kind: "beats-metro",
+    walkKm: walk.walkKm,
+    walkMin: walk.walkMin,
+    metroMin: Math.round(args.metroTotalSeconds / 60),
+    accessMin: Math.round(args.accessMinutes),
+  };
 }
 
 // ---- Shareable URL state (web planner) ----

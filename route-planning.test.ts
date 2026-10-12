@@ -20,6 +20,7 @@ import {
 import type { LineScheduleData } from "./lib/schedule-data";
 import {
   describePlanDay,
+  directWalkVerdict,
   formatCountdown,
   getArriveByViewState,
   getDayTypeForServiceDate,
@@ -621,6 +622,58 @@ describe("walk suggestion rule", () => {
   it("never suggests on non-finite input", () => {
     expect(shouldSuggestWalk(Number.NaN, 600)).toBe(false);
     expect(shouldSuggestWalk(5, Number.POSITIVE_INFINITY)).toBe(false);
+  });
+});
+
+describe("direct walk verdict", () => {
+  const a = { lat: 35.7265, lng: 51.2427 };
+  const b = { lat: 35.7265, lng: 51.2426 };
+
+  it("returns same-station data without any metro comparison", () => {
+    const v = directWalkVerdict({
+      origin: a,
+      dest: b,
+      sameStation: true,
+      metroTotalSeconds: null,
+      accessMinutes: 0,
+    });
+    expect(v?.kind).toBe("same-station");
+    expect(v?.walkKm).toBeGreaterThan(0);
+  });
+
+  it("returns beats-metro when the shared rule fires", () => {
+    const v = directWalkVerdict({
+      origin: a,
+      dest: b,
+      sameStation: false,
+      metroTotalSeconds: 60 * 60,
+      accessMinutes: 0,
+    });
+    expect(v?.kind).toBe("beats-metro");
+    expect(v?.metroMin).toBe(60);
+  });
+
+  it("returns null for identical points, missing points, or a metro win", () => {
+    const same = { ...a };
+    expect(
+      directWalkVerdict({ origin: a, dest: same, sameStation: true, metroTotalSeconds: null, accessMinutes: 0 }),
+    ).toBeNull();
+    expect(
+      directWalkVerdict({ origin: null, dest: b, sameStation: false, metroTotalSeconds: 3600, accessMinutes: 0 }),
+    ).toBeNull();
+    expect(
+      directWalkVerdict({ origin: a, dest: b, sameStation: false, metroTotalSeconds: null, accessMinutes: 0 }),
+    ).toBeNull();
+    // Far-apart points (~14 km walk) vs a 1-hour metro ride: metro wins.
+    expect(
+      directWalkVerdict({
+        origin: { lat: 35.7, lng: 51.3 },
+        dest: { lat: 35.8, lng: 51.4 },
+        sameStation: false,
+        metroTotalSeconds: 3600,
+        accessMinutes: 0,
+      }),
+    ).toBeNull();
   });
 });
 

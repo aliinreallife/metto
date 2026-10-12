@@ -21,8 +21,6 @@ import {
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
 import { STRINGS, type Lang } from "@/lib/i18n"
-import { haversineKm, estimateWalkMinutes } from "@/lib/geo"
-import { shouldSuggestWalk } from "@/lib/route-planning"
 import { classifyGeoError, getCurrentPositionTolerant, type GeoErrorKind } from "@/lib/geolocation"
 import { LocationErrorActions } from "@/components/location-error"
 import { useConnectivity, type ConnectivityState } from "@/lib/offline/use-connectivity"
@@ -40,6 +38,9 @@ type Props = {
   onPickPoint?: (lat: number, lng: number) => void
   /** Pending exact pick: rendered distinctly, labelled via the engine. */
   pendingPick?: { lat: number; lng: number; label: string } | null
+  /** Pre-decided direct walk line (shared verdict helper): when present it
+   *  replaces the pin-to-station stubs. */
+  directWalk?: { from: { lat: number; lng: number }; to: { lat: number; lng: number } } | null
   /** Map-local clear control (rendered with the zoom/locate stack). */
   onClearRoute?: () => void
   showClearRoute?: boolean
@@ -139,7 +140,7 @@ function buildLabelIcon(
   })
 }
 
-export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick }: Props) {
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick, directWalk }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
@@ -692,30 +693,16 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     // No pin markers: places are marked by their engine label plus the
     // dashed walk connector below. GPS keeps its blue dot.
-    // Direct pin-to-pin walk line when walking beats the metro: same-station
-    // endpoints always (no metro route to compare), otherwise under the same
-    // strictly-faster rule as the planner suggestion. It replaces the two
+    // Direct pin-to-pin walk line, decided by the caller through the shared
+    // verdict helper: this component only renders it. It replaces the two
     // pin-to-station stubs, which would otherwise route the picture back
     // into a slower metro ride.
     const originPm = placeMarkers.find((pm) => pm.role === "origin")
     const destPm = placeMarkers.find((pm) => pm.role === "dest")
-    const directWalkLine = (() => {
-      if (!originPm || !destPm) return null
-      const line = { from: originPm, to: destPm }
-      if (originId !== null && originId === destId) return line
-      if (!route) return null
-      // Same rule as the planner suggestion: the station access walks are
-      // part of the metro journey, so they count toward walking winning.
-      const legKm = (pm: { lat: number; lng: number; stationId?: string | null }) => {
-        const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
-        return st ? haversineKm(pm.lat, pm.lng, st.location.lat, st.location.lng) : 0
-      }
-      const walkKm = haversineKm(originPm.lat, originPm.lng, destPm.lat, destPm.lng)
-      const accessEgressMin = estimateWalkMinutes(legKm(originPm) + legKm(destPm))
-      return shouldSuggestWalk(estimateWalkMinutes(walkKm), route.totalSeconds, accessEgressMin)
-        ? line
+    const directWalkLine =
+      originPm && destPm && directWalk
+        ? { from: originPm, to: destPm }
         : null
-    })()
     const pts: [number, number][] = []
     if (directWalkLine) {
       pts.push([directWalkLine.from.lat, directWalkLine.from.lng])
@@ -774,7 +761,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     } else if (pts.length > 1) {
       map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
     }
-  }, [placeMarkers, route, originId, destId])
+  }, [placeMarkers, route, directWalk])
 
   // Pending arbitrary pick: exact-coordinate marker in its own layer. The
   // label goes through the shared engine (pendingPick extra above), so it
