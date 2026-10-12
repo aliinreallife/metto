@@ -34,12 +34,11 @@ const NAV_ITEMS = [
 
 /**
  * Top-level tab link. When effectively online it uses normal Next client
- * navigation, but automatic prefetch is deliberately disabled so speculative
- * RSC requests do not consume the hosting request quota. Otherwise (offline,
- * or still checking — the safe default since destinations are precached),
- * plain primary clicks on the four precached static tabs use a native
- * full-document navigation instead: client-side RSC fetches cannot succeed
- * offline and would abort the transition, while a document request is
+ * navigation and its normal prefetch behavior for responsive tab switches.
+ * Otherwise (offline, or still checking — the safe default since destinations
+ * are precached), plain primary clicks on the four precached static tabs use a
+ * native full-document navigation instead: client-side RSC fetches cannot
+ * succeed offline and would abort the transition, while a document request is
  * served from the Serwist precache. Modifier/middle clicks, new-tab targets
  * and non-precached URLs keep normal browser semantics.
  *
@@ -67,7 +66,6 @@ export function TabLink({
   return (
     <Link
       href={href}
-      prefetch={false}
       className={className}
       aria-current={ariaCurrent}
       onClick={(e) => {
