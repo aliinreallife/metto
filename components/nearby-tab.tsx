@@ -139,8 +139,6 @@ export function NearbyTab({ lang, onSetDest }: Props) {
             )}
           </button>
 
-          <p className="text-[11px] leading-5 text-muted-foreground">{t.locationUseNote}</p>
-
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="h-px flex-1 bg-border" />
             {t.orPickStation}

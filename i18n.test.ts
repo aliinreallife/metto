@@ -41,15 +41,6 @@ describe("location error copy (EN/FA)", () => {
   });
 });
 
-describe("location disclosure copy (EN/FA)", () => {
-  it("states the nearby-only purpose with the manual alternative in both languages", () => {
-    expect(STRINGS.fa.locationUseNote).toContain("فقط برای پیدا کردن ایستگاه‌های نزدیک");
-    expect(STRINGS.fa.locationUseNote).toContain("دستی انتخاب");
-    expect(STRINGS.en.locationUseNote).toMatch(/only used to find nearby stations/i);
-    expect(STRINGS.en.locationUseNote).toMatch(/manually/i);
-  });
-});
-
 describe("donation clarification copy (EN/FA)", () => {
   it("states support is voluntary and unlocks nothing in both languages", () => {
     expect(WELCOME_CONTENT.fa.donate.voluntaryNote).toContain("اختیاری");
