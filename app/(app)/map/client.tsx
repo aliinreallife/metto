@@ -382,9 +382,12 @@ export function MapPage() {
         {/* One-time save notice: informational only, online only, never
             stacked with the offline banner. */}
         {showSaveNotice && (
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background/90 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
-            <Building2 aria-hidden="true" className="size-4 shrink-0 text-primary" />
-            <p className="min-w-0 flex-1 truncate font-semibold text-foreground">{t.mapSaveTitle}</p>
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow-sm backdrop-blur">
+            <Building2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-foreground">{t.mapSaveTitle}</p>
+              <p className="mt-0.5 text-muted-foreground">{t.mapSaveBody}</p>
+            </div>
             <button
               type="button"
               onClick={dismissSaveNotice}
