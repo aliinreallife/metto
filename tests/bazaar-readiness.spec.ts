@@ -121,25 +121,19 @@ test.describe("privacy page", () => {
 
   test("/route footer links to /privacy", async ({ page }) => {
     await page.goto("/route", { waitUntil: "domcontentloaded" });
-    const name = "حریم خصوصی";
-    await expect(
-      page.getByRole("link", { name }).first(),
-    ).toBeVisible({ timeout: 15_000 });
-    await expect
-      .poll(async () =>
-        page.getByRole("link", { name }).first().getAttribute("href"),
-      )
-      .toBe("/privacy");
-    // Click through a possible hydration recovery re-render with a fresh
-    // locator per attempt (same idempotent destination every time).
-    await expect
-      .poll(async () => {
-        const link = page.getByRole("link", { name }).first();
-        if ((await link.count()) === 0) return false;
-        await link.click({ timeout: 2000 }).catch(() => {});
-        return page.url().includes("/privacy");
-      })
-      .toBe(true);
+    const privacy = page.getByRole("link", { name: "حریم خصوصی" }).first();
+    await expect(privacy).toBeVisible({ timeout: 15_000 });
+    await expect(privacy).toHaveAttribute("href", "/privacy");
+
+    // The link intentionally performs a full-document navigation. Wait for
+    // that navigation directly instead of repeatedly clicking inside a poll:
+    // repeated clicks can outlive the source page after a successful load and
+    // report a false failure even though /privacy already rendered.
+    await Promise.all([
+      page.waitForURL(/\/privacy(?:\?.*)?$/, { timeout: 20_000 }),
+      privacy.click(),
+    ]);
+
     await expect(
       page.getByRole("heading", { name: "حریم خصوصی" }),
     ).toBeVisible({ timeout: 15_000 });
