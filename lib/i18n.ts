@@ -55,8 +55,6 @@ export const STRINGS = {
     tabNearby: "Nearby",
     nearby: "Near me",
     useMyLocation: "Use my location",
-    locationUseNote:
-      "Your location is only used to find nearby stations. You can pick a station manually instead.",
     locating: "Locating…",
     orPickStation: "or pick a station as your location",
     yourLocation: "Your location",
@@ -235,8 +233,6 @@ export const STRINGS = {
     tabNearby: "نزدیک من",
     nearby: "نزدیک من",
     useMyLocation: "استفاده از موقعیت من",
-    locationUseNote:
-      "موقعیت مکانی فقط برای پیدا کردن ایستگاه‌های نزدیک استفاده می‌شود؛ می‌توانید به‌جای آن ایستگاه را دستی انتخاب کنید.",
     locating: "در حال یافتن موقعیت…",
     orPickStation: "یا یک ایستگاه را به‌عنوان موقعیت خود انتخاب کنید",
     yourLocation: "موقعیت شما",
