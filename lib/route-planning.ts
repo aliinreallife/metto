@@ -582,15 +582,21 @@ export function formatCountdown(
 /**
  * True when walking the whole way beats the metro journey: suggest walking
  * instead of forcing a slower ride. Strictly-less keeps ties on metro.
+ * The access/egress walks to and from the stations count too: when they
+ * alone exceed the direct walk, the full journey must as well.
  */
 export function shouldSuggestWalk(
   walkMinutes: number,
   metroTotalSeconds: number,
+  accessEgressMinutes = 0,
 ): boolean {
   if (!Number.isFinite(walkMinutes) || !Number.isFinite(metroTotalSeconds)) {
     return false;
   }
-  return walkMinutes < metroTotalSeconds / 60;
+  if (!Number.isFinite(accessEgressMinutes)) return walkMinutes < metroTotalSeconds / 60;
+  return (
+    walkMinutes < metroTotalSeconds / 60 || walkMinutes < accessEgressMinutes
+  );
 }
 
 // ---- Shareable URL state (web planner) ----

@@ -611,6 +611,13 @@ describe("walk suggestion rule", () => {
     expect(shouldSuggestWalk(30, 20 * 60)).toBe(false);
   });
 
+  it("suggests when access walks alone exceed the direct walk", () => {
+    // 10-minute metro ride, but 6 + 6 minutes of station walks beat a
+    // 10-minute direct walk on their own.
+    expect(shouldSuggestWalk(10, 10 * 60, 12)).toBe(true);
+    expect(shouldSuggestWalk(13, 10 * 60, 12)).toBe(false);
+  });
+
   it("never suggests on non-finite input", () => {
     expect(shouldSuggestWalk(Number.NaN, 600)).toBe(false);
     expect(shouldSuggestWalk(5, Number.POSITIVE_INFINITY)).toBe(false);
