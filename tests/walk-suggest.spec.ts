@@ -66,6 +66,24 @@ test.describe("walk suggestion", () => {
     await expect(page.getByText("مبدأ و مقصد یکسان هستند.")).toBeVisible();
   });
 
+  test("counts station access walks: close pins, far stations", async ({
+    page,
+  }) => {
+    // op/dp ~150 m apart but their stations are a long metro ride apart.
+    // The access walks alone dwarf the direct walk; far-future depart keeps
+    // the metro total huge so the card fires deterministically. (The OR
+    // branches themselves are unit-proven; this exercises the plumbing.)
+    const at = tehranDatePlusDays(6);
+    await page.goto(
+      `/route?from=shahid-ashrafi-esfahani&to=tehran-sadeghiyeh&timeMode=depart&at=${encodeURIComponent(at)}&op=35.7275,51.3346,${encodeURIComponent("مرزداران")}&dp=35.7261,51.3345,${encodeURIComponent("اباذر")}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    const card = page.getByTestId("walk-suggest");
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await expect(card).toContainText("پیاده‌روی سریع‌تر است");
+    await expect(card).toContainText("۲ دقیقه");
+  });
+
   test("same station with identical points stays quiet", async ({ page }) => {
     await page.goto(`/route?from=chitgar&to=chitgar`, {
       waitUntil: "domcontentloaded",

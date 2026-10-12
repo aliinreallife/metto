@@ -727,7 +727,9 @@ function RouteView({
           <>
             {(() => {
               // Walk-vs-metro nudge: exact place coords when pinned, else
-              // station coords. Suggests walking only when strictly faster.
+              // station coords. Suggests walking only when strictly faster —
+              // counting the station access walks too, since they are part
+              // of the journey the metro option forces.
               const originStation = originId ? STATION_MAP.get(originId) : null;
               const destStation = destId ? STATION_MAP.get(destId) : null;
               const oPt = originPlaceInfo
@@ -739,7 +741,10 @@ function RouteView({
               if (!oPt || !dPt) return null;
               const walkKm = haversineKm(oPt.lat, oPt.lng, dPt.lat, dPt.lng);
               const walkMin = estimateWalkMinutes(walkKm);
-              if (!shouldSuggestWalk(walkMin, route.totalSeconds)) return null;
+              const accessEgressMin = estimateWalkMinutes(
+                (originPlaceInfo?.distanceKm ?? 0) + (destPlaceInfo?.distanceKm ?? 0),
+              );
+              if (!shouldSuggestWalk(walkMin, route.totalSeconds, accessEgressMin)) return null;
               return <WalkSuggestCard lang={lang} walkMin={walkMin} distanceKm={walkKm} />;
             })()}
             <RoutePanel
