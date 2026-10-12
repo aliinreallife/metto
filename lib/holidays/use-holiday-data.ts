@@ -1,20 +1,27 @@
 "use client";
 
-// Single shared client holiday store: bundled 1405 baseline → persisted
-// last-known-good → background same-origin refresh. Routing reads the
-// in-memory dataset synchronously; the hook only swaps validated copies.
-import { useCallback, useEffect, useMemo, useState } from "react";
-import bundledRaw from "../../public/holidays.json";
+// Single shared client holiday store: bundled baseline → persisted
+// last-known-good → background same-origin refresh via the central
+// coordinator (`ensureHolidayCurrent` in ./client-update). Components are pure
+// consumers: they subscribe to the central snapshot and trigger the shared
+// check, but React lifecycle never decides freshness. Routing reads the
+// in-memory dataset synchronously; the hook only reflects validated central
+// state plus the one-time update notice.
 import {
-  parseHolidayDataset,
-  type HolidayDataset,
-} from "./local-dataset";
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
-  checkForHolidayUpdate,
+  ensureHolidayCurrent,
+  ensureHolidayMemory,
+  getHolidayServerSnapshot,
+  getHolidaySnapshot,
   markVersionNotified,
   readNotifiedVersion,
-  readStoredDataset,
-  storeDataset,
+  subscribeHoliday,
 } from "./client-update";
 import {
   createLocalIsHolidayDate,
@@ -22,52 +29,17 @@ import {
   upcomingHolidays,
 } from "./local-resolver";
 import type { IsHolidayDate } from "./types";
+import type { HolidayDataset } from "./local-dataset";
 import { tehranParts } from "../tehran-time";
 import { getMetroScheduleDayType } from "./schedule-day";
 
-function bundledDataset(): HolidayDataset | null {
-  return parseHolidayDataset(bundledRaw);
-}
-
-// Module-level memory cache so every hook instance (and findRoute callers)
-// shares one validated dataset without re-parsing per component.
-let memoryDataset: HolidayDataset | null = bundledDataset();
-let memoryReady = false;
-
-function ensureMemoryFromStorage(): void {
-  if (memoryReady) return;
-  memoryReady = true;
-  const stored = (() => {
-    try {
-      return readStoredDataset();
-    } catch {
-      return null;
-    }
-  })();
-  if (stored) {
-    // Stored copy wins over the bundle only when it is same-or-newer and
-    // validates (parse already guarantees shape).
-    memoryDataset = stored;
-  }
-  // First-run silence: the bundled baseline is not an "update".
-  try {
-    if (readNotifiedVersion() === null && memoryDataset) {
-      markVersionNotified(memoryDataset.version);
-    }
-  } catch {
-    // Non-fatal.
-  }
-}
-
-/** Sync read for non-React callers (routing). Never does I/O. */
-export function getLocalHolidayDataset(): HolidayDataset | null {
-  ensureMemoryFromStorage();
-  return memoryDataset;
-}
-
-export function getLocalIsHolidayDate(): IsHolidayDate {
-  return createLocalIsHolidayDate(getLocalHolidayDataset());
-}
+// Sync readers live in the coordinator; re-exported here so existing import
+// sites (travel-time-card, use-offline-readiness, mcp client-executors) keep
+// working unchanged.
+export {
+  getLocalHolidayDataset,
+  getLocalIsHolidayDate,
+} from "./client-update";
 
 export type HolidayUiState = {
   dataset: HolidayDataset | null;
@@ -97,45 +69,48 @@ export type HolidayUiState = {
 };
 
 export function useHolidayData(): HolidayUiState {
-  ensureMemoryFromStorage();
-  const [dataset, setDataset] = useState<HolidayDataset | null>(memoryDataset);
-  const [justUpdated, setJustUpdated] = useState(false);
+  // Synchronous stored/baseline upgrade on first render (same semantics as
+  // before: first paint already uses last-known-good, never waits).
+  ensureHolidayMemory();
+  const snapshot = useSyncExternalStore(
+    subscribeHoliday,
+    getHolidaySnapshot,
+    getHolidayServerSnapshot,
+  );
+  const dataset = snapshot.dataset;
+  // Instance boot version: the update notice fires only for adoptions that
+  // land during THIS session. A stored newer copy already present at boot is
+  // not a new update (same as the previous per-instance adoption behavior).
+  const [bootVersion] = useState(() => dataset?.version ?? "");
+  // Dismissals are explicit user actions (event handler, never an effect).
+  const [dismissedVersion, setDismissedVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    // Background refresh only; routing already works on the local copy.
-    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-    const current = (memoryDataset ?? dataset)?.version ?? "";
-    if (!current) return;
-    checkForHolidayUpdate(current).then((next) => {
-      if (cancelled || !next) return;
-      const previouslyNotified = (() => {
-        try {
-          return readNotifiedVersion();
-        } catch {
-          return null;
-        }
-      })();
-      memoryDataset = next;
-      storeDataset(next);
-      setDataset(next);
-      // Notify once per version — never on first install, never repeatedly.
-      if (previouslyNotified !== next.version) {
-        setJustUpdated(true);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-    // Run once on mount; version comparison happens inside.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Fire-and-forget: single-flight + TTL in the coordinator make concurrent
+    // triggers from many mounted instances free (one shared operation).
+    void ensureHolidayCurrent();
   }, []);
 
+  // Pure derivation (no setState in effects): the notice shows only for
+  // adoptions that land during THIS session and were never dismissed.
+  let justUpdated = false;
+  try {
+    justUpdated =
+      dataset !== null &&
+      dataset.version !== bootVersion &&
+      dataset.version !== dismissedVersion &&
+      readNotifiedVersion() !== dataset.version;
+  } catch {
+    justUpdated = false;
+  }
+
   const dismissUpdateNotice = useCallback(() => {
-    setJustUpdated(false);
     try {
-      const ds = memoryDataset;
-      if (ds) markVersionNotified(ds.version);
+      const ds = getHolidaySnapshot().dataset;
+      if (ds) {
+        markVersionNotified(ds.version);
+        setDismissedVersion(ds.version);
+      }
     } catch {
       // Non-fatal.
     }
