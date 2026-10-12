@@ -216,20 +216,18 @@ export function AppNav() {
             </span>
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
-          <TabLink
+          <a
             href="/#donate"
-            connectivity={connectivity}
             className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             {t.supportLink}
-          </TabLink>
-          <TabLink
+          </a>
+          <a
             href="/privacy"
-            connectivity={connectivity}
             className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             {t.privacyLink}
-          </TabLink>
+          </a>
         </div>
         )}
         <nav className={cn("grid grid-cols-4 pb-[env(safe-area-inset-bottom)]", isMainTab && "border-t border-border")}>
