@@ -21,6 +21,8 @@ import {
 import type { MetroStation } from "@/lib/metro/types";
 import { STATION_MAP, type RouteResult } from "@/lib/route"
 import { STRINGS, type Lang } from "@/lib/i18n"
+import { haversineKm, estimateWalkMinutes } from "@/lib/geo"
+import { shouldSuggestWalk } from "@/lib/route-planning"
 import { classifyGeoError, getCurrentPositionTolerant, type GeoErrorKind } from "@/lib/geolocation"
 import { LocationErrorActions } from "@/components/location-error"
 import { useConnectivity, type ConnectivityState } from "@/lib/offline/use-connectivity"
@@ -690,15 +692,21 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     // No pin markers: places are marked by their engine label plus the
     // dashed walk connector below. GPS keeps its blue dot.
-    // Same-station endpoints (from === to with both pins): a single direct
-    // pin-to-pin walk line replaces the two overlapping station stubs, which
-    // would otherwise route the picture back into the metro.
+    // Direct pin-to-pin walk line when walking beats the metro: same-station
+    // endpoints always (no metro route to compare), otherwise under the same
+    // strictly-faster rule as the planner suggestion. It replaces the two
+    // pin-to-station stubs, which would otherwise route the picture back
+    // into a slower metro ride.
     const originPm = placeMarkers.find((pm) => pm.role === "origin")
     const destPm = placeMarkers.find((pm) => pm.role === "dest")
-    const directWalkLine =
-      originId !== null && originId === destId && originPm && destPm
-        ? { from: originPm, to: destPm }
-        : null
+    const directWalkLine = (() => {
+      if (!originPm || !destPm) return null
+      const line = { from: originPm, to: destPm }
+      if (originId !== null && originId === destId) return line
+      if (!route) return null
+      const walkKm = haversineKm(originPm.lat, originPm.lng, destPm.lat, destPm.lng)
+      return shouldSuggestWalk(estimateWalkMinutes(walkKm), route.totalSeconds) ? line : null
+    })()
     const pts: [number, number][] = []
     if (directWalkLine) {
       pts.push([directWalkLine.from.lat, directWalkLine.from.lng])
