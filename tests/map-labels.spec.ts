@@ -43,6 +43,9 @@ test.describe("map label movement", () => {
     await page.route("**://nominatim.openstreetmap.org/**", (route) =>
       route.abort("blockedbyclient"),
     );
+    await page.route("**://nominatim.openstreetmap.org/**", (route) =>
+      route.abort("blockedbyclient"),
+    );
     // Fixed camera, no route, no pins: nothing may move the view here.
     await page.goto("/map?map=35.7000,51.4000,14", {
       waitUntil: "domcontentloaded",
@@ -60,6 +63,11 @@ test.describe("map label movement", () => {
     });
     const titleA = await page.getByTestId("map-pick-card").locator("h3").textContent();
     expect(titleA).toMatch(/^\d{2}\.\d{4}, \d{2}\.\d{4}$/);
+    // Poll: engine placement (debounced + measured) lands just after the
+    // card renders; a single-shot probe races it on slow machines.
+    await expect
+      .poll(async () => labelBox(page, titleA!.slice(0, 7)), { timeout: 10_000 })
+      .not.toBeNull();
     const posA = await labelBox(page, titleA!.slice(0, 7));
     expect(posA).not.toBeNull();
 
@@ -72,6 +80,9 @@ test.describe("map label movement", () => {
     const titleB = await card.locator("h3").textContent();
     expect(titleB).toMatch(/^\d{2}\.\d{4}, \d{2}\.\d{4}$/);
     expect(titleB).not.toBe(titleA);
+    await expect
+      .poll(async () => labelBox(page, titleB!.slice(0, 7)), { timeout: 10_000 })
+      .not.toBeNull();
     const posB = await labelBox(page, titleB!.slice(0, 7));
     expect(posB).not.toBeNull();
     // The label physically moved with the pin (far beyond jitter).
