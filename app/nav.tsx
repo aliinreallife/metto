@@ -102,6 +102,43 @@ export function TabLink({
   );
 }
 
+/** Secondary same-origin footer destinations do not need speculative RSC
+ * prefetch. Use a full-document navigation for plain clicks so hydration or
+ * router recovery cannot swallow the transition; modifier clicks stay native. */
+function FooterLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      prefetch={false}
+      className={className}
+      onClick={(e) => {
+        if (
+          e.button !== 0 ||
+          e.ctrlKey ||
+          e.metaKey ||
+          e.shiftKey ||
+          e.altKey ||
+          e.currentTarget.target === "_blank"
+        ) {
+          return;
+        }
+        e.preventDefault();
+        window.location.assign(e.currentTarget.href);
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export function AppNav() {
   const { lang, setLang, originId, destId, originPlace, destPlace } = useMetro();
   const pathname = usePathname();
@@ -216,18 +253,18 @@ export function AppNav() {
             </span>
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
-          <a
+          <FooterLink
             href="/#donate"
             className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             {t.supportLink}
-          </a>
-          <a
+          </FooterLink>
+          <FooterLink
             href="/privacy"
             className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             {t.privacyLink}
-          </a>
+          </FooterLink>
         </div>
         )}
         <nav className={cn("grid grid-cols-4 pb-[env(safe-area-inset-bottom)]", isMainTab && "border-t border-border")}>
