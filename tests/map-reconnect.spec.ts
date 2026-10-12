@@ -414,4 +414,33 @@ test.describe("Map reconnect recovery", () => {
     ).toBeVisible({ timeout: 15_000 });
     await context.setOffline(false);
   });
+
+  test("save notice stays hidden across tab navigations without reload", async ({
+    context,
+  }) => {
+    const page = await context.newPage();
+    await page.goto("/map", { waitUntil: "domcontentloaded" });
+    await expect(
+      page.locator('[aria-label="Metro on real map"]'),
+    ).toBeVisible({ timeout: 30_000 });
+    // First visit shows the full notice (title + body).
+    await expect(
+      page.getByText("ذخیره برای استفاده آفلاین", { exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByText("بخش‌هایی از نقشه که می‌بینید", { exact: false }),
+    ).toBeVisible();
+    // Showing it marks it seen: tab away and back without reload keeps it
+    // hidden without any dismiss click.
+    await page.getByRole("link", { name: "مسیر", exact: true }).click();
+    await expect(page).toHaveURL(/\/route(\?|$)/, { timeout: 15_000 });
+    await page.getByRole("link", { name: "نقشه", exact: true }).click();
+    await expect(page).toHaveURL(/\/map(\?|$)/, { timeout: 15_000 });
+    await expect(
+      page.locator('[aria-label="Metro on real map"]'),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.getByText("ذخیره برای استفاده آفلاین", { exact: true }),
+    ).toHaveCount(0);
+  });
 });
