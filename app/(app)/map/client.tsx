@@ -230,6 +230,28 @@ export function MapPage() {
   const visiblePlaceInfos = ENABLE_PLACE_CARD_DISMISS
     ? placeInfos.filter((p) => !dismissedKeys.has(`${p.role}:${p.label}`))
     : placeInfos;
+
+  // Same-station pins share one nearest station: merge the two cards into
+  // one (both labels, station once, direct pin-to-pin walk) so the stack
+  // never repeats itself.
+  const mergedPlaceInfo = useMemo(() => {
+    const origin = placeMarkers.find((m) => m.role === "origin");
+    const dest = placeMarkers.find((m) => m.role === "dest");
+    if (!origin || !dest) return null;
+    const originStation = origin.stationId ? STATION_MAP.get(origin.stationId) : null;
+    const destStation = dest.stationId ? STATION_MAP.get(dest.stationId) : null;
+    if (!originStation || originStation.id !== destStation?.id) return null;
+    const walkKm = haversineKm(origin.lat, origin.lng, dest.lat, dest.lng);
+    const walkMin = estimateWalkMinutes(walkKm);
+    return {
+      originLabel: origin.label,
+      destLabel: dest.label,
+      stationName: isFa ? originStation.name.fa : originStation.name.en,
+      distanceText: formatDistance(walkKm, lang),
+      walkText: formatWalkTime(walkMin, lang),
+      tooFar: isTooFarToWalk(walkKm),
+    };
+  }, [placeMarkers, isFa, lang]);
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
     center: initialParams.center,
     zoom: initialParams.zoom,
@@ -360,12 +382,9 @@ export function MapPage() {
         {/* One-time save notice: informational only, online only, never
             stacked with the offline banner. */}
         {showSaveNotice && (
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow-sm backdrop-blur">
-            <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-foreground">{t.mapSaveTitle}</p>
-              <p className="mt-0.5 text-muted-foreground">{t.mapSaveBody}</p>
-            </div>
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-background/90 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
+            <Building2 aria-hidden="true" className="size-4 shrink-0 text-primary" />
+            <p className="min-w-0 flex-1 truncate font-semibold text-foreground">{t.mapSaveTitle}</p>
             <button
               type="button"
               onClick={dismissSaveNotice}
@@ -377,7 +396,39 @@ export function MapPage() {
           </div>
         )}
 
-        {visiblePlaceInfos.map((p) => (
+        {mergedPlaceInfo ? (
+          <div
+            key={`merged:${mergedPlaceInfo.originLabel}:${mergedPlaceInfo.destLabel}`}
+            data-testid="map-place-card"
+            className={cn(
+              "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm backdrop-blur",
+              mergedPlaceInfo.tooFar
+                ? "border-amber-500/40 bg-background/95 text-foreground"
+                : "border-border bg-background/90 text-foreground",
+            )}
+          >
+            {mergedPlaceInfo.tooFar ? (
+              <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-500" />
+            ) : (
+              <Building2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">
+                {mergedPlaceInfo.originLabel}
+                <span aria-hidden="true" className="mx-1.5 text-muted-foreground">→</span>
+                {mergedPlaceInfo.destLabel}
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                {t.nearestStation}: {mergedPlaceInfo.stationName} · {mergedPlaceInfo.distanceText} · ~{mergedPlaceInfo.walkText} {t.walkTime}
+              </p>
+              {mergedPlaceInfo.tooFar && (
+                <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
+                  {t.tooFarFromStation} (~{mergedPlaceInfo.walkText})
+                </p>
+              )}
+            </div>
+          </div>
+        ) : visiblePlaceInfos.map((p) => (
           <div
             key={`${p.role}:${p.label}`}
             data-testid="map-place-card"
