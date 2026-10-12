@@ -579,7 +579,6 @@ function RouteView({
               )}
             </button>
           </div>
-          <p className="text-[11px] leading-5 text-muted-foreground">{t.locationUseNote}</p>
           {originPlaceInfo && (
             <PlaceCard
               lang={lang}
