@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Loader2, Layers, Satellite, Building2, AlertTriangle, X, WifiOff } from "lucide-react";
+import { Loader2, Layers, Satellite, Building2, AlertTriangle, Footprints, X, WifiOff } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
@@ -400,29 +400,24 @@ export function MapPage() {
           <div
             key={`merged:${mergedPlaceInfo.originLabel}:${mergedPlaceInfo.destLabel}`}
             data-testid="map-place-card"
-            className={cn(
-              "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm backdrop-blur",
-              mergedPlaceInfo.tooFar
-                ? "border-amber-500/40 bg-background/95 text-foreground"
-                : "border-border bg-background/90 text-foreground",
-            )}
+            className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3"
           >
-            {mergedPlaceInfo.tooFar ? (
-              <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-500" />
-            ) : (
-              <Building2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
-            )}
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+              <Footprints aria-hidden="true" className="size-5 text-primary" />
+            </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">
+              <p className="text-sm font-bold md:text-base">{t.walkFaster}</p>
+              <p className="tnum mt-0.5 truncate text-xs text-muted-foreground md:text-sm">
                 {mergedPlaceInfo.originLabel}
-                <span aria-hidden="true" className="mx-1.5 text-muted-foreground">→</span>
+                <span aria-hidden="true" className="mx-1.5">→</span>
                 {mergedPlaceInfo.destLabel}
+                {" · "}{mergedPlaceInfo.distanceText} · ~{mergedPlaceInfo.walkText} {t.walkTime}
               </p>
-              <p className="mt-0.5 text-muted-foreground">
-                {t.nearestStation}: {mergedPlaceInfo.stationName} · {mergedPlaceInfo.distanceText} · ~{mergedPlaceInfo.walkText} {t.walkTime}
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t.nearestStation}: {mergedPlaceInfo.stationName}
               </p>
               {mergedPlaceInfo.tooFar && (
-                <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
+                <p className="mt-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
                   {t.tooFarFromStation} (~{mergedPlaceInfo.walkText})
                 </p>
               )}

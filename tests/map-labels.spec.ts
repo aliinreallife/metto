@@ -93,9 +93,12 @@ test.describe("map label movement", () => {
       { waitUntil: "domcontentloaded" },
     );
     await mapReady(page);
-    await expect(page.getByTestId("map-place-card")).toHaveCount(2, {
-      timeout: 15_000,
-    });
+    // Same-station pins render one merged card with both labels.
+    const merged = page.getByTestId("map-place-card");
+    await expect(merged).toHaveCount(1, { timeout: 15_000 });
+    await expect(merged).toContainText("نقطه الف");
+    await expect(merged).toContainText("نقطه ب");
+    await expect(merged).toContainText("پیاده‌روی سریع‌تر است");
 
     const box = await page
       .locator('[aria-label="Metro on real map"]')
@@ -112,11 +115,12 @@ test.describe("map label movement", () => {
       .click();
     await expect(page.getByTestId("map-pick-card")).toHaveCount(0);
 
-    // Old origin label gone, dest card intact, new origin persisted.
+    // Origin replaced with a far station: back to two separate cards
+    // (different stations now), old origin text gone everywhere.
+    const cards = page.getByTestId("map-place-card");
+    await expect(cards).toHaveCount(2);
     await expect(page.getByText("نقطه الف", { exact: true })).toHaveCount(0);
-    await expect(
-      page.getByTestId("map-place-card").filter({ hasText: "نقطه ب" }),
-    ).toHaveCount(1);
+    await expect(cards.filter({ hasText: "نقطه ب" })).toHaveCount(1);
     const params = new URL(page.url()).searchParams;
     expect(params.get("from")).toBeTruthy();
     expect(params.get("op")).toBeTruthy();
