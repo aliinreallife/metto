@@ -1,21 +1,18 @@
 "use client";
 
-// Single shared client holiday store: bundled baseline → persisted
-// last-known-good → background same-origin refresh via the central
-// coordinator (`ensureHolidayCurrent` in ./client-update). Components are pure
-// consumers: they subscribe to the central snapshot and trigger the shared
-// check, but React lifecycle never decides freshness. Routing reads the
-// in-memory dataset synchronously; the hook only reflects validated central
-// state plus the one-time update notice.
+// Holiday data is local-first and static at runtime. The bundled dataset is
+// available immediately (and is precached for offline use); an already stored
+// last-known-good dataset from an older app version may still be read, but the
+// client no longer performs background version checks or holiday downloads.
+// Calendar changes are shipped with normal Metto deployments instead of
+// generating per-user runtime requests.
 import {
   useCallback,
-  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
 } from "react";
 import {
-  ensureHolidayCurrent,
   ensureHolidayMemory,
   getHolidayServerSnapshot,
   getHolidaySnapshot,
@@ -69,8 +66,8 @@ export type HolidayUiState = {
 };
 
 export function useHolidayData(): HolidayUiState {
-  // Synchronous stored/baseline upgrade on first render (same semantics as
-  // before: first paint already uses last-known-good, never waits).
+  // Synchronous local baseline on first render: first paint never waits for
+  // network, and holiday routing remains available offline.
   ensureHolidayMemory();
   const snapshot = useSyncExternalStore(
     subscribeHoliday,
@@ -78,21 +75,14 @@ export function useHolidayData(): HolidayUiState {
     getHolidayServerSnapshot,
   );
   const dataset = snapshot.dataset;
-  // Instance boot version: the update notice fires only for adoptions that
-  // land during THIS session. A stored newer copy already present at boot is
-  // not a new update (same as the previous per-instance adoption behavior).
+  // Instance boot version: retained for compatibility with an already stored
+  // last-known-good dataset from older Metto versions. New clients do not
+  // perform runtime holiday updates.
   const [bootVersion] = useState(() => dataset?.version ?? "");
-  // Dismissals are explicit user actions (event handler, never an effect).
   const [dismissedVersion, setDismissedVersion] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Fire-and-forget: single-flight + TTL in the coordinator make concurrent
-    // triggers from many mounted instances free (one shared operation).
-    void ensureHolidayCurrent();
-  }, []);
-
-  // Pure derivation (no setState in effects): the notice shows only for
-  // adoptions that land during THIS session and were never dismissed.
+  // Pure derivation (no network work): normally false now that calendar
+  // updates are delivered through app deployments rather than runtime fetches.
   let justUpdated = false;
   try {
     justUpdated =
