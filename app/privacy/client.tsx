@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useMetro } from "@/app/providers";
 
 const REPO_URL = "https://github.com/aliinreallife/metto";
@@ -9,11 +11,12 @@ const REYMIT_URL = "https://reymit.ir/aliinreallife";
 
 type Section = { h: string; ps: string[] };
 
-const COPY: Record<"fa" | "en", { title: string; intro: string; sections: Section[] }> = {
+const COPY: Record<"fa" | "en", { title: string; intro: string; back: string; sections: Section[] }> = {
   fa: {
     title: "حریم خصوصی",
     intro:
       "متو بدون ثبت‌نام کار می‌کند و داده‌ای درباره شما روی سرور نگه نمی‌دارد. این صفحه دقیقاً می‌گوید چه چیزی کجا می‌رود.",
+    back: "بازگشت به مسیریاب",
     sections: [
       {
         h: "موقعیت مکانی",
@@ -70,6 +73,7 @@ const COPY: Record<"fa" | "en", { title: string; intro: string; sections: Sectio
     title: "Privacy",
     intro:
       "metto works with no sign-up and keeps no data about you on a server. This page states exactly what goes where.",
+    back: "Back to route planner",
     sections: [
       {
         h: "Location",
@@ -173,10 +177,21 @@ export function PrivacyPage() {
   }, [c.title, isFa]);
 
   return (
-    <div className="flex size-full flex-col bg-background text-foreground">
+    <main className="flex size-full flex-col bg-background text-foreground">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <article className="mx-auto w-full max-w-xl px-4 py-6 md:py-8">
-          <h1 className="text-xl font-black tracking-tight md:text-2xl">{c.title}</h1>
+          <Link
+            href="/route"
+            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            {isFa ? (
+              <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
+            ) : (
+              <ArrowLeft aria-hidden="true" className="size-4 shrink-0" />
+            )}
+            {c.back}
+          </Link>
+          <h1 className="mt-4 text-xl font-black tracking-tight md:text-2xl">{c.title}</h1>
           <p className="mt-3 text-sm leading-8 text-muted-foreground">{c.intro}</p>
           {c.sections.map((s) => (
             <section key={s.h} className="mt-6">
@@ -191,6 +206,6 @@ export function PrivacyPage() {
           <Links lang={lang} />
         </article>
       </div>
-    </div>
+    </main>
   );
 }
