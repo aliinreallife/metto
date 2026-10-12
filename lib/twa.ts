@@ -29,6 +29,16 @@ export const TWA_LAUNCH_VALUE = "android";
 // wrapper — still no JavaScript bridge and no GMS.
 export const LOCATION_SETTINGS_URI = `intent://open-location-settings#Intent;scheme=metto;package=${TWA_PACKAGE};end`;
 
+// Canonical deep link handled by RateAppActivity (exported, no UI):
+// detects the installing store (Bazaar/Myket/Play) and opens our listing
+// in that exact store; unknown installs fall back to market:// then /rate.
+export const RATE_APP_URI = "metto://rate-app";
+
+// Package-targeted intent form of the rating deep link. Same CCT reason as
+// above: a plain metto:// navigation is swallowed inside the TWA, while the
+// explicit intent:// form resolves to the installed wrapper.
+export const RATE_APP_INTENT_URI = `intent://rate-app#Intent;scheme=metto;package=${TWA_PACKAGE};end`;
+
 const SESSION_KEY = "metto.twa";
 
 function readSessionFlag(): boolean {
@@ -130,4 +140,12 @@ export async function isAndroidTwa(): Promise<boolean> {
 // Only call when isAndroidTwa() is true.
 export function openAndroidLocationSettings(): void {
   window.location.href = LOCATION_SETTINGS_URI;
+}
+
+// Fire-and-forget: navigates to the native Rate helper via the
+// package-targeted intent URI above (RateAppActivity opens the installing
+// store's listing, or /rate for unknown installs).
+// Only call when isAndroidTwa() is true. No JavaScript bridge.
+export function openAndroidRateApp(): void {
+  window.location.href = RATE_APP_INTENT_URI;
 }

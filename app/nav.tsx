@@ -13,6 +13,7 @@ import {
   Database,
 } from "lucide-react";
 import { InstallButton } from "@/components/pwa";
+import { RateMettoAction } from "@/components/rate-prompt";
 import { OfflineStatus } from "@/components/offline-status";
 import { useMetro } from "./providers";
 import { STRINGS } from "@/lib/i18n";
@@ -230,6 +231,7 @@ export function AppNav() {
           >
             {t.privacyLink}
           </TabLink>
+          <RateMettoAction lang={lang} />
         </div>
         )}
         <nav className={cn("grid grid-cols-4 pb-[env(safe-area-inset-bottom)]", isMainTab && "border-t border-border")}>

@@ -1,0 +1,201 @@
+"use client";
+
+// Respectful automatic rating eligibility (local-only, pure/testable).
+//
+// - Local browser storage only. No account, analytics, server, fingerprint.
+// - Automatic prompting happens only inside the Android TWA (callers gate on
+//   lib/twa.ts); this module only tracks counts/days/cooldowns.
+// - A route counts only when the caller reports a genuine success
+//   (see home-page: route.status === "complete"); re-renders never count.
+// - Days are local calendar dates (YYYY-MM-DD via getFullYear/Month/Date),
+//   never UTC dates.
+
+export const APP_RATING_KEY = "metto.appRating.v1";
+
+export const MIN_SUCCESS_ROUTES = 5;
+export const MIN_DISTINCT_DAYS = 3;
+export const DISMISS_COOLDOWN_MS = 90 * 24 * 60 * 60 * 1000;
+export const MAX_AUTO_PROMPTS = 2;
+
+export type AppRatingState = {
+  version: 1;
+  /** Genuinely successful route plans (caller-gated, never re-renders). */
+  successCount: number;
+  /** Distinct local calendar days with at least one success. */
+  days: string[];
+  /** Lifetime automatic prompt displays (max 2). */
+  promptsShown: number;
+  /** Last "Not now" timestamp (epoch ms), or null. */
+  dismissedAtMs: number | null;
+  /** True once the user pressed "Rate Metto" (launch = completion). */
+  completed: boolean;
+};
+
+export function defaultRatingState(): AppRatingState {
+  return {
+    version: 1,
+    successCount: 0,
+    days: [],
+    promptsShown: 0,
+    dismissedAtMs: null,
+    completed: false,
+  };
+}
+
+/** Local calendar day key YYYY-MM-DD (never UTC). */
+export function toLocalDayKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function sanitize(raw: unknown): AppRatingState {
+  const base = defaultRatingState();
+  if (typeof raw !== "object" || raw === null) return base;
+  const r = raw as Record<string, unknown>;
+  const successCount =
+    typeof r.successCount === "number" &&
+    Number.isFinite(r.successCount) &&
+    r.successCount >= 0
+      ? Math.floor(r.successCount)
+      : 0;
+  const days = Array.isArray(r.days)
+    ? [...new Set(r.days.filter((d): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)))].slice(0, 3660)
+    : [];
+  const promptsShown =
+    typeof r.promptsShown === "number" &&
+    Number.isFinite(r.promptsShown) &&
+    r.promptsShown >= 0
+      ? Math.min(Math.floor(r.promptsShown), MAX_AUTO_PROMPTS + 10)
+      : 0;
+  const dismissedAtMs =
+    typeof r.dismissedAtMs === "number" && Number.isFinite(r.dismissedAtMs) && r.dismissedAtMs >= 0
+      ? r.dismissedAtMs
+      : null;
+  const completed = r.completed === true;
+  return { version: 1, successCount, days, promptsShown, dismissedAtMs, completed };
+}
+
+type StorageLike = Pick<Storage, "getItem" | "setItem">;
+
+function getStorage(): StorageLike | null {
+  try {
+    if (typeof localStorage !== "undefined") return localStorage;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function loadRatingState(storage?: StorageLike | null): AppRatingState {
+  try {
+    const s = storage !== undefined ? storage : getStorage();
+    if (!s) return defaultRatingState();
+    const raw = s.getItem(APP_RATING_KEY);
+    if (!raw) return defaultRatingState();
+    return sanitize(JSON.parse(raw));
+  } catch {
+    return defaultRatingState();
+  }
+}
+
+export function saveRatingState(
+  state: AppRatingState,
+  storage?: StorageLike | null,
+): void {
+  try {
+    const s = storage !== undefined ? storage : getStorage();
+    if (!s) return;
+    s.setItem(APP_RATING_KEY, JSON.stringify(state));
+  } catch {
+    // Storage full/private mode — eligibility simply stays in-memory.
+  }
+}
+
+/** Pure: is this stored state eligible for an automatic prompt right now? */
+export function isEligible(state: AppRatingState, nowMs: number): boolean {
+  if (state.completed) return false;
+  if (state.promptsShown >= MAX_AUTO_PROMPTS) return false;
+  if (state.successCount < MIN_SUCCESS_ROUTES) return false;
+  if (state.days.length < MIN_DISTINCT_DAYS) return false;
+  if (
+    state.dismissedAtMs !== null &&
+    nowMs - state.dismissedAtMs < DISMISS_COOLDOWN_MS
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/** Record one genuine route-planning success (caller-gated). Never throws. */
+export function recordRouteSuccess(
+  now: Date = new Date(),
+  storage?: StorageLike | null,
+): AppRatingState {
+  try {
+    const state = loadRatingState(storage);
+    const day = toLocalDayKey(now);
+    const days = state.days.includes(day) ? state.days : [...state.days, day];
+    const next: AppRatingState = {
+      ...state,
+      successCount: state.successCount + 1,
+      days,
+    };
+    saveRatingState(next, storage);
+    return next;
+  } catch {
+    return defaultRatingState();
+  }
+}
+
+/** The automatic prompt was displayed (counts toward the lifetime max). */
+export function notePromptShown(storage?: StorageLike | null): AppRatingState {
+  try {
+    const state = loadRatingState(storage);
+    const next: AppRatingState = {
+      ...state,
+      promptsShown: state.promptsShown + 1,
+    };
+    saveRatingState(next, storage);
+    return next;
+  } catch {
+    return defaultRatingState();
+  }
+}
+
+/** "Not now": 90-day cooldown. Display counting stays in notePromptShown. */
+export function recordRatingDismiss(
+  nowMs: number = Date.now(),
+  storage?: StorageLike | null,
+): AppRatingState {
+  try {
+    const state = loadRatingState(storage);
+    const next: AppRatingState = {
+      ...state,
+      dismissedAtMs: nowMs,
+    };
+    saveRatingState(next, storage);
+    return next;
+  } catch {
+    return defaultRatingState();
+  }
+}
+
+/**
+ * "Rate Metto" pressed: launching the store flow counts as completion
+ * (we cannot know if a review was submitted). Manual entry stays available.
+ */
+export function recordRatingAction(storage?: StorageLike | null): AppRatingState {
+  try {
+    const state = loadRatingState(storage);
+    const next: AppRatingState = {
+      ...state,
+      completed: true,
+    };
+    saveRatingState(next, storage);
+    return next;
+  } catch {
+    return defaultRatingState();
+  }
+}

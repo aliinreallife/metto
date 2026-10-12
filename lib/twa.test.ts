@@ -126,3 +126,17 @@ describe("LOCATION_SETTINGS_URI", () => {
     ).toBe(true);
   });
 });
+
+describe("RATE_APP_URI", () => {
+  it("exposes the canonical metto://rate-app deep link", async () => {
+    const mod = await import("./twa");
+    expect(mod.RATE_APP_URI).toBe("metto://rate-app");
+  });
+
+  it("navigates via a package-targeted intent URI (CCT-safe)", async () => {
+    const mod = await import("./twa");
+    expect(mod.RATE_APP_INTENT_URI).toBe(
+      `intent://rate-app#Intent;scheme=metto;package=${TWA_PACKAGE};end`,
+    );
+  });
+});

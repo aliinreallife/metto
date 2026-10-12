@@ -76,5 +76,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
       },
     },
+    {
+      url: `${baseUrl}/rate`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.3,
+      alternates: {
+        languages: {
+          fa: `${baseUrl}/rate`,
+          en: `${baseUrl}/rate?lang=en`,
+        },
+      },
+    },
   ];
 }

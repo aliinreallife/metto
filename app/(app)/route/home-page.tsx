@@ -16,9 +16,11 @@ import {
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
 import { MissedDeadlineCard, NoServiceCard, RoutePanel, WalkSuggestCard } from "@/components/route-panel";
+import { RateMettoAction, RatePromptHost } from "@/components/rate-prompt";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
 import { TravelTimeCard } from "@/components/travel-time-card";
+import { recordRouteSuccess } from "@/lib/app-rating";
 import { useMetro } from "@/app/providers";
 import { TabLink } from "@/app/nav";
 import { STATION_MAP, findRoute } from "@/lib/route";
@@ -269,6 +271,24 @@ export function HomePage() {
       ? getArriveByViewState(route, nowRoute, planAtMs)
       : null;
 
+  // Rating usage: count one success per distinct settled planning that
+  // genuinely produced a complete journey. Re-renders of the same route
+  // (language, clock ticks, GPS) never recount. Corrupt storage is
+  // swallowed inside recordRouteSuccess so planning never breaks.
+  const lastCountedRouteKey = useRef<string | null>(null);
+  useEffect(() => {
+    try {
+      if (!route || route.status !== "complete" || isPastTime) return;
+      if (arriveView && arriveView.kind !== "planned") return;
+      const key = `${originId}|${destId}|${timeMode}|${planAtMs ?? "now"}`;
+      if (lastCountedRouteKey.current === key) return;
+      lastCountedRouteKey.current = key;
+      recordRouteSuccess(new Date());
+    } catch {
+      // Never break route planning.
+    }
+  }, [route, arriveView, isPastTime, originId, destId, timeMode, planAtMs]);
+
   function swap() {
     setOriginId(destId);
     setDestId(originId);
@@ -389,6 +409,7 @@ export function HomePage() {
         >
           {t.privacyLink}
         </TabLink>
+        <RateMettoAction lang={lang} />
       </div>
     </div>
   );
@@ -765,6 +786,15 @@ function RouteView({
               if (!origin) return null;
               return <RouteActions origin={origin} lang={lang} />;
             })()}
+            <RatePromptHost
+              lang={lang}
+              routeSucceeded={
+                !!route &&
+                route.status === "complete" &&
+                !isPastTime &&
+                (!arriveView || arriveView.kind === "planned")
+              }
+            />
           </>
         ) : !selected ? (
           <>
