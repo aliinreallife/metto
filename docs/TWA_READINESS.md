@@ -301,8 +301,17 @@ hang, never a misleading empty state):
   (data credits, map directions, install flows) intentionally open
   externally (`_blank` + `noopener`). No mixed-content HTTP resources.
   `geo:` intents are user-initiated only.
-- No `assetlinks.json` exists yet — intentionally. It requires the real
-  Android package name + signing-cert SHA-256 (see below).
+- `assetlinks.json` serves both the standard `android_app` statement and
+  Bazaar's `cafebazaar_twa` / `check_validation` statement for
+  `ir.metto.app` (see `docs/ANDROID_TWA.md`; generator + validator +
+  tests keep them in sync — never hand-edit the production file).
+- Inside the Android wrapper (TWA) the landing install section hides its
+  alternate-distribution block (direct APK / other stores); normal
+  browsers and PWAs are unaffected.
+- `/privacy` (bilingual, linked from `/route` and the landing footer)
+  states the actual data flows; the location UI carries a one-line
+  purpose disclosure with the manual station picker as the alternative;
+  the donation link is explicitly voluntary with no unlocked content.
 
 ---
 
@@ -434,16 +443,18 @@ first activation there also purges the legacy `metto-v*` caches.
 
 > Status: steps 1–2 are implemented on branch `feat/android-twa`
 > (wrapper in `android/`, CI + release pipeline, Asset Links tooling —
-> details in `docs/ANDROID_TWA.md`). Steps 3+ remain manual/in-order.
+> details in `docs/ANDROID_TWA.md`), and step 6 (real `assetlinks.json`
+> with both the Android and the Bazaar `cafebazaar_twa` statements) is
+> live. Steps 3–5, 7+ remain manual/in-order.
 
-1. Choose final Android package/application ID.
-2. Generate Bubblewrap/TWA wrapper project.
+1. Choose final Android package/application ID. ✅ (`ir.metto.app`)
+2. Generate Bubblewrap/TWA wrapper project. ✅
 3. Generate signing key.
 4. Safely back up signing key (offline, redundant).
 5. Obtain signing-certificate SHA-256 fingerprint.
-6. Create real `https://metto.ir/.well-known/assetlinks.json`.
+6. Create real `https://metto.ir/.well-known/assetlinks.json`. ✅ (Android + Bazaar statements)
 7. Verify Digital Asset Links.
 8. Build signed package (AAB/APK as required by each store).
 9. Test on real Android devices (install, offline, updates, deep links).
-10. Prepare Café Bazaar/Myket listing, icons, screenshots, privacy info.
+10. Prepare Café Bazaar/Myket listing, icons, screenshots, privacy info. (Privacy page + location/donation copy ship in-web; panel metadata remains manual.)
 11. Submit to Bazaar/Myket.

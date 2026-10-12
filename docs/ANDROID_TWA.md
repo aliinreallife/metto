@@ -149,19 +149,39 @@ The signed APK from the release workflow uses this release certificate, so
 its fingerprint belongs in Digital Asset Links and direct-installed APKs
 verify as a TWA.
 
-## Digital Asset Links — live with the release signing fingerprint
+## Digital Asset Links — live with the release signing fingerprint + Bazaar statement
 
-`https://metto.ir/.well-known/assetlinks.json` serves the `ir.metto.app`
-release certificate fingerprint (source: `public/.well-known/assetlinks.json`).
-No placeholder fingerprints are committed. It was generated with:
+`https://metto.ir/.well-known/assetlinks.json` serves two statements for
+`ir.metto.app` (source: `public/.well-known/assetlinks.json` — never
+hand-edited; always regenerated so the Bazaar statement cannot be dropped):
+
+1. Standard Android (`namespace: android_app`,
+   `delegate_permission/common.handle_all_urls`) with the release
+   certificate fingerprint(s).
+2. Cafe Bazaar verification (`namespace: cafebazaar_twa`,
+   `relation: check_validation`, package-only — deliberately NO
+   fingerprints), as required by Bazaar's TWA publishing guideline
+   (`https://developers.cafebazaar.ir/en/guidelines/learn-more/trusted-web-application`).
+   Bazaar rejects uploads without it
+   (`فضای نام اجباری cafebazaar_twa … تعریف نشده است`).
+
+No placeholder fingerprints are committed. Regenerate with:
 
 ```bash
 node scripts/generate-assetlinks.mjs \
   --fingerprint '<RELEASE-SHA256>' \
   --output public/.well-known/assetlinks.json
 node scripts/validate-assetlinks.mjs   # strict once the file exists
-curl -s https://metto.ir/.well-known/assetlinks.json | head -c 400
+curl -s https://metto.ir/.well-known/assetlinks.json | head -c 600
 ```
+
+The validator requires at least one valid statement of EACH type for
+`ir.metto.app` (Android fingerprint checks stay fully strict; the Bazaar
+statement is validated on required semantics only — namespace, package,
+and a relation list containing `check_validation` — while the generator
+keeps emitting the clean minimal package-only form), while ignoring
+unrelated statements about other packages/namespaces. `assetlinks.test.ts`
+locks this in — including that a missing/malformed Bazaar statement fails.
 
 If Google Play publishing is added later with Play App Signing, append the
 Play signing certificate fingerprint alongside the release fingerprint
@@ -170,6 +190,34 @@ and direct-installed builds both verify. `vercel.json` already stages
 `Content-Type: application/json` + short cache for this path, and the URL
 must stay a direct 200 (no redirect, no Deployment Protection gate —
 same rule as `/sw.js`).
+
+## Bazaar web-side compliance (no native changes)
+
+The TWA serves `https://metto.ir` at runtime, so these Bazaar-facing rules
+are satisfied in web code — no manifest, permission, signing, or version
+change, and no APK rebuild:
+
+- **No alternate distribution inside the wrapper.** The landing install
+  section's store/APK block (direct GitHub APK, Myket, …) is suppressed for
+  Android-TWA sessions (`app/(landing)/components/PwaStrip.tsx`, pre-paint
+  via `lib/twa.ts` sync detection — no flash). Normal browsers and PWAs
+  see it unchanged, and merely having the wrapper installed while browsing
+  does not hide it. No per-installer (Bazaar-vs-Myket) detection is
+  attempted: it is not reliably available client-side.
+- **Privacy.** A short bilingual `/privacy` page states the actual data
+  flows (on-device location math, Nominatim place search, CARTO/Esri tiles,
+  production Vercel telemetry, server-side holiday refresh, on-device
+  storage, no account). It is linked from the `/route` footer (the TWA
+  start page) and the landing footer, and listed in `app/sitemap.ts`.
+- **Location disclosure.** A one-line FA/EN note next to “Use my location”
+  (`lib/i18n.ts` `locationUseNote`, rendered in `components/nearby-tab.tsx`
+  and the route planner) states location is only for nearby stations with a
+  manual picker as the alternative. No new permission, no background
+  location, no pre-permission modal.
+- **Donation.** The Reymit link stays an external voluntary-support link
+  with explicit “unlocks nothing” copy (`app/(landing)/content.ts`
+  `voluntaryNote`). It sells no digital content, so no Bazaar In-App
+  Billing is integrated.
 
 ## CI / release
 

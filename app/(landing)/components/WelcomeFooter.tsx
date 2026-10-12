@@ -85,6 +85,11 @@ export function WelcomeFooter() {
                   {donateCta}
                 </a>
               </li>
+              <li>
+                <Link href="/privacy" className="text-sm font-medium transition-colors hover:text-primary">
+                  {t.privacy}
+                </Link>
+              </li>
             </ul>
           </nav>
 

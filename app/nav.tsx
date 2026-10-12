@@ -223,6 +223,13 @@ export function AppNav() {
           >
             {t.supportLink}
           </TabLink>
+          <TabLink
+            href="/privacy"
+            connectivity={connectivity}
+            className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t.privacyLink}
+          </TabLink>
         </div>
         )}
         <nav className={cn("grid grid-cols-4 pb-[env(safe-area-inset-bottom)]", isMainTab && "border-t border-border")}>

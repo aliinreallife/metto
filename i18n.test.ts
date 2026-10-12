@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { persianDigits, STRINGS } from "./lib/i18n";
+import { WELCOME_CONTENT } from "./app/(landing)/content";
 
 describe("persianDigits locale behavior", () => {
   it('converts Latin digits to Persian in fa UI ("15:11" -> "۱۵:۱۱")', () => {
@@ -40,6 +41,36 @@ describe("location error copy (EN/FA)", () => {
   });
 });
 
+describe("location disclosure copy (EN/FA)", () => {
+  it("states the nearby-only purpose with the manual alternative in both languages", () => {
+    expect(STRINGS.fa.locationUseNote).toContain("فقط برای پیدا کردن ایستگاه‌های نزدیک");
+    expect(STRINGS.fa.locationUseNote).toContain("دستی انتخاب");
+    expect(STRINGS.en.locationUseNote).toMatch(/only used to find nearby stations/i);
+    expect(STRINGS.en.locationUseNote).toMatch(/manually/i);
+  });
+});
+
+describe("donation clarification copy (EN/FA)", () => {
+  it("states support is voluntary and unlocks nothing in both languages", () => {
+    expect(WELCOME_CONTENT.fa.donate.voluntaryNote).toContain("اختیاری");
+    expect(WELCOME_CONTENT.fa.donate.voluntaryNote).toMatch(/باز نمی‌شود/);
+    expect(WELCOME_CONTENT.en.donate.voluntaryNote).toMatch(/voluntary/i);
+    expect(WELCOME_CONTENT.en.donate.voluntaryNote).toMatch(/no feature or content is unlocked/i);
+  });
+
+  it("labels the landing footer privacy link in both languages", () => {
+    expect(WELCOME_CONTENT.fa.footer.privacy).toBe("حریم خصوصی");
+    expect(WELCOME_CONTENT.en.footer.privacy).toBe("Privacy");
+  });
+});
+describe("privacy link copy (EN/FA)", () => {
+  it("exists in both languages and is distinct from the about link", () => {
+    expect(STRINGS.fa.privacyLink).toBe("حریم خصوصی");
+    expect(STRINGS.en.privacyLink).toBe("Privacy");
+    expect(STRINGS.en.privacyLink).not.toBe(STRINGS.en.aboutLink);
+    expect(STRINGS.fa.privacyLink).not.toBe(STRINGS.fa.aboutLink);
+  });
+});
 describe("map offline/save notice copy", () => {
   it("exists in both languages with the exact approved wording", () => {
     expect(STRINGS.fa.mapOfflineTitle).toBe("بدون اینترنت");

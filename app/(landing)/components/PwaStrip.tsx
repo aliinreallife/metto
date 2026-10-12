@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, type ReactElement } from "react";
+import { useEffect, useLayoutEffect, useState, type ReactElement } from "react";
 import Link from "next/link";
 import { useMetro } from "@/app/providers";
-import { isAndroidTwa, isTwaPackageInstalled } from "@/lib/twa";
+import { isAndroidTwa, isAndroidTwaSync, isTwaPackageInstalled } from "@/lib/twa";
 import {
   readRememberedInstall,
   selectInstallStatus,
@@ -39,6 +39,11 @@ function isStandalone() {
   );
 }
 
+// Layout effect on the client (plain effect during SSR, where window is
+// absent): runs before paint so TWA suppression below never flashes.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 const INSTALL_TARGETS = {
   twa: "https://github.com/aliinreallife/metto/releases/latest",
   myket: "https://myket.ir/app/ir.metto.app",
@@ -71,6 +76,19 @@ export function PwaStrip() {
   // This browser installed the PWA before (our own memory — see
   // install-status.ts for why the browser itself can't always tell us).
   const [remembered, setRemembered] = useState(false);
+
+  // First-paint TWA suppression (see the stores block below): the sync
+  // wrapper signal (android-app referrer, ?twa=android launcher param, or
+  // the remembered session flag) is already available before paint, so the
+  // alternate-distribution links never flash inside the Android app. A
+  // useState initializer cannot do this — it would hydrate mismatched UI
+  // (server always renders the full section). Plain browsers/PWAs keep
+  // inTwa false and render everything, unchanged.
+  useIsomorphicLayoutEffect(() => {
+    // Pre-paint sync TWA signal; server + first client render both show the
+    // full section, so hydration stays consistent.
+    if (isAndroidTwaSync()) setInTwa(true);
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount hydration from browser-only APIs (display-mode/localStorage); initializers would crash on the server or hydrate mismatched UI.
@@ -253,6 +271,16 @@ export function PwaStrip() {
           </details>
         </Reveal>
 
+        {/* Alternate-distribution block (direct APK, Myket, …): shown to
+            normal browser/PWA visitors only. Inside the Android wrapper
+            (TWA) it is suppressed — store guidelines prohibit pointing
+            users at competing distribution channels from inside a
+            store-installed app — while the web/PWA install path above is
+            untouched. inTwa is set pre-paint (see above), so this never
+            flashes. Merely having the wrapper installed while browsing
+            (twaOnDevice) does NOT hide it: that is still the normal
+            website. */}
+        {!inTwa && (
         <Reveal delay={60}>
           <div className="mt-8">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -315,6 +343,7 @@ export function PwaStrip() {
             </ul>
           </div>
         </Reveal>
+        )}
       </div>
     </section>
   );

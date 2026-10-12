@@ -13,6 +13,13 @@ import { fileURLToPath } from "node:url";
 
 export const EXPECTED_PACKAGE = "ir.metto.app";
 export const EXPECTED_RELATION = "delegate_permission/common.handle_all_urls";
+// Cafe Bazaar TWA verification (see
+// https://developers.cafebazaar.ir/en/guidelines/learn-more/trusted-web-application):
+// a second statement with a Bazaar-specific namespace and NO certificate
+// fingerprints. It must always be emitted alongside the android_app
+// statement — never regenerate assetlinks.json without it.
+export const BAZAAR_NAMESPACE = "cafebazaar_twa";
+export const BAZAAR_RELATION = "check_validation";
 export const FINGERPRINT_RE = /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/;
 const PACKAGE_RE = /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/;
 
@@ -37,6 +44,13 @@ export function buildAssetLinks({ packageName, fingerprints }) {
         namespace: "android_app",
         package_name: packageName,
         sha256_cert_fingerprints: fps,
+      },
+    },
+    {
+      relation: [BAZAAR_RELATION],
+      target: {
+        namespace: BAZAAR_NAMESPACE,
+        package_name: packageName,
       },
     },
   ];
@@ -76,7 +90,7 @@ if (isMain) {
       const dest = resolve(repoRoot, args.output ?? "public/.well-known/assetlinks.json");
       mkdirSync(dirname(dest), { recursive: true });
       writeFileSync(dest, text);
-      console.log(`wrote ${dest} (${json[0].target.sha256_cert_fingerprints.length} fingerprint(s))`);
+      console.log(`wrote ${dest} (${json[0].target.sha256_cert_fingerprints.length} fingerprint(s) + Bazaar ${BAZAAR_NAMESPACE} statement)`);
     }
   } catch (err) {
     console.error(`generate-assetlinks: ${err.message}`);

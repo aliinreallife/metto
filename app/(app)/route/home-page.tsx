@@ -383,6 +383,13 @@ export function HomePage() {
         >
           {t.supportLink}
         </TabLink>
+        <TabLink
+          href="/privacy"
+          connectivity={connectivity}
+          className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {t.privacyLink}
+        </TabLink>
       </div>
     </div>
   );
@@ -573,6 +580,7 @@ function RouteView({
               )}
             </button>
           </div>
+          <p className="text-[11px] leading-5 text-muted-foreground">{t.locationUseNote}</p>
           {originPlaceInfo && (
             <PlaceCard
               lang={lang}
