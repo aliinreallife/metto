@@ -244,9 +244,9 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
           <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden="true" />
           <span className="min-w-0 flex-1 truncate" dir={isFa ? "rtl" : "ltr"}>
             {selected ? (
-              <span className="flex items-center gap-2">
-                <span className="truncate font-medium">{isFa ? selected.name.fa : selected.name.en}</span>
-                <span className="truncate text-xs text-muted-foreground">{isFa ? selected.name.en : selected.name.fa}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="min-w-0 flex-1 truncate font-medium">{isFa ? selected.name.fa : selected.name.en}</span>
+                <span className="min-w-0 max-w-[45%] shrink truncate text-xs text-muted-foreground">{isFa ? selected.name.en : selected.name.fa}</span>
               </span>
             ) : (
               <span className="text-muted-foreground">{placeholder}</span>

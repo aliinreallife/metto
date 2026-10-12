@@ -551,7 +551,7 @@ function RouteView({
             {t.from}
           </label>
           <div className="flex gap-2">
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <StationCombobox
                 id="origin-combobox"
                 value={originId}
@@ -597,7 +597,7 @@ function RouteView({
             {t.to}
           </label>
           <div className="flex gap-2">
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <StationCombobox
                 id="dest-combobox"
                 value={destId}
