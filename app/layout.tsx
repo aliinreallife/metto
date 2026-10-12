@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Vazirmatn } from "next/font/google";
 import { MetroProvider } from "./providers";
 import { SerwistProvider } from "./serwist";
@@ -181,10 +182,9 @@ export default function RootLayout({
           cacheOnNavigation={false}
           disable={process.env.NODE_ENV === "development"}
         >
-        <MetroProvider>
-          {children}
-        </MetroProvider>
+          <MetroProvider>{children}</MetroProvider>
         </SerwistProvider>
+        <Analytics />
       </body>
     </html>
   );
