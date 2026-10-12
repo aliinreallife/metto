@@ -347,4 +347,27 @@ test.describe("map route controls", () => {
       page.locator(`${overlay} path[stroke="#ef4444"]`),
     ).not.toHaveCount(0, { timeout: 15_000 });
   });
+
+  test("close pins count access walks: direct line despite short ride", async ({
+    page,
+  }) => {
+    // Pins ~600 m apart, but ~16 min of station access walks dwarf the walk
+    // while the ride alone is 6 min: same rule as the planner suggestion.
+    await suppressSaveNotice(page);
+    await page.goto(
+      `/map?from=eram-e-sabz&to=varzeshgah-e-azadi&op=35.7222,51.2934,${encodeURIComponent("ارم")}&dp=35.7202,51.2872,${encodeURIComponent("ورزشگاه آزادی")}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await mapReady(page);
+    const overlay = ".leaflet-overlay-pane";
+    await expect(
+      page.locator(`${overlay} path[stroke="#a3a3a3"]`),
+    ).toHaveCount(1, { timeout: 15_000 });
+    await expect(
+      page.locator(`${overlay} path[stroke="#22c55e"]`),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(`${overlay} path[stroke="#ef4444"]`),
+    ).toHaveCount(0);
+  });
 });

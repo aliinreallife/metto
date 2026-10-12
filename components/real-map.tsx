@@ -704,8 +704,17 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const line = { from: originPm, to: destPm }
       if (originId !== null && originId === destId) return line
       if (!route) return null
+      // Same rule as the planner suggestion: the station access walks are
+      // part of the metro journey, so they count toward walking winning.
+      const legKm = (pm: { lat: number; lng: number; stationId?: string | null }) => {
+        const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
+        return st ? haversineKm(pm.lat, pm.lng, st.location.lat, st.location.lng) : 0
+      }
       const walkKm = haversineKm(originPm.lat, originPm.lng, destPm.lat, destPm.lng)
-      return shouldSuggestWalk(estimateWalkMinutes(walkKm), route.totalSeconds) ? line : null
+      const accessEgressMin = estimateWalkMinutes(legKm(originPm) + legKm(destPm))
+      return shouldSuggestWalk(estimateWalkMinutes(walkKm), route.totalSeconds, accessEgressMin)
+        ? line
+        : null
     })()
     const pts: [number, number][] = []
     if (directWalkLine) {
