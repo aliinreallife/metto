@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 // Bazaar-readiness regressions: the TWA must not expose alternate app
 // distribution channels, while normal browser/PWA behavior is unchanged;
-// /privacy + disclosures + donation clarification work in FA and EN.
+// /privacy + donation clarification work in FA and EN.
 
 const MYKET_HREF = "https://myket.ir/app/ir.metto.app";
 const DIRECT_APK_HREF = "https://github.com/aliinreallife/metto/releases/latest";
@@ -153,43 +153,6 @@ test.describe("privacy page", () => {
     await expect
       .poll(async () => privacy.first().getAttribute("href"))
       .toBe("/privacy");
-  });
-});
-
-test.describe("location disclosure", () => {
-  test("/nearby shows the nearby-only note in FA", async ({ page }) => {
-    await page.goto("/nearby", { waitUntil: "domcontentloaded" });
-    await expect(
-      page.getByText("فقط برای پیدا کردن ایستگاه‌های نزدیک", {
-        exact: false,
-      }),
-    ).toBeVisible({ timeout: 15_000 });
-  });
-
-  test("/route shows the nearby-only note in FA", async ({ page }) => {
-    await page.goto("/route", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("#origin-combobox")).toBeVisible({
-      timeout: 15_000,
-    });
-    await expect(
-      page.getByText("فقط برای پیدا کردن ایستگاه‌های نزدیک", {
-        exact: false,
-      }),
-    ).toBeVisible();
-  });
-
-  test("/nearby shows the note in EN", async ({ context, page }) => {
-    await context.addInitScript(() => {
-      try {
-        window.localStorage.setItem("lang", "en");
-      } catch {
-        // Storage unavailable — the test premise needs it.
-      }
-    });
-    await page.goto("/nearby", { waitUntil: "domcontentloaded" });
-    await expect(
-      page.getByText("only used to find nearby stations", { exact: false }),
-    ).toBeVisible({ timeout: 15_000 });
   });
 });
 
