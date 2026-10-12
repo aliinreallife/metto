@@ -690,28 +690,56 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     // No pin markers: places are marked by their engine label plus the
     // dashed walk connector below. GPS keeps its blue dot.
+    // Same-station endpoints (from === to with both pins): a single direct
+    // pin-to-pin walk line replaces the two overlapping station stubs, which
+    // would otherwise route the picture back into the metro.
+    const originPm = placeMarkers.find((pm) => pm.role === "origin")
+    const destPm = placeMarkers.find((pm) => pm.role === "dest")
+    const directWalkLine =
+      originId !== null && originId === destId && originPm && destPm
+        ? { from: originPm, to: destPm }
+        : null
     const pts: [number, number][] = []
-    for (const pm of placeMarkers) {
-      pts.push([pm.lat, pm.lng])
+    if (directWalkLine) {
+      pts.push([directWalkLine.from.lat, directWalkLine.from.lng])
+      pts.push([directWalkLine.to.lat, directWalkLine.to.lng])
+      L.polyline(
+        [
+          [directWalkLine.from.lat, directWalkLine.from.lng],
+          [directWalkLine.to.lat, directWalkLine.to.lng],
+        ],
+        {
+          color: "#a3a3a3",
+          weight: 3,
+          opacity: 0.9,
+          dashArray: "6 6",
+          // Display-only connector: clicks pass through to point picking.
+          interactive: false,
+        },
+      ).addTo(layer)
+    } else {
+      for (const pm of placeMarkers) {
+        pts.push([pm.lat, pm.lng])
 
-      // Dashed "walk" connector from the searched place to its station.
-      const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
-      if (st) {
-        L.polyline(
-          [
-            [pm.lat, pm.lng],
-            [st.location.lat, st.location.lng],
-          ],
-          {
-            color: pm.role === "origin" ? "#22c55e" : "#ef4444",
-            weight: 3,
-            opacity: 0.9,
-            dashArray: "6 6",
-            // Display-only connector: clicks pass through to point picking.
-            interactive: false,
-          },
-        ).addTo(layer)
-        pts.push([st.location.lat, st.location.lng])
+        // Dashed "walk" connector from the searched place to its station.
+        const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
+        if (st) {
+          L.polyline(
+            [
+              [pm.lat, pm.lng],
+              [st.location.lat, st.location.lng],
+            ],
+            {
+              color: pm.role === "origin" ? "#22c55e" : "#ef4444",
+              weight: 3,
+              opacity: 0.9,
+              dashArray: "6 6",
+              // Display-only connector: clicks pass through to point picking.
+              interactive: false,
+            },
+          ).addTo(layer)
+          pts.push([st.location.lat, st.location.lng])
+        }
       }
     }
 
@@ -729,7 +757,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     } else if (pts.length > 1) {
       map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
     }
-  }, [placeMarkers, route])
+  }, [placeMarkers, route, originId, destId])
 
   // Pending arbitrary pick: exact-coordinate marker in its own layer. The
   // label goes through the shared engine (pendingPick extra above), so it

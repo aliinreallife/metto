@@ -277,4 +277,27 @@ test.describe("map route controls", () => {
     await page.waitForTimeout(1_500);
     await expect(pick).toHaveCount(0);
   });
+
+  test("same-station pins draw one direct walk line, no station stubs", async ({
+    page,
+  }) => {
+    await suppressSaveNotice(page);
+    await page.goto(
+      `/map?from=chitgar&to=chitgar&op=35.7265,51.2427,${encodeURIComponent("کوهک")}&dp=35.7265,51.2426,${encodeURIComponent("کوهک")}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await mapReady(page);
+    const overlay = ".leaflet-overlay-pane";
+    // Single neutral pin-to-pin line…
+    await expect(
+      page.locator(`${overlay} path[stroke="#a3a3a3"]`),
+    ).toHaveCount(1, { timeout: 15_000 });
+    // …instead of the green/red pin-to-station stubs.
+    await expect(
+      page.locator(`${overlay} path[stroke="#22c55e"]`),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(`${overlay} path[stroke="#ef4444"]`),
+    ).toHaveCount(0);
+  });
 });
