@@ -378,7 +378,6 @@ export function HomePage() {
         <TabLink
           href="/#donate"
           connectivity={connectivity}
-          prefetch={false}
           className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           {t.supportLink}
