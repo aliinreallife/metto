@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   // TODO(multi-city): this route currently serves Tehran data. When /[city]
   // routes land, move this Tehran-scoped title/description there and make
   // this root generic.
-  title: "متو | مسیریاب مترو تهران، زمان قطار بعدی و تخمین رسیدن",
+  title: "مسیریاب مترو تهران",
   description:
     "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
   alternates: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "متو | مسیریاب مترو تهران، زمان قطار بعدی و تخمین رسیدن",
+    title: "مسیریاب مترو تهران | متو",
     description:
       "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
     url: "https://metto.ir/route",
