@@ -174,7 +174,12 @@ test.describe("donation clarification", () => {
       }
     });
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("#hero h1")).toBeVisible({ timeout: 15_000 });
+    // Hydration recovery can briefly leave the FA hero node next to the EN
+    // client-rendered one. Select the intended language explicitly instead of
+    // using the ambiguous #hero h1 locator.
+    await expect(
+      page.getByRole("heading", { name: "Metro routing, simple and fast" }),
+    ).toBeVisible({ timeout: 15_000 });
     await scrollIntoViewStable(page, "#donate");
     const note = page.getByText("no feature or content is unlocked", {
       exact: false,
