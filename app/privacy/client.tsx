@@ -180,18 +180,21 @@ export function PrivacyPage() {
     <main className="flex size-full flex-col bg-background text-foreground">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <article className="mx-auto w-full max-w-xl px-4 py-6 md:py-8">
-          <Link
-            href="/route"
-            className="group inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-bold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            {isFa ? (
-              <ArrowRight aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5" />
-            ) : (
-              <ArrowLeft aria-hidden="true" className="size-4 transition-transform group-hover:-translate-x-0.5" />
-            )}
-            <span>{c.back}</span>
-          </Link>
-          <h1 className="mt-5 text-xl font-black tracking-tight md:text-2xl">{c.title}</h1>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/route"
+              aria-label={c.back}
+              title={c.back}
+              className="group inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              {isFa ? (
+                <ArrowRight aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5" />
+              ) : (
+                <ArrowLeft aria-hidden="true" className="size-4 transition-transform group-hover:-translate-x-0.5" />
+              )}
+            </Link>
+            <h1 className="text-xl font-black tracking-tight md:text-2xl">{c.title}</h1>
+          </div>
           <p className="mt-3 text-sm leading-8 text-muted-foreground">{c.intro}</p>
           {c.sections.map((s) => (
             <section key={s.h} className="mt-6">
