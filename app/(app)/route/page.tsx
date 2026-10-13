@@ -11,10 +11,6 @@ export const metadata: Metadata = {
     "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
   alternates: {
     canonical: "https://metto.ir/route",
-    languages: {
-      en: "/route?lang=en",
-      fa: "/route",
-    },
   },
   openGraph: {
     title: "مسیریاب مترو تهران | متو",

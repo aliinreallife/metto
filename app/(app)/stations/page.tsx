@@ -8,10 +8,6 @@ export const metadata: Metadata = {
     "لیست ایستگاه‌های مترو تهران با خطوط، زمان‌بندی و امکاناتی مثل آسانسور، سرویس بهداشتی، نمازخانه و پارکینگ.",
   alternates: {
     canonical: "/stations",
-    languages: {
-      en: "/stations?lang=en",
-      fa: "/stations",
-    },
   },
   openGraph: {
     title: "ایستگاه‌های مترو تهران | متو",

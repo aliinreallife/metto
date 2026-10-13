@@ -9,10 +9,6 @@ export const metadata: Metadata = {
     "نقشه آنلاین خطوط و ایستگاه‌های مترو تهران را ببین، اطلاعات ایستگاه‌ها را بررسی کن و مستقیم وارد مسیریابی شو.",
   alternates: {
     canonical: "/map",
-    languages: {
-      en: "/map?lang=en",
-      fa: "/map",
-    },
   },
   openGraph: {
     title: "نقشه مترو تهران | متو",

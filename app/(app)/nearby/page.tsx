@@ -8,10 +8,6 @@ export const metadata: Metadata = {
     "نزدیک‌ترین ایستگاه مترو به موقعیتت را با GPS پیدا کن و فاصله و امکانات ایستگاه را ببین.",
   alternates: {
     canonical: "/nearby",
-    languages: {
-      en: "/nearby?lang=en",
-      fa: "/nearby",
-    },
   },
   openGraph: {
     title: "مترو نزدیک من | متو",
