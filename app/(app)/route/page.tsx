@@ -6,18 +6,14 @@ export const metadata: Metadata = {
   // TODO(multi-city): this route currently serves Tehran data. When /[city]
   // routes land, move this Tehran-scoped title/description there and make
   // this root generic.
-  title: "متو | مسیریاب مترو تهران، زمان قطار بعدی و تخمین رسیدن",
+  title: "مسیریاب مترو تهران",
   description:
     "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
   alternates: {
     canonical: "https://metto.ir/route",
-    languages: {
-      en: "/route?lang=en",
-      fa: "/route",
-    },
   },
   openGraph: {
-    title: "متو | مسیریاب مترو تهران، زمان قطار بعدی و تخمین رسیدن",
+    title: "مسیریاب مترو تهران | متو",
     description:
       "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین، مسیرت را به اشتراک بگذار و نزدیک‌ترین راه تا ایستگاه شروع را پیدا کن.",
     url: "https://metto.ir/route",
@@ -33,6 +29,13 @@ export const metadata: Metadata = {
         type: "image/png",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "مسیریاب مترو تهران | متو",
+    description:
+      "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین.",
+    images: ["/socialprev.png"],
   },
 };
 
