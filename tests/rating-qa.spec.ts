@@ -4,6 +4,7 @@ const QA_FROM = "namayeshgah-e-shahr-e-aftab";
 const QA_TO = "aghdasiyeh";
 const QA_QUERY = `?from=${QA_FROM}&to=${QA_TO}`;
 const RATING_KEY = "metto.appRating.v1";
+const RATING_SESSION_KEY = "metto.appRating.session.v1";
 const RATE_HEADING = /از متو راضی هستی[؟?]|Enjoying Metto\?/;
 
 const BASE_STATE = {
@@ -23,7 +24,7 @@ async function clickDesktopTab(page: Page, path: string) {
 }
 
 test.describe("rating QA trigger", () => {
-  test("hidden route sequence forces the real prompt on web without mutating rating state", async ({ page }) => {
+  test("hidden route sequence forces the real prompt on web without mutating rating prompt state", async ({ page }) => {
     await page.addInitScript(
       ({ key, state }) => {
         localStorage.setItem(key, JSON.stringify(state));
@@ -44,26 +45,38 @@ test.describe("rating QA trigger", () => {
     await clickDesktopTab(page, "/map");
     await clickDesktopTab(page, "/route");
 
+    // Let the final successful route finish its normal success bookkeeping,
+    // then snapshot the real rating state before the QA prompt's settle delay.
+    const stats = page.getByTestId("route-summary-stats");
+    await expect(stats).toBeVisible();
+    await page.waitForTimeout(100);
+    const storedBeforePrompt = await page.evaluate((key) => localStorage.getItem(key), RATING_KEY);
+    const sessionBeforePrompt = await page.evaluate((key) => sessionStorage.getItem(key), RATING_SESSION_KEY);
+
     const prompt = page.getByRole("heading", { name: RATE_HEADING });
     await expect(prompt).toBeVisible({ timeout: 15_000 });
 
     // The ask should be hard to miss: it sits immediately below the three
     // summary cards (stops / wait + travel / arrival), before route details.
-    const stats = page.getByTestId("route-summary-stats");
-    await expect(stats).toBeVisible();
     const firstAfterStats = stats.locator("xpath=following-sibling::*[1]");
     await expect(
       firstAfterStats.getByRole("heading", { name: RATE_HEADING }),
     ).toBeVisible();
 
+    // Forced QA presentation must not touch production prompt bookkeeping.
+    // Normal route-success counting above is intentionally allowed to run.
     const storedWhileVisible = await page.evaluate((key) => localStorage.getItem(key), RATING_KEY);
-    expect(storedWhileVisible).toBe(JSON.stringify(BASE_STATE));
+    const sessionWhileVisible = await page.evaluate((key) => sessionStorage.getItem(key), RATING_SESSION_KEY);
+    expect(storedWhileVisible).toBe(storedBeforePrompt);
+    expect(sessionWhileVisible).toBe(sessionBeforePrompt);
 
     await page.getByRole("button", { name: /فعلاً نه|Not now/ }).click();
     await expect(prompt).toHaveCount(0);
 
     const storedAfterDismiss = await page.evaluate((key) => localStorage.getItem(key), RATING_KEY);
-    expect(storedAfterDismiss).toBe(JSON.stringify(BASE_STATE));
+    const sessionAfterDismiss = await page.evaluate((key) => sessionStorage.getItem(key), RATING_SESSION_KEY);
+    expect(storedAfterDismiss).toBe(storedBeforePrompt);
+    expect(sessionAfterDismiss).toBe(sessionBeforePrompt);
   });
 
   test("eligible web users still do not receive the production automatic prompt", async ({ page }) => {
