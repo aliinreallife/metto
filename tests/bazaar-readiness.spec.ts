@@ -119,34 +119,28 @@ test.describe("privacy page", () => {
     ).toEqual([]);
   });
 
-  test("/route footer links to /privacy", async ({ page }) => {
+  test("/route footer no longer links to /privacy (page still live)", async ({ page }) => {
     await page.goto("/route", { waitUntil: "domcontentloaded" });
-    const privacy = page.getByRole("link", { name: "حریم خصوصی" }).first();
-    await expect(privacy).toBeVisible({ timeout: 15_000 });
-    await expect(privacy).toHaveAttribute("href", "/privacy");
+    await expect(page.locator("#origin-combobox")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      page.getByRole("link", { name: "حریم خصوصی" }),
+    ).toHaveCount(0);
 
-    // The link intentionally performs a full-document navigation. Wait for
-    // that navigation directly instead of repeatedly clicking inside a poll:
-    // repeated clicks can outlive the source page after a successful load and
-    // report a false failure even though /privacy already rendered.
-    await Promise.all([
-      page.waitForURL(/\/privacy(?:\?.*)?$/, { timeout: 20_000 }),
-      privacy.click(),
-    ]);
-
+    // The page itself stays reachable directly.
+    await page.goto("/privacy", { waitUntil: "domcontentloaded" });
     await expect(
       page.getByRole("heading", { name: "حریم خصوصی" }),
     ).toBeVisible({ timeout: 15_000 });
   });
 
-  test("landing footer links to /privacy", async ({ page }) => {
+  test("landing footer no longer links to /privacy", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.locator("#hero h1")).toBeVisible({ timeout: 15_000 });
-    const privacy = page.getByRole("link", { name: "حریم خصوصی" });
-    await expect(privacy.first()).toBeAttached();
-    await expect
-      .poll(async () => privacy.first().getAttribute("href"))
-      .toBe("/privacy");
+    await expect(
+      page.getByRole("link", { name: "حریم خصوصی" }),
+    ).toHaveCount(0);
   });
 });
 
@@ -185,5 +179,28 @@ test.describe("donation clarification", () => {
       exact: false,
     });
     await expect(note).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("/route footer says Donate in EN (not Support)", async ({
+    context,
+    page,
+  }) => {
+    await context.addInitScript(() => {
+      try {
+        window.localStorage.setItem("lang", "en");
+      } catch {
+        // Storage unavailable — the test premise needs it.
+      }
+    });
+    await page.goto("/route", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#origin-combobox")).toBeVisible({
+      timeout: 15_000,
+    });
+    const donate = page.getByRole("link", { name: "Donate" });
+    await expect(donate).toBeVisible({ timeout: 10_000 });
+    await expect(donate).toHaveAttribute("href", "/#donate");
+    await expect(
+      page.getByRole("link", { name: "Support", exact: true }),
+    ).toHaveCount(0);
   });
 });

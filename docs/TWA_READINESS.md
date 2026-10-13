@@ -308,8 +308,8 @@ hang, never a misleading empty state):
 - Inside the Android wrapper (TWA) the landing install section hides its
   alternate-distribution block (direct APK / other stores); normal
   browsers and PWAs are unaffected.
-- `/privacy` (bilingual, linked from `/route` and the landing footer)
-  states the actual data flows; the location UI carries a one-line
+- `/privacy` (bilingual, served directly and listed in the sitemap —
+  no footer link) states the actual data flows; the location UI carries a one-line
   purpose disclosure with the manual station picker as the alternative;
   the donation link is explicitly voluntary with no unlocked content.
 
