@@ -16,6 +16,13 @@ export const metadata: Metadata = {
     url: "https://metto.ir",
     images: ["/socialprev.png"],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "مترویابی و مسیریاب مترو تهران | متو",
+    description:
+      "بهترین مسیر مترو تهران، زمان رسیدن، تعویض خط و قطار بعدی را ببین.",
+    images: ["/socialprev.png"],
+  },
 };
 
 export default function Page() {
