@@ -182,16 +182,14 @@ export function PrivacyPage() {
         <article className="mx-auto w-full max-w-xl px-4 py-6 md:py-8">
           <Link
             href="/route"
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto sm:justify-start md:h-12 md:text-base"
+            className="group inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-bold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20">
-              {isFa ? (
-                <ArrowRight aria-hidden="true" className="size-4" />
-              ) : (
-                <ArrowLeft aria-hidden="true" className="size-4" />
-              )}
-            </span>
-            {c.back}
+            {isFa ? (
+              <ArrowRight aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5" />
+            ) : (
+              <ArrowLeft aria-hidden="true" className="size-4 transition-transform group-hover:-translate-x-0.5" />
+            )}
+            <span>{c.back}</span>
           </Link>
           <h1 className="mt-5 text-xl font-black tracking-tight md:text-2xl">{c.title}</h1>
           <p className="mt-3 text-sm leading-8 text-muted-foreground">{c.intro}</p>
