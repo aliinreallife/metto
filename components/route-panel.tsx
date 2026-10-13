@@ -278,11 +278,11 @@ export function RoutePanel({
           icon={<Clock aria-hidden="true" className="size-5" />}
           value={
             firstWait > 0 ? (
-              <>
-                <span className="text-lg font-semibold text-muted-foreground/70">{persianDigits(firstWait, lang)}</span>
-                <span className="text-muted-foreground/40"> + </span>
-                <span>{persianDigits(restMins, lang)}</span>
-              </>
+              <span className="whitespace-nowrap">
+                <span className="text-xl font-semibold text-muted-foreground/70 md:text-2xl">{persianDigits(firstWait, lang)}</span>
+                <span className="text-base text-muted-foreground/40 md:text-xl"> + </span>
+                <span className="text-xl md:text-2xl">{persianDigits(restMins, lang)}</span>
+              </span>
             ) : (
               persianDigits(mins, lang)
             )
@@ -309,7 +309,7 @@ export function RoutePanel({
           }
         >
           <AlertTriangle aria-hidden="true" className="size-4 shrink-0" />
-          <span>{topWarning.message}</span>
+          <span className="min-w-0">{topWarning.message}</span>
         </div>
       )}
       {route.numTransfers > 0 && (
@@ -335,7 +335,7 @@ export function RoutePanel({
               <div className="flex flex-col gap-1 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Footprints aria-hidden="true" className="size-4 shrink-0" />
-                  <span>
+                  <span className="min-w-0">
                     {t.transferTo} {persianDigits(seg.line, lang)} {t.via}{" "}
                     {name(seg.stations[0])}
                   </span>
@@ -360,7 +360,7 @@ export function RoutePanel({
             {i > 0 && seg.changeFromPrevious.type === "train_change" && (
               <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
                 <TrainFront aria-hidden="true" className="size-4 shrink-0" />
-                <span>
+                <span className="min-w-0">
                   {isFa ? "تعویض قطار" : "Change trains"}{" "}
                   {t.via} {name(seg.stations[0])}
                 </span>
@@ -395,10 +395,10 @@ function Stat({
   tooltip?: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-3 py-3 md:px-5 md:py-4">
+    <div className="flex min-w-0 flex-col items-center gap-1 overflow-hidden rounded-xl border border-border bg-card px-2 py-3 md:px-5 md:py-4">
       <span aria-hidden="true" className="text-muted-foreground">{icon}</span>
-      <span className="tnum text-2xl font-bold leading-none md:text-3xl" title={tooltip}>{value}</span>
-      <span className="text-sm text-muted-foreground md:text-base">{label}</span>
+      <span className="tnum max-w-full whitespace-nowrap text-2xl font-bold leading-none md:text-3xl" title={tooltip}>{value}</span>
+      <span className="whitespace-nowrap text-xs text-muted-foreground md:text-base">{label}</span>
     </div>
   );
 }
@@ -493,7 +493,7 @@ function SegmentCard({
                 </span>
               )}
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 break-words text-xs text-muted-foreground">
               {isFa ? "به سمت" : "→"} {name(terminal)}
               {trip ? (
                 <>
@@ -560,16 +560,16 @@ function SegmentCard({
             >
               <Compass aria-hidden="true" className="size-4 shrink-0" />
               <span className="shrink-0">{t.towards}</span>
-              <span className="truncate font-bold">{name(terminal)}</span>
+              <span className="min-w-0 flex-1 truncate font-bold" title={name(terminal)}>{name(terminal)}</span>
             </span>
           </div>
 
           {/* route spine: board -- (intermediate ticks) -- alight */}
-          <div className="flex items-center gap-2 text-sm md:gap-3 md:text-base">
-            <span className="font-semibold truncate shrink-0 max-w-[38%]">
+          <div className="flex min-w-0 items-center gap-2 text-sm md:gap-3 md:text-base">
+            <span className="min-w-0 max-w-[38%] shrink truncate text-start font-semibold" title={name(board)}>
               {name(board)}
             </span>
-            <div aria-hidden="true" className="relative h-2 flex-1 md:h-3">
+            <div aria-hidden="true" className="relative h-2 min-w-8 flex-1 md:h-3">
               <div
                 className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2"
                 style={{ backgroundColor: `${color}55` }}
@@ -598,7 +598,7 @@ function SegmentCard({
               className="size-4 shrink-0 rtl:rotate-180"
               style={{ color }}
             />
-            <span className="font-semibold truncate shrink-0 max-w-[38%]">
+            <span className="min-w-0 max-w-[38%] shrink truncate text-end font-semibold" title={name(alight)}>
               {name(alight)}
             </span>
           </div>
