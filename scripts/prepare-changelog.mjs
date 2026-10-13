@@ -83,14 +83,25 @@ function repoNameWithOwner() {
   }).trim();
 }
 
-function ghApi(args) {
+function ghApi(args, { retries = 4 } = {}) {
   // Compare responses embed the whole range's file patches (easily >1 MiB),
   // far beyond execFileSync's default 1 MiB stdout buffer. Size the buffer
   // for release-range growth instead of failing with ENOBUFS.
-  return execFileSync("gh", ["api", ...args], {
-    encoding: "utf8",
-    maxBuffer: 32 * 1024 * 1024,
-  });
+  const opts = { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 };
+  let lastErr;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return execFileSync("gh", ["api", ...args], opts);
+    } catch (err) {
+      lastErr = err;
+      // Transient API/network blips (empty bodies, dropped connections)
+      // must not abort a whole release: back off and retry. A persistently
+      // failing call still throws, so callers keep their no-partial-output
+      // abort behavior.
+      if (attempt < retries) execFileSync("sleep", [String(2 ** (attempt - 1))]);
+    }
+  }
+  throw lastErr;
 }
 
 // Commits in PREV_TAG..BASE — the paginated GitHub compare itself, which is
