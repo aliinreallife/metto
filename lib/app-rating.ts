@@ -1,5 +1,7 @@
 "use client";
 
+import { isRatingQaOverrideActive } from "./rating-qa";
+
 // Respectful automatic rating eligibility (local-only, pure/testable).
 //
 // - Local browser storage only. No account, analytics, server, fingerprint.
@@ -9,6 +11,8 @@
 //   (see home-page: route.status === "complete"); re-renders never count.
 // - Days are local calendar dates (YYYY-MM-DD via getFullYear/Month/Date),
 //   never UTC dates.
+// - A session-only QA mode can temporarily skip these limits on one specific
+//   route; it never writes the persistent counters/cooldown/completed state.
 
 export const APP_RATING_KEY = "metto.appRating.v1";
 
@@ -113,8 +117,9 @@ export function saveRatingState(
   }
 }
 
-/** Pure: is this stored state eligible for an automatic prompt right now? */
+/** Pure in normal use: is this stored state eligible for an automatic prompt? */
 export function isEligible(state: AppRatingState, nowMs: number): boolean {
+  if (isRatingQaOverrideActive()) return true;
   if (state.completed) return false;
   if (state.promptsShown >= MAX_AUTO_PROMPTS) return false;
   if (state.successCount < MIN_SUCCESS_ROUTES) return false;
@@ -153,6 +158,7 @@ export function recordRouteSuccess(
 export function notePromptShown(storage?: StorageLike | null): AppRatingState {
   try {
     const state = loadRatingState(storage);
+    if (isRatingQaOverrideActive()) return state;
     const next: AppRatingState = {
       ...state,
       promptsShown: state.promptsShown + 1,
@@ -171,6 +177,7 @@ export function recordRatingDismiss(
 ): AppRatingState {
   try {
     const state = loadRatingState(storage);
+    if (isRatingQaOverrideActive()) return state;
     const next: AppRatingState = {
       ...state,
       dismissedAtMs: nowMs,
@@ -189,6 +196,7 @@ export function recordRatingDismiss(
 export function recordRatingAction(storage?: StorageLike | null): AppRatingState {
   try {
     const state = loadRatingState(storage);
+    if (isRatingQaOverrideActive()) return state;
     const next: AppRatingState = {
       ...state,
       completed: true,
@@ -222,6 +230,7 @@ function getSessionStorage(): StorageLike | null {
 /** True once the prompt was shown, dismissed, or acted on this session. */
 export function hasSessionPrompted(session?: StorageLike | null): boolean {
   try {
+    if (isRatingQaOverrideActive()) return false;
     const s = session !== undefined ? session : getSessionStorage();
     if (!s) return false;
     return s.getItem(APP_RATING_SESSION_KEY) === "1";
@@ -233,6 +242,7 @@ export function hasSessionPrompted(session?: StorageLike | null): boolean {
 /** Mark this session as done (shown, dismissed, or acted — all block). */
 export function markSessionPrompted(session?: StorageLike | null): void {
   try {
+    if (isRatingQaOverrideActive()) return;
     const s = session !== undefined ? session : getSessionStorage();
     if (!s) return;
     s.setItem(APP_RATING_SESSION_KEY, "1");
