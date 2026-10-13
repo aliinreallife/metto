@@ -48,6 +48,17 @@ test.describe("rating QA trigger", () => {
     });
     await expect(prompt).toBeVisible({ timeout: 15_000 });
 
+    // The ask should be hard to miss: it sits immediately below the three
+    // summary cards (stops / wait + travel / arrival), before route details.
+    const stats = page.getByTestId("route-summary-stats");
+    await expect(stats).toBeVisible();
+    const firstAfterStats = stats.locator("xpath=following-sibling::*[1]");
+    await expect(
+      firstAfterStats.getByRole("heading", {
+        name: /از متو راضی هستی\?|Enjoying Metto\?/,
+      }),
+    ).toBeVisible();
+
     const storedWhileVisible = await page.evaluate((key) => localStorage.getItem(key), RATING_KEY);
     expect(storedWhileVisible).toBe(JSON.stringify(BASE_STATE));
 
