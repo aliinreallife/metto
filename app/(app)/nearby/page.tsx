@@ -28,6 +28,13 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "مترو نزدیک من | متو",
+    description:
+      "نزدیک‌ترین ایستگاه مترو به موقعیتت را با GPS پیدا کن.",
+    images: ["/socialprev.png"],
+  },
 };
 
 export default function NearbyRoute() {
