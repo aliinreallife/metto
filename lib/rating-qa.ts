@@ -21,6 +21,20 @@ function normalizePath(pathname: string): string {
   return pathname === "/" ? "/route" : pathname;
 }
 
+function currentLocationMatchesQaRoute(): boolean {
+  try {
+    if (typeof window === "undefined") return false;
+    if (normalizePath(window.location.pathname) !== "/route") return false;
+    const params = new URLSearchParams(window.location.search);
+    return (
+      params.get("from") === RATING_QA_ORIGIN &&
+      params.get("to") === RATING_QA_DEST
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function noteRatingQaNavigation(
   pathname: string,
   storage?: SessionLike | null,
@@ -42,8 +56,12 @@ export function noteRatingQaNavigation(
     }
 
     if (next >= QA_SEQUENCE.length) {
-      s.setItem(QA_ARMED_KEY, "1");
-      s.removeItem(QA_PROGRESS_KEY);
+      if (currentLocationMatchesQaRoute()) {
+        s.setItem(QA_ARMED_KEY, "1");
+        s.removeItem(QA_PROGRESS_KEY);
+      } else {
+        s.setItem(QA_PROGRESS_KEY, "1");
+      }
     } else if (next > 0) {
       s.setItem(QA_PROGRESS_KEY, String(next));
     } else {
@@ -54,27 +72,15 @@ export function noteRatingQaNavigation(
   }
 }
 
-export function isRatingQaTriggerArmed(
-  routeKey: string,
-  storage?: SessionLike | null,
-): boolean {
+/**
+ * Session-only QA eligibility. It is true only on the chosen route after the
+ * navigation sequence has armed it, so normal routes keep normal behavior.
+ */
+export function isRatingQaOverrideActive(storage?: SessionLike | null): boolean {
   try {
     const s = storage !== undefined ? storage : getSession();
-    if (!s || s.getItem(QA_ARMED_KEY) !== "1") return false;
-    const [origin, dest] = routeKey.split("|");
-    return origin === RATING_QA_ORIGIN && dest === RATING_QA_DEST;
+    return s?.getItem(QA_ARMED_KEY) === "1" && currentLocationMatchesQaRoute();
   } catch {
     return false;
-  }
-}
-
-export function consumeRatingQaTrigger(storage?: SessionLike | null): void {
-  try {
-    const s = storage !== undefined ? storage : getSession();
-    if (!s) return;
-    s.removeItem(QA_ARMED_KEY);
-    s.removeItem(QA_PROGRESS_KEY);
-  } catch {
-    // Ignore.
   }
 }
