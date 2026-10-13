@@ -71,10 +71,11 @@ describe("TWA wrapper detection", () => {
     expect(isAndroidTwaSync()).toBe(true);
   });
 
-  it("detects the wrapper via installed related apps", async () => {
+  it("does not mistake ordinary Chrome with the wrapper installed for the TWA", async () => {
     stubBrowser({ relatedApps: [{ id: TWA_PACKAGE }] });
-    await expect(isAndroidTwa()).resolves.toBe(true);
-    expect(isAndroidTwaSync()).toBe(true);
+    await expect(isTwaPackageInstalled()).resolves.toBe(true);
+    await expect(isAndroidTwa()).resolves.toBe(false);
+    expect(isAndroidTwaSync()).toBe(false);
   });
 
   it("stays negative when related apps list something else", async () => {

@@ -1,21 +1,25 @@
 "use client";
 
-// Android TWA detection + the "Turn on location" deep link.
+// Android TWA context detection + native deep links.
 //
 // Background: the web Geolocation API cannot prove the device Location
 // master switch is OFF (POSITION_UNAVAILABLE also means "no fix", e.g.
 // underground). Certainty lives only in native code
 // (LocationSettingsActivity checks LocationManager.isLocationEnabled()
-// before opening system settings). This module only answers "are we inside
-// the metto Android wrapper?" so the web UI can offer that native action
-// there — and hide it in plain browsers/PWAs where it could not work.
+// before opening system settings). This module answers two deliberately
+// separate questions:
 //
-// Detection signals (any one is enough; all are cheap and offline-safe):
+//  1. "Is this page currently running inside the Metto Android TWA?"
+//     Used to gate native-only UI and automatic rating prompts.
+//  2. "Is the Metto Android wrapper installed on this device?"
+//     Exposed separately by isTwaPackageInstalled(). Installation alone is
+//     NOT proof that the current page is a TWA; ordinary Chrome/PWA users may
+//     also have the Android app installed.
+//
+// TWA-context signals (either is enough; both are cheap and offline-safe):
 //  1. document.referrer is android-app://ir.metto.app/... inside the TWA.
 //  2. The launcher appends ?twa=android to the TWA start URL; it is
 //     remembered in sessionStorage and stripped from the address bar.
-//  3. navigator.getInstalledRelatedApps() lists ir.metto.app (needs the
-//     related_applications entry in app/manifest.ts).
 
 export const TWA_PACKAGE = "ir.metto.app";
 export const TWA_LAUNCH_PARAM = "twa";
@@ -103,7 +107,10 @@ type RelatedApp = { platform?: string; id?: string | null };
  * installed. Shows no prompt and reveals nothing else about the device —
  * the API only answers for apps our own manifest declares. Never throws:
  * missing API, rejection, or non-array results all mean "not installed".
- * No URL side effects (unlike isAndroidTwa, it never consumes ?twa=android).
+ *
+ * Important: installation is deliberately NOT used as TWA-context proof.
+ * A user can browse metto.ir in ordinary Chrome while the wrapper is also
+ * installed, and native-only UI must not appear in that browser tab.
  */
 export async function isTwaPackageInstalled(): Promise<boolean> {
   try {
@@ -138,12 +145,12 @@ export async function isAndroidTwa(): Promise<boolean> {
       }
     }
   } catch {
-    // Malformed URL — fall through to the other signals.
+    // Malformed URL — fall through to the other context signals.
   }
-  if (isAndroidTwaSync()) return true;
-  const relatedHit = await isTwaPackageInstalled();
-  if (relatedHit) rememberTwa();
-  return relatedHit;
+
+  // Deliberately do not consult getInstalledRelatedApps() here. That API
+  // answers "is our wrapper installed?", not "is this tab the wrapper?".
+  return isAndroidTwaSync();
 }
 
 // Fire-and-forget: navigates to the native Location settings helper via the
