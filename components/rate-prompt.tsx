@@ -16,6 +16,12 @@ import {
   recordRatingDismiss,
   shouldPresentPrompt,
 } from "@/lib/app-rating";
+import {
+  consumeRatingQaSessionMarkSkip,
+  finishRatingQaOverride,
+  isRatingQaOverrideActive,
+  noteRatingQaPromptShown,
+} from "@/lib/rating-qa";
 
 // Settle delay before the automatic card may appear: the route result must
 // be visible and stable first (never pops during calculation, typing, or a
@@ -170,10 +176,24 @@ function restoreRouteFocus(): void {
   }
 }
 
-// Host: shows RatePrompt only after a settled successful route, only inside
-// the Android TWA, and only when eligibility holds. Route info stays usable
-// (inline card below the result, never a blocking dialog, never auto-focus,
-// never focus-trapped — it is not a modal).
+// Complete the hidden QA presentation without leaking its interaction into
+// the real one-per-session guard. Persistent rating state was already skipped
+// by recordRatingDismiss/recordRatingAction while the QA override was active.
+function finishQaPresentation(): boolean {
+  try {
+    if (!finishRatingQaOverride()) return false;
+    consumeRatingQaSessionMarkSkip();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Host: production automatic prompting still happens only after a settled
+// successful route inside the Android TWA. The hidden QA sequence is the only
+// exception: it may force the exact same card on web/PWA too so the flow can
+// be verified on every surface. Route info stays usable (inline card below the
+// result, never a blocking dialog, never auto-focus, never focus-trapped).
 export function RatePromptHost({
   lang,
   routeSucceeded,
@@ -234,10 +254,13 @@ export function RatePromptHost({
     } catch {
       // Ignore.
     }
-    try {
-      markSessionPrompted();
-    } catch {
-      // Ignore.
+    const qaFinished = finishQaPresentation();
+    if (!qaFinished) {
+      try {
+        markSessionPrompted();
+      } catch {
+        // Ignore.
+      }
     }
     setVisible(false);
     if (keyboard) restoreRouteFocus();
@@ -245,42 +268,54 @@ export function RatePromptHost({
 
   function act(): void {
     // Launching the store flow counts as completion: we cannot know whether
-    // a review was submitted after leaving Metto. The /rate fallback counts
-    // the same way.
+    // a review was submitted after leaving Metto. The hidden QA presentation
+    // deliberately leaves the user's real rating state unchanged.
     try {
       recordRatingAction();
     } catch {
       // Ignore — still forward.
     }
-    try {
-      markSessionPrompted();
-    } catch {
-      // Ignore.
+    const qaFinished = finishQaPresentation();
+    if (!qaFinished) {
+      try {
+        markSessionPrompted();
+      } catch {
+        // Ignore.
+      }
     }
     setVisible(false);
     try {
-      openAndroidRateAppWithFallback(() => {
+      if (inTwa) {
+        openAndroidRateAppWithFallback(() => {
+          router.push("/rate");
+        });
+      } else {
         router.push("/rate");
-      });
+      }
     } catch {
       // Silent — never an error dialog for the rating action.
     }
   }
 
   useEffect(() => {
-    if (!routeSucceeded || !inTwa || firedRef.current || visible) return;
+    if (!routeSucceeded || firedRef.current || visible) return;
+    if (!inTwa && !isRatingQaOverrideActive()) return;
     let cancelled = false;
     let timer: number | undefined;
 
     const attempt = () => {
       if (cancelled || firedRef.current) return;
       try {
+        const qaActive = isRatingQaOverrideActive();
+        if (!inTwa && !qaActive) return;
         if (hasSessionPrompted()) return;
         const eligible = isEligible(loadRatingState(), Date.now());
         if (
           shouldPresentPrompt({
             routeSucceeded: true,
-            inTwa: true,
+            // Production requires the TWA; the hidden QA override is the
+            // sole non-TWA path through this presentation gate.
+            inTwa: inTwa || qaActive,
             eligible,
             sessionDone: false,
             pageVisible: isPageVisible(),
@@ -289,6 +324,10 @@ export function RatePromptHost({
           })
         ) {
           firedRef.current = true;
+          // Transition QA armed -> presenting before the normal bookkeeping;
+          // app-rating sees the override as active and therefore does not
+          // mutate persistent/session production state.
+          noteRatingQaPromptShown();
           markSessionPrompted();
           notePromptShown();
           // Never auto-focus: the card must not steal keyboard or

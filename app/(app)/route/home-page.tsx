@@ -772,22 +772,24 @@ function RouteView({
                   ? { mode: timeMode, atMs: planAtMs }
                   : undefined
               }
+              afterStats={
+                <RatePromptHost
+                  lang={lang}
+                  routeSucceeded={
+                    !!route &&
+                    route.status === "complete" &&
+                    !isPastTime &&
+                    (!arriveView || arriveView.kind === "planned")
+                  }
+                  routeKey={`${originId}|${destId}|${timeMode}|${planAtMs ?? "now"}`}
+                />
+              }
             />
             {originId && (() => {
               const origin = STATION_MAP.get(originId);
               if (!origin) return null;
               return <RouteActions origin={origin} lang={lang} />;
             })()}
-            <RatePromptHost
-              lang={lang}
-              routeSucceeded={
-                !!route &&
-                route.status === "complete" &&
-                !isPastTime &&
-                (!arriveView || arriveView.kind === "planned")
-              }
-              routeKey={`${originId}|${destId}|${timeMode}|${planAtMs ?? "now"}`}
-            />
           </>
         ) : !selected ? (
           <>

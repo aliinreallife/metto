@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
   AlarmClock,
   ArrowRight,
@@ -171,11 +171,14 @@ export function RoutePanel({
   route,
   lang,
   plan,
+  afterStats,
 }: {
   route: RouteResult;
   lang: Lang;
   /** Advanced time plan that produced this route (absent for "now"). */
   plan?: { mode: "depart" | "arrive"; atMs: number };
+  /** Optional content placed immediately below the three route summary cards. */
+  afterStats?: ReactNode;
 }) {
   const loaded = useScheduleData();
   const t = STRINGS[lang];
@@ -268,7 +271,7 @@ export function RoutePanel({
           </p>
         </div>
       )}
-      <div className="grid grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-3 gap-3 md:gap-4" data-testid="route-summary-stats">
         <Stat
           icon={<TrainFront aria-hidden="true" className="size-5 md:size-6" />}
           value={persianDigits(route.numStops + 1, lang)}
@@ -299,6 +302,7 @@ export function RoutePanel({
           label={isFa ? "رسیدن" : "arrival"}
         />
       </div>
+      {afterStats}
       {topWarning && (
         <div
           role={topWarning.severity === "red" ? "alert" : "status"}
