@@ -1,6 +1,6 @@
-// Structural contract for the minimal share card. Satori PNG bytes are not a
-// stable snapshot target, so these tests pin the useful copy and intentionally
-// small visual vocabulary instead.
+// Structural contract for the branded route teaser. Satori PNG bytes are not a
+// stable snapshot target, so these tests pin the useful copy, icon presence,
+// route facts, and the deliberate boundary around full journey details.
 import { describe, expect, it } from "vitest";
 import type { ReactElement, ReactNode } from "react";
 import { renderShareCard } from "./card";
@@ -44,6 +44,23 @@ function texts(node: ReactNode, out: string[] = []): string[] {
   return out;
 }
 
+function types(node: ReactNode, out: string[] = []): string[] {
+  if (Array.isArray(node)) {
+    node.forEach((n) => types(n, out));
+    return out;
+  }
+  node = resolve(node);
+  if (Array.isArray(node)) {
+    node.forEach((n) => types(n, out));
+    return out;
+  }
+  const el = asEl(node);
+  if (!el) return out;
+  if (typeof el.type === "string") out.push(el.type);
+  types(el.props.children, out);
+  return out;
+}
+
 function backgrounds(node: ReactNode, out: string[] = []): string[] {
   if (Array.isArray(node)) {
     node.forEach((n) => backgrounds(n, out));
@@ -63,14 +80,20 @@ function backgrounds(node: ReactNode, out: string[] = []): string[] {
   return out;
 }
 
-const tree = () => renderShareCard("تجریش", "تئاتر شهر");
+const tree = () =>
+  renderShareCard({
+    originDisplay: "تجریش",
+    destDisplay: "تئاتر شهر",
+    numStops: 14,
+    numTransfers: 1,
+  });
 
-describe("minimal share card", () => {
-  it("shows Metto identity and the route endpoints in order", () => {
+describe("branded share card", () => {
+  it("uses the real Metto identity, slogan, and route endpoints", () => {
     const all = texts(tree());
     for (const s of [
       "متو",
-      "مسیریاب مترو تهران",
+      "تو مترو گم شدی؟ ما هم شده بودیم",
       "metto.ir",
       "از",
       "تجریش",
@@ -80,27 +103,45 @@ describe("minimal share card", () => {
     ]) {
       expect(all).toContain(s);
     }
-    expect(all.indexOf("از")).toBeLessThan(all.indexOf("تجریش"));
-    expect(all.indexOf("تجریش")).toBeLessThan(all.indexOf("به"));
-    expect(all.indexOf("به")).toBeLessThan(all.indexOf("تئاتر"));
+    expect(types(tree())).toContain("svg");
+    expect(all).not.toContain("مسیریاب مترو تهران");
   });
 
-  it("uses the app red as the only strong accent", () => {
+  it("shows useful teaser facts and points to the full journey", () => {
+    const all = texts(tree()).join(" ");
+    expect(all).toContain("۱۴ ایستگاه");
+    expect(all).toContain("۱ تعویض خط");
+    expect(all).toContain("زمان‌بندی و جزئیات کامل داخل متو");
+  });
+
+  it("handles a direct route without an awkward zero-transfer chip", () => {
+    const all = texts(
+      renderShareCard({
+        originDisplay: "تجریش",
+        destDisplay: "شهید بهشتی",
+        numStops: 7,
+        numTransfers: 0,
+      }),
+    ).join(" ");
+    expect(all).toContain("بدون تعویض خط");
+    expect(all).not.toContain("۰ تعویض خط");
+  });
+
+  it("uses the canonical Metto red", () => {
     const colors = backgrounds(tree());
-    expect(colors.filter((c) => c === "#be1228").length).toBeGreaterThanOrEqual(3);
+    expect(colors.filter((c) => c === "#cc0e2d").length).toBeGreaterThanOrEqual(2);
   });
 
-  it("keeps route-map and timetable detail out of the teaser", () => {
+  it("keeps exact timing, line instructions, and map detail out of the teaser", () => {
     const all = texts(tree()).join(" ");
     for (const s of [
-      "ایستگاه",
-      "تعویض",
-      "رسیدن",
-      "حرکت",
+      "رسیدن تا",
+      "حرکت در",
       "دقیقه",
       "نقشه",
       "خط ۱",
       "خط ۲",
+      "۱۳:۳۵",
     ]) {
       expect(all).not.toContain(s);
     }
