@@ -89,6 +89,35 @@ export function WelcomePage() {
     }
   }, []);
 
+  // Cold full-document loads (direct link, share, mobile footer
+  // window.location.assign) land at the top: neither the browser nor Next
+  // performs the anchor jump into this page's inner scroll container, so an
+  // explicit hash like /#donate would silently stay put. Scroll to the
+  // target here instead. Instant (auto): this is anchor navigation, not
+  // animation. Focus is deliberately left alone — visual scroll only.
+  useEffect(() => {
+    const scrollToHash = () => {
+      try {
+        const hash = window.location.hash;
+        if (!hash || hash.length <= 1) return;
+        const el = document.getElementById(hash.slice(1));
+        if (!el) return;
+        el.scrollIntoView({ behavior: "auto", block: "start" });
+      } catch {
+        // A broken hash must never break the landing.
+      }
+    };
+    scrollToHash();
+    // Late assets (fonts/images) can shift layout after the first scroll;
+    // re-assert once everything settled. hashchange covers in-page jumps.
+    window.addEventListener("hashchange", scrollToHash);
+    window.addEventListener("load", scrollToHash);
+    return () => {
+      window.removeEventListener("hashchange", scrollToHash);
+      window.removeEventListener("load", scrollToHash);
+    };
+  }, []);
+
   // Block layout for the scroll container (not flex): children stack at
   // content height and this container scrolls. A flex column here would
   // starve <main> of height and shrink its overflow-hidden sections to zero.
