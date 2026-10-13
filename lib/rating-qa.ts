@@ -5,6 +5,8 @@ export const RATING_QA_DEST = "aghdasiyeh";
 
 const QA_PROGRESS_KEY = "metto.appRating.qaProgress.v1";
 const QA_ARMED_KEY = "metto.appRating.qaArmed.v1";
+const QA_PRESENTING_KEY = "metto.appRating.qaPresenting.v1";
+const QA_SKIP_SESSION_MARK_KEY = "metto.appRating.qaSkipSessionMark.v1";
 const QA_SEQUENCE = ["/route", "/stations", "/nearby", "/map", "/route"] as const;
 
 type SessionLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -42,9 +44,21 @@ export function noteRatingQaNavigation(
   try {
     const s = storage !== undefined ? storage : getSession();
     if (!s) return;
-    if (s.getItem(QA_ARMED_KEY) === "1") return;
 
     const path = normalizePath(pathname);
+
+    // Leaving the route while a QA prompt is on screen abandons that one
+    // forced presentation. A fresh sequence is required to force it again.
+    if (s.getItem(QA_PRESENTING_KEY) === "1") {
+      if (path !== "/route") {
+        s.removeItem(QA_PRESENTING_KEY);
+        s.removeItem(QA_PROGRESS_KEY);
+      }
+      return;
+    }
+
+    if (s.getItem(QA_ARMED_KEY) === "1") return;
+
     const raw = Number.parseInt(s.getItem(QA_PROGRESS_KEY) ?? "0", 10);
     const progress = Number.isFinite(raw) && raw >= 0 && raw < QA_SEQUENCE.length ? raw : 0;
 
@@ -72,14 +86,67 @@ export function noteRatingQaNavigation(
   }
 }
 
-/**
- * Session-only QA eligibility. It is true only on the chosen route after the
- * navigation sequence has armed it, so normal routes keep normal behavior.
- */
+/** True only for the chosen route while a forced QA display is armed/active. */
 export function isRatingQaOverrideActive(storage?: SessionLike | null): boolean {
   try {
     const s = storage !== undefined ? storage : getSession();
-    return s?.getItem(QA_ARMED_KEY) === "1" && currentLocationMatchesQaRoute();
+    if (!s || !currentLocationMatchesQaRoute()) return false;
+    return (
+      s.getItem(QA_ARMED_KEY) === "1" ||
+      s.getItem(QA_PRESENTING_KEY) === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Called exactly when RatePromptHost counts a display. */
+export function noteRatingQaPromptShown(storage?: SessionLike | null): boolean {
+  try {
+    const s = storage !== undefined ? storage : getSession();
+    if (
+      !s ||
+      s.getItem(QA_ARMED_KEY) !== "1" ||
+      !currentLocationMatchesQaRoute()
+    ) {
+      return false;
+    }
+    s.removeItem(QA_ARMED_KEY);
+    s.setItem(QA_PRESENTING_KEY, "1");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Finish a forced QA prompt without touching the real rating state. The
+ * one-shot marker also suppresses RatePromptHost's immediately-following
+ * markSessionPrompted() call after dismiss/rate.
+ */
+export function finishRatingQaOverride(storage?: SessionLike | null): boolean {
+  try {
+    const s = storage !== undefined ? storage : getSession();
+    if (!s || s.getItem(QA_PRESENTING_KEY) !== "1") return false;
+    s.removeItem(QA_PRESENTING_KEY);
+    s.removeItem(QA_ARMED_KEY);
+    s.removeItem(QA_PROGRESS_KEY);
+    s.setItem(QA_SKIP_SESSION_MARK_KEY, "1");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Consume the one markSessionPrompted() call that follows a QA action. */
+export function consumeRatingQaSessionMarkSkip(
+  storage?: SessionLike | null,
+): boolean {
+  try {
+    const s = storage !== undefined ? storage : getSession();
+    if (!s || s.getItem(QA_SKIP_SESSION_MARK_KEY) !== "1") return false;
+    s.removeItem(QA_SKIP_SESSION_MARK_KEY);
+    return true;
   } catch {
     return false;
   }
