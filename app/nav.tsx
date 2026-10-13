@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   TrainFront,
   Globe,
@@ -17,7 +17,7 @@ import { InstallButton } from "@/components/pwa";
 import { OfflineStatus } from "@/components/offline-status";
 import { useMetro } from "./providers";
 import { STRINGS } from "@/lib/i18n";
-import { buildTabHref } from "@/lib/geo";
+import { buildStatefulTabHref } from "@/lib/tab-href";
 import { noteRatingQaNavigation } from "@/lib/rating-qa";
 import {
   isPrecachedTabUrl,
@@ -144,6 +144,7 @@ function FooterLink({
 export function AppNav() {
   const { lang, setLang, originId, destId, originPlace, destPlace } = useMetro();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const t = STRINGS[lang];
   // One shared subscription for every tab link below.
   const { state: connectivity } = useConnectivity();
@@ -158,14 +159,19 @@ export function AppNav() {
   }, [currentPath]);
 
   function getHref(base: string) {
-    // Preserve each side independently plus place pins on every tab, so
-    // tab switches (and reloads) never drop selections or landmarks.
-    return buildTabHref(base, {
-      from: originId,
-      to: destId,
-      originPlace,
-      destPlace,
-    });
+    // Preserve route selections, place pins, and the validated advanced-time
+    // plan on every tab. This also keeps state through the offline fallback,
+    // which performs a full-document navigation using this exact href.
+    return buildStatefulTabHref(
+      base,
+      {
+        from: originId,
+        to: destId,
+        originPlace,
+        destPlace,
+      },
+      searchParams,
+    );
   }
 
   function toggleLang() {
@@ -176,7 +182,7 @@ export function AppNav() {
   return (
     <>
       <header className="z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-6 md:py-4">
-          <TabLink href="/route" connectivity={connectivity} className="flex items-center gap-2.5 md:gap-3">
+        <TabLink href={getHref("/route")} connectivity={connectivity} className="flex items-center gap-2.5 md:gap-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground md:size-10">
             <TrainFront className="size-5 md:size-6" />
           </span>
