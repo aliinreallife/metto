@@ -6,8 +6,15 @@ import { LINE_COLORS } from "@/lib/metro/lines";
 import { getAllStations } from "@/lib/metro/selectors";
 import { getStation, getStationLines } from "@/lib/metro/selectors";
 import type { MetroStation } from "@/lib/metro/types";
+import type { AmenityKey } from "@/lib/geo";
 import { orderLineStations } from "@/lib/route";
-import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import {
+  AMENITY_LABELS,
+  STRINGS,
+  persianDigits,
+  type Lang,
+} from "@/lib/i18n";
+import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { cn } from "@/lib/utils";
 import { StationCard } from "@/components/station-card";
 import { StationTimesheet } from "@/components/station-timesheet";
@@ -15,6 +22,13 @@ import { StationTimesheet } from "@/components/station-timesheet";
 const LINE_NUMBERS = Object.keys(LINE_COLORS)
   .map(Number)
   .sort((a, b) => a - b);
+
+const STATION_AMENITY_KEYS: AmenityKey[] = [
+  "elevator",
+  "wc",
+  "prayerRoom",
+  "parking",
+];
 
 type Props = {
   lang: Lang;
@@ -26,6 +40,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
   const isFa = lang === "fa";
   const [query, setQuery] = useState("");
   const [lineFilter, setLineFilter] = useState<number | null>(null);
+  const [selectedAmenities, setSelectedAmenities] = useState<AmenityKey[]>([]);
   const [branchIndex, setBranchIndex] = useState(0);
   const [timetableStation, setTimetableStation] = useState<MetroStation | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -79,10 +94,17 @@ export function StationsTab({ lang, onSetDest }: Props) {
   );
   const isForked = (lineOrder?.chains.length ?? 0) > 1;
 
+  function toggleAmenity(key: AmenityKey) {
+    setSelectedAmenities((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  }
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = getAllStations().filter((s) => {
       if (lineFilter !== null && !getStationLines(s.id).includes(lineFilter)) return false;
+      if (selectedAmenities.some((key) => s.amenities[key] !== true)) return false;
       if (!q) return true;
       return s.name.en.toLowerCase().includes(q) || s.name.fa.includes(query.trim());
     });
@@ -106,7 +128,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
       if (ob !== undefined) return 1;
       return isFa ? a.name.fa.localeCompare(b.name.fa, "fa") : a.name.en.localeCompare(b.name.en);
     });
-  }, [query, lineFilter, isFa, branchIndex, isForked, lineOrder]);
+  }, [query, lineFilter, selectedAmenities, isFa, branchIndex, isForked, lineOrder]);
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-xl flex-col gap-4 overflow-x-hidden p-4">
@@ -128,7 +150,10 @@ export function StationsTab({ lang, onSetDest }: Props) {
         <div className="flex flex-wrap gap-2">
           <FilterChip
             active={lineFilter === null}
-            onClick={() => { setLineFilter(null); setBranchIndex(0); }}
+            onClick={() => {
+              setLineFilter(null);
+              setBranchIndex(0);
+            }}
           >
             {t.all}
           </FilterChip>
@@ -136,12 +161,42 @@ export function StationsTab({ lang, onSetDest }: Props) {
             <FilterChip
               key={l}
               active={lineFilter === l}
-              onClick={() => { setLineFilter(l); setBranchIndex(0); }}
+              onClick={() => {
+                setLineFilter(l);
+                setBranchIndex(0);
+              }}
               dot={LINE_COLORS[l]}
             >
               {t.line} {persianDigits(l, lang)}
             </FilterChip>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t.findAmenity}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <FilterChip
+            active={selectedAmenities.length === 0}
+            onClick={() => setSelectedAmenities([])}
+          >
+            {t.all}
+          </FilterChip>
+          {STATION_AMENITY_KEYS.map((key) => {
+            const Icon = AMENITY_ICON_MAP[key];
+            return (
+              <FilterChip
+                key={key}
+                active={selectedAmenities.includes(key)}
+                onClick={() => toggleAmenity(key)}
+              >
+                {Icon && <Icon className="size-3.5" aria-hidden="true" />}
+                {AMENITY_LABELS[key][lang]}
+              </FilterChip>
+            );
+          })}
         </div>
       </div>
 
@@ -160,7 +215,8 @@ export function StationsTab({ lang, onSetDest }: Props) {
                   active={branchIndex === i}
                   onClick={() => setBranchIndex(i)}
                 >
-                  {isFa ? "تا " : "To "}{label}
+                  {isFa ? "تا " : "To "}
+                  {label}
                 </FilterChip>
               );
             })}
