@@ -106,6 +106,7 @@ function MettoIcon() {
 function Brand() {
   return (
     <div
+      dir="rtl"
       style={{
         width: "100%",
         display: "flex",
@@ -133,17 +134,16 @@ function Brand() {
           >
             متو
           </div>
-          <div
-            dir="rtl"
+          <RtlWords
+            text="تو مترو گم شدی؟ ما هم شده بودیم"
+            gap={7}
             style={{
               fontSize: 24,
               lineHeight: 1,
               color: MUTED,
               whiteSpace: "nowrap",
             }}
-          >
-            تو مترو گم شدی؟ ما هم شده بودیم
-          </div>
+          />
         </div>
       </RtlRow>
 
@@ -283,7 +283,7 @@ function Metric({ text }: { text: string }) {
         whiteSpace: "nowrap",
       }}
     >
-      {text}
+      <RtlWords text={text} gap={6} />
     </div>
   );
 }
@@ -419,19 +419,16 @@ export function renderShareCard({
           }}
         >
           <RouteFacts numStops={numStops} numTransfers={numTransfers} />
-          <div
-            dir="rtl"
+          <RtlWords
+            text="زمان‌بندی و جزئیات کامل داخل متو"
+            gap={6}
             style={{
-              display: "flex",
-              alignItems: "center",
               color: MUTED,
               fontSize: 21,
               lineHeight: 1,
               whiteSpace: "nowrap",
             }}
-          >
-            زمان‌بندی و جزئیات کامل داخل متو
-          </div>
+          />
         </div>
       </div>
     </div>
