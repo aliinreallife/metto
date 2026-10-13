@@ -203,4 +203,25 @@ test.describe("app footer links", () => {
     expect(new URL(page.url()).hash).toBe("#donate");
     await expect(page.locator("#donate")).toBeAttached();
   });
+
+  test("cold /#donate scrolls the donate section into view", async ({
+    page,
+  }) => {
+    // Full-document loads (direct link, share, mobile footer) used to land
+    // at the page top: nothing performs the anchor jump into the landing's
+    // inner scroll container. The section must end up in the viewport.
+    await page.goto("/#donate", { waitUntil: "domcontentloaded" });
+    const donate = page.locator("#donate");
+    await expect(donate).toBeAttached();
+    await expect
+      .poll(
+        async () =>
+          donate.evaluate((el) => {
+            const b = el.getBoundingClientRect();
+            return b.top <= 2 && b.bottom > 0;
+          }),
+        { timeout: 10_000 },
+      )
+      .toBe(true);
+  });
 });
