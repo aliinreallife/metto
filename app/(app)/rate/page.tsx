@@ -7,10 +7,6 @@ export const metadata: Metadata = {
     "به متو امتیاز بدهید: کافه‌بازار یا مایکت را انتخاب کنید تا صفحه متو باز شود.",
   alternates: {
     canonical: "/rate",
-    languages: {
-      en: "/rate?lang=en",
-      fa: "/rate",
-    },
   },
   openGraph: {
     title: "امتیاز به متو | متو",
