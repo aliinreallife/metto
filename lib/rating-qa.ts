@@ -1,9 +1,5 @@
 "use client";
 
-// Hidden, session-only QA path for exercising the real rating prompt from the
-// installed app without ADB/query params. It intentionally never touches the
-// persistent rating state in metto.appRating.v1.
-
 export const RATING_QA_ORIGIN = "namayeshgah-e-shahr-e-aftab";
 export const RATING_QA_DEST = "aghdasiyeh";
 
@@ -25,12 +21,10 @@ function normalizePath(pathname: string): string {
   return pathname === "/" ? "/route" : pathname;
 }
 
-/**
- * Advance the hidden navigation sequence. Any wrong main-app page resets the
- * sequence, while starting again at /route restarts it cleanly.
- */
 export function noteRatingQaNavigation(
   pathname: string,
+  originId?: string | null,
+  destId?: string | null,
   storage?: SessionLike | null,
 ): void {
   try {
@@ -50,19 +44,22 @@ export function noteRatingQaNavigation(
     }
 
     if (next >= QA_SEQUENCE.length) {
-      s.setItem(QA_ARMED_KEY, "1");
-      s.removeItem(QA_PROGRESS_KEY);
+      if (originId === RATING_QA_ORIGIN && destId === RATING_QA_DEST) {
+        s.setItem(QA_ARMED_KEY, "1");
+        s.removeItem(QA_PROGRESS_KEY);
+      } else {
+        s.setItem(QA_PROGRESS_KEY, "1");
+      }
     } else if (next > 0) {
       s.setItem(QA_PROGRESS_KEY, String(next));
     } else {
       s.removeItem(QA_PROGRESS_KEY);
     }
   } catch {
-    // QA helpers must never affect normal navigation.
+    // QA support must never affect normal navigation.
   }
 }
 
-/** True when the sequence is armed and the current route is the QA route. */
 export function isRatingQaTriggerArmed(
   routeKey: string,
   storage?: SessionLike | null,
@@ -77,7 +74,6 @@ export function isRatingQaTriggerArmed(
   }
 }
 
-/** Consume only once the real card is actually about to be shown. */
 export function consumeRatingQaTrigger(storage?: SessionLike | null): void {
   try {
     const s = storage !== undefined ? storage : getSession();
