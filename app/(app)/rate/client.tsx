@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, Star } from "lucide-react";
 import { useMetro } from "@/app/providers";
+import { RatePrompt } from "@/components/rate-prompt";
 import { STRINGS } from "@/lib/i18n";
 import { recordRatingAction } from "@/lib/app-rating";
+import { isAndroidTwa, openAndroidRateAppWithFallback } from "@/lib/twa";
 
 const BAZAAR_URL = "https://cafebazaar.ir/app/ir.metto.app";
 const MYKET_URL = "https://myket.ir/app/ir.metto.app";
@@ -13,10 +16,26 @@ export function RatePage() {
   const { lang } = useMetro();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Hidden QA surface: render the exact production card without touching its
+  // automatic eligibility state. Useful for visual/device verification.
+  const previewPrompt = searchParams.get("prompt") === "1";
+  const [inTwa, setInTwa] = useState(false);
 
   useEffect(() => {
     document.title = `${t.ratePageTitle}${isFa ? " | متو" : " | metto"}`;
   }, [t.ratePageTitle, isFa]);
+
+  useEffect(() => {
+    let live = true;
+    void isAndroidTwa().then((value) => {
+      if (live) setInTwa(value);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   function handleStore(url: string) {
     try {
@@ -29,6 +48,38 @@ export function RatePage() {
     } catch {
       // Ignore.
     }
+  }
+
+  function handlePreviewRate() {
+    // Manual preview is QA-only: it exercises the real TWA store routing but
+    // intentionally does not mutate automatic-prompt eligibility/cooldowns.
+    try {
+      if (inTwa) {
+        openAndroidRateAppWithFallback(() => {
+          router.replace("/rate");
+        });
+      } else {
+        router.replace("/rate");
+      }
+    } catch {
+      router.replace("/rate");
+    }
+  }
+
+  if (previewPrompt) {
+    return (
+      <div className="flex size-full flex-col bg-background text-foreground">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <article className="mx-auto w-full max-w-xl px-4 py-6 md:py-8">
+            <RatePrompt
+              lang={lang}
+              onRate={handlePreviewRate}
+              onNotNow={() => router.replace("/rate")}
+            />
+          </article>
+        </div>
+      </div>
+    );
   }
 
   return (
