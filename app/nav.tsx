@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -18,6 +19,7 @@ import { RateMettoAction } from "@/components/rate-prompt";
 import { useMetro } from "./providers";
 import { STRINGS } from "@/lib/i18n";
 import { buildTabHref } from "@/lib/geo";
+import { noteRatingQaNavigation } from "@/lib/rating-qa";
 import {
   isPrecachedTabUrl,
   shouldInterceptOfflineNav,
@@ -149,6 +151,12 @@ export function AppNav() {
 
   const currentPath = pathname === "/" ? "/" : pathname;
   const isMainTab = currentPath === "/route";
+
+  // Hidden QA sequence for the installed app. Session-only and harmless if
+  // storage is unavailable; no UI or persistent rating state is touched here.
+  useEffect(() => {
+    noteRatingQaNavigation(currentPath);
+  }, [currentPath]);
 
   function getHref(base: string) {
     // Preserve each side independently plus place pins on every tab, so
