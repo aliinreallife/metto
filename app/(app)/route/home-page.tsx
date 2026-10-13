@@ -794,6 +794,7 @@ function RouteView({
                 !isPastTime &&
                 (!arriveView || arriveView.kind === "planned")
               }
+              routeKey={`${originId}|${destId}|${timeMode}|${planAtMs ?? "now"}`}
             />
           </>
         ) : !selected ? (

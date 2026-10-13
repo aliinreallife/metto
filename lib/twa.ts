@@ -34,10 +34,21 @@ export const LOCATION_SETTINGS_URI = `intent://open-location-settings#Intent;sch
 // in that exact store; unknown installs fall back to market:// then /rate.
 export const RATE_APP_URI = "metto://rate-app";
 
+// Web fallback for the rating flow (also the browser_fallback_url below).
+export const RATE_FALLBACK_URL = "https://metto.ir/rate";
+
 // Package-targeted intent form of the rating deep link. Same CCT reason as
 // above: a plain metto:// navigation is swallowed inside the TWA, while the
 // explicit intent:// form resolves to the installed wrapper.
-export const RATE_APP_INTENT_URI = `intent://rate-app#Intent;scheme=metto;package=${TWA_PACKAGE};end`;
+//
+// S.browser_fallback_url is the PRIMARY old-wrapper protection: Chrome
+// itself opens https://metto.ir/rate when no activity handles
+// metto://rate-app (i.e. wrappers predating RateAppActivity). The
+// visibility-timer backup in openAndroidRateAppWithFallback covers only
+// browsers/TWA providers that ignore browser_fallback_url.
+export const RATE_APP_INTENT_URI =
+  `intent://rate-app#Intent;scheme=metto;package=${TWA_PACKAGE};` +
+  `S.browser_fallback_url=${encodeURIComponent(RATE_FALLBACK_URL)};end`;
 
 const SESSION_KEY = "metto.twa";
 
@@ -148,4 +159,104 @@ export function openAndroidLocationSettings(): void {
 // Only call when isAndroidTwa() is true. No JavaScript bridge.
 export function openAndroidRateApp(): void {
   window.location.href = RATE_APP_INTENT_URI;
+}
+
+/**
+ * Rate flow with old-wrapper protection.
+ *
+ * Primary mechanism: S.browser_fallback_url inside RATE_APP_INTENT_URI —
+ * Chrome opens https://metto.ir/rate itself when the wrapper has no
+ * RateAppActivity. This function adds a SECONDARY safety net for
+ * browsers/TWA providers that ignore browser_fallback_url: if the page is
+ * still visible after `delayMs` (i.e. no native activity took over),
+ * `navigateToRate()` runs (callers pass `() => router.push("/rate")`).
+ *
+ * The backup never fires after a successful native launch (page hidden),
+ * never fires on /rate itself, cancels on visibilitychange/pagehide, and
+ * stays silent (no error UI). Returns a cancel function for unmount.
+ */
+export function openAndroidRateAppWithFallback(
+  navigateToRate: () => void,
+  delayMs = 2500,
+): () => void {
+  const noop = () => {};
+  try {
+    if (
+      typeof window === "undefined" ||
+      typeof document === "undefined" ||
+      typeof navigateToRate !== "function"
+    ) {
+      return noop;
+    }
+    // Already on the fallback page — nothing to do.
+    if (window.location.pathname === "/rate") return noop;
+    try {
+      window.location.href = RATE_APP_INTENT_URI;
+    } catch {
+      // Assigning the URI itself failed: go straight to the fallback.
+      try {
+        navigateToRate();
+      } catch {
+        // Silent — never an error dialog for the rating action.
+      }
+      return noop;
+    }
+    let settled = false;
+    const cleanup = () => {
+      if (settled) return;
+      settled = true;
+      try {
+        window.clearTimeout(timer);
+      } catch {
+        // Ignore.
+      }
+      try {
+        document.removeEventListener("visibilitychange", onVisibility);
+      } catch {
+        // Ignore.
+      }
+      try {
+        window.removeEventListener("pagehide", onHide);
+      } catch {
+        // Ignore.
+      }
+    };
+    const onVisibility = () => {
+      try {
+        if (document.visibilityState === "hidden") cleanup();
+      } catch {
+        // Ignore.
+      }
+    };
+    const onHide = () => cleanup();
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      try {
+        // Page still visible: no native handler took over (old wrapper +
+        // a browser ignoring browser_fallback_url). Fall back invisibly.
+        if (
+          document.visibilityState !== "hidden" &&
+          window.location.pathname !== "/rate"
+        ) {
+          navigateToRate();
+        }
+      } catch {
+        // Silent.
+      }
+      cleanup();
+    }, delayMs);
+    try {
+      document.addEventListener("visibilitychange", onVisibility);
+    } catch {
+      // Ignore.
+    }
+    try {
+      window.addEventListener("pagehide", onHide);
+    } catch {
+      // Ignore.
+    }
+    return cleanup;
+  } catch {
+    return noop;
+  }
 }

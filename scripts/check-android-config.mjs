@@ -169,6 +169,18 @@ ok(
   rateJava.includes("ActivityNotFoundException") && rateJava.includes("finish()"),
   "RateAppActivity never crashes when a store is missing and always finishes",
 );
+const twaTs = readFileSync(resolve(repoRoot, "lib/twa.ts"), "utf8");
+ok(
+  twaTs.includes("S.browser_fallback_url") &&
+    twaTs.includes('RATE_FALLBACK_URL = "https://metto.ir/rate"') &&
+    twaTs.includes("encodeURIComponent(RATE_FALLBACK_URL)"),
+  "lib/twa.ts rating intent carries S.browser_fallback_url to https://metto.ir/rate (old-wrapper protection)",
+);
+ok(
+  twaTs.includes("openAndroidRateAppWithFallback") &&
+    twaTs.includes("visibilityState"),
+  "lib/twa.ts keeps a visibility-gated /rate backup for browsers ignoring browser_fallback_url",
+);
 ok(
   !rateJava.includes("play-services") && !rateJava.includes("PlayCore") && !rateJava.includes("ReviewManager"),
   "RateAppActivity uses no GMS/Play Core dependency (listing intents only)",

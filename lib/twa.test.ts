@@ -135,8 +135,10 @@ describe("RATE_APP_URI", () => {
 
   it("navigates via a package-targeted intent URI (CCT-safe)", async () => {
     const mod = await import("./twa");
-    expect(mod.RATE_APP_INTENT_URI).toBe(
-      `intent://rate-app#Intent;scheme=metto;package=${TWA_PACKAGE};end`,
+    expect(mod.RATE_APP_INTENT_URI).toContain(
+      "intent://rate-app#Intent;scheme=metto;",
     );
+    expect(mod.RATE_APP_INTENT_URI).toContain("package=ir.metto.app");
+    expect(mod.RATE_APP_INTENT_URI.endsWith(";end")).toBe(true);
   });
 });

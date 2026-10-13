@@ -3,13 +3,17 @@ import {
   APP_RATING_KEY,
   DISMISS_COOLDOWN_MS,
   defaultRatingState,
+  hasSessionPrompted,
   isEligible,
   loadRatingState,
+  markSessionPrompted,
   notePromptShown,
   recordRatingAction,
   recordRatingDismiss,
   recordRouteSuccess,
+  shouldPresentPrompt,
   toLocalDayKey,
+  type PromptGate,
 } from "./app-rating";
 
 function memStorage(initial: Record<string, string> = {}) {
@@ -222,5 +226,71 @@ describe("eligibility", () => {
   it("toLocalDayKey formats local (not UTC) dates", () => {
     expect(toLocalDayKey(localDate(2026, 1, 5))).toBe("2026-01-05");
     expect(toLocalDayKey(localDate(2026, 12, 31, 23))).toBe("2026-12-31");
+  });
+
+  it("dismissal records only the timestamp (display counting stays separate)", () => {
+    const s = memStorage();
+    notePromptShown(s);
+    const after = recordRatingDismiss(localDate(2026, 5, 1).getTime(), s);
+    expect(after.promptsShown).toBe(1);
+    expect(after.dismissedAtMs).toBe(localDate(2026, 5, 1).getTime());
+  });
+});
+
+describe("session guard (one presentation per session)", () => {
+  it("starts unprompted and records any outcome", () => {
+    const s = memStorage();
+    expect(hasSessionPrompted(s)).toBe(false);
+    markSessionPrompted(s);
+    expect(hasSessionPrompted(s)).toBe(true);
+  });
+
+  it("fails safely on broken session storage", () => {
+    const broken = {
+      getItem: () => {
+        throw new Error("denied");
+      },
+      setItem: () => {
+        throw new Error("denied");
+      },
+    };
+    expect(hasSessionPrompted(broken)).toBe(false);
+    expect(() => markSessionPrompted(broken)).not.toThrow();
+  });
+
+  it("does not read or write the persistent key", () => {
+    const s = memStorage();
+    markSessionPrompted(s);
+    // Persistent eligibility is untouched by the session flag.
+    expect(loadRatingState(s)).toEqual(defaultRatingState());
+  });
+});
+
+describe("shouldPresentPrompt gate", () => {
+  const base: PromptGate = {
+    routeSucceeded: true,
+    inTwa: true,
+    eligible: true,
+    sessionDone: false,
+    pageVisible: true,
+    editingInputs: false,
+    modalOpen: false,
+  };
+
+  it("presents only when every condition holds", () => {
+    expect(shouldPresentPrompt(base)).toBe(true);
+  });
+
+  const withheld: Array<[string, PromptGate]> = [
+    ["no route yet", { ...base, routeSucceeded: false }],
+    ["outside the TWA", { ...base, inTwa: false }],
+    ["not eligible", { ...base, eligible: false }],
+    ["already shown this session", { ...base, sessionDone: true }],
+    ["document hidden", { ...base, pageVisible: false }],
+    ["user is editing inputs", { ...base, editingInputs: true }],
+    ["a dialog is open", { ...base, modalOpen: true }],
+  ];
+  it.each(withheld)("withholds the card: %s", (_name, gate) => {
+    expect(shouldPresentPrompt(gate)).toBe(false);
   });
 });

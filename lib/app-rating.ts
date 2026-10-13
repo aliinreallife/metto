@@ -199,3 +199,80 @@ export function recordRatingAction(storage?: StorageLike | null): AppRatingState
     return defaultRatingState();
   }
 }
+
+// ---- Session guard: at most one automatic presentation per session ----
+//
+// sessionStorage only (tab lifetime). This is NOT the source of truth for
+// the 90-day cooldown or lifetime limits — those stay in metto.appRating.v1
+// above. The session flag merely prevents a second presentation after
+// remounts/navigation within the same tab (shown, dismissed, or acted all
+// block the rest of the session).
+
+export const APP_RATING_SESSION_KEY = "metto.appRating.session.v1";
+
+function getSessionStorage(): StorageLike | null {
+  try {
+    if (typeof sessionStorage !== "undefined") return sessionStorage;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** True once the prompt was shown, dismissed, or acted on this session. */
+export function hasSessionPrompted(session?: StorageLike | null): boolean {
+  try {
+    const s = session !== undefined ? session : getSessionStorage();
+    if (!s) return false;
+    return s.getItem(APP_RATING_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Mark this session as done (shown, dismissed, or acted — all block). */
+export function markSessionPrompted(session?: StorageLike | null): void {
+  try {
+    const s = session !== undefined ? session : getSessionStorage();
+    if (!s) return;
+    s.setItem(APP_RATING_SESSION_KEY, "1");
+  } catch {
+    // Private mode etc. — the per-mount guard still applies.
+  }
+}
+
+// ---- Presentation gate (pure): every condition in one testable place ----
+
+export type PromptGate = {
+  /** A successful route result is currently rendered and stable. */
+  routeSucceeded: boolean;
+  /** Inside the Android TWA (automatic prompts never fire elsewhere). */
+  inTwa: boolean;
+  /** Persistent eligibility (5+/3+/cooldown/lifetime) already checked. */
+  eligible: boolean;
+  /** A prompt was already shown/dismissed/acted on this session. */
+  sessionDone: boolean;
+  /** Document is currently visible (never pop on background return). */
+  pageVisible: boolean;
+  /** Origin/destination input has focus or the user is otherwise editing. */
+  editingInputs: boolean;
+  /** A blocking dialog/sheet is open. */
+  modalOpen: boolean;
+};
+
+/**
+ * True only when the automatic card may be presented right now. The card
+ * itself is non-blocking and never steals focus; this gate keeps it from
+ * ever appearing at a bad moment.
+ */
+export function shouldPresentPrompt(g: PromptGate): boolean {
+  return (
+    g.routeSucceeded &&
+    g.inTwa &&
+    g.eligible &&
+    !g.sessionDone &&
+    g.pageVisible &&
+    !g.editingInputs &&
+    !g.modalOpen
+  );
+}

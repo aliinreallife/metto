@@ -5,16 +5,30 @@ import { useRouter } from "next/navigation";
 import { Star, X } from "lucide-react";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { isAndroidTwa } from "@/lib/twa";
-import { openAndroidRateApp } from "@/lib/twa";
+import { openAndroidRateAppWithFallback } from "@/lib/twa";
 import {
+  hasSessionPrompted,
   isEligible,
   loadRatingState,
+  markSessionPrompted,
   notePromptShown,
   recordRatingAction,
   recordRatingDismiss,
+  shouldPresentPrompt,
 } from "@/lib/app-rating";
 
+// Settle delay before the automatic card may appear: the route result must
+// be visible and stable first (never pops during calculation, typing, or a
+// background return). Non-blocking; cancelled on any change below.
+const PROMPT_SETTLE_MS = 2000;
+// Retries while the user is editing inputs or a dialog is open: the card
+// waits instead of interrupting. Bounded so timers always terminate.
+const PROMPT_MAX_DEFERS = 4;
+
 // Presentational card: neutral copy, no review-gating, no "5 stars" ask.
+// onNotNow receives true when activated from the keyboard (Enter/Space give
+// click detail 0) so the host can restore focus; pointer users are left
+// alone.
 export function RatePrompt({
   lang,
   onRate,
@@ -22,7 +36,7 @@ export function RatePrompt({
 }: {
   lang: Lang;
   onRate: () => void;
-  onNotNow: () => void;
+  onNotNow: (keyboard: boolean) => void;
 }) {
   const t = STRINGS[lang];
   const titleId = useId();
@@ -44,18 +58,18 @@ export function RatePrompt({
         <p className="mt-0.5 text-xs text-muted-foreground md:text-sm">
           {t.rateBody}
         </p>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={onRate}
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+            className="flex min-h-[44px] items-center rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
           >
             {t.rateNow}
           </button>
           <button
             type="button"
-            onClick={onNotNow}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+            onClick={(e) => onNotNow(e.detail === 0)}
+            className="flex min-h-[44px] items-center rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
           >
             {t.rateNotNow}
           </button>
@@ -63,9 +77,9 @@ export function RatePrompt({
       </div>
       <button
         type="button"
-        onClick={onNotNow}
+        onClick={(e) => onNotNow(e.detail === 0)}
         aria-label={t.close}
-        className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <X aria-hidden="true" className="size-4" />
       </button>
@@ -73,19 +87,82 @@ export function RatePrompt({
   );
 }
 
+// True while the user is actively editing route inputs (comboboxes keep
+// focus while typing/selecting). The card waits instead of interrupting.
+function isEditingInputs(): boolean {
+  try {
+    const el = document.activeElement as HTMLElement | null;
+    if (!el) return false;
+    const tag = el.tagName;
+    if (
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      tag === "SELECT" ||
+      el.isContentEditable
+    ) {
+      return true;
+    }
+    const role = typeof el.getAttribute === "function" && el.getAttribute("role");
+    return role === "combobox" || role === "searchbox" || role === "listbox";
+  } catch {
+    return false;
+  }
+}
+
+// True while a blocking dialog/sheet is open. The inline card is
+// non-blocking, but it still waits rather than stacking onto a modal.
+function isModalOpen(): boolean {
+  try {
+    return !!document.querySelector('[role="dialog"], [role="alertdialog"]');
+  } catch {
+    return false;
+  }
+}
+
+function isPageVisible(): boolean {
+  try {
+    return document.visibilityState === "visible";
+  } catch {
+    return true;
+  }
+}
+
+// After a keyboard dismissal the tapped button unmounts, so focus would
+// fall to <body>. Land it back in the route-result area instead — without
+// scrolling the page. Pointer users are left alone.
+function restoreRouteFocus(): void {
+  try {
+    const main = document.getElementById("main-content");
+    if (main instanceof HTMLElement) {
+      main.focus({ preventScroll: true });
+    }
+  } catch {
+    // Ignore — focus simply stays where the browser puts it.
+  }
+}
+
 // Host: shows RatePrompt only after a settled successful route, only inside
 // the Android TWA, and only when eligibility holds. Route info stays usable
-// (inline card below the result, never a blocking dialog).
+// (inline card below the result, never a blocking dialog, never auto-focus,
+// never focus-trapped — it is not a modal).
 export function RatePromptHost({
   lang,
   routeSucceeded,
+  routeKey,
 }: {
   lang: Lang;
   routeSucceeded: boolean;
+  /** Stable key of the current planning (origin|dest|mode|time). */
+  routeKey: string;
 }) {
   const [inTwa, setInTwa] = useState(false);
   const [visible, setVisible] = useState(false);
-  const shownRef = useRef(false);
+  // Re-arms the settle delay when the tab returns from the background: the
+  // result must settle again while visible before anything may appear.
+  const [visibleTick, setVisibleTick] = useState(0);
+  const firedRef = useRef(false);
+  const defersRef = useRef(0);
+  const router = useRouter();
 
   useEffect(() => {
     let live = true;
@@ -98,62 +175,128 @@ export function RatePromptHost({
   }, []);
 
   useEffect(() => {
-    if (!routeSucceeded || !inTwa || shownRef.current) return;
-    try {
-      const state = loadRatingState();
-      if (!isEligible(state, Date.now())) return;
-      shownRef.current = true;
-      notePromptShown();
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- eligibility sync from localStorage/TWA (external systems) on settled route success; guarded by shownRef so it fires once.
-      setVisible(true);
-    } catch {
-      // Corrupt storage must never break route planning.
-    }
-  }, [routeSucceeded, inTwa]);
-
-  // Escape dismisses without rating.
-  useEffect(() => {
     if (!visible) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        try {
-          recordRatingDismiss();
-        } catch {
-          // Ignore.
-        }
-        setVisible(false);
-      }
+      if (e.key === "Escape") dismiss(true);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [visible]);
+
+  // Track background/foreground so a background return restarts the settle
+  // delay instead of popping the card immediately.
+  useEffect(() => {
+    const onVisibility = () => {
+      try {
+        if (document.visibilityState === "visible") {
+          setVisibleTick((n) => n + 1);
+        }
+      } catch {
+        // Ignore.
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
+  function dismiss(keyboard: boolean): void {
+    try {
+      recordRatingDismiss();
+    } catch {
+      // Ignore.
+    }
+    try {
+      markSessionPrompted();
+    } catch {
+      // Ignore.
+    }
+    setVisible(false);
+    if (keyboard) restoreRouteFocus();
+  }
+
+  function act(): void {
+    // Launching the store flow counts as completion: we cannot know whether
+    // a review was submitted after leaving Metto. The /rate fallback counts
+    // the same way.
+    try {
+      recordRatingAction();
+    } catch {
+      // Ignore — still forward.
+    }
+    try {
+      markSessionPrompted();
+    } catch {
+      // Ignore.
+    }
+    setVisible(false);
+    try {
+      openAndroidRateAppWithFallback(() => {
+        router.push("/rate");
+      });
+    } catch {
+      // Silent — never an error dialog for the rating action.
+    }
+  }
+
+  useEffect(() => {
+    if (!routeSucceeded || !inTwa || firedRef.current || visible) return;
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const attempt = () => {
+      if (cancelled || firedRef.current) return;
+      try {
+        if (hasSessionPrompted()) return;
+        const eligible = isEligible(loadRatingState(), Date.now());
+        if (
+          shouldPresentPrompt({
+            routeSucceeded: true,
+            inTwa: true,
+            eligible,
+            sessionDone: false,
+            pageVisible: isPageVisible(),
+            editingInputs: isEditingInputs(),
+            modalOpen: isModalOpen(),
+          })
+        ) {
+          firedRef.current = true;
+          markSessionPrompted();
+          notePromptShown();
+          // Never auto-focus: the card must not steal keyboard or
+          // screen-reader focus from the route experience.
+          setVisible(true);
+          return;
+        }
+        // Eligible but the moment is wrong (typing, dialog, hidden tab):
+        // wait for a better moment instead of interrupting. Bounded.
+        if (
+          eligible &&
+          defersRef.current < PROMPT_MAX_DEFERS &&
+          isPageVisible()
+        ) {
+          defersRef.current += 1;
+          timer = window.setTimeout(attempt, PROMPT_SETTLE_MS);
+        }
+      } catch {
+        // Corrupt storage etc. must never break route planning.
+      }
+    };
+
+    // Settle delay: the result must be visible and stable first.
+    timer = window.setTimeout(attempt, PROMPT_SETTLE_MS);
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [routeSucceeded, routeKey, inTwa, visibleTick, visible]);
 
   if (!visible) return null;
 
   return (
     <RatePrompt
       lang={lang}
-      onRate={() => {
-        try {
-          recordRatingAction();
-        } catch {
-          // Ignore — still forward to the store.
-        }
-        setVisible(false);
-        try {
-          openAndroidRateApp();
-        } catch {
-          // Ignore.
-        }
-      }}
-      onNotNow={() => {
-        try {
-          recordRatingDismiss();
-        } catch {
-          // Ignore.
-        }
-        setVisible(false);
-      }}
+      onRate={act}
+      onNotNow={(keyboard) => dismiss(keyboard)}
     />
   );
 }
@@ -183,6 +326,9 @@ export function RateMettoAction({
   }, []);
 
   function handleClick() {
+    // Voluntary rating: independent of automatic-prompt state (promptsShown,
+    // cooldown, completed never gate this). Completion is recorded first so
+    // the automatic prompt never fires afterwards.
     try {
       recordRatingAction();
     } catch {
@@ -190,7 +336,11 @@ export function RateMettoAction({
     }
     try {
       if (inTwa) {
-        openAndroidRateApp();
+        // browser_fallback_url inside the intent protects old wrappers;
+        // the visibility timer is the secondary net. Silent either way.
+        openAndroidRateAppWithFallback(() => {
+          router.push("/rate");
+        });
       } else {
         router.push("/rate");
       }
