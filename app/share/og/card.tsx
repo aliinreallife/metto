@@ -368,8 +368,12 @@ function RouteFacts({
       {numTransfers !== null ? (
         <Metric
           kind="transfer"
-          value={numTransfers === 0 ? "بدون تعویض" : `${faNumber(numTransfers)} تعویض`}
-          label="تعویض خط"
+          value={
+            numTransfers === 0
+              ? "بدون تعویض خط"
+              : `${faNumber(numTransfers)} تعویض خط`
+          }
+          label={numTransfers === 0 ? "مسیر مستقیم" : "تغییر مسیر"}
         />
       ) : null}
       {lineCount !== null ? (
