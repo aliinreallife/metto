@@ -31,6 +31,9 @@ export async function generateMetadata({
     searchRecordToParams(await searchParams),
     Date.now(),
   );
+  const socialTitle = p.valid
+    ? `${p.originDisplay} ← ${p.destDisplay} | متو`
+    : SHARE_GENERIC_TITLE;
   const ogUrl = new URL(p.sharePath, SHARE_SITE_URL).href;
   const image = p.valid
     ? {
@@ -49,10 +52,12 @@ export async function generateMetadata({
         alt: "متو - مسیریاب مترو",
         type: "image/png",
       };
+  // Keep exact depart/arrive timing out of social metadata. The shared URL
+  // still carries it, so opening Metto restores the complete planned journey.
   // openGraph/twitter replace (not merge with) the root layout objects, so
   // every inherited field that still applies is restated here.
   return {
-    title: p.valid ? p.title : SHARE_GENERIC_TITLE,
+    title: socialTitle,
     description: p.valid ? p.description : SHARE_GENERIC_DESC,
     robots: {
       index: false,
@@ -62,7 +67,7 @@ export async function generateMetadata({
       canonical: p.canonical,
     },
     openGraph: {
-      title: p.valid ? p.title : SHARE_GENERIC_TITLE,
+      title: socialTitle,
       description: p.valid ? p.description : SHARE_GENERIC_DESC,
       url: ogUrl,
       siteName: "متو",
@@ -73,7 +78,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: p.valid ? p.title : SHARE_GENERIC_TITLE,
+      title: socialTitle,
       description: p.valid ? p.description : SHARE_GENERIC_DESC,
       images: [p.imagePath],
     },

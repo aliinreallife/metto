@@ -1,18 +1,29 @@
-// Minimal Metto route social-preview card (Satori-compatible host elements).
+// Branded Metto route social-preview card (Satori-compatible host elements).
 //
-// The preview deliberately avoids route-map geometry and timetable detail.
-// It answers one thing at a glance — where the shared trip starts and ends —
-// using the same dark neutrals + red accent as the app. The opened share URL
-// remains the source of truth for the full route, timing, transfers, and map.
+// Keep this a teaser, not a screenshot of the planner: the card shows route
+// endpoints plus static topology facts (stops/transfers). Exact timing, line
+// instructions, the map, and the full journey stay behind the shared link.
 
 import type { CSSProperties, ReactNode } from "react";
 
-const BRAND_RED = "#be1228";
+const BRAND_RED = "#cc0e2d";
 const BG = "#0b0b0d";
 const PANEL = "#141416";
+const PANEL_SOFT = "#19191c";
 const TEXT = "#fafafa";
 const MUTED = "#a1a1aa";
-const BORDER = "#27272a";
+const BORDER = "#29292d";
+
+export interface ShareCardData {
+  originDisplay: string;
+  destDisplay: string;
+  numStops: number | null;
+  numTransfers: number | null;
+}
+
+function faNumber(value: number): string {
+  return String(value).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
+}
 
 function RtlRow({
   children,
@@ -28,7 +39,7 @@ function RtlRow({
       dir="rtl"
       style={{
         display: "flex",
-        flexDirection: "row-reverse",
+        flexDirection: "row",
         alignItems: "center",
         gap,
         ...style,
@@ -43,7 +54,7 @@ function RtlRow({
 // explicit RTL word nodes so long multi-word station names stay predictable.
 function RtlWords({
   text,
-  gap = 11,
+  gap = 10,
   style,
 }: {
   text: string;
@@ -61,60 +72,109 @@ function RtlWords({
   );
 }
 
+function MettoIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="72"
+      height="72"
+      viewBox="0 0 512 512"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ display: "flex", flexShrink: 0 }}
+    >
+      <rect width="512" height="512" rx="102" fill={BRAND_RED} />
+      <g
+        transform="translate(96 96) scale(13.333333)"
+        fill="none"
+        stroke="white"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M8 3.1V7a4 4 0 0 0 8 0V3.1" />
+        <path d="m9 15-1-1" />
+        <path d="m15 15 1-1" />
+        <path d="M9 19c-2.8 0-5-2.2-5-5v-4a8 8 0 0 1 16 0v4c0 2.8-2.2 5-5 5Z" />
+        <path d="m8 19-2 3" />
+        <path d="m16 19 2 3" />
+      </g>
+    </svg>
+  );
+}
+
 function Brand() {
   return (
-    <RtlRow gap={14} style={{ width: "100%" }}>
-      <div
-        style={{
-          width: "42px",
-          height: "42px",
-          borderRadius: "13px",
-          background: BRAND_RED,
-          display: "flex",
-          flexShrink: 0,
-        }}
-      />
-      <div
-        style={{
-          fontSize: 40,
-          lineHeight: 1,
-          fontWeight: 700,
-          color: TEXT,
-        }}
-      >
-        متو
-      </div>
-      <div
-        style={{
-          fontSize: 25,
-          lineHeight: 1,
-          color: MUTED,
-          marginRight: "4px",
-        }}
-      >
-        مسیریاب مترو تهران
-      </div>
-      <div style={{ flexGrow: 1, display: "flex" }} />
+    <div
+      dir="rtl"
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <RtlRow gap={18}>
+        <MettoIcon />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "8px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 43,
+              lineHeight: 1,
+              fontWeight: 700,
+              color: TEXT,
+            }}
+          >
+            متو
+          </div>
+          <RtlWords
+            text="تو مترو گم شدی؟ ما هم شده بودیم"
+            gap={7}
+            style={{
+              fontSize: 24,
+              lineHeight: 1,
+              color: MUTED,
+              whiteSpace: "nowrap",
+            }}
+          />
+        </div>
+      </RtlRow>
+
       <div
         dir="ltr"
         style={{
-          fontSize: 24,
+          display: "flex",
+          alignItems: "center",
+          border: `1px solid ${BORDER}`,
+          borderRadius: "999px",
+          background: PANEL_SOFT,
+          padding: "11px 18px",
+          fontSize: 23,
+          lineHeight: 1,
           color: MUTED,
           letterSpacing: "0.2px",
         }}
       >
         metto.ir
       </div>
-    </RtlRow>
+    </div>
   );
 }
 
 function stationFontSize(origin: string, destination: string): number {
   const longest = Math.max(origin.length, destination.length);
-  if (longest <= 10) return 64;
-  if (longest <= 18) return 56;
-  if (longest <= 28) return 47;
-  return 39;
+  if (longest <= 10) return 58;
+  if (longest <= 18) return 52;
+  if (longest <= 28) return 45;
+  if (longest <= 38) return 39;
+  return 34;
 }
 
 function Endpoint({
@@ -138,10 +198,11 @@ function Endpoint({
     >
       <div
         style={{
-          color: MUTED,
-          fontSize: 23,
+          color: BRAND_RED,
+          fontSize: 22,
           lineHeight: 1,
-          marginBottom: "10px",
+          fontWeight: 700,
+          marginBottom: "9px",
         }}
       >
         {label}
@@ -154,7 +215,7 @@ function Endpoint({
           color: TEXT,
           fontSize,
           fontWeight: 700,
-          lineHeight: 1.16,
+          lineHeight: 1.1,
           overflow: "hidden",
         }}
       />
@@ -167,7 +228,7 @@ function RouteRail() {
     <div
       style={{
         width: "34px",
-        height: "244px",
+        height: "215px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -180,7 +241,7 @@ function RouteRail() {
           height: "22px",
           borderRadius: "50%",
           border: `5px solid ${BRAND_RED}`,
-          background: BG,
+          background: PANEL,
           flexShrink: 0,
         }}
       />
@@ -205,8 +266,58 @@ function RouteRail() {
   );
 }
 
-export function renderShareCard(originDisplay: string, destDisplay: string) {
+function Metric({ text }: { text: string }) {
+  return (
+    <div
+      dir="rtl"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        background: PANEL_SOFT,
+        border: `1px solid ${BORDER}`,
+        borderRadius: "999px",
+        padding: "10px 16px",
+        color: TEXT,
+        fontSize: 21,
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <RtlWords text={text} gap={6} />
+    </div>
+  );
+}
+
+function RouteFacts({
+  numStops,
+  numTransfers,
+}: Pick<ShareCardData, "numStops" | "numTransfers">) {
+  if (numStops === null && numTransfers === null) return null;
+
+  return (
+    <RtlRow gap={10}>
+      {numStops !== null ? <Metric text={`${faNumber(numStops)} ایستگاه`} /> : null}
+      {numTransfers !== null ? (
+        <Metric
+          text={
+            numTransfers === 0
+              ? "بدون تعویض خط"
+              : `${faNumber(numTransfers)} تعویض خط`
+          }
+        />
+      ) : null}
+    </RtlRow>
+  );
+}
+
+export function renderShareCard({
+  originDisplay,
+  destDisplay,
+  numStops,
+  numTransfers,
+}: ShareCardData) {
   const nameSize = stationFontSize(originDisplay, destDisplay);
+
   return (
     <div
       style={{
@@ -214,12 +325,12 @@ export function renderShareCard(originDisplay: string, destDisplay: string) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: BG,
+        background: `linear-gradient(145deg, ${BG} 0%, #111114 100%)`,
         color: TEXT,
         fontFamily: "Vazirmatn",
         position: "relative",
         overflow: "hidden",
-        padding: "54px 64px 58px",
+        padding: "48px 62px 46px",
       }}
     >
       <div
@@ -228,7 +339,7 @@ export function renderShareCard(originDisplay: string, destDisplay: string) {
           top: 0,
           left: 0,
           right: 0,
-          height: "10px",
+          height: "8px",
           background: BRAND_RED,
           display: "flex",
         }}
@@ -236,7 +347,7 @@ export function renderShareCard(originDisplay: string, destDisplay: string) {
 
       <Brand />
 
-      <div style={{ height: "42px", display: "flex", flexShrink: 0 }} />
+      <div style={{ height: "30px", display: "flex", flexShrink: 0 }} />
 
       <div
         dir="rtl"
@@ -244,38 +355,80 @@ export function renderShareCard(originDisplay: string, destDisplay: string) {
           width: "100%",
           flexGrow: 1,
           display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          gap: "30px",
+          flexDirection: "column",
           border: `1px solid ${BORDER}`,
-          borderRadius: "28px",
+          borderRadius: "30px",
           background: PANEL,
-          padding: "34px 42px",
+          padding: "28px 36px 24px",
           overflow: "hidden",
         }}
       >
-        <RouteRail />
         <div
           style={{
-            minWidth: 0,
-            flexGrow: 1,
-            height: "244px",
+            width: "100%",
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: "28px",
+            minHeight: "220px",
           }}
         >
-          <Endpoint label="از" name={originDisplay} fontSize={nameSize} />
+          <RouteRail />
           <div
             style={{
-              width: "100%",
-              height: "1px",
-              background: BORDER,
+              minWidth: 0,
+              flexGrow: 1,
+              height: "215px",
               display: "flex",
-              flexShrink: 0,
+              flexDirection: "column",
+              justifyContent: "space-between",
+            }}
+          >
+            <Endpoint label="از" name={originDisplay} fontSize={nameSize} />
+            <div
+              style={{
+                width: "100%",
+                height: "1px",
+                background: BORDER,
+                display: "flex",
+                flexShrink: 0,
+              }}
+            />
+            <Endpoint label="به" name={destDisplay} fontSize={nameSize} />
+          </div>
+        </div>
+
+        <div
+          style={{
+            width: "100%",
+            height: "1px",
+            background: BORDER,
+            display: "flex",
+            flexShrink: 0,
+            marginTop: "18px",
+          }}
+        />
+
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: "18px",
+          }}
+        >
+          <RouteFacts numStops={numStops} numTransfers={numTransfers} />
+          <RtlWords
+            text="زمان‌بندی و جزئیات کامل داخل متو"
+            gap={6}
+            style={{
+              color: MUTED,
+              fontSize: 21,
+              lineHeight: 1,
+              whiteSpace: "nowrap",
             }}
           />
-          <Endpoint label="به" name={destDisplay} fontSize={nameSize} />
         </div>
       </div>
     </div>
