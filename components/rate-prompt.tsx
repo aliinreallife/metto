@@ -330,7 +330,7 @@ export function RatePromptHost({
   );
 }
 
-// Permanent manual entry (footer/About area). Always available regardless of
+// Manual entry (currently not rendered in the footers). Always available regardless of
 // automatic-prompt state. Inside the TWA it opens the native helper;
 // outside it navigates to the /rate fallback page.
 export function RateMettoAction({

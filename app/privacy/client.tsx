@@ -113,9 +113,9 @@ const COPY: Record<"fa" | "en", { title: string; intro: string; back: string; se
         ],
       },
       {
-        h: "Support",
+        h: "Donations",
         ps: [
-          "Support is fully voluntary and goes through the Reymit website — no feature or content is unlocked by paying.",
+          "Donating is fully voluntary and goes through the Reymit website — no feature or content is unlocked by paying.",
         ],
       },
       {
