@@ -181,6 +181,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
           <FilterChip
             active={selectedAmenities.length === 0}
             onClick={() => setSelectedAmenities([])}
+            ariaLabel={`${t.all} ${t.amenities}`}
           >
             {t.all}
           </FilterChip>
@@ -276,17 +277,20 @@ function FilterChip({
   active,
   onClick,
   dot,
+  ariaLabel,
   children,
 }: {
   active: boolean;
   onClick: () => void;
   dot?: string;
+  ariaLabel?: string;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-label={ariaLabel}
       aria-pressed={active}
       className={cn(
         "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
