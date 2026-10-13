@@ -18,6 +18,8 @@ export function RatePage() {
   const isFa = lang === "fa";
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Hidden QA surface: render the exact production card without touching its
+  // automatic eligibility state. Useful for visual/device verification.
   const previewPrompt = searchParams.get("prompt") === "1";
   const [inTwa, setInTwa] = useState(false);
 
