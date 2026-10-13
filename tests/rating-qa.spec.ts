@@ -4,6 +4,7 @@ const QA_FROM = "namayeshgah-e-shahr-e-aftab";
 const QA_TO = "aghdasiyeh";
 const QA_QUERY = `?from=${QA_FROM}&to=${QA_TO}`;
 const RATING_KEY = "metto.appRating.v1";
+const RATE_HEADING = /از متو راضی هستی[؟?]|Enjoying Metto\?/;
 
 const BASE_STATE = {
   version: 1,
@@ -43,9 +44,7 @@ test.describe("rating QA trigger", () => {
     await clickDesktopTab(page, "/map");
     await clickDesktopTab(page, "/route");
 
-    const prompt = page.getByRole("heading", {
-      name: /از متو راضی هستی\?|Enjoying Metto\?/,
-    });
+    const prompt = page.getByRole("heading", { name: RATE_HEADING });
     await expect(prompt).toBeVisible({ timeout: 15_000 });
 
     // The ask should be hard to miss: it sits immediately below the three
@@ -54,9 +53,7 @@ test.describe("rating QA trigger", () => {
     await expect(stats).toBeVisible();
     const firstAfterStats = stats.locator("xpath=following-sibling::*[1]");
     await expect(
-      firstAfterStats.getByRole("heading", {
-        name: /از متو راضی هستی\?|Enjoying Metto\?/,
-      }),
+      firstAfterStats.getByRole("heading", { name: RATE_HEADING }),
     ).toBeVisible();
 
     const storedWhileVisible = await page.evaluate((key) => localStorage.getItem(key), RATING_KEY);
@@ -88,7 +85,7 @@ test.describe("rating QA trigger", () => {
     await page.waitForTimeout(3_000);
 
     await expect(
-      page.getByRole("heading", { name: /از متو راضی هستی\?|Enjoying Metto\?/ }),
+      page.getByRole("heading", { name: RATE_HEADING }),
     ).toHaveCount(0);
   });
 });
