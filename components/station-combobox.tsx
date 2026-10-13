@@ -220,7 +220,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
         : ""
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative w-full min-w-0 [contain:inline-size]">
       {/* Plain wrapper around the trigger so the dropdown can anchor to it.
           No clear (X) button by design — selection changes by picking
           another station. Padding lives on the trigger itself so the
@@ -242,11 +242,21 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
           className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2.5 text-start transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:px-4 md:py-3"
         >
           <span className={cn("size-2.5 shrink-0 rounded-full", accentClass)} aria-hidden="true" />
-          <span className="min-w-0 flex-1 truncate" dir={isFa ? "rtl" : "ltr"}>
+          <span className="min-w-0 flex-1 overflow-hidden" dir={isFa ? "rtl" : "ltr"}>
             {selected ? (
-              <span className="flex items-center gap-2">
-                <span className="truncate font-medium">{isFa ? selected.name.fa : selected.name.en}</span>
-                <span className="truncate text-xs text-muted-foreground">{isFa ? selected.name.en : selected.name.fa}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <span
+                  className="min-w-0 flex-1 truncate font-medium"
+                  title={isFa ? selected.name.fa : selected.name.en}
+                >
+                  {isFa ? selected.name.fa : selected.name.en}
+                </span>
+                <span
+                  className="min-w-0 max-w-[42%] shrink truncate text-xs text-muted-foreground"
+                  title={isFa ? selected.name.en : selected.name.fa}
+                >
+                  {isFa ? selected.name.en : selected.name.fa}
+                </span>
               </span>
             ) : (
               <span className="text-muted-foreground">{placeholder}</span>
@@ -345,11 +355,10 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                       />
                     ))}
                   </span>
-                  <span className="min-w-0 truncate">
-                    <span className="block font-medium">{isFa ? s.name.fa : s.name.en}</span>
-                    <span className="block text-xs text-muted-foreground">{isFa ? s.name.en : s.name.fa}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{isFa ? s.name.fa : s.name.en}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{isFa ? s.name.en : s.name.fa}</span>
                   </span>
-                  <span className="flex-1" aria-hidden="true" />
                   <MapPin aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
               </li>
               )

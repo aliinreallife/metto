@@ -2,8 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   RATING_QA_DEST,
   RATING_QA_ORIGIN,
+  consumeRatingQaSessionMarkSkip,
+  finishRatingQaOverride,
   isRatingQaOverrideActive,
   noteRatingQaNavigation,
+  noteRatingQaPromptShown,
 } from "./rating-qa";
 
 function memStorage() {
@@ -23,6 +26,15 @@ function setLocation(pathname: string, search = "") {
   vi.stubGlobal("window", {
     location: { pathname, search },
   });
+}
+
+function armQa(s: ReturnType<typeof memStorage>) {
+  const query = `?from=${RATING_QA_ORIGIN}&to=${RATING_QA_DEST}`;
+  for (const path of ["/route", "/stations", "/nearby", "/map", "/route"]) {
+    setLocation(path, query);
+    noteRatingQaNavigation(path, s);
+  }
+  return query;
 }
 
 afterEach(() => {
@@ -75,5 +87,20 @@ describe("rating QA sequence", () => {
     noteRatingQaNavigation("/route", s);
 
     expect(isRatingQaOverrideActive(s)).toBe(false);
+  });
+
+  it("moves armed -> presenting -> finished and consumes the session-mark skip once", () => {
+    const s = memStorage();
+    const query = armQa(s);
+    setLocation("/route", query);
+
+    expect(isRatingQaOverrideActive(s)).toBe(true);
+    expect(noteRatingQaPromptShown(s)).toBe(true);
+    expect(isRatingQaOverrideActive(s)).toBe(true);
+
+    expect(finishRatingQaOverride(s)).toBe(true);
+    expect(isRatingQaOverrideActive(s)).toBe(false);
+    expect(consumeRatingQaSessionMarkSkip(s)).toBe(true);
+    expect(consumeRatingQaSessionMarkSkip(s)).toBe(false);
   });
 });
