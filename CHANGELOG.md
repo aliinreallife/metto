@@ -43,6 +43,12 @@ PR body instead (see AGENTS.md).
 - On the map, a walk recommendation now appears when walking directly beats the metro, using the same rule as the route planner. (#161)
 - Tapping a map location no longer warns about walking distance; nearest-station results skip stations you cannot board. (#161)
 - The privacy page now opens without the app header and has a clear button back to the route planner. (#169)
+- Refined the in-app “Rate Metto” card with clearer hierarchy, softer styling, better button balance, and a more native mobile feel. (#177)
+- Added a manual QA preview at `/rate?prompt=1` that renders the exact production prompt without changing rating eligibility, cooldowns, or prompt counts. (#177)
+- Added a session-only in-app QA gesture for the rating prompt: select Namayeshgah-e Shahr-e Aftab → Aghdasiyeh, then visit Route → Stations → Nearby → Map → Route. (#178)
+- That QA path shows the real TWA rating card regardless of normal success-count, distinct-day, cooldown, lifetime, or one-per-session limits, without changing the user's real rating state. (#178)
+- Slimmer footers: the Privacy and Rate links are gone (both pages still open directly). (#180)
+- The English footer link now says “Donate” instead of “Support”, so it no longer reads like asking for help. (#180)
 
 ### Fixes
 
@@ -108,6 +114,20 @@ PR body instead (see AGENTS.md).
 - در نقشه، وقتی پیاده‌روی مستقیم از مترو بهتر باشد پیشنهاد پیاده‌روی نمایش داده می‌شود، با همان قانون مسیریاب. (#161)
 - لمس یک نقطه روی نقشه دیگر هشدار مسافت نمی‌دهد؛ نزدیک‌ترین ایستگاه‌ها از میان ایستگاه‌های قابل استفاده انتخاب می‌شوند. (#161)
 - صفحه حریم خصوصی بدون سربرگ برنامه باز می‌شود و دکمه بازگشت به مسیریاب دارد. (#169)
+- ظاهر کارت «امتیاز به متو» با چیدمان بهتر، فاصله‌گذاری تمیزتر، دکمه‌های متعادل‌تر و حس نزدیک‌تر به اپ موبایل بهبود پیدا کرد. (#177)
+- یک پیش‌نمایش دستی برای تست در `/rate?prompt=1` اضافه شد که همان کامپوننت واقعی را نشان می‌دهد و هیچ تغییری در شرایط نمایش، شمارنده‌ها یا محدودیت ۹۰روزه ایجاد نمی‌کند. (#177)
+- Automatic production eligibility/timing/store-routing logic is unchanged. (#177)
+- The preview uses the same `RatePrompt` component, so it cannot drift visually from production. (#177)
+- In a real TWA, the preview CTA still exercises the native store-routing helper; outside TWA it falls back to the regular `/rate` chooser. (#177)
+- Preview interactions intentionally do not mutate `metto.appRating.v1`. (#177)
+- یک مسیر تست داخلی و موقت برای کارت امتیاز اضافه شد: مسیر «نمایشگاه شهر آفتاب ← اقدسیه» را انتخاب کنید و سپس به ترتیب «مسیریاب → ایستگاه‌ها → نزدیک من → نقشه → مسیریاب» بروید. (#178)
+- در این حالت کارت واقعی داخل TWA بدون توجه به تعداد مسیرها، روزهای استفاده، محدودیت ۹۰روزه، سقف دفعات نمایش یا محدودیت هر نشست نشان داده می‌شود و وضعیت واقعی امتیاز کاربر را تغییر نمی‌دهد. (#178)
+- Normal production eligibility is unchanged for every other route/session. (#178)
+- QA state lives only in sessionStorage. (#178)
+- The existing `/rate?prompt=1` manual preview remains available. (#178)
+- Added focused unit coverage for the QA navigation sequence and route scoping. (#178)
+- فوترها خلوت‌تر شدند: لینک‌های حریم خصوصی و امتیاز حذف شدند (هر دو صفحه مستقیم باز می‌شوند). (#180)
+- در نسخه انگلیسی، «Support» به «Donate» تغییر کرد تا با درخواست کمک اشتباه گرفته نشود. (#180)
 
 ### رفع مشکلات
 
@@ -137,7 +157,6 @@ PR body instead (see AGENTS.md).
 - عنوان کارت‌های اشتراک‌گذاری با موضوع هر صفحه هماهنگ شد. (#173)
 - تاریخ تغییر نادقیق و همیشه‌جدید از سایت‌مپ حذف شد. (#173)
 - اشاره نادرست به نسخه انگلیسی در hreflang فعلاً حذف شد تا وقتی نسخه انگلیسی واقعاً از سرور با آدرس canonical مستقل ارائه شود؛ حالت انگلیسی داخل برنامه بدون تغییر باقی مانده است. (#173)
-
 ## [v0.7.9] - 2026-10-07
 
 ### New
