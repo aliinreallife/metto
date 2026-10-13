@@ -8,6 +8,136 @@ PR body instead (see AGENTS.md).
 
 ## [Unreleased]
 
+## [v0.7.10] - 2026-10-13
+
+### New
+
+- Plan trips by time: leave now, be at your origin station at a set time, or set the latest time you must arrive by. (#126)
+- Arrive-by finds the latest feasible trains from the real timetable, including transfers, holidays, and midnight crossings. (#126)
+- Time plans live in shareable links and survive reloads. (#126)
+- Shared route links now show a rich preview with origin, destination, metro lines, and a route-map image in Telegram, WhatsApp and other apps. (#137)
+- Copy Link now copies a share link that reopens the exact same trip, including place pins and arrive/depart times. (#137)
+- New “Rate Metto” action opens Metto’s page in the correct store (Cafe Bazaar or Myket) from the Android app, with a simple `/rate` fallback page. (#175)
+- Respectful rating prompt appears only after regular use (5+ routes over 3+ days), at most twice, and never blocks the route result. (#175)
+
+### Improvements
+
+- Station search announcements for screen readers now use Persian digits in Persian mode. (#131)
+- Station search now supports arrow-key navigation with screen-reader announcements, so keyboard users no longer need to tab through every result. (#132)
+- Reaching the main content with the keyboard is easier, and the active tab is shown more clearly. (#132)
+- The install section now clearly labels the browser install as a web app (PWA) and explains that PWA and APK are the same app — PWA needs no download, APK is about 1.3 MB. (#135)
+- When already installed, the section now says how (installed web app, Android app, or APK on this phone) instead of only greying out the button. (#135)
+- Metro routes from the AI assistant now include per-stop arrival and departure times from the timetable. (#140)
+- Easier to use with screen readers and keyboards: clearer control labels, a skip link, and calmer animations when reduced motion is on. (#141)
+- The travel-time options are now three separate buttons with short labels, so start-now, leave-at, and arrive-by are easier to tell apart. (#145)
+- Trip planning is now limited to 7 days ahead, and non-normal days show a weekday pill before the date (official holidays show their name). (#146)
+- For arrive-by plans, one row shows a live countdown with seconds to the origin station. (#146)
+- Route link previews are now faster and more reliable. (#146)
+- Route link previews are now faster and more reliable. (#147)
+- The map page now has a clear-route button that removes the displayed route and pins without touching the saved route planner state. (#150)
+- You can tap any point on the map and set that exact place as origin or destination, with walking context to the nearest station. (#150)
+- When walking the whole way is faster than the metro ride, the planner now suggests walking with the walk time and distance, above the metro result. (#151)
+- On the map, pins sharing one station now show a single card with both places, the walk between them, and a nudge when walking wins. (#156)
+- The walking suggestion now counts the walks to and from the stations, so short metro rides with long station walks also suggest walking. (#157)
+- The map's offline-saved notice keeps its full explanatory format while still appearing only once. (#159)
+- On the map, a walk recommendation now appears when walking directly beats the metro, using the same rule as the route planner. (#161)
+- Tapping a map location no longer warns about walking distance; nearest-station results skip stations you cannot board. (#161)
+- The privacy page now opens without the app header and has a clear button back to the route planner. (#169)
+
+### Fixes
+
+- Language button label stays centered in both English and Persian, with no width jump when switching. (#128)
+- The install button in the header is now the same height as the language button. (#130)
+- Line number badges on light lines (3, 4, 6) now use dark text so they are easier to read. (#133)
+- Station search options and the timetable sheet work better for keyboard and screen-reader users. (#133)
+- Fixed AI assistants (Cursor, Windsurf) failing to connect to the metto MCP server: the connection now stays alive instead of being rejected. (#138)
+- Fixed AI assistants (Cursor, Windsurf) failing to connect to the metto MCP server: the connection now establishes instead of hanging or being rejected. (#139)
+- Sections lower on the page no longer steal keyboard focus before they appear. (#143)
+- When the install button is unavailable, its explanation is still read out to screen-reader users. (#143)
+- The date in the date picker is now centered, with the weekday shown as red text after it. (#149)
+- Same-station trips with different start and end points now suggest walking when it is the faster option. (#154)
+- Map pin labels now follow their pins when the endpoints change instead of sticking at their first position. (#154)
+- On the map, pins that are quicker to walk between are now joined by a direct walk line instead of connectors routing back into the metro. (#155)
+- On the map, the direct walk line now appears whenever walking wins, including short metro rides with long walks to the stations. (#158)
+- Long station names no longer break the route layout or cause horizontal scrolling; they shorten with an ellipsis. (#165)
+- The wait + travel time number stays on one line on small screens. (#165)
+
+### Uncategorized
+
+- Publishes on Cafe Bazaar: adds Bazaar's required verification to asset links and hides other stores' install links inside the Android app. (#162)
+- New bilingual Privacy page, a short location-use note, and clarified voluntary donations (nothing is unlocked by paying). (#162)
+- Removed the location-use explanatory note from the nearby tab and route page. (#164)
+- Improved search result titles and descriptions for Metto's main metro-planning, nearby-station, map, route, and stations pages. (#173)
+- Made station amenities easier to understand from search results. (#173)
+- Kept social sharing cards consistent with each page's search intent. (#173)
+- Removed inaccurate always-current sitemap modification dates. (#173)
+- Removed misleading English hreflang hints until English pages have server-rendered, self-canonical URLs; the in-app English mode is unchanged. (#173)
+
+#### فارسی
+
+### جدید
+
+- برنامه‌ریزی سفر با زمان: حرکت الان، حضور در ایستگاه مبدأ در ساعت مشخص، یا تعیین آخرین زمان رسیدن به مقصد. (#126)
+- گزینه رسیدن تا، آخرین قطارهای ممکن را با جدول زمانی واقعی پیدا می‌کند؛ با احتساب تعویض خط، تعطیلات و عبور از نیمه‌شب. (#126)
+- برنامه زمانی در لینک اشتراکی ذخیره می‌ماند و با بارگذاری دوباره حفظ می‌شود. (#126)
+- لینک‌های مسیر حالا در پیام‌رسان‌ها پیش‌نمایش کامل با مبدأ، مقصد، خطوط و عکس نقشهٔ مسیر نشان می‌دهند. (#137)
+- «کپی لینک» نشانی اشتراک‌گذاری می‌دهد که دقیقاً همان سفر را با مکان‌ها و زمان رسیدن/حرکت باز می‌کند. (#137)
+- دکمه «امتیاز به متو» در برنامه اندروید صفحه متو را در فروشگاه درست (کافه‌بازار یا مایکت) باز می‌کند و صفحه ساده `/rate` هم برای انتخاب فروشگاه هست. (#175)
+- پیام امتیازدهی فقط بعد از استفاده واقعی (۵ مسیر در ۳ روز) و حداکثر دوبار نمایش داده می‌شود و هیچ‌وقت جلوی مسیر را نمی‌گیرد. (#175)
+
+### بهبودها
+
+- اعلام‌های جست‌وجوی ایستگاه برای صفحه‌خوان‌ها در حالت فارسی حالا با ارقام فارسی خوانده می‌شود. (#131)
+- جستجوی ایستگاه حالا با کلیدهای جهت‌دار کار می‌کند و نتایج برای صفحه‌خوان اعلام می‌شود؛ دیگر لازم نیست با Tab از همه نتایج عبور کنید. (#132)
+- رسیدن به محتوای اصلی با صفحه‌کلید راحت‌تر شد و تب فعال واضح‌تر نشان داده می‌شود. (#132)
+- بخش نصب حالا مشخص می‌کند دکمه مرورگر نصب وب‌اپ (PWA) است و توضیح می‌دهد وب‌اپ و APK یکی‌اند — وب‌اپ دانلود نمی‌خواهد و APK حدود ۱٫۳ مگ است. (#135)
+- وقتی برنامه نصب شده، بخش نصب حالا می‌گوید به چه شکل نصب است (وب‌اپ نصب‌شده، اپ اندروید، یا بودن APK روی گوشی) به‌جای اینکه فقط دکمه را کم‌رنگ کند. (#135)
+- مسیرهای مترو در دستیار هوش مصنوعی اکنون زمان رسیدن و حرکت هر ایستگاه را از جدول زمانی نشان می‌دهند. (#140)
+- استفاده راحت‌تر با صفحه‌خوان و کیبورد: نام‌گذاری بهتر کنترل‌ها، میان‌بر رفتن به محتوا و انیمیشن آرام‌تر با حالت کاهش حرکت. (#141)
+- گزینه‌های زمان سفر حالا سه دکمه جدا با برچسب کوتاه هستند و شروع فوری با «حرکت همین الان» مشخص است. (#145)
+- برنامه‌ریزی سفر حالا تا ۷ روز آینده محدود است و روزهای غیرعادی با نشان روز هفته پیش از تاریخ دیده می‌شوند (تعطیلات رسمی با نام خودشان). (#146)
+- برای برنامه‌های رسیدن تا ساعت مشخص، یک ردیف شمارش معکوس زنده با ثانیه تا ایستگاه مبدأ را نشان می‌دهد. (#146)
+- پیش‌نمایش لینک‌های مسیر سریع‌تر و پایدارتر شد. (#146)
+- پیش‌نمایش لینک‌های مسیر سریع‌تر و پایدارتر شد. (#147)
+- صفحه نقشه حالا دکمه پاک کردن مسیر دارد که مسیر و نشان‌ها را پاک می‌کند بدون اینکه وضعیت ذخیره‌شده مسیریاب را تغییر دهد. (#150)
+- می‌توانید هر نقطه‌ای روی نقشه را لمس کنید و همان مکان دقیق را به‌عنوان مبدأ یا مقصد انتخاب کنید، همراه با اطلاعات پیاده‌روی تا نزدیک‌ترین ایستگاه. (#150)
+- وقتی پیاده‌روی کل مسیر از مترو سریع‌تر باشد، مسیریاب حالا پیاده‌روی را با زمان و مسافت بالای نتیجه مترو پیشنهاد می‌دهد. (#151)
+- در نقشه، نشان‌های هم‌ایستگاه حالا یک کارت مشترک با هر دو مکان، مسیر پیاده‌روی و پیشنهاد پیاده‌روی نشان می‌دهند. (#156)
+- پیشنهاد پیاده‌روی حالا پیاده‌روی تا ایستگاه‌ها را هم حساب می‌کند، پس مسیرهای کوتاه مترو با پیاده‌روی طولانی تا ایستگاه هم پیاده‌روی را پیشنهاد می‌دهند. (#157)
+- اعلان ذخیره آفلاین نقشه با همان قالب کامل توضیحی می‌ماند و همچنان فقط یک‌بار نمایش داده می‌شود. (#159)
+- در نقشه، وقتی پیاده‌روی مستقیم از مترو بهتر باشد پیشنهاد پیاده‌روی نمایش داده می‌شود، با همان قانون مسیریاب. (#161)
+- لمس یک نقطه روی نقشه دیگر هشدار مسافت نمی‌دهد؛ نزدیک‌ترین ایستگاه‌ها از میان ایستگاه‌های قابل استفاده انتخاب می‌شوند. (#161)
+- صفحه حریم خصوصی بدون سربرگ برنامه باز می‌شود و دکمه بازگشت به مسیریاب دارد. (#169)
+
+### رفع مشکلات
+
+- برچسب دکمه زبان در هر دو حالت فارسی و انگلیسی وسط می‌ماند و هنگام جابه‌جایی عرض دکمه تکان نمی‌خورد. (#128)
+- ارتفاع دکمه نصب در سربرگ با دکمه زبان یکسان شد. (#130)
+- شماره خط‌ها روی خطوط روشن (۳، ۴ و ۶) حالا با متن تیره خواناتر نشان داده می‌شود. (#133)
+- گزینه‌های جستجوی ایستگاه و صفحه برنامه حرکت برای کاربران صفحه‌کلید و صفحه‌خوان بهتر شد. (#133)
+- رفع مشکل اتصال دستیارهای هوش مصنوعی (Cursor و Windsurf) به سرور MCP مترو: اتصال اکنون پایدار می‌ماند و قطع نمی‌شود. (#138)
+- رفع مشکل اتصال دستیارهای هوش مصنوعی (Cursor و Windsurf) به سرور MCP مترو: اتصال اکنون بدون انتظار یا خطا برقرار می‌شود. (#139)
+- بخش‌های پایین‌تر صفحه قبل از نمایش، دیگر فوکوس صفحه‌کلید را نمی‌گیرند. (#143)
+- وقتی دکمه نصب در دسترس نیست، توضیح آن همچنان برای کاربران صفحه‌خوان خوانده می‌شود. (#143)
+- تاریخ در انتخاب‌گر تاریخ حالا وسط‌چین است و روز هفته به‌صورت متن قرمز بعد از آن نمایش داده می‌شود. (#149)
+- سفرهای با مبدأ و مقصد یکسان که نقطه شروع و پایان متفاوتی دارند حالا در صورت سریع‌تر بودن، پیاده‌روی را پیشنهاد می‌دهند. (#154)
+- برچسب‌های نقشه حالا با جابه‌جایی مبدأ یا مقصد حرکت می‌کنند و در جای اولشان نمی‌مانند. (#154)
+- در نقشه، نشان‌هایی که پیاده‌روی بینشان سریع‌تر است حالا با یک خط مستقیم پیاده‌روی به هم وصل می‌شوند، به‌جای خطوطی که به مترو برمی‌گردند. (#155)
+- در نقشه، خط مستقیم پیاده‌روی حالا هر وقت پیاده‌روی برنده باشد نمایش داده می‌شود، از جمله مسیرهای کوتاه مترو با پیاده‌روی طولانی تا ایستگاه‌ها. (#158)
+- نام‌های طولانی ایستگاه دیگر چیدمان مسیر را به‌هم نمی‌زنند و اسکرول افقی ایجاد نمی‌کنند؛ با سه‌نقطه کوتاه نمایش داده می‌شوند. (#165)
+- عدد «انتظار + سفر» در صفحه‌های کوچک در یک خط باقی می‌ماند. (#165)
+
+### بدون دسته‌بندی
+
+- انتشار در کافه‌بازار: افزودن تأییدیه لازم بازار به asset links و پنهان شدن لینک نصب فروشگاه‌های دیگر داخل اپ اندروید. (#162)
+- صفحه حریم خصوصی دوزبانه، توضیح کوتاه کاربرد موقعیت، و شفاف‌سازی داوطلبانه بودن حمایت (پرداخت هیچ قابلیتی باز نمی‌کند). (#162)
+- توضیح کاربرد موقعیت مکانی از برگه نزدیک من و صفحه مسیر حذف شد. (#164)
+- عنوان و توضیحات نتایج جست‌وجو برای صفحات اصلی مسیریابی، مترو نزدیک من، نقشه، مسیر و ایستگاه‌های متو بهبود پیدا کرد. (#173)
+- امکانات واقعی ایستگاه‌ها مثل آسانسور، سرویس بهداشتی، نمازخانه و پارکینگ در توضیح صفحه ایستگاه‌ها واضح‌تر شد. (#173)
+- عنوان کارت‌های اشتراک‌گذاری با موضوع هر صفحه هماهنگ شد. (#173)
+- تاریخ تغییر نادقیق و همیشه‌جدید از سایت‌مپ حذف شد. (#173)
+- اشاره نادرست به نسخه انگلیسی در hreflang فعلاً حذف شد تا وقتی نسخه انگلیسی واقعاً از سرور با آدرس canonical مستقل ارائه شود؛ حالت انگلیسی داخل برنامه بدون تغییر باقی مانده است. (#173)
+
 ## [v0.7.9] - 2026-10-07
 
 ### New
