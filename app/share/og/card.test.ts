@@ -1,5 +1,5 @@
 // Structural contract for the branded route teaser. Satori PNG bytes are not a
-// stable snapshot target, so these tests pin the useful copy, icon presence,
+// stable snapshot target, so these tests pin useful copy, icon/skyline presence,
 // route facts, and the deliberate boundary around full journey details.
 import { describe, expect, it } from "vitest";
 import type { ReactElement, ReactNode } from "react";
@@ -89,25 +89,26 @@ const tree = () =>
   });
 
 describe("branded share card", () => {
-  it("uses the real Metto identity, slogan, and route endpoints", () => {
+  it("uses Metto identity, slogan, skyline treatment, and route endpoints", () => {
     const all = texts(tree());
-    for (const s of ["متو", "metto.ir", "از", "تجریش", "به", "تئاتر", "شهر"]) {
+    for (const s of ["metto", "metto.ir", "مبدأ", "تجریش", "مقصد", "تئاتر", "شهر"]) {
       expect(all).toContain(s);
     }
     const copy = all.join(" ");
     expect(copy).toContain("تو مترو گم شدی؟ ما هم شده بودیم");
-    expect(types(tree())).toContain("svg");
+    expect(types(tree()).filter((type) => type === "svg").length).toBeGreaterThanOrEqual(5);
     expect(copy).not.toContain("مسیریاب مترو تهران");
   });
 
-  it("shows useful teaser facts and points to the full journey", () => {
+  it("shows useful teaser facts and derived line count", () => {
     const all = texts(tree()).join(" ");
     expect(all).toContain("۱۴ ایستگاه");
     expect(all).toContain("۱ تعویض خط");
-    expect(all).toContain("زمان‌بندی و جزئیات کامل داخل متو");
+    expect(all).toContain("۲ خط");
+    expect(all).toContain("جزئیات کامل مسیر داخل متو");
   });
 
-  it("handles a direct route without an awkward zero-transfer chip", () => {
+  it("handles a direct route without an awkward zero-transfer stat", () => {
     const all = texts(
       renderShareCard({
         originDisplay: "تجریش",
@@ -117,6 +118,7 @@ describe("branded share card", () => {
       }),
     ).join(" ");
     expect(all).toContain("بدون تعویض خط");
+    expect(all).toContain("۱ خط");
     expect(all).not.toContain("۰ تعویض خط");
   });
 
