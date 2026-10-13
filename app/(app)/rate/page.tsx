@@ -8,11 +8,22 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/rate",
   },
+  robots: {
+    index: false,
+    follow: true,
+  },
   openGraph: {
     title: "امتیاز به متو | متو",
     description:
       "کافه‌بازار یا مایکت را انتخاب کنید تا صفحه متو باز شود و امتیاز بدهید.",
     url: "https://metto.ir/rate",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "امتیاز به متو | متو",
+    description:
+      "کافه‌بازار یا مایکت را انتخاب کنید تا صفحه متو باز شود و امتیاز بدهید.",
+    images: ["/socialprev.png"],
   },
 };
 
