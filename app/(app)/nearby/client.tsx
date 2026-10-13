@@ -11,9 +11,7 @@ export function NearbyPage() {
   const isFa = lang === "fa";
 
   useEffect(() => {
-    const title = isFa ? "نزدیک‌ترین ایستگاه مترو" : "Nearby Metro Stations";
-    const suffix = isFa ? " | متو" : " | metto";
-    document.title = title + suffix;
+    document.title = isFa ? "مترو نزدیک من | متو" : "Nearby Metro Stations | metto";
   }, [isFa]);
 
   return (
