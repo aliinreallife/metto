@@ -6,7 +6,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: baseUrl,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
       alternates: {
@@ -18,7 +17,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/stations`,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
       alternates: {
@@ -30,7 +28,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/nearby`,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,
       alternates: {
@@ -42,7 +39,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/map`,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,
       alternates: {
@@ -54,7 +50,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/route`,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
       alternates: {
@@ -66,7 +61,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/privacy`,
-      lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.3,
       alternates: {
