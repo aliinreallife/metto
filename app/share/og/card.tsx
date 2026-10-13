@@ -1,25 +1,18 @@
-// Minimal route social-preview card (Satori-compatible host elements only).
+// Minimal Metto route social-preview card (Satori-compatible host elements).
 //
-// The 1200x630 canvas is intentionally split 720/480:
-// - 720px live route map on the left (full-height, divider drawn inside it
-//   so the canvas math stays exact: 720 + 480 = 1200)
-// - 480px RTL route summary on the right
-//
-// Social previews answer only the glanceable questions: where from, where
-// to, and which lines. Stops/transfers/timing/strip/slogan stay in Metto —
-// the image is a teaser, and the share URL still carries the full state.
-//
-// RTL note: Satori does not reliably reorder Persian paragraphs. Multi-word
-// Persian is therefore rendered as explicit word nodes inside row-reverse
-// flex containers, preserving visual RTL without browser bidi assumptions.
+// The preview deliberately avoids route-map geometry and timetable detail.
+// It answers one thing at a glance — where the shared trip starts and ends —
+// using the same dark neutrals + red accent as the app. The opened share URL
+// remains the source of truth for the full route, timing, transfers, and map.
 
 import type { CSSProperties, ReactNode } from "react";
-import { OG_PANEL, type ShareLineLeg, type ShareMapModel } from "./map";
 
-const BRAND_RED = "#cc0e2d";
-const INFO_W = 480;
-const INFO_PAD_X = 48;
-const DIM_TRACK_OPACITY = 0.35;
+const BRAND_RED = "#be1228";
+const BG = "#0b0b0d";
+const PANEL = "#141416";
+const TEXT = "#fafafa";
+const MUTED = "#a1a1aa";
+const BORDER = "#27272a";
 
 function RtlRow({
   children,
@@ -46,9 +39,11 @@ function RtlRow({
   );
 }
 
+// Satori's bidi handling can differ from browsers. Render Persian labels as
+// explicit RTL word nodes so long multi-word station names stay predictable.
 function RtlWords({
   text,
-  gap = 10,
+  gap = 11,
   style,
 }: {
   text: string;
@@ -58,15 +53,7 @@ function RtlWords({
   return (
     <RtlRow gap={gap} style={style}>
       {text.split(" ").map((word, i) => (
-        <div
-          key={`${word}-${i}`}
-          style={{
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            minWidth: 0,
-          }}
-        >
+        <div key={`${word}-${i}`} style={{ whiteSpace: "nowrap" }}>
           {word}
         </div>
       ))}
@@ -74,45 +61,46 @@ function RtlWords({
   );
 }
 
-function BrandRow() {
+function Brand() {
   return (
-    <RtlRow gap={12} style={{ width: "100%" }}>
+    <RtlRow gap={14} style={{ width: "100%" }}>
       <div
         style={{
-          width: "30px",
-          height: "30px",
-          borderRadius: "9px",
+          width: "42px",
+          height: "42px",
+          borderRadius: "13px",
           background: BRAND_RED,
+          display: "flex",
           flexShrink: 0,
         }}
       />
       <div
         style={{
-          fontSize: 34,
-          fontWeight: 700,
+          fontSize: 40,
           lineHeight: 1,
-          color: "#fafafa",
+          fontWeight: 700,
+          color: TEXT,
         }}
       >
         متو
       </div>
       <div
         style={{
-          width: "1px",
-          height: "24px",
-          background: "#34343a",
-          flexShrink: 0,
-          marginLeft: "3px",
-          marginRight: "3px",
+          fontSize: 25,
+          lineHeight: 1,
+          color: MUTED,
+          marginRight: "4px",
         }}
-      />
+      >
+        مسیریاب مترو تهران
+      </div>
+      <div style={{ flexGrow: 1, display: "flex" }} />
       <div
         dir="ltr"
         style={{
           fontSize: 24,
-          lineHeight: 1,
-          color: "#a1a1aa",
-          whiteSpace: "nowrap",
+          color: MUTED,
+          letterSpacing: "0.2px",
         }}
       >
         metto.ir
@@ -121,7 +109,15 @@ function BrandRow() {
   );
 }
 
-function StationBlock({
+function stationFontSize(origin: string, destination: string): number {
+  const longest = Math.max(origin.length, destination.length);
+  if (longest <= 10) return 64;
+  if (longest <= 18) return 56;
+  if (longest <= 28) return 47;
+  return 39;
+}
+
+function Endpoint({
   label,
   name,
   fontSize,
@@ -133,319 +129,154 @@ function StationBlock({
   return (
     <div
       style={{
-        width: "100%",
         display: "flex",
         flexDirection: "column",
-        gap: "5px",
+        alignItems: "flex-end",
+        width: "100%",
+        minWidth: 0,
       }}
     >
-      <RtlRow style={{ width: "100%" }}>
-        <div
-          style={{
-            fontSize: 22,
-            fontWeight: 400,
-            color: "#8d8d97",
-          }}
-        >
-          {label}
-        </div>
-      </RtlRow>
+      <div
+        style={{
+          color: MUTED,
+          fontSize: 23,
+          lineHeight: 1,
+          marginBottom: "10px",
+        }}
+      >
+        {label}
+      </div>
       <RtlWords
         text={name}
-        gap={10}
         style={{
           width: "100%",
+          justifyContent: "flex-start",
+          color: TEXT,
           fontSize,
           fontWeight: 700,
-          lineHeight: 1.17,
-          color: "#fafafa",
-          whiteSpace: "nowrap",
+          lineHeight: 1.16,
           overflow: "hidden",
-          maxWidth: "100%",
         }}
       />
     </div>
   );
 }
 
-// Box-only down arrow: avoids relying on arrow glyphs that may be absent
-// from the embedded Vazirmatn fonts in the production ImageResponse
-// runtime. Shaft + two rotated caps, all muted so it stays subtle.
-function DownArrow() {
+function RouteRail() {
   return (
     <div
       style={{
-        width: "30px",
-        height: "42px",
-        position: "relative",
+        width: "34px",
+        height: "244px",
         display: "flex",
-        alignSelf: "center",
+        flexDirection: "column",
+        alignItems: "center",
         flexShrink: 0,
       }}
     >
       <div
         style={{
-          position: "absolute",
-          left: "13px",
-          top: 0,
-          width: "4px",
-          height: "29px",
-          borderRadius: "2px",
-          background: "#71717a",
+          width: "22px",
+          height: "22px",
+          borderRadius: "50%",
+          border: `5px solid ${BRAND_RED}`,
+          background: BG,
+          flexShrink: 0,
         }}
       />
       <div
         style={{
-          position: "absolute",
-          left: "7px",
-          top: "23px",
-          width: "4px",
-          height: "16px",
-          borderRadius: "2px",
-          background: "#71717a",
-          transform: "rotate(-45deg)",
-          transformOrigin: "center",
+          width: "5px",
+          flexGrow: 1,
+          background: BRAND_RED,
+          borderRadius: "999px",
         }}
       />
       <div
         style={{
-          position: "absolute",
-          left: "19px",
-          top: "23px",
-          width: "4px",
-          height: "16px",
-          borderRadius: "2px",
-          background: "#71717a",
-          transform: "rotate(45deg)",
-          transformOrigin: "center",
+          width: "22px",
+          height: "22px",
+          borderRadius: "50%",
+          background: BRAND_RED,
+          flexShrink: 0,
         }}
       />
     </div>
   );
 }
 
-// Compact line legend in travel order, straight from the map model's legs
-// (line/label/color — no topology logic duplicated here). Dots only, never
-// pills.
-function LineLegend({ legs }: { legs: ShareLineLeg[] }) {
-  if (legs.length === 0) return null;
-  return (
-    <RtlRow
-      gap={18}
-      style={{
-        width: "100%",
-        minHeight: "34px",
-      }}
-    >
-      {legs.map((leg) => (
-        <RtlRow key={leg.line} gap={9}>
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 400,
-              color: "#d4d4d8",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {leg.label}
-          </div>
-          <div
-            style={{
-              width: "14px",
-              height: "14px",
-              borderRadius: "50%",
-              background: leg.color,
-              flexShrink: 0,
-            }}
-          />
-        </RtlRow>
-      ))}
-    </RtlRow>
-  );
-}
-
-function stationFontSize(origin: string, destination: string): number {
-  const longest = Math.max(origin.length, destination.length);
-  // Tiers verified against renders: 14-char names (e.g. تهران (صادقیه))
-  // already overflow 384px at 55px, so the 55px tier stops at 12 chars.
-  if (longest <= 9) return 62;
-  if (longest <= 12) return 55;
-  if (longest <= 20) return 47;
-  return 39;
-}
-
-export function renderShareCard(
-  originDisplay: string,
-  destDisplay: string,
-  map: ShareMapModel | null,
-) {
+export function renderShareCard(originDisplay: string, destDisplay: string) {
   const nameSize = stationFontSize(originDisplay, destDisplay);
-
   return (
     <div
       style={{
         width: "100%",
         height: "100%",
         display: "flex",
-        flexDirection: "row",
-        direction: "ltr",
-        background: "#08090b",
-        color: "#fafafa",
+        flexDirection: "column",
+        background: BG,
+        color: TEXT,
         fontFamily: "Vazirmatn",
         position: "relative",
         overflow: "hidden",
+        padding: "54px 64px 58px",
       }}
     >
-      {/* Full-height live map: the route is the visual hook in social feeds. */}
       <div
         style={{
-          width: `${OG_PANEL.w}px`,
-          height: `${OG_PANEL.h}px`,
-          position: "relative",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "10px",
+          background: BRAND_RED,
           display: "flex",
-          background: "#0d0e11",
-          overflow: "hidden",
-          flexShrink: 0,
         }}
-      >
-        {map && (
-          <div style={{ display: "flex" }}>
-            {map.edges.map((e, i) => (
-              <div
-                key={`e${i}`}
-                style={{
-                  position: "absolute",
-                  left: e.cx - e.len / 2,
-                  top: e.cy - e.thick / 2,
-                  width: e.len,
-                  height: e.thick,
-                  background: e.color,
-                  opacity: e.opacity,
-                  borderRadius: e.thick / 2,
-                  transform: `rotate(${e.deg}deg)`,
-                  transformOrigin: "center",
-                }}
-              />
-            ))}
-            {map.connectors.map((e, i) => (
-              <div
-                key={`c${i}`}
-                style={{
-                  position: "absolute",
-                  left: e.cx - e.len / 2,
-                  top: e.cy - e.thick / 2,
-                  width: e.len,
-                  height: e.thick,
-                  background: e.color,
-                  opacity: e.opacity,
-                  borderRadius: e.thick / 2,
-                  transform: `rotate(${e.deg}deg)`,
-                  transformOrigin: "center",
-                }}
-              />
-            ))}
-            {map.dimJoints.map((d, i) => (
-              <div
-                key={`w${i}`}
-                style={{
-                  position: "absolute",
-                  left: d.x - d.r,
-                  top: d.y - d.r,
-                  width: d.r * 2,
-                  height: d.r * 2,
-                  borderRadius: "50%",
-                  background: d.fill,
-                  opacity: DIM_TRACK_OPACITY,
-                }}
-              />
-            ))}
-            {map.dots.map((d, i) => (
-              <div
-                key={`d${i}`}
-                style={{
-                  position: "absolute",
-                  left: d.x - d.r,
-                  top: d.y - d.r,
-                  width: d.r * 2,
-                  height: d.r * 2,
-                  borderRadius: "50%",
-                  background: d.fill,
-                }}
-              />
-            ))}
-            {map.joints.map((d, i) => (
-              <div
-                key={`j${i}`}
-                style={{
-                  position: "absolute",
-                  left: d.x - d.r,
-                  top: d.y - d.r,
-                  width: d.r * 2,
-                  height: d.r * 2,
-                  borderRadius: "50%",
-                  background: d.fill,
-                }}
-              />
-            ))}
-            {map.pins.map((d, i) => (
-              <div
-                key={`p${i}`}
-                style={{
-                  position: "absolute",
-                  left: d.x - d.r,
-                  top: d.y - d.r,
-                  width: d.r * 2,
-                  height: d.r * 2,
-                  borderRadius: "50%",
-                  background: d.fill,
-                }}
-              />
-            ))}
-          </div>
-        )}
-        {/* Divider drawn INSIDE the map panel so the canvas math stays
-            exact (720 map + 480 info = 1200); a border would add width. */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: "1px",
-            background: "#191a1f",
-          }}
-        />
-      </div>
+      />
 
-      {/* Minimal route summary: details are intentionally deferred to Metto. */}
+      <Brand />
+
+      <div style={{ height: "42px", display: "flex", flexShrink: 0 }} />
+
       <div
         dir="rtl"
         style={{
-          width: `${INFO_W}px`,
-          height: "630px",
+          width: "100%",
+          flexGrow: 1,
           display: "flex",
-          flexDirection: "column",
-          padding: `44px ${INFO_PAD_X}px 42px`,
-          background: "#08090b",
-          flexShrink: 0,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: "30px",
+          border: `1px solid ${BORDER}`,
+          borderRadius: "28px",
+          background: PANEL,
+          padding: "34px 42px",
           overflow: "hidden",
         }}
       >
-        <BrandRow />
-
-        <div style={{ height: "58px", flexShrink: 0 }} />
-
-        <StationBlock label="از" name={originDisplay} fontSize={nameSize} />
-
-        <div style={{ height: "18px", flexShrink: 0 }} />
-        <DownArrow />
-        <div style={{ height: "12px", flexShrink: 0 }} />
-
-        <StationBlock label="به" name={destDisplay} fontSize={nameSize} />
-
-        <div style={{ flexGrow: 1, display: "flex" }} />
-
-        {map && <LineLegend legs={map.legs} />}
+        <RouteRail />
+        <div
+          style={{
+            minWidth: 0,
+            flexGrow: 1,
+            height: "244px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
+          <Endpoint label="از" name={originDisplay} fontSize={nameSize} />
+          <div
+            style={{
+              width: "100%",
+              height: "1px",
+              background: BORDER,
+              display: "flex",
+              flexShrink: 0,
+            }}
+          />
+          <Endpoint label="به" name={destDisplay} fontSize={nameSize} />
+        </div>
       </div>
     </div>
   );
