@@ -28,6 +28,13 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "ایستگاه‌های مترو تهران | متو",
+    description:
+      "ایستگاه‌های مترو تهران را با اطلاعات خطوط، زمان‌بندی و امکانات ایستگاه‌ها ببینید.",
+    images: ["/socialprev.png"],
+  },
 };
 
 export default function StationsRoute() {
