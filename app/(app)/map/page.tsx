@@ -29,6 +29,13 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "نقشه مترو تهران | متو",
+    description:
+      "نقشه آنلاین خطوط و ایستگاه‌های مترو تهران با دسترسی مستقیم به مسیریابی.",
+    images: ["/socialprev.png"],
+  },
 };
 
 export default function MapRoute() {
