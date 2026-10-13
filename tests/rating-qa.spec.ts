@@ -2,7 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 
 const QA_FROM = "namayeshgah-e-shahr-e-aftab";
 const QA_TO = "aghdasiyeh";
-const QA_QUERY = `?from=${QA_FROM}&to=${QA_TO}`;
 const RATING_KEY = "metto.appRating.v1";
 const RATING_SESSION_KEY = "metto.appRating.session.v1";
 const RATE_HEADING = /از متو راضی هستی[؟?]|Enjoying Metto\?/;
@@ -15,6 +14,25 @@ const BASE_STATE = {
   dismissedAtMs: null,
   completed: false,
 };
+
+/** A future 09:00 Tehran departure, safely inside the planner horizon.
+ *
+ * This QA route used to rely on "Now", which makes the test legitimately hit
+ * the no-service card late in the operating day. Pinning tomorrow morning
+ * keeps the rating sequence deterministic and, because the same plan must
+ * survive every tab, also regression-tests advanced-time persistence. */
+function qaRouteQuery(): string {
+  const tomorrow = new Date(Date.now() + 36 * 3_600_000);
+  const day = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tehran",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(tomorrow);
+  // Tehran is UTC+03:30 year-round; 09:00 local = 05:30Z.
+  const at = `${day}T05:30:00.000Z`;
+  return `?from=${QA_FROM}&to=${QA_TO}&timeMode=depart&at=${encodeURIComponent(at)}`;
+}
 
 async function clickDesktopTab(page: Page, path: string) {
   const link = page.locator(`nav[aria-label="Main"] a[href^="${path}"]`);
@@ -32,18 +50,23 @@ test.describe("rating QA trigger", () => {
       { key: RATING_KEY, state: BASE_STATE },
     );
 
-    await page.goto(`/route${QA_QUERY}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`/route${qaRouteQuery()}`, { waitUntil: "domcontentloaded" });
     await expect(page.locator("#origin-combobox")).toBeVisible();
 
-    // Follow the same hydrated tab links a real user taps. This both preserves
-    // the selected route and guarantees each destination mounted before the
-    // next step, which is the contract the session-only QA tracker observes.
+    // Follow the same hydrated tab links a real user taps. The selected route
+    // AND advanced-time plan must survive every destination and come back to
+    // /route intact; the session-only QA tracker observes the same sequence.
     const stationsTab = page.locator('nav[aria-label="Main"] a[href^="/stations"]');
     await expect(stationsTab).toHaveAttribute("href", new RegExp(`from=${QA_FROM}.*to=${QA_TO}`));
+    await expect(stationsTab).toHaveAttribute("href", /timeMode=depart/);
     await clickDesktopTab(page, "/stations");
     await clickDesktopTab(page, "/nearby");
     await clickDesktopTab(page, "/map");
     await clickDesktopTab(page, "/route");
+
+    const finalUrl = new URL(page.url());
+    expect(finalUrl.searchParams.get("timeMode")).toBe("depart");
+    expect(finalUrl.searchParams.get("at")).toBeTruthy();
 
     // Let the final successful route finish its normal success bookkeeping,
     // then snapshot the real rating state before the QA prompt's settle delay.
