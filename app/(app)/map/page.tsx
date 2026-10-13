@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   // TODO(multi-city): Tehran-scoped until /[city]/map lands.
   title: "نقشه مترو تهران",
   description:
-    "نقشه تعاملی مترو تهران با نمای ماهواره‌ای و نقشه خطوط. تمام ایستگاه‌ها، خطوط و اطلاعات مسیریابی.",
+    "نقشه آنلاین خطوط و ایستگاه‌های مترو تهران را ببین، اطلاعات ایستگاه‌ها را بررسی کن و مستقیم وارد مسیریابی شو.",
   alternates: {
     canonical: "/map",
     languages: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "نقشه مترو تهران | متو",
     description:
-      "نقشه تعاملی مترو تهران با نمای ماهواره‌ای و نقشه خطوط.",
+      "نقشه آنلاین خطوط و ایستگاه‌های مترو تهران با دسترسی مستقیم به مسیریابی.",
     url: "https://metto.ir/map",
     images: [
       {
