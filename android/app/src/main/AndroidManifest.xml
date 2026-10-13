@@ -180,6 +180,28 @@
             </intent-filter>
         </activity>
 
+        <!-- metto: "Rate Metto" target for the TWA web UI
+              (metto://rate-app, see RateAppActivity + StoreResolver).
+              Detects the installing store (Bazaar/Myket/Play) and opens
+              our listing in that exact store; unknown/direct installs
+              fall back to market:// then https://metto.ir/rate — no GMS.
+              Re-apply after any `bubblewrap update` (it regenerates this file). -->
+        <activity
+            android:name=".RateAppActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="metto"
+                    android:host="rate-app" />
+            </intent-filter>
+        </activity>
+
         <activity android:name="com.google.androidbrowserhelper.trusted.WebViewFallbackActivity"
             android:configChanges="orientation|screenSize" />
 

@@ -55,7 +55,8 @@ npx -y @bubblewrap/cli@1.25.0 update --manifest android
 # stay enabled even when enableNotifications=false, otherwise TWA GPS fails
 # with PERMISSION_DENIED while the PWA works).
 # Also re-apply the LocationSettingsActivity block ("Turn on location"
-# deep link) and the ?twa=android line in LauncherActivity.getLaunchingUrl.
+# deep link), the RateAppActivity block (metto://rate-app, see below),
+# and the ?twa=android line in LauncherActivity.getLaunchingUrl.
 #
 # Launch path: the TWA cold-start URL must stay in sync in three places —
 # app/manifest.ts start_url (PWA installs), android/twa-manifest.json
@@ -71,9 +72,10 @@ Web geolocation cannot prove the device Location master switch is OFF
 (`POSITION_UNAVAILABLE` also means "no fix", e.g. underground), so the web
 UI (`lib/geolocation.ts` → `classifyGeoError`, `components/location-error.tsx`)
 words unavailable/timeout failures as "make sure device Location is turned
-on" guidance with a Retry action — and, only inside the TWA (`lib/twa.ts`
-detection: `android-app://ir.metto.app` referrer, `?twa=android` launcher
-param, or `getInstalledRelatedApps`), a native **Turn on location** action.
+on" guidance with a Retry action — and, only inside the actual TWA
+(`lib/twa.ts` detection: `android-app://ir.metto.app` referrer or the
+`?twa=android` launcher/session signal; `getInstalledRelatedApps()` is
+install-presence only), a native **Turn on location** action.
 
 That action is a package-targeted Android intent URI
 (`intent://open-location-settings#Intent;scheme=metto;package=ir.metto.app;end`;
@@ -90,6 +92,107 @@ GMS may be absent. Opening system settings covers every device.
 Note: the CLI's first-run JDK/SDK prompts are interactive; generation
 itself needs neither. The project in this PR was generated
 programmatically with `@bubblewrap/core@1.25.0` (same code, no prompts).
+
+## Rate Metto (no GMS / no Play Core)
+
+Web entry (`lib/twa.ts`): `RATE_APP_URI = "metto://rate-app"` plus
+`openAndroidRateAppWithFallback()` which navigates via the package-targeted
+intent form (same CCT reason as location: plain `metto://` is swallowed
+inside the TWA). The intent carries
+`S.browser_fallback_url=https%3A%2F%2Fmetto.ir%2Frate` — primary
+old-wrapper protection: Chrome itself opens `/rate` when the wrapper has
+no `RateAppActivity`. A visibility-timer backup (~2.5s, cancelled when the
+page hides) covers TWA providers that ignore the fallback param.
+No JavaScript bridge.
+
+Native target (`RateAppActivity`, exported, `noHistory`,
+`excludeFromRecents`, `Theme.NoDisplay`, handles `metto://rate-app`):
+determines the package that installed `ir.metto.app`, then opens our
+listing directly in that exact store (Intent pinned to the store package,
+so no chooser):
+
+- API 30+: `PackageManager.getInstallSourceInfo(getPackageName()).getInstallingPackageName()`
+- Older: `PackageManager.getInstallerPackageName(getPackageName())`
+- Nulls + all exceptions handled safely; never crashes, always `finish()`.
+
+The website cannot query Android's installer source — only this native
+activity can. Old wrappers predate it, so two layers protect old-wrapper
+users (no dead taps, no error dialogs): `S.browser_fallback_url` (Chrome
+opens `/rate` itself) plus the visibility-timer backup in
+`openAndroidRateAppWithFallback()`. Non-Chrome TWA-capable browsers may
+behave differently; the timer is the net. Native installer detection
+reaches users only after they update the Android app — see rollout below.
+
+Installer → store (`StoreResolver`, pure Java, no framework):
+
+- Cafe Bazaar `com.farsitel.bazaar`:
+  native `bazaar://details?id=ir.metto.app`,
+  fallback `https://cafebazaar.ir/app/ir.metto.app`
+- Myket `ir.mservices.market`:
+  native `myket://details?id=ir.metto.app`,
+  fallback `https://myket.ir/app/ir.metto.app`
+- Google Play `com.android.vending` (recognized only; no Play Core or
+  Google dependency — opening the Play listing is sufficient):
+  native `market://details?id=ir.metto.app` pinned to `com.android.vending`,
+  fallback `https://play.google.com/store/apps/details?id=ir.metto.app`
+- Unknown / direct / ADB: never guess. Unpinned
+  `market://details?id=ir.metto.app` (system resolves or shows its normal
+  chooser); if nothing handles it, `https://metto.ir/rate`.
+
+Each native attempt catches `ActivityNotFoundException` before falling
+back. No GMS / Play Core / In-App Review dependency anywhere
+(`scripts/check-android-config.mjs` asserts this).
+
+Automatic prompt (`lib/app-rating.ts`, key `metto.appRating.v1`,
+localStorage only, no account/analytics/server/fingerprint):
+
+- Eligible after ≥5 successful routes on ≥3 distinct local calendar days,
+  not completed, not in cooldown, <2 lifetime displays.
+- "Rate Metto" → `recordRatingAction()` (launch = completion) before
+  invoking the native flow. Manual entry stays available regardless.
+- "Not now" → `recordRatingDismiss()` (90-day cooldown).
+- Second dismissal disables automatic prompting forever.
+- Days are local `YYYY-MM-DD`, corrupt storage fails safely.
+
+UI (`components/rate-prompt.tsx`): neutral "Enjoying Metto? / Your rating
+helps more people find Metto." with "Rate Metto" / "Not now". Small inline
+card below the settled route result — never a blocking dialog, never
+during launch/loading/permissions/GPS/offline/calculation, never
+auto-focused, never focus-trapped. Presentation additionally requires a
+~2s settle delay (cancelled on route change/hide/unmount), a visible tab,
+no focused route input, and no open dialog; a `sessionStorage` session flag
+(`metto.appRating.session.v1`) limits presentation to once per session
+across remounts. Keyboard dismissal restores focus to the route area
+(`preventScroll`); pointer users are left alone. Buttons are 44px minimum.
+Manual entry (`RateMettoAction`) lives in the route footer + mobile
+credits; outside the TWA it goes to bilingual `/rate` (explicit
+Bazaar/Myket buttons).
+
+Rollout (web-first is safe): 1. merge/deploy web → 2. verify `/rate` →
+3. cut the Android release (versionCode/versionName bump) → 4. publish to
+Bazaar/Myket → 5. verify on real store installs. Production wrappers gain
+nothing from a web deploy alone — native detection arrives only with the
+app update. The old-wrapper fallbacks above make web-first safe, and the
+5-route/3-day gate means almost nobody is auto-prompted before updating,
+so the automatic prompt stays enabled during rollout.
+
+WARNING: `bubblewrap update` regenerates `AndroidManifest.xml` — the
+`RateAppActivity` block above (like the location block) must be reapplied,
+or `node scripts/check-android-config.mjs` will fail.
+
+ADB QA (real phone, debug APK):
+
+```bash
+ADB=".../platform-tools/adb.exe"
+APK="$(wslpath -w "$(pwd)/android/app/build/outputs/apk/debug/app-debug.apk")"
+"$ADB" uninstall ir.metto.app || true
+"$ADB" install -i com.farsitel.bazaar "$APK"
+"$ADB" shell dumpsys package ir.metto.app | grep -i -A4 installer
+"$ADB" shell am start -W -a android.intent.action.VIEW -d "metto://rate-app"
+# repeat with -i ir.mservices.market, then plain install for unknown,
+# then the intent form with the browser fallback:
+# intent://rate-app#Intent;scheme=metto;package=ir.metto.app;S.browser_fallback_url=https%3A%2F%2Fmetto.ir%2Frate;end
+```
 
 ## Signing (one release key, GitHub-hosted secrets only)
 

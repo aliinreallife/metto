@@ -71,10 +71,11 @@ describe("TWA wrapper detection", () => {
     expect(isAndroidTwaSync()).toBe(true);
   });
 
-  it("detects the wrapper via installed related apps", async () => {
+  it("does not mistake ordinary Chrome with the wrapper installed for the TWA", async () => {
     stubBrowser({ relatedApps: [{ id: TWA_PACKAGE }] });
-    await expect(isAndroidTwa()).resolves.toBe(true);
-    expect(isAndroidTwaSync()).toBe(true);
+    await expect(isTwaPackageInstalled()).resolves.toBe(true);
+    await expect(isAndroidTwa()).resolves.toBe(false);
+    expect(isAndroidTwaSync()).toBe(false);
   });
 
   it("stays negative when related apps list something else", async () => {
@@ -124,5 +125,21 @@ describe("LOCATION_SETTINGS_URI", () => {
         "intent://open-location-settings#Intent;",
       ),
     ).toBe(true);
+  });
+});
+
+describe("RATE_APP_URI", () => {
+  it("exposes the canonical metto://rate-app deep link", async () => {
+    const mod = await import("./twa");
+    expect(mod.RATE_APP_URI).toBe("metto://rate-app");
+  });
+
+  it("navigates via a package-targeted intent URI (CCT-safe)", async () => {
+    const mod = await import("./twa");
+    expect(mod.RATE_APP_INTENT_URI).toContain(
+      "intent://rate-app#Intent;scheme=metto;",
+    );
+    expect(mod.RATE_APP_INTENT_URI).toContain("package=ir.metto.app");
+    expect(mod.RATE_APP_INTENT_URI.endsWith(";end")).toBe(true);
   });
 });

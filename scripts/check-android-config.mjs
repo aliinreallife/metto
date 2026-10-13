@@ -112,6 +112,79 @@ ok(
   !gradle.includes("play-services"),
   "app/build.gradle adds no Play Services dependency (Location settings via platform Settings intent)",
 );
+ok(
+  !gradle.includes("play-core") && !gradle.includes("review:"),
+  "app/build.gradle adds no Play Core/In-App Review dependency (rating via store listing intents)",
+);
+
+// "Rate Metto" helper (RateAppActivity + StoreResolver): installer-source
+// routing to the exact installing store (Bazaar/Myket/Play) with a /rate
+// web fallback for unknown installs. Deliberately GMS-free.
+ok(
+  manifestXml.includes('android:name=".RateAppActivity"'),
+  "AndroidManifest declares .RateAppActivity (Rate Metto target)",
+);
+ok(
+  /<activity[^>]*android:name="\.RateAppActivity"[^>]*android:exported="true"/s.test(manifestXml) ||
+    /<activity[^>]*android:exported="true"[^>]*android:name="\.RateAppActivity"/s.test(manifestXml),
+  "AndroidManifest keeps RateAppActivity android:exported=true (Chrome must fire the deep link)",
+);
+ok(
+  /<activity[^>]*android:name="\.RateAppActivity"[^>]*android:noHistory="true"/s.test(manifestXml) ||
+    /<activity[^>]*android:noHistory="true"[^>]*android:name="\.RateAppActivity"/s.test(manifestXml),
+  "AndroidManifest keeps RateAppActivity android:noHistory=true (forward then finish)",
+);
+ok(
+  /<activity[^>]*android:name="\.RateAppActivity"[^>]*android:excludeFromRecents="true"/s.test(manifestXml) ||
+    /<activity[^>]*android:excludeFromRecents="true"[^>]*android:name="\.RateAppActivity"/s.test(manifestXml),
+  "AndroidManifest keeps RateAppActivity excluded from recents",
+);
+ok(
+  manifestXml.includes('android:host="rate-app"'),
+  "AndroidManifest routes metto://rate-app to RateAppActivity",
+);
+const rateJava = readFileSync(
+  resolve(repoRoot, "android/app/src/main/java/ir/metto/app/RateAppActivity.java"),
+  "utf8",
+);
+ok(
+  rateJava.includes("getInstallSourceInfo") && rateJava.includes("getInstallerPackageName"),
+  "RateAppActivity detects installer via getInstallSourceInfo (API 30+) with getInstallerPackageName fallback",
+);
+ok(
+  rateJava.includes("com.farsitel.bazaar") || readFileSync(
+    resolve(repoRoot, "android/app/src/main/java/ir/metto/app/StoreResolver.java"),
+    "utf8",
+  ).includes("com.farsitel.bazaar"),
+  "Rating helper recognizes Cafe Bazaar installer (com.farsitel.bazaar)",
+);
+ok(
+  readFileSync(
+    resolve(repoRoot, "android/app/src/main/java/ir/metto/app/StoreResolver.java"),
+    "utf8",
+  ).includes("ir.mservices.market"),
+  "Rating helper recognizes Myket installer (ir.mservices.market)",
+);
+ok(
+  rateJava.includes("ActivityNotFoundException") && rateJava.includes("finish()"),
+  "RateAppActivity never crashes when a store is missing and always finishes",
+);
+const twaTs = readFileSync(resolve(repoRoot, "lib/twa.ts"), "utf8");
+ok(
+  twaTs.includes("S.browser_fallback_url") &&
+    twaTs.includes('RATE_FALLBACK_URL = "https://metto.ir/rate"') &&
+    twaTs.includes("encodeURIComponent(RATE_FALLBACK_URL)"),
+  "lib/twa.ts rating intent carries S.browser_fallback_url to https://metto.ir/rate (old-wrapper protection)",
+);
+ok(
+  twaTs.includes("openAndroidRateAppWithFallback") &&
+    twaTs.includes("visibilityState"),
+  "lib/twa.ts keeps a visibility-gated /rate backup for browsers ignoring browser_fallback_url",
+);
+ok(
+  !rateJava.includes("play-services") && !rateJava.includes("PlayCore") && !rateJava.includes("ReviewManager"),
+  "RateAppActivity uses no GMS/Play Core dependency (listing intents only)",
+);
 
 if (fail.length) {
   console.error("\ncheck-android-config: FAILED");
