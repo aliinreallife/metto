@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { StationCombobox } from "@/components/station-combobox";
 import { MissedDeadlineCard, NoServiceCard, RoutePanel, WalkSuggestCard } from "@/components/route-panel";
-import { RateMettoAction, RatePromptHost } from "@/components/rate-prompt";
+import { RatePromptHost } from "@/components/rate-prompt";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
 import { TravelTimeCard } from "@/components/travel-time-card";
@@ -402,14 +402,6 @@ export function HomePage() {
         >
           {t.supportLink}
         </TabLink>
-        <TabLink
-          href="/privacy"
-          connectivity={connectivity}
-          className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          {t.privacyLink}
-        </TabLink>
-        <RateMettoAction lang={lang} />
       </div>
     </div>
   );

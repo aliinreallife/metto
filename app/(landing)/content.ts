@@ -387,7 +387,7 @@ const en: typeof fa = {
     items: [
       {
         q: "Is it free?",
-        a: "Completely — with no ads, forever. No sign-up, no payment. Hosting and data run purely on voluntary user support; if you feel like it, the “Support metto” section at the bottom of the page links to Reymit.",
+        a: "Completely — with no ads, forever. No sign-up, no payment. Hosting and data run purely on voluntary user donations; if you feel like it, the “Donate to metto” section at the bottom of the page links to Reymit.",
       },
       {
         q: "Which cities?",
@@ -406,16 +406,16 @@ const en: typeof fa = {
     ask: "Ask on GitHub",
   },
   donate: {
-    eyebrow: "Support metto",
+    eyebrow: "Donate to metto",
     title: "Free. No ads. Forever.",
-    desc: "metto charges nothing and never shows advertising — its hosting and development time run purely on voluntary support from the people who use it.",
-    paysTitle: "What your support pays for",
+    desc: "metto charges nothing and never shows advertising — its hosting and development time run purely on voluntary donations from the people who use it.",
+    paysTitle: "What your donation pays for",
     pays: ["Keeps the server running", "Keeps data and timetables current", "Builds new features and cities"],
     primary: "Donate",
     primaryNote: "via Reymit",
-    voluntaryNote: "Support is fully voluntary — no feature or content is unlocked by paying.",
+    voluntaryNote: "Donating is fully voluntary — no feature or content is unlocked by paying.",
     secondary: "Star on GitHub",
-    altTitle: "Not all valuable support is money:",
+    altTitle: "Other ways to help:",
     altWays: ["Tell a friend about metto", "Report a data mistake", "Share an idea with us"],
     slotLabel: "Ad slot",
     adBadge: "Ad",

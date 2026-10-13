@@ -113,7 +113,7 @@ export const STRINGS = {
     dataBy: "Metro data by",
     aboutLink: "About",
     privacyLink: "Privacy",
-    supportLink: "Support",
+    supportLink: "Donate",
     searchHintBefore: "you could also search places like",
     searchHintExample: "Iran Mall",
     searchHintAfter: "or any place you need",

@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { InstallButton } from "@/components/pwa";
 import { OfflineStatus } from "@/components/offline-status";
-import { RateMettoAction } from "@/components/rate-prompt";
 import { useMetro } from "./providers";
 import { STRINGS } from "@/lib/i18n";
 import { buildTabHref } from "@/lib/geo";
@@ -268,16 +267,6 @@ export function AppNav() {
           >
             {t.supportLink}
           </FooterLink>
-          <FooterLink
-            href="/privacy"
-            className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {t.privacyLink}
-          </FooterLink>
-          <RateMettoAction
-            lang={lang}
-            className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-          />
         </div>
         )}
         <nav className={cn("grid grid-cols-4 pb-[env(safe-area-inset-bottom)]", isMainTab && "border-t border-border")}>

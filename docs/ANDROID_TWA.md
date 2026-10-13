@@ -164,9 +164,9 @@ no focused route input, and no open dialog; a `sessionStorage` session flag
 (`metto.appRating.session.v1`) limits presentation to once per session
 across remounts. Keyboard dismissal restores focus to the route area
 (`preventScroll`); pointer users are left alone. Buttons are 44px minimum.
-Manual entry (`RateMettoAction`) lives in the route footer + mobile
-credits; outside the TWA it goes to bilingual `/rate` (explicit
-Bazaar/Myket buttons).
+Manual entry (`RateMettoAction`) is intentionally not in the footers;
+outside the TWA the bilingual `/rate` page (explicit Bazaar/Myket buttons)
+remains reachable directly.
 
 Rollout (web-first is safe): 1. merge/deploy web → 2. verify `/rate` →
 3. cut the Android release (versionCode/versionName bump) → 4. publish to
@@ -310,8 +310,8 @@ change, and no APK rebuild:
 - **Privacy.** A short bilingual `/privacy` page states the actual data
   flows (on-device location math, Nominatim place search, CARTO/Esri tiles,
   production Vercel telemetry, server-side holiday refresh, on-device
-  storage, no account). It is linked from the `/route` footer (the TWA
-  start page) and the landing footer, and listed in `app/sitemap.ts`.
+  storage, no account). It is served directly and listed in `app/sitemap.ts`
+  (no footer link).
 - **Location disclosure.** A one-line FA/EN note next to “Use my location”
   (`lib/i18n.ts` `locationUseNote`, rendered in `components/nearby-tab.tsx`
   and the route planner) states location is only for nearby stations with a
