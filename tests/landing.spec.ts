@@ -93,9 +93,23 @@ test.describe("landing a11y improvements", () => {
     expect(activeBefore).not.toBe("A");
     await expect(cta).not.toBeFocused();
 
-    // Scrolling into view fires the observer, which removes inert.
-    await cta.scrollIntoViewIfNeeded();
-    await expect(reveal).not.toHaveAttribute("inert", "", { timeout: 10_000 });
+    // Hydration recovery may replace this Reveal node after load. Re-query and
+    // scroll the current node on every retry so the IntersectionObserver that
+    // owns the current DOM instance gets a chance to remove inert.
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const el = document.querySelector(
+              "#install div.transition-all",
+            ) as HTMLElement | null;
+            if (!el) return false;
+            el.scrollIntoView({ block: "center" });
+            return !el.hasAttribute("inert");
+          }),
+        { timeout: 10_000 },
+      )
+      .toBe(true);
 
     // Now the same descendant can receive focus normally.
     await cta.focus();

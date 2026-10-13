@@ -33,12 +33,12 @@ const NAV_ITEMS = [
 ] as const;
 
 /**
- * Top-level tab link. When effectively online it behaves exactly like Next
- * <Link> (client navigation + prefetch). Otherwise (offline, or still
- * checking — the safe default since destinations are precached), plain
- * primary clicks on the four precached static tabs use a native
- * full-document navigation instead: client-side RSC fetches cannot succeed
- * offline and would abort the transition, while a document request is
+ * Top-level tab link. When effectively online it uses normal Next client
+ * navigation and its normal prefetch behavior for responsive tab switches.
+ * Otherwise (offline, or still checking — the safe default since destinations
+ * are precached), plain primary clicks on the four precached static tabs use a
+ * native full-document navigation instead: client-side RSC fetches cannot
+ * succeed offline and would abort the transition, while a document request is
  * served from the Serwist precache. Modifier/middle clicks, new-tab targets
  * and non-precached URLs keep normal browser semantics.
  *
@@ -95,6 +95,43 @@ export function TabLink({
         if (!stateOffline && !linkOffline) return;
         e.preventDefault();
         window.location.assign(href);
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
+/** Secondary same-origin footer destinations do not need speculative RSC
+ * prefetch. Use a full-document navigation for plain clicks so hydration or
+ * router recovery cannot swallow the transition; modifier clicks stay native. */
+function FooterLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      prefetch={false}
+      className={className}
+      onClick={(e) => {
+        if (
+          e.button !== 0 ||
+          e.ctrlKey ||
+          e.metaKey ||
+          e.shiftKey ||
+          e.altKey ||
+          e.currentTarget.target === "_blank"
+        ) {
+          return;
+        }
+        e.preventDefault();
+        window.location.assign(e.currentTarget.href);
       }}
     >
       {children}
@@ -216,20 +253,18 @@ export function AppNav() {
             </span>
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
-          <TabLink
+          <FooterLink
             href="/#donate"
-            connectivity={connectivity}
             className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             {t.supportLink}
-          </TabLink>
-          <TabLink
+          </FooterLink>
+          <FooterLink
             href="/privacy"
-            connectivity={connectivity}
             className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             {t.privacyLink}
-          </TabLink>
+          </FooterLink>
         </div>
         )}
         <nav className={cn("grid grid-cols-4 pb-[env(safe-area-inset-bottom)]", isMainTab && "border-t border-border")}>
