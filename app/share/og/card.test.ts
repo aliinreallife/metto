@@ -91,20 +91,13 @@ const tree = () =>
 describe("branded share card", () => {
   it("uses the real Metto identity, slogan, and route endpoints", () => {
     const all = texts(tree());
-    for (const s of [
-      "متو",
-      "تو مترو گم شدی؟ ما هم شده بودیم",
-      "metto.ir",
-      "از",
-      "تجریش",
-      "به",
-      "تئاتر",
-      "شهر",
-    ]) {
+    for (const s of ["متو", "metto.ir", "از", "تجریش", "به", "تئاتر", "شهر"]) {
       expect(all).toContain(s);
     }
+    const copy = all.join(" ");
+    expect(copy).toContain("تو مترو گم شدی؟ ما هم شده بودیم");
     expect(types(tree())).toContain("svg");
-    expect(all).not.toContain("مسیریاب مترو تهران");
+    expect(copy).not.toContain("مسیریاب مترو تهران");
   });
 
   it("shows useful teaser facts and points to the full journey", () => {
