@@ -23,8 +23,6 @@ function normalizePath(pathname: string): string {
 
 export function noteRatingQaNavigation(
   pathname: string,
-  originId?: string | null,
-  destId?: string | null,
   storage?: SessionLike | null,
 ): void {
   try {
@@ -44,12 +42,8 @@ export function noteRatingQaNavigation(
     }
 
     if (next >= QA_SEQUENCE.length) {
-      if (originId === RATING_QA_ORIGIN && destId === RATING_QA_DEST) {
-        s.setItem(QA_ARMED_KEY, "1");
-        s.removeItem(QA_PROGRESS_KEY);
-      } else {
-        s.setItem(QA_PROGRESS_KEY, "1");
-      }
+      s.setItem(QA_ARMED_KEY, "1");
+      s.removeItem(QA_PROGRESS_KEY);
     } else if (next > 0) {
       s.setItem(QA_PROGRESS_KEY, String(next));
     } else {
