@@ -196,11 +196,11 @@ jobs:
           cat dist/SHA256SUMS.txt
 
       - name: Build release notes from CHANGELOG.md
-        # User-facing bilingual notes first, download table + artifact details after.
+        # Put direct download/install information first, then the bilingual changelog.
         # Extraction fails the job if the version section is missing.
         run: |
           set -euo pipefail
-          node scripts/extract-changelog-section.mjs "$GITHUB_REF_NAME" > RELEASE_NOTES.md
+          node scripts/extract-changelog-section.mjs "$GITHUB_REF_NAME" > CHANGELOG_RELEASE_NOTES.md
           TAG="$GITHUB_REF_NAME"
           REPO="$GITHUB_REPOSITORY"
           BASE_URL="https://github.com/$REPO/releases/download/$TAG"
@@ -211,9 +211,6 @@ jobs:
           AAB_MB="$(awk "BEGIN {printf \"%.1f\", $(stat -c%s "$AAB")/1048576}")"
           SUMS_KB="$(awk "BEGIN {printf \"%.0f\", $(stat -c%s "$SUMS")/1024}")"
           {
-            echo ""
-            echo "---"
-            echo ""
             echo "## Download / دانلود"
             echo ""
             echo "metto Android $TAG (versionCode $VERSION_CODE)."
@@ -230,7 +227,11 @@ jobs:
             echo "Also on Myket: https://myket.ir/app/ir.metto.app"
             echo ""
             echo "No store publishing inside this workflow."
-          } >> RELEASE_NOTES.md
+            echo ""
+            echo "---"
+            echo ""
+            cat CHANGELOG_RELEASE_NOTES.md
+          } > RELEASE_NOTES.md
           cat RELEASE_NOTES.md
 
       - name: Create GitHub Release
