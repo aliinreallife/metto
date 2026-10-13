@@ -84,7 +84,13 @@ function repoNameWithOwner() {
 }
 
 function ghApi(args) {
-  return execFileSync("gh", ["api", ...args], { encoding: "utf8" });
+  // Compare responses embed the whole range's file patches (easily >1 MiB),
+  // far beyond execFileSync's default 1 MiB stdout buffer. Size the buffer
+  // for release-range growth instead of failing with ENOBUFS.
+  return execFileSync("gh", ["api", ...args], {
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+  });
 }
 
 // Commits in PREV_TAG..BASE — the paginated GitHub compare itself, which is
@@ -202,7 +208,7 @@ function searchMergedPrsSince({ since, base, limit = 200 }) {
   const out = execFileSync(
     "gh",
     ["pr", "list", "--search", `merged:>${since}`, "--state", "merged", "--base", base, "--limit", String(limit), "--json", "number,title,body,mergedAt,url"],
-    { encoding: "utf8" },
+    { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
   );
   return JSON.parse(out);
 }
