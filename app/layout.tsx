@@ -26,10 +26,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   alternates: {
     canonical: siteUrl,
-    languages: {
-      en: "/?lang=en",
-      fa: "/",
-    },
   },
   keywords: [
     "نقشه مترو",
