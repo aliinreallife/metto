@@ -1,30 +1,9 @@
-// Structural contract for the minimal share card (no pixels: Satori byte
-// output is unstable, so this pins hierarchy + copy instead).
-// Covers: از/به heading order, box-drawn DownArrow (no handmade LeftArrow),
-// line chips in travel order, and teaser compliance (no stops/transfers/
-// timing/strip/slogan anywhere in the tree).
+// Structural contract for the minimal share card. Satori PNG bytes are not a
+// stable snapshot target, so these tests pin the useful copy and intentionally
+// small visual vocabulary instead.
 import { describe, expect, it } from "vitest";
 import type { ReactElement, ReactNode } from "react";
 import { renderShareCard } from "./card";
-import type { ShareMapModel } from "./map";
-
-function fakeMap(): ShareMapModel {
-  return {
-    edges: [],
-    dots: [],
-    pins: [],
-    connectors: [],
-    legs: [
-      { line: 1, label: "۱ خط", color: "#E0001F", stops: 9 },
-      { line: 3, label: "۳ خط", color: "#67C5F5", stops: 4 },
-    ],
-    numStops: 13,
-    numTransfers: 1,
-    interchangeIds: ["shahid-beheshti"],
-    joints: [],
-    dimJoints: [],
-  };
-}
 
 interface ElProps {
   children?: ReactNode;
@@ -38,8 +17,6 @@ function asEl(node: ReactNode): ReactElement<ElProps> | null {
   return null;
 }
 
-/** Expand a hookless function component (RtlRow/RtlWords/BrandRow and co.
-//  are all pure output — safe to call directly for structural inspection). */
 function resolve(node: ReactNode): ReactNode {
   const el = asEl(node);
   if (el && typeof el.type === "function") {
@@ -48,7 +25,6 @@ function resolve(node: ReactNode): ReactNode {
   return node;
 }
 
-/** All string leaves of an element tree, in render order. */
 function texts(node: ReactNode, out: string[] = []): string[] {
   if (typeof node === "string" || typeof node === "number") {
     out.push(String(node));
@@ -68,87 +44,63 @@ function texts(node: ReactNode, out: string[] = []): string[] {
   return out;
 }
 
-/** True when any element in the tree is a function component called `name`. */
-function usesComponent(node: ReactNode, name: string): boolean {
-  if (Array.isArray(node)) return node.some((n) => usesComponent(n, name));
-  const el = asEl(node);
-  if (!el) return false;
-  if (typeof el.type === "function" && el.type.name === name) return true;
-  return usesComponent(el.props.children, name);
-}
-
-/** Backgrounds of 14px circle divs (line-legend dots), in render order. */
-function legendColors(node: ReactNode, out: string[] = []): string[] {
+function backgrounds(node: ReactNode, out: string[] = []): string[] {
   if (Array.isArray(node)) {
-    node.forEach((n) => legendColors(n, out));
+    node.forEach((n) => backgrounds(n, out));
     return out;
   }
   node = resolve(node);
   if (Array.isArray(node)) {
-    node.forEach((n) => legendColors(n, out));
+    node.forEach((n) => backgrounds(n, out));
     return out;
   }
   const el = asEl(node);
   if (!el) return out;
-  const style = el.props.style;
-  if (
-    style?.width === "14px" &&
-    style?.borderRadius === "50%" &&
-    typeof style.background === "string"
-  ) {
-    out.push(style.background);
+  if (typeof el.props.style?.background === "string") {
+    out.push(el.props.style.background);
   }
-  legendColors(el.props.children, out);
+  backgrounds(el.props.children, out);
   return out;
 }
 
-const tree = () => renderShareCard("تجریش", "تئاتر شهر", fakeMap());
+const tree = () => renderShareCard("تجریش", "تئاتر شهر");
 
 describe("minimal share card", () => {
-  it("orders brand, از/origin, arrow, به/destination, line legend", () => {
+  it("shows Metto identity and the route endpoints in order", () => {
     const all = texts(tree());
     for (const s of [
       "متو",
+      "مسیریاب مترو تهران",
       "metto.ir",
       "از",
       "تجریش",
       "به",
       "تئاتر",
       "شهر",
-      "۱ خط",
-      "۳ خط",
     ]) {
       expect(all).toContain(s);
     }
     expect(all.indexOf("از")).toBeLessThan(all.indexOf("تجریش"));
     expect(all.indexOf("تجریش")).toBeLessThan(all.indexOf("به"));
     expect(all.indexOf("به")).toBeLessThan(all.indexOf("تئاتر"));
-    expect(all.indexOf("تئاتر")).toBeLessThan(all.indexOf("۱ خط"));
   });
 
-  it("draws a box-only direction arrow, never the handmade one", () => {
-    expect(usesComponent(tree(), "DownArrow")).toBe(true);
-    expect(usesComponent(tree(), "LeftArrow")).toBe(false);
+  it("uses the app red as the only strong accent", () => {
+    const colors = backgrounds(tree());
+    expect(colors.filter((c) => c === "#be1228").length).toBeGreaterThanOrEqual(3);
   });
 
-  it("shows leg-colored line dots in travel order", () => {
-    expect(legendColors(tree())).toEqual(["#E0001F", "#67C5F5"]);
-    const all = texts(tree());
-    expect(all.indexOf("۱ خط")).toBeLessThan(all.indexOf("۳ خط"));
-  });
-
-  it("renders teaser-only copy (no meta/timing/strip/slogan)", () => {
-    const all = texts(tree());
+  it("keeps route-map and timetable detail out of the teaser", () => {
+    const all = texts(tree()).join(" ");
     for (const s of [
       "ایستگاه",
       "تعویض",
-      "بدون",
       "رسیدن",
       "حرکت",
-      "منتظر",
-      "گیج",
+      "دقیقه",
       "نقشه",
-      "مسیریابی",
+      "خط ۱",
+      "خط ۲",
     ]) {
       expect(all).not.toContain(s);
     }
