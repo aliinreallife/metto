@@ -40,49 +40,78 @@ export function RatePrompt({
 }) {
   const t = STRINGS[lang];
   const titleId = useId();
+  const eyebrow = lang === "fa" ? "یک درخواست کوچک" : "A small favor";
+  const reassurance =
+    lang === "fa"
+      ? "بدون مزاحمت؛ اگر نخواهی، تا مدت طولانی دوباره نشان داده نمی‌شود."
+      : "No pressure — if you skip it, we won’t ask again for a long time.";
+
   return (
     <section
       aria-labelledby={titleId}
-      className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
+      className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_30px_rgba(0,0,0,0.07)]"
     >
       <span
         aria-hidden="true"
-        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15"
-      >
-        <Star className="size-4 text-primary" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <h2 id={titleId} className="text-sm font-bold md:text-base">
-          {t.rateTitle}
-        </h2>
-        <p className="mt-0.5 text-xs text-muted-foreground md:text-sm">
-          {t.rateBody}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onRate}
-            className="flex min-h-[44px] items-center rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+        className="absolute inset-y-0 start-0 w-[3px] bg-primary"
+      />
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 p-4">
+        <span
+          aria-hidden="true"
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary"
+        >
+          <Star className="size-[18px]" />
+        </span>
+
+        <div className="min-w-0 pt-0.5">
+          <span className="text-[10px] font-black text-primary">
+            {eyebrow}
+          </span>
+          <h2
+            id={titleId}
+            className="mt-0.5 text-sm font-black tracking-tight md:text-base"
           >
-            {t.rateNow}
-          </button>
-          <button
-            type="button"
-            onClick={(e) => onNotNow(e.detail === 0)}
-            className="flex min-h-[44px] items-center rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
-          >
-            {t.rateNotNow}
-          </button>
+            {t.rateTitle}
+          </h2>
+          <p className="mt-1 text-xs leading-6 text-muted-foreground md:text-sm">
+            {t.rateBody}
+          </p>
+
+          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 max-[360px]:grid-cols-1">
+            <button
+              type="button"
+              onClick={onRate}
+              className="flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground shadow-[0_6px_14px_rgba(204,14,45,0.18)] transition-[transform,background-color,box-shadow] hover:bg-primary/90 hover:shadow-[0_8px_18px_rgba(204,14,45,0.23)] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+            >
+              {t.rateNow}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => onNotNow(e.detail === 0)}
+              className="flex min-h-[44px] items-center justify-center rounded-xl border border-border bg-muted/20 px-4 py-2 text-xs font-bold text-muted-foreground transition-[transform,background-color,color] hover:bg-muted/50 hover:text-foreground active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+            >
+              {t.rateNotNow}
+            </button>
+          </div>
+
+          <p className="mt-2.5 flex items-start gap-1.5 text-[10px] leading-5 text-muted-foreground/80">
+            <span
+              aria-hidden="true"
+              className="mt-[7px] size-1.5 shrink-0 rounded-full bg-muted-foreground/35"
+            />
+            <span>{reassurance}</span>
+          </p>
         </div>
+
+        <button
+          type="button"
+          onClick={(e) => onNotNow(e.detail === 0)}
+          aria-label={t.close}
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X aria-hidden="true" className="size-4" />
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={(e) => onNotNow(e.detail === 0)}
-        aria-label={t.close}
-        className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <X aria-hidden="true" className="size-4" />
-      </button>
     </section>
   );
 }
