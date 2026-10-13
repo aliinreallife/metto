@@ -34,6 +34,13 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "مسیریاب مترو تهران | متو",
+    description:
+      "با متو مسیر متروی تهران را پیدا کن، زمان رسیدن و قطار بعدی را ببین.",
+    images: ["/socialprev.png"],
+  },
 };
 
 export default function Page() {
