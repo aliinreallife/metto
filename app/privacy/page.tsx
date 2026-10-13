@@ -7,10 +7,6 @@ export const metadata: Metadata = {
     "حریم خصوصی متو: موقعیت مکانی فقط برای ایستگاه‌های نزدیک، بدون حساب کاربری، آمار فنی پایه و سرویس‌های شخص ثالث.",
   alternates: {
     canonical: "/privacy",
-    languages: {
-      en: "/privacy?lang=en",
-      fa: "/privacy",
-    },
   },
   openGraph: {
     title: "حریم خصوصی | متو",
