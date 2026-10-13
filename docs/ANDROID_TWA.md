@@ -72,9 +72,10 @@ Web geolocation cannot prove the device Location master switch is OFF
 (`POSITION_UNAVAILABLE` also means "no fix", e.g. underground), so the web
 UI (`lib/geolocation.ts` → `classifyGeoError`, `components/location-error.tsx`)
 words unavailable/timeout failures as "make sure device Location is turned
-on" guidance with a Retry action — and, only inside the TWA (`lib/twa.ts`
-detection: `android-app://ir.metto.app` referrer, `?twa=android` launcher
-param, or `getInstalledRelatedApps`), a native **Turn on location** action.
+on" guidance with a Retry action — and, only inside the actual TWA
+(`lib/twa.ts` detection: `android-app://ir.metto.app` referrer or the
+`?twa=android` launcher/session signal; `getInstalledRelatedApps()` is
+install-presence only), a native **Turn on location** action.
 
 That action is a package-targeted Android intent URI
 (`intent://open-location-settings#Intent;scheme=metto;package=ir.metto.app;end`;
