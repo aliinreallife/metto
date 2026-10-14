@@ -96,16 +96,17 @@ describe("branded share card", () => {
     }
     const copy = all.join(" ");
     expect(copy).toContain("تو مترو گم شدی؟ ما هم شده بودیم");
-    expect(types(tree()).filter((type) => type === "svg").length).toBeGreaterThanOrEqual(5);
+    expect(types(tree()).filter((type) => type === "svg").length).toBeGreaterThanOrEqual(4);
     expect(copy).not.toContain("مسیریاب مترو تهران");
   });
 
-  it("shows useful teaser facts and derived line count", () => {
+  it("shows useful teaser facts without a derived line count", () => {
     const all = texts(tree()).join(" ");
     expect(all).toContain("۱۴ ایستگاه");
     expect(all).toContain("۱ تعویض خط");
-    expect(all).toContain("۲ خط");
-    expect(all).toContain("جزئیات کامل مسیر داخل متو");
+    expect(all).toContain("تغییر خط");
+    expect(all).toContain("جزئیات کامل مسیر در");
+    expect(all).not.toContain("۲ خط");
   });
 
   it("handles a direct route without an awkward zero-transfer stat", () => {
@@ -117,8 +118,8 @@ describe("branded share card", () => {
         numTransfers: 0,
       }),
     ).join(" ");
-    expect(all).toContain("بدون تعویض خط");
-    expect(all).toContain("۱ خط");
+    expect(all).toContain("بدون تعویض");
+    expect(all).toContain("تغییر خط");
     expect(all).not.toContain("۰ تعویض خط");
   });
 

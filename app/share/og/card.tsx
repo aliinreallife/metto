@@ -1,19 +1,29 @@
 // Branded Metto route social-preview card (Satori-compatible host elements).
 //
+// Visual source: the `metto – dynamic social card` HTML mockup (dark #0A1218
+// banner, brand + slogan left, origin/dest rail center, metric rail right).
+// Adapted to the standard 1200x630 OG canvas; the mockup's ultra-detailed
+// skyline is a simplified Milad/Azadi silhouette (Satori/perf-safe).
+//
 // Keep this a teaser, not a screenshot of the planner: the card shows route
-// endpoints plus static topology facts (stops/transfers/derived line count).
-// Exact timing, line instructions, the map, and the full journey stay behind
-// the shared link.
+// endpoints plus static topology facts (stops/transfers). Exact timing, line
+// instructions, the map, and the full journey stay behind the shared link.
+// Minutes are deliberately omitted: share image pixels stay time-independent
+// so one URL renders one cacheable image (see route.ts).
 
 import type { CSSProperties, ReactNode } from "react";
 
 const BRAND_RED = "#cc0e2d";
-const BG = "#080b10";
+const BG = "#0A1218";
 const PANEL = "#0f1319";
-const TEXT = "#f8fafc";
-const MUTED = "#8b949e";
-const BORDER = "#252b33";
-const SKYLINE = "#46505c";
+const TEXT = "#FCFCFC";
+// Mockup grays: endpoint captions, metric labels, and CTA sub-copy each have
+// their own tone on the dark banner.
+const CAPTION = "#70747C";
+const FACT_LABEL = "#888C94";
+const CTA_SUB = "#ACB0B4";
+const DIVIDER = "#596168";
+const SKYLINE = "#8b949e";
 
 export interface ShareCardData {
   originDisplay: string;
@@ -149,6 +159,11 @@ function Skyline() {
       }}
     >
       <circle cx="183" cy="126" r="51" fill={BRAND_RED} opacity="0.82" />
+      {/* Mountain silhouette behind the skyline, per the mockup's ridgelines. */}
+      <path
+        d="M0 154L38 138L58 144L96 128L137 118L172 126L210 132L249 122L280 130L310 118L344 130L378 126L412 134L446 128L480 140L500 136V170H0Z"
+        fill={PANEL}
+      />
       <path
         d="M0 154H38L58 144L74 149L96 137L117 144L137 128L155 139L172 126L191 138L210 145L230 133L249 140L264 133L280 139L296 126L310 135L326 129L344 140L362 136L378 142L396 134L412 143L430 138L446 147L464 142L480 151H500"
         stroke={SKYLINE}
@@ -194,7 +209,7 @@ function Endpoint({
     >
       <div
         style={{
-          color: MUTED,
+          color: CAPTION,
           fontSize: 18,
           lineHeight: 1,
           marginBottom: "9px",
@@ -263,21 +278,11 @@ function RouteRail() {
   );
 }
 
-function MetricIcon({ kind }: { kind: "stops" | "transfer" | "lines" }) {
+function MetricIcon({ kind }: { kind: "stops" | "transfer" }) {
   if (kind === "transfer") {
     return (
       <svg aria-hidden="true" width="34" height="34" viewBox="0 0 34 34" fill="none" style={{ display: "flex" }}>
         <path d="M5 11H27M27 11L22 6M27 11L22 16M29 23H7M7 23L12 18M7 23L12 28" stroke={BRAND_RED} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-
-  if (kind === "lines") {
-    return (
-      <svg aria-hidden="true" width="34" height="34" viewBox="0 0 34 34" fill="none" style={{ display: "flex" }}>
-        <circle cx="9" cy="10" r="4" stroke={BRAND_RED} strokeWidth="3" />
-        <circle cx="25" cy="24" r="4" stroke={BRAND_RED} strokeWidth="3" />
-        <path d="M12 13L22 21" stroke={BRAND_RED} strokeWidth="3" strokeLinecap="round" />
       </svg>
     );
   }
@@ -295,7 +300,7 @@ function Metric({
   value,
   label,
 }: {
-  kind: "stops" | "transfer" | "lines";
+  kind: "stops" | "transfer";
   value: string;
   label: string;
 }) {
@@ -308,7 +313,6 @@ function Metric({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderBottom: `1px solid ${BORDER}`,
         padding: "12px 0",
       }}
     >
@@ -336,7 +340,7 @@ function Metric({
           text={label}
           gap={4}
           style={{
-            color: MUTED,
+            color: FACT_LABEL,
             fontSize: 17,
             lineHeight: 1,
             whiteSpace: "nowrap",
@@ -352,8 +356,6 @@ function RouteFacts({
   numStops,
   numTransfers,
 }: Pick<ShareCardData, "numStops" | "numTransfers">) {
-  const lineCount = numTransfers === null ? null : numTransfers + 1;
-
   return (
     <div
       style={{
@@ -370,14 +372,11 @@ function RouteFacts({
           kind="transfer"
           value={
             numTransfers === 0
-              ? "بدون تعویض خط"
+              ? "بدون تعویض"
               : `${faNumber(numTransfers)} تعویض خط`
           }
-          label={numTransfers === 0 ? "مسیر مستقیم" : "تغییر مسیر"}
+          label="تغییر خط"
         />
-      ) : null}
-      {lineCount !== null ? (
-        <Metric kind="lines" value={`${faNumber(lineCount)} خط`} label="در مسیر" />
       ) : null}
     </div>
   );
@@ -397,7 +396,7 @@ export function renderShareCard({
         width: "100%",
         height: "100%",
         display: "flex",
-        background: `linear-gradient(145deg, ${BG} 0%, #0a0e14 58%, #0d1117 100%)`,
+        background: BG,
         color: TEXT,
         fontFamily: "Vazirmatn",
         position: "relative",
@@ -476,7 +475,11 @@ export function renderShareCard({
             display: "flex",
             alignItems: "center",
             gap: "16px",
-            marginBottom: "2px",
+            // Solid banner behind the CTA so the skyline never crosses the
+            // text (same role as the mockup's fade/solid CTA backdrop).
+            background: BG,
+            padding: "10px 0 2px",
+            marginBottom: "0",
             position: "relative",
             zIndex: 3,
           }}
@@ -494,10 +497,10 @@ export function renderShareCard({
             metto.ir
           </div>
           <RtlWords
-            text="جزئیات کامل مسیر داخل متو"
+            text="جزئیات کامل مسیر در"
             gap={5}
             style={{
-              color: MUTED,
+              color: CTA_SUB,
               fontSize: 17,
               lineHeight: 1,
               whiteSpace: "nowrap",
@@ -510,7 +513,7 @@ export function renderShareCard({
         style={{
           width: "1px",
           height: "100%",
-          background: BORDER,
+          background: DIVIDER,
           display: "flex",
           flexShrink: 0,
         }}
@@ -538,7 +541,7 @@ export function renderShareCard({
         style={{
           width: "1px",
           height: "100%",
-          background: BORDER,
+          background: DIVIDER,
           display: "flex",
           flexShrink: 0,
         }}
