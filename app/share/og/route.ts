@@ -69,16 +69,19 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL(SHARE_STATIC_IMAGE, url));
     }
 
-    // Static topology only: transfers + geometric travel duration add useful
-    // context without schedule lookup, ETA calculation, holiday I/O, or map
-    // geometry. Failure degrades to an endpoint-only card rather than failing.
+    // Static topology only: transfers + geometric travel duration + stop count
+    // add useful context without schedule lookup, ETA calculation, holiday I/O,
+    // or map geometry. Failure degrades to an endpoint-only card rather than
+    // failing the share preview entirely.
     let numTransfers: number | null = null;
     let durationMinutes: number | null = null;
+    let numStops: number | null = null;
     if (p.state.from && p.state.to) {
       try {
         const topology = computeRouteTopology(p.state.from, p.state.to);
         numTransfers = topology?.numTransfers ?? null;
         durationMinutes = topology ? estimateTopologyMinutes(topology) : null;
+        numStops = topology ? topology.hops.length : null;
       } catch {
         // Endpoint-only fallback is intentional.
       }
@@ -104,6 +107,7 @@ export async function GET(request: Request) {
         destDisplay: p.destDisplay,
         durationMinutes,
         numTransfers,
+        numStops,
         cityArtworkDataUri: CITY_ARTWORK_DATA_URI,
       }),
       {
