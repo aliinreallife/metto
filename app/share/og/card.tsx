@@ -1,9 +1,7 @@
 // Metto route social-preview card (Satori-compatible host elements).
-//
 // Geometry follows the approved 1200x630 browser mockup. The Tehran background
 // is the exact SVG artwork from that mockup. Satori does not reliably perform
-// Persian bidi word ordering, so multi-word Persian copy is laid out in visual
-// right-to-left order explicitly.
+// Persian bidi word ordering, so Persian copy is laid out explicitly.
 
 import { Children, type CSSProperties, type ReactNode } from "react";
 
@@ -50,11 +48,7 @@ function PersianLine({
       }}
     >
       {words.map((word, index) => (
-        <div
-          key={`${word}-${index}`}
-          dir="rtl"
-          style={{ display: "flex", whiteSpace: "nowrap" }}
-        >
+        <div key={`${word}-${index}`} dir="rtl" style={{ display: "flex", whiteSpace: "nowrap" }}>
           {word}
         </div>
       ))}
@@ -62,8 +56,6 @@ function PersianLine({
   );
 }
 
-// Satori keeps JSX child order visually left-to-right. Reverse logical Persian
-// segments so the first logical segment lands on the visual right edge.
 function VisualRtlRow({
   children,
   gap = 0,
@@ -90,8 +82,6 @@ function VisualRtlRow({
   );
 }
 
-// Keep the smaller station-name scale chosen in the final visual iteration,
-// then progressively shrink long names instead of clipping them.
 function stationFontSize(name: string): number {
   const length = name.length;
   if (length <= 16) return 42;
@@ -211,13 +201,7 @@ function StationBlock({
   );
 }
 
-function RouteDot({
-  top,
-  destination = false,
-}: {
-  top: number;
-  destination?: boolean;
-}) {
+function RouteDot({ top, destination = false }: { top: number; destination?: boolean }) {
   return (
     <div
       style={{
@@ -230,19 +214,16 @@ function RouteDot({
         borderRadius: "50%",
         background: destination ? BG : BRAND_RED,
         border: destination ? `5px solid ${BRAND_RED}` : "none",
-        boxShadow: destination
-          ? "none"
-          : `0 0 0 7px ${BG}, 0 0 24px 5px rgba(220,24,48,.50)`,
+        boxShadow: destination ? "none" : `0 0 0 7px ${BG}, 0 0 24px 5px rgba(220,24,48,.50)`,
         display: "flex",
       }}
     />
   );
 }
 
-function Effect({ children }: { children: ReactNode }) {
+function Effect({ text }: { text: string }) {
   return (
     <div
-      dir="rtl"
       style={{
         display: "flex",
         position: "relative",
@@ -268,19 +249,13 @@ function Effect({ children }: { children: ReactNode }) {
           display: "flex",
         }}
       />
-      <div style={{ display: "flex", position: "relative", zIndex: 1 }}>
-        {children}
-      </div>
+      <PersianLine text={text} gap={4} style={{ position: "relative", zIndex: 1 }} />
     </div>
   );
 }
 
-function RtlText({ children }: { children: ReactNode }) {
-  return (
-    <div dir="rtl" style={{ display: "flex", whiteSpace: "nowrap" }}>
-      {children}
-    </div>
-  );
+function RtlText({ text }: { text: string }) {
+  return <PersianLine text={text} gap={4} />;
 }
 
 function TripSentence({
@@ -319,16 +294,16 @@ function TripSentence({
     >
       {durationMinutes !== null ? (
         <VisualRtlRow gap={4} style={{ width: "100%" }}>
-          <RtlText>مسیرت</RtlText>
-          <Effect>{`${faNumber(durationMinutes)} دقیقه`}</Effect>
-          <RtlText>طول می‌کشه</RtlText>
+          <RtlText text="مسیرت" />
+          <Effect text={`${faNumber(durationMinutes)} دقیقه`} />
+          <RtlText text="طول می‌کشه" />
         </VisualRtlRow>
       ) : null}
       {transferCore !== null ? (
         <VisualRtlRow gap={4} style={{ width: "100%" }}>
-          <RtlText>و</RtlText>
-          <Effect>{transferCore}</Effect>
-          <RtlText>{numTransfers === 0 ? "خط می‌ری." : "خط داری."}</RtlText>
+          <RtlText text="و" />
+          <Effect text={transferCore} />
+          <RtlText text={numTransfers === 0 ? "خط می‌ری." : "خط داری."} />
         </VisualRtlRow>
       ) : null}
     </div>
@@ -364,14 +339,7 @@ export function renderShareCard({
           src={cityArtworkDataUri}
           width={1200}
           height={630}
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: 1200,
-            height: 630,
-            display: "flex",
-          }}
+          style={{ position: "absolute", left: 0, top: 0, width: 1200, height: 630, display: "flex" }}
         />
       ) : null}
 
@@ -394,16 +362,7 @@ export function renderShareCard({
         <PersianLine text="ما هم شده بودیم" gap={16} style={{ width: "100%", color: BRAND_RED }} />
       </div>
 
-      <div
-        style={{
-          position: "absolute",
-          right: 64,
-          top: 30,
-          width: 470,
-          height: 410,
-          display: "flex",
-        }}
-      >
+      <div style={{ position: "absolute", right: 64, top: 30, width: 470, height: 410, display: "flex" }}>
         <div
           style={{
             position: "absolute",
@@ -411,8 +370,7 @@ export function renderShareCard({
             top: 64,
             width: 4,
             height: 104,
-            background:
-              "linear-gradient(180deg,#DC1830,rgba(220,24,48,.55))",
+            background: "linear-gradient(180deg,#DC1830,rgba(220,24,48,.55))",
             display: "flex",
           }}
         />
@@ -423,8 +381,7 @@ export function renderShareCard({
             top: 126,
             width: 4,
             height: 66,
-            background:
-              "linear-gradient(180deg,rgba(220,24,48,.55),#DC1830)",
+            background: "linear-gradient(180deg,rgba(220,24,48,.55),#DC1830)",
             display: "flex",
           }}
         />
@@ -432,10 +389,7 @@ export function renderShareCard({
         <RouteDot top={188} destination />
         <StationBlock label="مبدأ" name={originDisplay} top={0} />
         <StationBlock label="مقصد" name={destDisplay} top={144} numStops={numStops} />
-        <TripSentence
-          durationMinutes={durationMinutes}
-          numTransfers={numTransfers}
-        />
+        <TripSentence durationMinutes={durationMinutes} numTransfers={numTransfers} />
       </div>
 
       <div
@@ -464,25 +418,14 @@ export function renderShareCard({
       >
         <div
           dir="ltr"
-          style={{
-            display: "flex",
-            color: BRAND_RED,
-            fontSize: 46,
-            lineHeight: 1,
-            fontWeight: 800,
-          }}
+          style={{ display: "flex", color: BRAND_RED, fontSize: 46, lineHeight: 1, fontWeight: 800 }}
         >
           metto.ir
         </div>
         <PersianLine
           text="جزئیات کامل مسیر در"
           gap={8}
-          style={{
-            color: MUTED,
-            fontSize: 34,
-            lineHeight: 1,
-            fontWeight: 600,
-          }}
+          style={{ color: MUTED, fontSize: 34, lineHeight: 1, fontWeight: 600 }}
         />
       </div>
     </div>
