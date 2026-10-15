@@ -102,10 +102,10 @@ function encodeRgbaPng(width: number, height: number, pixels: Buffer): Buffer {
 function cropScalePng(png: Buffer, mode: string): Buffer {
   const src = decodeRgbaPng(png);
   const crop = mode === "route"
-    ? { x: 620, y: 0, w: 580, h: 460, outW: 580, outH: 460 }
+    ? { x: 620, y: 0, w: 580, h: 460, outW: 290, outH: 230 }
     : mode === "bottom"
-      ? { x: 0, y: 430, w: 760, h: 200, outW: 760, outH: 200 }
-      : { x: 0, y: 0, w: 1200, h: 630, outW: 300, outH: 158 };
+      ? { x: 0, y: 430, w: 760, h: 200, outW: 380, outH: 100 }
+      : { x: 0, y: 0, w: 1200, h: 630, outW: 150, outH: 79 };
   const out = Buffer.alloc(crop.outW * crop.outH * 4);
   for (let y = 0; y < crop.outH; y++) {
     const sy = Math.min(src.height - 1, crop.y + Math.floor((y * crop.h) / crop.outH));
