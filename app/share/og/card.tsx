@@ -1,8 +1,8 @@
 // Metto route social-preview card (Satori-compatible host elements).
 //
 // Geometry follows the approved 1200x630 browser mockup. The Tehran background
-// is the exact SVG artwork from that mockup. Persian word order is laid out
-// explicitly because Satori bidi behavior can differ from browsers.
+// is the exact SVG artwork from that mockup. Persian station names stay as one
+// RTL text run so word order/wrapping matches normal Persian reading order.
 
 import type { CSSProperties, ReactNode } from "react";
 
@@ -54,36 +54,24 @@ function VisualRtlRow({
 
 function RtlWords({
   text,
-  gap = 7,
   style,
 }: {
   text: string;
-  gap?: number;
   style?: CSSProperties;
 }) {
   return (
-    <VisualRtlRow
-      gap={gap}
+    <div
+      dir="rtl"
       style={{
-        flexWrap: "wrap",
-        alignContent: "flex-start",
+        display: "flex",
+        direction: "rtl",
+        textAlign: "right",
+        whiteSpace: "normal",
         ...style,
       }}
     >
-      {text
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((word, i) => (
-          <div
-            key={`${word}-${i}`}
-            dir="rtl"
-            style={{ display: "flex", whiteSpace: "nowrap" }}
-          >
-            {word}
-          </div>
-        ))}
-    </VisualRtlRow>
+      {text}
+    </div>
   );
 }
 
@@ -168,11 +156,9 @@ function StationBlock({
       {label === "مقصد" ? <StopChip numStops={numStops} /> : null}
       <RtlWords
         text={name}
-        gap={7}
         style={{
           width: "100%",
           maxHeight: 100,
-          justifyContent: "flex-start",
           color: TEXT,
           fontSize: stationFontSize(name),
           fontWeight: 800,
@@ -284,20 +270,21 @@ function TripSentence({
         alignItems: "flex-end",
         justifyContent: "flex-end",
         color: SENTENCE,
-        fontSize: 27,
+        fontSize: 24,
         lineHeight: 1.42,
         fontWeight: 600,
+        overflow: "hidden",
       }}
     >
       {durationMinutes !== null ? (
-        <VisualRtlRow gap={7} style={{ width: "100%" }}>
+        <VisualRtlRow gap={4} style={{ width: "100%" }}>
           <RtlText>مسیرت</RtlText>
           <Effect>{`${faNumber(durationMinutes)} دقیقه`}</Effect>
           <RtlText>طول می‌کشه</RtlText>
         </VisualRtlRow>
       ) : null}
       {transferCore !== null ? (
-        <VisualRtlRow gap={7} style={{ width: "100%" }}>
+        <VisualRtlRow gap={4} style={{ width: "100%" }}>
           <RtlText>و</RtlText>
           <Effect>{transferCore}</Effect>
           <RtlText>{numTransfers === 0 ? "خط می‌ری." : "خط داری."}</RtlText>
