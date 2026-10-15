@@ -1,15 +1,16 @@
 // Final Metto route social-preview card (Satori-compatible host elements).
 //
-// This deliberately stays a teaser: origin, destination, an inexpensive static
-// travel-time estimate, and transfer count. Exact timetable timing, line-by-line
-// instructions, and the interactive map remain inside the shared link.
+// The visual layout intentionally mirrors the approved 1200x630 HTML mockup.
+// The Tehran background is supplied as the exact SVG artwork from that mockup;
+// Persian word order is laid out explicitly because Satori's bidi behavior can
+// differ from browsers.
 
 import type { CSSProperties, ReactNode } from "react";
 
 const BRAND_RED = "#DC1830";
 const BG = "#0A1218";
 const TEXT = "#FCFCFC";
-const MUTED = "#AEB5BF";
+const MUTED = "#B6BBC2";
 const LABEL = "#8A9099";
 
 export interface ShareCardData {
@@ -17,13 +18,16 @@ export interface ShareCardData {
   destDisplay: string;
   durationMinutes: number | null;
   numTransfers: number | null;
+  cityArtworkDataUri?: string;
 }
 
 function faNumber(value: number): string {
   return String(value).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
 }
 
-function RtlRow({
+// Do not rely on dir=rtl to reorder flex children. Put the first logical Persian
+// segment at the visual right edge explicitly and keep each text node RTL.
+function VisualRtlRow({
   children,
   gap = 0,
   style,
@@ -34,10 +38,10 @@ function RtlRow({
 }) {
   return (
     <div
-      dir="rtl"
       style={{
         display: "flex",
-        flexDirection: "row",
+        flexDirection: "row-reverse",
+        justifyContent: "flex-start",
         alignItems: "center",
         gap,
         ...style,
@@ -48,9 +52,6 @@ function RtlRow({
   );
 }
 
-// Satori's bidi handling can differ from browsers. Explicit RTL word nodes keep
-// Persian station names predictable and let long names wrap inside their own
-// reserved boxes instead of colliding with the Tehran artwork.
 function RtlWords({
   text,
   gap = 7,
@@ -61,7 +62,7 @@ function RtlWords({
   style?: CSSProperties;
 }) {
   return (
-    <RtlRow
+    <VisualRtlRow
       gap={gap}
       style={{
         flexWrap: "wrap",
@@ -69,105 +70,20 @@ function RtlWords({
         ...style,
       }}
     >
-      {text.split(" ").map((word, i) => (
-        <div key={`${word}-${i}`} style={{ whiteSpace: "nowrap" }}>
-          {word}
-        </div>
-      ))}
-    </RtlRow>
-  );
-}
-
-function CityArtwork() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="1200"
-      height="630"
-      viewBox="0 0 1200 630"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ position: "absolute", inset: 0, display: "flex" }}
-    >
-      <circle cx="348" cy="390" r="46" fill={BRAND_RED} opacity="0.95" />
-      <path
-        d="M0 414L74 380L130 397L196 350L254 378L320 326L382 372L448 340L510 374L568 330L626 368L684 344L742 377L806 352L868 380L930 356L996 386L1062 364L1128 392L1200 370"
-        stroke="white"
-        strokeOpacity="0.22"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M0 454H70V438H102V454H142V425H178V454H214V440H246V454H286V420H324V454H360V433H392V454H426V410H462V454H496V436H528V454H566V427H602V454H1200"
-        stroke="white"
-        strokeOpacity="0.20"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-
-      <g
-        transform="translate(545 232)"
-        stroke="white"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path
-          d="M54 0H55L57 76H52L54 0Z"
-          fill="white"
-          fillOpacity="0.42"
-          stroke="none"
-        />
-        <path d="M50 82C50 75 60 75 60 82" strokeOpacity="0.52" />
-        <path d="M45 86H65M45 86L30 102M65 86L80 102" strokeOpacity="0.54" />
-        <path
-          d="M30 102C46 108 64 108 80 102L66 128H44L30 102Z"
-          strokeOpacity="0.52"
-        />
-        <path d="M45 128L41 215M65 128L69 215" strokeOpacity="0.52" />
-        <path
-          d="M40 215C41 224 27 229 20 232M70 215C69 224 83 229 90 232"
-          strokeOpacity="0.52"
-        />
-        <path d="M20 232H90V238H20V232Z" strokeOpacity="0.52" />
-      </g>
-
-      <g
-        transform="translate(370 354)"
-        stroke="white"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path
-          d="M0 100L48 57V25H58V22H82V25H92V57L140 100"
-          strokeOpacity="0.46"
-        />
-        <path d="M48 57H92M55 25V58M85 25V58" strokeOpacity="0.34" />
-        <path
-          d="M34 100C38 77 60 62 70 52C80 62 102 77 106 100"
-          strokeOpacity="0.48"
-        />
-        <path
-          d="M24 100C31 70 58 50 70 39C82 50 109 70 116 100"
-          strokeOpacity="0.32"
-        />
-        <path d="M0 100H140" strokeOpacity="0.52" />
-      </g>
-
-      <path d="M0 454H1200V630H0Z" fill="url(#cityFade)" />
-      <defs>
-        <linearGradient
-          id="cityFade"
-          x1="600"
-          y1="454"
-          x2="600"
-          y2="630"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor={BG} stopOpacity="0.02" />
-          <stop offset="1" stopColor={BG} stopOpacity="0.94" />
-        </linearGradient>
-      </defs>
-    </svg>
+      {text
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word, i) => (
+          <div
+            key={`${word}-${i}`}
+            dir="rtl"
+            style={{ display: "flex", whiteSpace: "nowrap" }}
+          >
+            {word}
+          </div>
+        ))}
+    </VisualRtlRow>
   );
 }
 
@@ -199,12 +115,14 @@ function StationBlock({
         height: 136,
         display: "flex",
         flexDirection: "column",
+        alignItems: "flex-end",
         paddingRight: 56,
         paddingLeft: 2,
         overflow: "hidden",
       }}
     >
       <div
+        dir="rtl"
         style={{
           display: "flex",
           color: LABEL,
@@ -212,6 +130,7 @@ function StationBlock({
           lineHeight: 1.3,
           fontWeight: 700,
           marginBottom: 4,
+          textAlign: "right",
         }}
       >
         {label}
@@ -255,6 +174,7 @@ function RouteDot({ top }: { top: number }) {
 function Effect({ children }: { children: ReactNode }) {
   return (
     <div
+      dir="rtl"
       style={{
         display: "flex",
         position: "relative",
@@ -275,12 +195,21 @@ function Effect({ children }: { children: ReactNode }) {
           borderRadius: 999,
           background: BRAND_RED,
           opacity: 0.72,
+          transform: "skewX(-8deg)",
           display: "flex",
         }}
       />
       <div style={{ display: "flex", position: "relative", zIndex: 1 }}>
         {children}
       </div>
+    </div>
+  );
+}
+
+function RtlText({ children }: { children: ReactNode }) {
+  return (
+    <div dir="rtl" style={{ display: "flex", whiteSpace: "nowrap" }}>
+      {children}
     </div>
   );
 }
@@ -302,16 +231,15 @@ function TripSentence({
 
   return (
     <div
-      dir="rtl"
       style={{
         position: "absolute",
         right: 0,
         top: 300,
         width: 500,
-        height: 82,
+        height: 80,
         display: "flex",
         flexDirection: "column",
-        alignItems: "flex-start",
+        alignItems: "flex-end",
         justifyContent: "flex-end",
         gap: 3,
         color: "#C9CED6",
@@ -321,20 +249,18 @@ function TripSentence({
       }}
     >
       {durationMinutes !== null ? (
-        <RtlRow gap={7} style={{ width: "100%", justifyContent: "flex-start" }}>
-          <div style={{ display: "flex", whiteSpace: "nowrap" }}>مسیرت</div>
+        <VisualRtlRow gap={7} style={{ width: "100%" }}>
+          <RtlText>مسیرت</RtlText>
           <Effect>{`${faNumber(durationMinutes)} دقیقه`}</Effect>
-          <div style={{ display: "flex", whiteSpace: "nowrap" }}>طول می‌کشه</div>
-        </RtlRow>
+          <RtlText>طول می‌کشه</RtlText>
+        </VisualRtlRow>
       ) : null}
       {transferCore !== null ? (
-        <RtlRow gap={7} style={{ width: "100%", justifyContent: "flex-start" }}>
-          <div style={{ display: "flex", whiteSpace: "nowrap" }}>و</div>
+        <VisualRtlRow gap={7} style={{ width: "100%" }}>
+          <RtlText>و</RtlText>
           <Effect>{transferCore}</Effect>
-          <div style={{ display: "flex", whiteSpace: "nowrap" }}>
-            {numTransfers === 0 ? "خط می‌ری." : "خط داری."}
-          </div>
-        </RtlRow>
+          <RtlText>{numTransfers === 0 ? "خط می‌ری." : "خط داری."}</RtlText>
+        </VisualRtlRow>
       ) : null}
     </div>
   );
@@ -345,6 +271,7 @@ export function renderShareCard({
   destDisplay,
   durationMinutes,
   numTransfers,
+  cityArtworkDataUri,
 }: ShareCardData) {
   return (
     <div
@@ -359,10 +286,25 @@ export function renderShareCard({
         overflow: "hidden",
       }}
     >
-      <CityArtwork />
+      {cityArtworkDataUri ? (
+        <img
+          aria-hidden="true"
+          alt=""
+          src={cityArtworkDataUri}
+          width={1200}
+          height={630}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 1200,
+            height: 630,
+            display: "flex",
+          }}
+        />
+      ) : null}
 
       <div
-        dir="rtl"
         style={{
           position: "absolute",
           left: 64,
@@ -377,10 +319,13 @@ export function renderShareCard({
           letterSpacing: 0,
         }}
       >
-        <div style={{ display: "flex", color: TEXT, whiteSpace: "nowrap" }}>
+        <div dir="rtl" style={{ display: "flex", color: TEXT, whiteSpace: "nowrap" }}>
           تو مترو گم شدی؟
         </div>
-        <div style={{ display: "flex", color: BRAND_RED, whiteSpace: "nowrap" }}>
+        <div
+          dir="rtl"
+          style={{ display: "flex", color: BRAND_RED, whiteSpace: "nowrap" }}
+        >
           ما هم شده بودیم
         </div>
       </div>
@@ -391,18 +336,29 @@ export function renderShareCard({
           right: 64,
           top: 36,
           width: 470,
-          height: 382,
+          height: 380,
           display: "flex",
         }}
       >
+        {/* Exact connector geometry from the approved HTML pseudo-elements. */}
         <div
           style={{
             position: "absolute",
             right: 18,
             top: 60,
             width: 4,
-            height: 136,
-            borderRadius: 999,
+            height: 104,
+            background: BRAND_RED,
+            display: "flex",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            right: 18,
+            top: 126,
+            width: 4,
+            height: 60,
             background: BRAND_RED,
             display: "flex",
           }}
@@ -422,26 +378,27 @@ export function renderShareCard({
           position: "absolute",
           left: 46,
           top: 522,
-          width: 535,
-          height: 74,
-          borderRadius: 37,
+          width: 520,
+          height: 64,
+          borderRadius: 32,
           background:
-            "linear-gradient(90deg, rgba(10,18,24,.98) 0%, rgba(10,18,24,.94) 36%, rgba(10,18,24,.80) 62%, rgba(10,18,24,0) 100%)",
+            "linear-gradient(90deg, rgba(10,18,24,.96) 0%, rgba(10,18,24,.93) 28%, rgba(10,18,24,.82) 50%, rgba(10,18,24,.50) 72%, rgba(10,18,24,.16) 90%, rgba(10,18,24,0) 100%)",
           display: "flex",
         }}
       />
       <div
-        dir="ltr"
         style={{
           position: "absolute",
           left: 64,
           top: 534,
           display: "flex",
+          flexDirection: "row",
           alignItems: "baseline",
           gap: 16,
         }}
       >
         <div
+          dir="ltr"
           style={{
             display: "flex",
             color: BRAND_RED,
