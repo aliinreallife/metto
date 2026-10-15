@@ -6,12 +6,17 @@ import {
   buildSharePresentation,
   SHARE_STATIC_IMAGE,
 } from "@/lib/route-share";
-import { computeRouteTopology } from "@/lib/route";
+import {
+  computeRouteTopology,
+  estimateSegmentSeconds,
+  type RouteTopology,
+} from "@/lib/route";
 import { renderShareCard } from "./card";
 
 // Dynamic 1200x630 social preview for valid route-share states. The image is
 // deliberately a teaser: brand + endpoints + cheap, time-independent topology
-// facts. Exact timing, directions, and the map stay inside the shared route.
+// facts. Exact timetable timing, directions, and the interactive map stay
+// inside the shared route.
 
 export const alt = "مسیر مترو در متو";
 export const size = {
@@ -20,13 +25,13 @@ export const size = {
 };
 export const contentType = "image/png";
 
-// Every render depends on query labels, so never statically optimize the
-// route. Per-URL CDN caching below absorbs duplicate crawler fetches.
+// Every render depends on query labels, so never statically optimize the route.
+// Per-URL CDN caching below absorbs duplicate crawler fetches.
 export const dynamic = "force-dynamic";
 
 // ImageResponse can still be relatively expensive on a cold instance because
-// it loads fonts and rasterizes with Satori/resvg. The topology summary below
-// is synchronous/static and does not touch timetables or external services.
+// it loads fonts and rasterizes with Satori/resvg. The route facts below are
+// synchronous/static and do not touch timetables, holidays, or external I/O.
 export const maxDuration = 30;
 
 // Vazirmatn TTFs (SIL OFL 1.1, see NOTICE.md). Read once at module scope.
@@ -37,8 +42,21 @@ const regularFont = readFile(
 const boldFont = readFile(
   join(process.cwd(), "assets", "fonts", "Vazirmatn-Bold.ttf"),
 );
-
 let warmed = false;
+
+// Keep the image cache key independent of timeMode/at. This estimate mirrors
+// Metto's geometry fallback: riding time from inter-station distance plus the
+// known physical walk at line transfers. Waits stay out of the preview.
+function estimateTopologyMinutes(topology: RouteTopology): number {
+  let seconds = 0;
+  for (const segment of topology.segments) {
+    seconds += estimateSegmentSeconds(segment.stations);
+    if (segment.changeFromPrevious.type === "line_transfer") {
+      seconds += segment.changeFromPrevious.walkSeconds;
+    }
+  }
+  return Math.max(1, Math.round(seconds / 60));
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -50,18 +68,18 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL(SHARE_STATIC_IMAGE, url));
     }
 
-    // Static topology only: stops/transfers add useful context without doing
-    // schedule lookup, ETA calculation, holiday I/O, or map geometry. Failure
-    // degrades to an endpoint-only card rather than failing the OG request.
-    let numStops: number | null = null;
+    // Static topology only: transfers + geometric travel duration add useful
+    // context without schedule lookup, ETA calculation, holiday I/O, or map
+    // geometry. Failure degrades to an endpoint-only card rather than failing.
     let numTransfers: number | null = null;
+    let durationMinutes: number | null = null;
     if (p.state.from && p.state.to) {
       try {
         const topology = computeRouteTopology(p.state.from, p.state.to);
-        numStops = topology?.numStops ?? null;
         numTransfers = topology?.numTransfers ?? null;
+        durationMinutes = topology ? estimateTopologyMinutes(topology) : null;
       } catch {
-        // Text-only fallback is intentional.
+        // Endpoint-only fallback is intentional.
       }
     }
     const tTopology = Date.now() - t0 - tPresent;
@@ -83,7 +101,7 @@ export async function GET(request: Request) {
       renderShareCard({
         originDisplay: p.originDisplay,
         destDisplay: p.destDisplay,
-        numStops,
+        durationMinutes,
         numTransfers,
       }),
       {

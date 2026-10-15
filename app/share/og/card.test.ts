@@ -1,6 +1,6 @@
-// Structural contract for the branded route teaser. Satori PNG bytes are not a
-// stable snapshot target, so these tests pin useful copy, icon/skyline presence,
-// route facts, and the deliberate boundary around full journey details.
+// Structural contract for the final route teaser. Satori PNG bytes are not a
+// stable snapshot target, so these tests pin useful copy, endpoint layout,
+// duration/transfer wording, and the deliberate boundary around exact timing.
 import { describe, expect, it } from "vitest";
 import type { ReactElement, ReactNode } from "react";
 import { renderShareCard } from "./card";
@@ -44,23 +44,6 @@ function texts(node: ReactNode, out: string[] = []): string[] {
   return out;
 }
 
-function types(node: ReactNode, out: string[] = []): string[] {
-  if (Array.isArray(node)) {
-    node.forEach((n) => types(n, out));
-    return out;
-  }
-  node = resolve(node);
-  if (Array.isArray(node)) {
-    node.forEach((n) => types(n, out));
-    return out;
-  }
-  const el = asEl(node);
-  if (!el) return out;
-  if (typeof el.type === "string") out.push(el.type);
-  types(el.props.children, out);
-  return out;
-}
-
 function backgrounds(node: ReactNode, out: string[] = []): string[] {
   if (Array.isArray(node)) {
     node.forEach((n) => backgrounds(n, out));
@@ -82,62 +65,60 @@ function backgrounds(node: ReactNode, out: string[] = []): string[] {
 
 const tree = () =>
   renderShareCard({
-    originDisplay: "تجریش",
-    destDisplay: "تئاتر شهر",
-    numStops: 14,
+    originDisplay: "نمایشگاه شهر آفتاب",
+    destDisplay: "اقدسیه",
+    durationMinutes: 32,
     numTransfers: 1,
   });
 
-describe("branded share card", () => {
-  it("uses Metto identity, slogan, skyline treatment, and route endpoints", () => {
+describe("final branded share card", () => {
+  it("uses Metto identity, slogan, Tehran artwork, and route endpoints", () => {
     const all = texts(tree());
-    for (const s of ["metto", "metto.ir", "مبدأ", "تجریش", "مقصد", "تئاتر", "شهر"]) {
+    const copy = all.join(" ");
+    for (const s of [
+      "metto.ir",
+      "مبدأ",
+      "مقصد",
+      "نمایشگاه",
+      "شهر",
+      "آفتاب",
+      "اقدسیه",
+    ]) {
       expect(all).toContain(s);
     }
-    const copy = all.join(" ");
     expect(copy).toContain("تو مترو گم شدی؟ ما هم شده بودیم");
-    expect(types(tree()).filter((type) => type === "svg").length).toBeGreaterThanOrEqual(5);
+    expect(copy).toContain("جزئیات کامل مسیر در");
     expect(copy).not.toContain("مسیریاب مترو تهران");
   });
 
-  it("shows useful teaser facts and derived line count", () => {
-    const all = texts(tree()).join(" ");
-    expect(all).toContain("۱۴ ایستگاه");
-    expect(all).toContain("۱ تعویض خط");
-    expect(all).toContain("۲ خط");
-    expect(all).toContain("جزئیات کامل مسیر داخل متو");
+  it("turns duration and transfer count into one natural sentence", () => {
+    const copy = texts(tree()).join(" ");
+    expect(copy).toContain("مسیرت ۳۲ دقیقه طول می‌کشه");
+    expect(copy).toContain("و یه تعویض خط داری.");
+    expect(copy).not.toContain("تعداد ایستگاه");
   });
 
-  it("handles a direct route without an awkward zero-transfer stat", () => {
-    const all = texts(
+  it("handles a direct route without awkward zero-transfer wording", () => {
+    const copy = texts(
       renderShareCard({
         originDisplay: "تجریش",
         destDisplay: "شهید بهشتی",
-        numStops: 7,
+        durationMinutes: 18,
         numTransfers: 0,
       }),
     ).join(" ");
-    expect(all).toContain("بدون تعویض خط");
-    expect(all).toContain("۱ خط");
-    expect(all).not.toContain("۰ تعویض خط");
+    expect(copy).toContain("بدون تعویض خط می‌ری.");
+    expect(copy).not.toContain("۰ تعویض");
   });
 
-  it("uses the canonical Metto red", () => {
+  it("uses the final design red", () => {
     const colors = backgrounds(tree());
-    expect(colors.filter((c) => c === "#cc0e2d").length).toBeGreaterThanOrEqual(2);
+    expect(colors.filter((c) => c === "#DC1830").length).toBeGreaterThanOrEqual(3);
   });
 
-  it("keeps exact timing, line instructions, and map detail out of the teaser", () => {
+  it("keeps exact timetable details and line instructions out of the teaser", () => {
     const all = texts(tree()).join(" ");
-    for (const s of [
-      "رسیدن تا",
-      "حرکت در",
-      "دقیقه",
-      "نقشه",
-      "خط ۱",
-      "خط ۲",
-      "۱۳:۳۵",
-    ]) {
+    for (const s of ["رسیدن تا", "حرکت در", "نقشه", "خط ۱", "خط ۲", "۱۳:۳۵"]) {
       expect(all).not.toContain(s);
     }
   });
