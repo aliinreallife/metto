@@ -69,6 +69,7 @@ const tree = () =>
     destDisplay: "اقدسیه",
     durationMinutes: 32,
     numTransfers: 1,
+    numStops: 12,
   });
 
 describe("final branded share card", () => {
@@ -95,6 +96,7 @@ describe("final branded share card", () => {
     const copy = texts(tree()).join(" ");
     expect(copy).toContain("مسیرت ۳۲ دقیقه طول می‌کشه");
     expect(copy).toContain("و یه تعویض خط داری.");
+    expect(copy).toContain("۱۲ ایستگاه");
     expect(copy).not.toContain("تعداد ایستگاه");
   });
 
@@ -105,6 +107,7 @@ describe("final branded share card", () => {
         destDisplay: "شهید بهشتی",
         durationMinutes: 18,
         numTransfers: 0,
+        numStops: 5,
       }),
     ).join(" ");
     expect(copy).toContain("بدون تعویض خط می‌ری.");
