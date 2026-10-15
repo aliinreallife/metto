@@ -11,6 +11,7 @@ import {
   estimateSegmentSeconds,
   type RouteTopology,
 } from "@/lib/route";
+import { CITY_ARTWORK_DATA_URI } from "./city-artwork";
 import { renderShareCard } from "./card";
 
 // Dynamic 1200x630 social preview for valid route-share states. The image is
@@ -103,6 +104,7 @@ export async function GET(request: Request) {
         destDisplay: p.destDisplay,
         durationMinutes,
         numTransfers,
+        cityArtworkDataUri: CITY_ARTWORK_DATA_URI,
       }),
       {
         ...size,
