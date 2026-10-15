@@ -1,10 +1,11 @@
 // Metto route social-preview card (Satori-compatible host elements).
 //
 // Geometry follows the approved 1200x630 browser mockup. The Tehran background
-// is the exact SVG artwork from that mockup. Persian station names stay as one
-// RTL text run so word order/wrapping matches normal Persian reading order.
+// is the exact SVG artwork from that mockup. Satori does not reliably perform
+// Persian bidi word ordering, so multi-word Persian copy is laid out in visual
+// right-to-left order explicitly.
 
-import type { CSSProperties, ReactNode } from "react";
+import { Children, type CSSProperties, type ReactNode } from "react";
 
 const BRAND_RED = "#DC1830";
 const BG = "#0A1218";
@@ -26,7 +27,43 @@ function faNumber(value: number): string {
   return String(value).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
 }
 
-// Put the first logical Persian segment at the visual right edge explicitly.
+function PersianLine({
+  text,
+  gap = 7,
+  style,
+}: {
+  text: string;
+  gap?: number;
+  style?: CSSProperties;
+}) {
+  const words = text.trim().split(/\s+/).filter(Boolean).reverse();
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        alignItems: "baseline",
+        gap,
+        whiteSpace: "nowrap",
+        ...style,
+      }}
+    >
+      {words.map((word, index) => (
+        <div
+          key={`${word}-${index}`}
+          dir="rtl"
+          style={{ display: "flex", whiteSpace: "nowrap" }}
+        >
+          {word}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Satori keeps JSX child order visually left-to-right. Reverse logical Persian
+// segments so the first logical segment lands on the visual right edge.
 function VisualRtlRow({
   children,
   gap = 0,
@@ -36,41 +73,19 @@ function VisualRtlRow({
   gap?: number;
   style?: CSSProperties;
 }) {
+  const visualChildren = Children.toArray(children).reverse();
   return (
     <div
       style={{
         display: "flex",
-        flexDirection: "row-reverse",
-        justifyContent: "flex-start",
+        flexDirection: "row",
+        justifyContent: "flex-end",
         alignItems: "center",
         gap,
         ...style,
       }}
     >
-      {children}
-    </div>
-  );
-}
-
-function RtlWords({
-  text,
-  style,
-}: {
-  text: string;
-  style?: CSSProperties;
-}) {
-  return (
-    <div
-      dir="rtl"
-      style={{
-        display: "flex",
-        direction: "rtl",
-        textAlign: "right",
-        whiteSpace: "normal",
-        ...style,
-      }}
-    >
-      {text}
+      {visualChildren}
     </div>
   );
 }
@@ -86,11 +101,29 @@ function stationFontSize(name: string): number {
   return 26;
 }
 
+function stationLines(name: string): string[] {
+  const clean = name.trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (clean.length <= 20 || words.length < 2) return [clean];
+
+  let bestIndex = 1;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (let index = 1; index < words.length; index += 1) {
+    const first = words.slice(0, index).join(" ");
+    const second = words.slice(index).join(" ");
+    const score = Math.max(first.length, second.length) * 2 + Math.abs(first.length - second.length);
+    if (score < bestScore) {
+      bestScore = score;
+      bestIndex = index;
+    }
+  }
+  return [words.slice(0, bestIndex).join(" "), words.slice(bestIndex).join(" ")];
+}
+
 function StopChip({ numStops }: { numStops: number | null }) {
   if (numStops === null || numStops <= 0) return null;
   return (
     <div
-      dir="rtl"
       style={{
         position: "absolute",
         right: 140,
@@ -107,7 +140,7 @@ function StopChip({ numStops }: { numStops: number | null }) {
         whiteSpace: "nowrap",
       }}
     >
-      {`${faNumber(numStops)} ایستگاه`}
+      <PersianLine text={`${faNumber(numStops)} ایستگاه`} gap={5} />
     </div>
   );
 }
@@ -123,6 +156,8 @@ function StationBlock({
   top: number;
   numStops?: number | null;
 }) {
+  const lines = stationLines(name);
+  const fontSize = stationFontSize(name);
   return (
     <div
       style={{
@@ -154,18 +189,24 @@ function StationBlock({
         {label}
       </div>
       {label === "مقصد" ? <StopChip numStops={numStops} /> : null}
-      <RtlWords
-        text={name}
+      <div
         style={{
           width: "100%",
           maxHeight: 100,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          overflow: "hidden",
           color: TEXT,
-          fontSize: stationFontSize(name),
+          fontSize,
           fontWeight: 800,
           lineHeight: 1.16,
-          overflow: "hidden",
         }}
-      />
+      >
+        {lines.map((line, index) => (
+          <PersianLine key={`${line}-${index}`} text={line} gap={7} style={{ width: "100%" }} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -342,22 +383,15 @@ export function renderShareCard({
           width: 620,
           display: "flex",
           flexDirection: "column",
-          alignItems: "flex-start",
+          alignItems: "stretch",
           fontSize: 84,
           lineHeight: 1.3,
           fontWeight: 900,
           letterSpacing: 0,
         }}
       >
-        <div dir="rtl" style={{ display: "flex", color: TEXT, whiteSpace: "nowrap" }}>
-          تو مترو گم شدی؟
-        </div>
-        <div
-          dir="rtl"
-          style={{ display: "flex", color: BRAND_RED, whiteSpace: "nowrap" }}
-        >
-          ما هم شده بودیم
-        </div>
+        <PersianLine text="تو مترو گم شدی؟" gap={16} style={{ width: "100%", color: TEXT }} />
+        <PersianLine text="ما هم شده بودیم" gap={16} style={{ width: "100%", color: BRAND_RED }} />
       </div>
 
       <div
@@ -440,19 +474,16 @@ export function renderShareCard({
         >
           metto.ir
         </div>
-        <div
-          dir="rtl"
+        <PersianLine
+          text="جزئیات کامل مسیر در"
+          gap={8}
           style={{
-            display: "flex",
             color: MUTED,
             fontSize: 34,
             lineHeight: 1,
             fontWeight: 600,
-            whiteSpace: "nowrap",
           }}
-        >
-          جزئیات کامل مسیر در
-        </div>
+        />
       </div>
     </div>
   );
