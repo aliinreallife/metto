@@ -73,28 +73,17 @@ const tree = () =>
   });
 
 describe("final branded share card", () => {
-  it("uses Metto identity, slogan, CTA, and route endpoints", () => {
+  it("keeps Persian identity and route copy as logical RTL phrases", () => {
     const all = texts(tree());
     for (const s of [
       "metto.ir",
       "مبدأ",
       "مقصد",
-      "نمایشگاه",
-      "شهر",
-      "آفتاب",
+      "نمایشگاه شهر آفتاب",
       "اقدسیه",
-      "تو",
-      "مترو",
-      "گم",
-      "شدی؟",
-      "ما",
-      "هم",
-      "شده",
-      "بودیم",
-      "جزئیات",
-      "کامل",
-      "مسیر",
-      "در",
+      "تو مترو گم شدی؟",
+      "ما هم شده بودیم",
+      "جزئیات کامل مسیر در",
     ]) {
       expect(all).toContain(s);
     }
@@ -110,8 +99,7 @@ describe("final branded share card", () => {
       "و",
       "یه تعویض",
       "خط داری.",
-      "۱۲",
-      "ایستگاه",
+      "۱۲ ایستگاه",
     ]) {
       expect(all).toContain(s);
     }
@@ -128,6 +116,7 @@ describe("final branded share card", () => {
         numStops: 5,
       }),
     );
+    expect(all).toContain("شهید بهشتی");
     expect(all).toContain("بدون تعویض");
     expect(all).toContain("خط می‌ری.");
     expect(all.join(" ")).not.toContain("۰ تعویض");
