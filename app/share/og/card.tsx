@@ -1,9 +1,10 @@
 // Metto route social-preview card (Satori-compatible host elements).
 // Geometry follows the approved 1200x630 browser mockup. The Tehran background
-// is the exact SVG artwork from that mockup. Satori does not reliably perform
-// Persian bidi word ordering, so Persian copy is laid out explicitly.
+// is the exact SVG artwork from that mockup. Keep each Persian phrase as one
+// RTL text run: Satori can order a run correctly, but mixed inline fragments do
+// not get browser-style bidi reordering.
 
-import { Children, type CSSProperties, type ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 const BRAND_RED = "#DC1830";
 const BG = "#0A1218";
@@ -25,38 +26,23 @@ function faNumber(value: number): string {
   return String(value).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
 }
 
-function PersianLine({
-  text,
-  gap = 7,
-  style,
-}: {
-  text: string;
-  gap?: number;
-  style?: CSSProperties;
-}) {
-  const words = text.trim().split(/\s+/).filter(Boolean).reverse();
+function PersianText({ text, style }: { text: string; style?: CSSProperties }) {
   return (
     <div
+      dir="rtl"
       style={{
         display: "flex",
-        flexDirection: "row",
-        justifyContent: "flex-end",
-        alignItems: "baseline",
-        gap,
+        direction: "rtl",
         whiteSpace: "nowrap",
         ...style,
       }}
     >
-      {words.map((word, index) => (
-        <div key={`${word}-${index}`} dir="rtl" style={{ display: "flex", whiteSpace: "nowrap" }}>
-          {word}
-        </div>
-      ))}
+      {text}
     </div>
   );
 }
 
-function VisualRtlRow({
+function RtlSegmentsRow({
   children,
   gap = 0,
   style,
@@ -65,19 +51,20 @@ function VisualRtlRow({
   gap?: number;
   style?: CSSProperties;
 }) {
-  const visualChildren = Children.toArray(children).reverse();
   return (
     <div
+      dir="rtl"
       style={{
         display: "flex",
+        direction: "rtl",
         flexDirection: "row",
-        justifyContent: "flex-end",
+        justifyContent: "flex-start",
         alignItems: "center",
         gap,
         ...style,
       }}
     >
-      {visualChildren}
+      {children}
     </div>
   );
 }
@@ -130,7 +117,7 @@ function StopChip({ numStops }: { numStops: number | null }) {
         whiteSpace: "nowrap",
       }}
     >
-      <PersianLine text={`${faNumber(numStops)} ایستگاه`} gap={5} />
+      <PersianText text={`${faNumber(numStops)} ایستگاه`} />
     </div>
   );
 }
@@ -161,13 +148,11 @@ function StationBlock({
         alignItems: "flex-end",
         paddingRight: 56,
         paddingLeft: 2,
-        overflow: "hidden",
       }}
     >
-      <div
-        dir="rtl"
+      <PersianText
+        text={label}
         style={{
-          display: "flex",
           color: LABEL,
           fontSize: 26,
           lineHeight: 1.3,
@@ -175,9 +160,7 @@ function StationBlock({
           marginBottom: 2,
           textAlign: "right",
         }}
-      >
-        {label}
-      </div>
+      />
       {label === "مقصد" ? <StopChip numStops={numStops} /> : null}
       <div
         style={{
@@ -186,7 +169,6 @@ function StationBlock({
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
-          overflow: "hidden",
           color: TEXT,
           fontSize,
           fontWeight: 800,
@@ -194,7 +176,11 @@ function StationBlock({
         }}
       >
         {lines.map((line, index) => (
-          <PersianLine key={`${line}-${index}`} text={line} gap={7} style={{ width: "100%" }} />
+          <PersianText
+            key={`${line}-${index}`}
+            text={line}
+            style={{ width: "100%", justifyContent: "flex-start", textAlign: "right" }}
+          />
         ))}
       </div>
     </div>
@@ -224,8 +210,10 @@ function RouteDot({ top, destination = false }: { top: number; destination?: boo
 function Effect({ text }: { text: string }) {
   return (
     <div
+      dir="rtl"
       style={{
         display: "flex",
+        direction: "rtl",
         position: "relative",
         isolation: "isolate",
         color: TEXT,
@@ -249,13 +237,9 @@ function Effect({ text }: { text: string }) {
           display: "flex",
         }}
       />
-      <PersianLine text={text} gap={4} style={{ position: "relative", zIndex: 1 }} />
+      <PersianText text={text} style={{ position: "relative", zIndex: 1 }} />
     </div>
   );
-}
-
-function RtlText({ text }: { text: string }) {
-  return <PersianLine text={text} gap={4} />;
 }
 
 function TripSentence({
@@ -286,26 +270,33 @@ function TripSentence({
         alignItems: "flex-end",
         justifyContent: "flex-end",
         color: SENTENCE,
-        fontSize: 24,
+        fontSize: 27,
         lineHeight: 1.42,
         fontWeight: 600,
-        overflow: "hidden",
       }}
     >
       {durationMinutes !== null ? (
-        <VisualRtlRow gap={4} style={{ width: "100%" }}>
-          <RtlText text="مسیرت" />
+        <RtlSegmentsRow gap={5} style={{ width: "100%" }}>
+          <PersianText text="مسیرت" />
           <Effect text={`${faNumber(durationMinutes)} دقیقه`} />
-          <RtlText text="طول می‌کشه" />
-        </VisualRtlRow>
+          <PersianText text="طول می‌کشه" />
+        </RtlSegmentsRow>
       ) : null}
       {transferCore !== null ? (
-        <VisualRtlRow gap={4} style={{ width: "100%" }}>
-          <RtlText text="و" />
+        <RtlSegmentsRow gap={5} style={{ width: "100%" }}>
+          <PersianText text="و" />
           <Effect text={transferCore} />
-          <RtlText text={numTransfers === 0 ? "خط می‌ری." : "خط داری."} />
-        </VisualRtlRow>
+          <PersianText text={numTransfers === 0 ? "خط می‌ری." : "خط داری."} />
+        </RtlSegmentsRow>
       ) : null}
+    </div>
+  );
+}
+
+function SloganLine({ text, color }: { text: string; color: string }) {
+  return (
+    <div style={{ width: "100%", display: "flex", justifyContent: "flex-start" }}>
+      <PersianText text={text} style={{ color }} />
     </div>
   );
 }
@@ -358,8 +349,8 @@ export function renderShareCard({
           letterSpacing: 0,
         }}
       >
-        <PersianLine text="تو مترو گم شدی؟" gap={16} style={{ width: "100%", color: TEXT }} />
-        <PersianLine text="ما هم شده بودیم" gap={16} style={{ width: "100%", color: BRAND_RED }} />
+        <SloganLine text="تو مترو گم شدی؟" color={TEXT} />
+        <SloganLine text="ما هم شده بودیم" color={BRAND_RED} />
       </div>
 
       <div style={{ position: "absolute", right: 64, top: 30, width: 470, height: 410, display: "flex" }}>
@@ -422,9 +413,8 @@ export function renderShareCard({
         >
           metto.ir
         </div>
-        <PersianLine
+        <PersianText
           text="جزئیات کامل مسیر در"
-          gap={8}
           style={{ color: MUTED, fontSize: 34, lineHeight: 1, fontWeight: 600 }}
         />
       </div>
