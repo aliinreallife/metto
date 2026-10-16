@@ -43,14 +43,14 @@ export const metadata: Metadata = {
   authors: [{ name: "aliinreallife" }],
   creator: "aliinreallife",
   publisher: "aliinreallife",
-  applicationName: "Metto",
+  applicationName: "metto",
   referrer: "origin-when-cross-origin",
   openGraph: {
     type: "website",
     locale: "fa_IR",
     alternateLocale: "en_US",
     url: siteUrl,
-    siteName: "Metto",
+    siteName: "metto",
     title: "متو | مسیریاب مترو، ساده و سریع",
     description:
       "متو؛ مسیریاب رایگان مترو با زمان رسیدن، نقشه واقعی و اطلاعات ایستگاه‌ها.",
@@ -123,7 +123,7 @@ export const viewport: Viewport = {
 const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "Metto",
+  name: "metto",
   alternateName: ["متو", "metto.ir"],
   url: `${siteUrl}/`,
   inLanguage: ["fa", "en"],
