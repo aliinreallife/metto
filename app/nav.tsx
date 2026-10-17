@@ -13,7 +13,7 @@ import {
   ExternalLink,
   Database,
 } from "lucide-react";
-import { InstallButton } from "@/components/pwa";
+import { InstallNavButton } from "@/components/install-nav-button";
 import { OfflineStatus } from "@/components/offline-status";
 import { useMetro } from "./providers";
 import { STRINGS } from "@/lib/i18n";
@@ -218,7 +218,12 @@ export function AppNav() {
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <InstallButton label={t.install} iosHintLabel={t.installIosHint} iosHintSteps={t.installIosSteps} />
+          <InstallNavButton
+            label={t.install}
+            iosGuideTitle={t.installIosHint}
+            iosGuideSteps={t.installIosSteps}
+            closeLabel={t.close}
+          />
           <button
             type="button"
             onClick={toggleLang}
