@@ -102,14 +102,21 @@ describe("final branded share card", () => {
   });
 
   it("contains the natural two-line duration and transfer sentence", () => {
+    // PersianLine deliberately splits multi-word copy into separate nodes and
+    // reverses their visual order for Satori/RTL stability. Pin the words, not
+    // an implementation-impossible multi-word text node.
     const all = texts(tree());
     for (const s of [
       "مسیرت",
-      "۳۲ دقیقه",
-      "طول می‌کشه",
+      "۳۲",
+      "دقیقه",
+      "طول",
+      "می‌کشه",
       "و",
-      "یه تعویض",
-      "خط داری.",
+      "یه",
+      "تعویض",
+      "خط",
+      "داری.",
       "۱۲",
       "ایستگاه",
     ]) {
@@ -128,8 +135,9 @@ describe("final branded share card", () => {
         numStops: 5,
       }),
     );
-    expect(all).toContain("بدون تعویض");
-    expect(all).toContain("خط می‌ری.");
+    for (const s of ["بدون", "تعویض", "خط", "می‌ری."]) {
+      expect(all).toContain(s);
+    }
     expect(all.join(" ")).not.toContain("۰ تعویض");
   });
 
