@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Download, Share, X } from "lucide-react";
 import { isTwaPackageInstalled } from "@/lib/twa";
@@ -73,16 +74,22 @@ export function InstallNavButton({
 
   useEffect(() => {
     if (!guideOpen) return;
-    const previousFocus = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setGuideOpen(false);
     };
     window.addEventListener("keydown", onKeyDown);
     requestAnimationFrame(() => closeRef.current?.focus());
+
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
       previousFocus?.focus();
     };
   }, [guideOpen]);
@@ -112,6 +119,71 @@ export function InstallNavButton({
     );
   }
 
+  const guidePortal =
+    guideOpen && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-black/50"
+            style={{
+              paddingTop: "max(1rem, env(safe-area-inset-top))",
+              paddingRight: "max(1rem, env(safe-area-inset-right))",
+              paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+              paddingLeft: "max(1rem, env(safe-area-inset-left))",
+            }}
+            onClick={() => setGuideOpen(false)}
+          >
+            <div className="flex min-h-full items-center justify-center">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="ios-install-guide-title"
+                aria-describedby="ios-install-guide-steps"
+                className="relative w-full max-w-sm overflow-y-auto rounded-2xl border border-border bg-card p-5 text-foreground shadow-2xl"
+                style={{
+                  maxHeight:
+                    "calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))",
+                }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  ref={closeRef}
+                  type="button"
+                  onClick={() => setGuideOpen(false)}
+                  aria-label={closeLabel}
+                  className="absolute end-3 top-3 flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <X className="size-5" />
+                </button>
+
+                <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <Share className="size-5" />
+                </div>
+                <h2
+                  id="ios-install-guide-title"
+                  className="mt-4 pe-10 text-lg font-bold"
+                >
+                  {iosGuideTitle}
+                </h2>
+                <p
+                  id="ios-install-guide-steps"
+                  className="mt-2 text-sm leading-7 text-muted-foreground"
+                >
+                  {iosGuideSteps}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setGuideOpen(false)}
+                  className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  {closeLabel}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
     <>
       <button
@@ -125,52 +197,7 @@ export function InstallNavButton({
         <Share className="size-4 shrink-0 md:size-5" />
         <span className="hidden leading-none sm:inline">{label}</span>
       </button>
-
-      {guideOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 p-4 sm:items-center"
-          onClick={() => setGuideOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="ios-install-guide-title"
-            aria-describedby="ios-install-guide-steps"
-            className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-5 text-foreground shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              ref={closeRef}
-              type="button"
-              onClick={() => setGuideOpen(false)}
-              aria-label={closeLabel}
-              className="absolute end-3 top-3 flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <X className="size-5" />
-            </button>
-
-            <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Share className="size-5" />
-            </div>
-            <h2 id="ios-install-guide-title" className="mt-4 pe-10 text-lg font-bold">
-              {iosGuideTitle}
-            </h2>
-            <p
-              id="ios-install-guide-steps"
-              className="mt-2 text-sm leading-7 text-muted-foreground"
-            >
-              {iosGuideSteps}
-            </p>
-            <button
-              type="button"
-              onClick={() => setGuideOpen(false)}
-              className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
-            >
-              {closeLabel}
-            </button>
-          </div>
-        </div>
-      )}
+      {guidePortal}
     </>
   );
 }
