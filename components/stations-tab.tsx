@@ -7,7 +7,9 @@ import { getAllStations } from "@/lib/metro/selectors";
 import { getStation, getStationLines } from "@/lib/metro/selectors";
 import type { MetroStation } from "@/lib/metro/types";
 import { orderLineStations } from "@/lib/route";
-import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import type { AmenityKey } from "@/lib/geo";
+import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { cn } from "@/lib/utils";
 import { StationCard } from "@/components/station-card";
 import { StationTimesheet } from "@/components/station-timesheet";
@@ -15,6 +17,7 @@ import { StationTimesheet } from "@/components/station-timesheet";
 const LINE_NUMBERS = Object.keys(LINE_COLORS)
   .map(Number)
   .sort((a, b) => a - b);
+const AMENITY_KEYS = Object.keys(AMENITY_LABELS) as AmenityKey[];
 
 type Props = {
   lang: Lang;
@@ -26,6 +29,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
   const isFa = lang === "fa";
   const [query, setQuery] = useState("");
   const [lineFilter, setLineFilter] = useState<number | null>(null);
+  const [selectedAmenities, setSelectedAmenities] = useState<AmenityKey[]>([]);
   const [branchIndex, setBranchIndex] = useState(0);
   const [timetableStation, setTimetableStation] = useState<MetroStation | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -83,6 +87,12 @@ export function StationsTab({ lang, onSetDest }: Props) {
     const q = query.trim().toLowerCase();
     const filtered = getAllStations().filter((s) => {
       if (lineFilter !== null && !getStationLines(s.id).includes(lineFilter)) return false;
+      if (
+        selectedAmenities.length > 0 &&
+        !selectedAmenities.every((key) => s.amenities[key] === true)
+      ) {
+        return false;
+      }
       if (!q) return true;
       return s.name.en.toLowerCase().includes(q) || s.name.fa.includes(query.trim());
     });
@@ -106,7 +116,13 @@ export function StationsTab({ lang, onSetDest }: Props) {
       if (ob !== undefined) return 1;
       return isFa ? a.name.fa.localeCompare(b.name.fa, "fa") : a.name.en.localeCompare(b.name.en);
     });
-  }, [query, lineFilter, isFa, branchIndex, isForked, lineOrder]);
+  }, [query, lineFilter, selectedAmenities, isFa, branchIndex, isForked, lineOrder]);
+
+  function toggleAmenity(key: AmenityKey) {
+    setSelectedAmenities((prev) =>
+      prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key],
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-xl flex-col gap-4 overflow-x-hidden p-4">
@@ -145,6 +161,33 @@ export function StationsTab({ lang, onSetDest }: Props) {
         </div>
       </div>
 
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t.amenities}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <FilterChip
+            active={selectedAmenities.length === 0}
+            onClick={() => setSelectedAmenities([])}
+          >
+            {t.all}
+          </FilterChip>
+          {AMENITY_KEYS.map((key) => {
+            const Icon = AMENITY_ICON_MAP[key];
+            return (
+              <FilterChip
+                key={key}
+                active={selectedAmenities.includes(key)}
+                onClick={() => toggleAmenity(key)}
+              >
+                {Icon && <Icon className="size-3.5" aria-hidden="true" />}
+                {AMENITY_LABELS[key][lang]}
+              </FilterChip>
+            );
+          })}
+        </div>
+      </div>
+
       {isForked && lineOrder && (
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -168,7 +211,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-muted-foreground" aria-live="polite">
         {persianDigits(results.length, lang)} {isFa ? "ایستگاه" : "stations"}
       </p>
 
