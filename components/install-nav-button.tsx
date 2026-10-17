@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Download, Share, X } from "lucide-react";
 import { isTwaPackageInstalled } from "@/lib/twa";
 import {
@@ -36,7 +37,6 @@ export function InstallNavButton({
   const [isStandalone, setIsStandalone] = useState(false);
   const [twaInstalled, setTwaInstalled] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
-  const openerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -54,6 +54,7 @@ export function InstallNavButton({
       nav.maxTouchPoints ?? 0,
     );
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- browser-only platform/standalone detection; an initializer would hydrate different markup.
     setIsStandalone(standalone);
     setPlatform(ios ? "ios" : "other");
 
@@ -104,17 +105,16 @@ export function InstallNavButton({
 
   if (resolveInstallHeaderAction(platform === "ios") === "landing-install") {
     return (
-      <a href="/#install" className={buttonClass} aria-label={label}>
+      <Link href="/#install" className={buttonClass} aria-label={label}>
         <Download className="size-4 shrink-0 md:size-5" />
         <span className="hidden leading-none sm:inline">{label}</span>
-      </a>
+      </Link>
     );
   }
 
   return (
     <>
       <button
-        ref={openerRef}
         type="button"
         onClick={() => setGuideOpen(true)}
         aria-haspopup="dialog"
