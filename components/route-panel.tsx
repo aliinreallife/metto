@@ -143,10 +143,13 @@ export function WalkSuggestCard({
   lang,
   walkMin,
   distanceKm,
+  action,
 }: {
   lang: Lang;
   walkMin: number;
   distanceKm: number;
+  /** Optional map-only alternative. Not needed for planner's inline nudge. */
+  action?: { label: string; onClick: () => void; active: boolean };
 }) {
   const t = STRINGS[lang];
   return (
@@ -157,12 +160,23 @@ export function WalkSuggestCard({
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
         <Footprints aria-hidden="true" className="size-5 text-primary" />
       </span>
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
         <span className="text-sm font-bold md:text-base">{t.walkFaster}</span>
         <span className="tnum text-xs text-muted-foreground md:text-sm">
           {formatWalkTime(walkMin, lang)} · {formatDistance(distanceKm, lang)} {t.walkDistance}
         </span>
-      </span>
+        {action && (
+          <button
+            type="button"
+            data-testid="map-route-mode-toggle"
+            aria-pressed={action.active}
+            onClick={action.onClick}
+            className="mt-1 rounded-md px-2 py-1 text-xs font-semibold text-primary underline-offset-2 hover:bg-primary/10 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            {action.label}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
