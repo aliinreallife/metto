@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { X, Clock, Zap, Ban } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
-import { getStationLines } from "@/lib/metro/selectors";
+import { getStationLines, getOperationalStationLines } from "@/lib/metro/selectors";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import {
@@ -29,6 +29,8 @@ export function StationDetail({
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const lines = getStationLines(station.id);
+  const boardableLines = getOperationalStationLines(station.id);
+  const unavailableLines = lines.filter((l) => !boardableLines.includes(l));
   const activeAmenities = Object.entries(station.amenities).filter(
     ([, v]) => v === true,
   );
@@ -56,7 +58,8 @@ export function StationDetail({
               <span
                 key={l}
                 className="flex size-7 items-center justify-center rounded-full text-xs font-bold"
-                style={{ backgroundColor: LINE_COLORS[l], color: lineOnColor(l) }}
+                style={{ backgroundColor: LINE_COLORS[l], color: lineOnColor(l), opacity: boardableLines.includes(l) ? 1 : 0.45 }}
+                aria-label={isFa ? `خط ${persianDigits(l, lang)}${boardableLines.includes(l) ? "" : "، غیرفعال"}` : `Line ${l}${boardableLines.includes(l) ? "" : ", not open"}`}
               >
                 {persianDigits(l, lang)}
               </span>
@@ -73,10 +76,18 @@ export function StationDetail({
         </div>
       </div>
 
-      {lines.length > 1 && (
+      {boardableLines.length > 1 && (
         <span className="inline-flex items-center gap-1 self-start rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
           {t.interchange}
         </span>
+      )}
+
+      {unavailableLines.length > 0 && station.status === "operational" && (
+        <p className="text-xs text-muted-foreground" role="status">
+          {isFa
+            ? `خط ${unavailableLines.map((l) => persianDigits(l, lang)).join("، ")} هنوز در این ایستگاه مسافرگیری ندارد.`
+            : `Boarding on line ${unavailableLines.join(", ")} is not yet available at this station.`}
+        </p>
       )}
 
       {station.status !== "operational" && (
