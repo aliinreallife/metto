@@ -475,9 +475,9 @@ export function computeRouteTopology(
 
   // Passenger stops: boardable stations excluding the origin. Non-boardable
   // pass-through stations (e.g. Vavan) are traversed but never counted.
-  const numStops = path
-    .slice(1)
-    .filter((sid) => canBoardAtStation(sid)).length;
+  const numStops = hops.filter((hop) =>
+    canBoardAtStation(hop.to, hop.line),
+  ).length;
   const numTransfers = segments.filter(
     (s) => s.changeFromPrevious.type === "line_transfer",
   ).length;
