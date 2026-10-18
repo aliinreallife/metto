@@ -4,8 +4,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Star, X } from "lucide-react";
 import { STRINGS, type Lang } from "@/lib/i18n";
-import { isAndroidTwa } from "@/lib/twa";
-import { openAndroidRateAppWithFallback } from "@/lib/twa";
+import {
+  getAvailableRatingStores,
+  getPreferredRatingStore,
+  isAndroidTwa,
+  openAndroidRateAppWithFallback,
+} from "@/lib/twa";
 import {
   hasSessionPrompted,
   isEligible,
@@ -204,7 +208,7 @@ export function RatePromptHost({
   /** Stable key of the current planning (origin|dest|mode|time). */
   routeKey: string;
 }) {
-  const [inTwa, setInTwa] = useState(false);
+  const [canRate, setCanRate] = useState(false);
   const [visible, setVisible] = useState(false);
   // Re-arms the settle delay when the tab returns from the background: the
   // result must settle again while visible before anything may appear.
@@ -216,7 +220,7 @@ export function RatePromptHost({
   useEffect(() => {
     let live = true;
     void isAndroidTwa().then((v) => {
-      if (live) setInTwa(v);
+      if (live) setCanRate(v && getAvailableRatingStores().length > 0);
     });
     return () => {
       live = false;
@@ -285,11 +289,12 @@ export function RatePromptHost({
     }
     setVisible(false);
     try {
-      if (inTwa) {
+      if (canRate && getPreferredRatingStore()) {
         openAndroidRateAppWithFallback(() => {
           router.push("/rate");
         });
       } else {
+        // Both markets installed on an APK with unknown installer: choose.
         router.push("/rate");
       }
     } catch {
@@ -299,7 +304,7 @@ export function RatePromptHost({
 
   useEffect(() => {
     if (!routeSucceeded || firedRef.current || visible) return;
-    if (!inTwa && !isRatingQaOverrideActive()) return;
+    if (!canRate && !isRatingQaOverrideActive()) return;
     let cancelled = false;
     let timer: number | undefined;
 
@@ -307,7 +312,7 @@ export function RatePromptHost({
       if (cancelled || firedRef.current) return;
       try {
         const qaActive = isRatingQaOverrideActive();
-        if (!inTwa && !qaActive) return;
+        if (!canRate && !qaActive) return;
         if (hasSessionPrompted()) return;
         const eligible = isEligible(loadRatingState(), Date.now());
         if (
@@ -315,7 +320,7 @@ export function RatePromptHost({
             routeSucceeded: true,
             // Production requires the TWA; the hidden QA override is the
             // sole non-TWA path through this presentation gate.
-            inTwa: inTwa || qaActive,
+            inTwa: canRate || qaActive,
             eligible,
             sessionDone: false,
             pageVisible: isPageVisible(),
@@ -356,7 +361,7 @@ export function RatePromptHost({
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [routeSucceeded, routeKey, inTwa, visibleTick, visible]);
+  }, [routeSucceeded, routeKey, canRate, visibleTick, visible]);
 
   if (!visible) return null;
 
@@ -380,7 +385,7 @@ export function RateMettoAction({
   className?: string;
 }) {
   const t = STRINGS[lang];
-  const [inTwa, setInTwa] = useState(false);
+  const [canRate, setCanRate] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -403,19 +408,19 @@ export function RateMettoAction({
       // Ignore — still forward.
     }
     try {
-      if (inTwa) {
-        // browser_fallback_url inside the intent protects old wrappers;
-        // the visibility timer is the secondary net. Silent either way.
+      if (canRate && getPreferredRatingStore()) {
         openAndroidRateAppWithFallback(() => {
           router.push("/rate");
         });
-      } else {
+      } else if (canRate) {
         router.push("/rate");
       }
     } catch {
       // Ignore.
     }
   }
+
+  if (!canRate) return null;
 
   return (
     <button
