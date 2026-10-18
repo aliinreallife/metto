@@ -55,6 +55,14 @@ public class LauncherActivity
             uri = uri.buildUpon().appendQueryParameter("twa", "android").build();
         }
 
+        // Only native Android can reliably check installed stores. Pass a
+        // short-lived capability snapshot to the TWA (consumed into session
+        // storage and removed from the URL by lib/twa.ts). A new launch
+        // always overwrites the previous snapshot, including "none".
+        uri = uri.buildUpon()
+                .appendQueryParameter("ratingStores", StoreAvailability.availableParameter(this))
+                .appendQueryParameter("ratingPreferred", StoreAvailability.preferredParameter(this))
+                .build();
         return uri;
     }
 }
