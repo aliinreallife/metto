@@ -271,7 +271,9 @@ test.describe("a11y quick wins", () => {
     await expect(search).toBeVisible();
 
     // "All" chip starts pressed; picking a line flips pressed state.
-    const allChip = page.getByRole("button", { name: "همه", exact: true });
+    // The line and amenities filters each have an "All" chip. The first
+    // one belongs to the line filter this test toggles.
+    const allChip = page.getByRole("button", { name: "همه", exact: true }).first();
     await expect(allChip).toHaveAttribute("aria-pressed", "true");
 
     const lineChip = page.getByRole("button", { name: /خط ۱/ }).first();

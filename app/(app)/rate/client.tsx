@@ -7,10 +7,14 @@ import { useMetro } from "@/app/providers";
 import { RatePrompt } from "@/components/rate-prompt";
 import { STRINGS } from "@/lib/i18n";
 import { recordRatingAction } from "@/lib/app-rating";
-import { isAndroidTwa, openAndroidRateAppWithFallback } from "@/lib/twa";
-
-const BAZAAR_URL = "https://cafebazaar.ir/app/ir.metto.app";
-const MYKET_URL = "https://myket.ir/app/ir.metto.app";
+import {
+  getAvailableRatingStores,
+  getPreferredRatingStore,
+  isAndroidTwa,
+  openAndroidRateAppWithFallback,
+  openAndroidRatingStore,
+  type RatingStore,
+} from "@/lib/twa";
 
 export function RatePage() {
   const { lang } = useMetro();
@@ -21,7 +25,8 @@ export function RatePage() {
   // Hidden QA surface: render the exact production card without touching its
   // automatic eligibility state. Useful for visual/device verification.
   const previewPrompt = searchParams.get("prompt") === "1";
-  const [inTwa, setInTwa] = useState(false);
+  const [stores, setStores] = useState<RatingStore[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     document.title = `${t.ratePageTitle}${isFa ? " | متو" : " | metto"}`;
@@ -30,21 +35,29 @@ export function RatePage() {
   useEffect(() => {
     let live = true;
     void isAndroidTwa().then((value) => {
-      if (live) setInTwa(value);
+      if (!live) return;
+      setStores(value ? getAvailableRatingStores() : []);
+      setReady(true);
     });
     return () => {
       live = false;
     };
   }, []);
 
-  function handleStore(url: string) {
+  useEffect(() => {
+    // This page is also accessible by URL, but only installed store apps
+    // inside Metto's updated TWA can launch direct review screens.
+    if (ready && !stores.length && !previewPrompt) router.replace("/route");
+  }, [ready, stores, previewPrompt, router]);
+
+  function handleStore(store: RatingStore) {
     try {
       recordRatingAction();
     } catch {
       // Ignore — still open the store.
     }
     try {
-      window.location.assign(url);
+      openAndroidRatingStore(store);
     } catch {
       // Ignore.
     }
@@ -54,12 +67,12 @@ export function RatePage() {
     // Manual preview is QA-only: it exercises the real TWA store routing but
     // intentionally does not mutate automatic-prompt eligibility/cooldowns.
     try {
-      if (inTwa) {
+      if (stores.length && getPreferredRatingStore()) {
         openAndroidRateAppWithFallback(() => {
           router.replace("/rate");
         });
       } else {
-        router.replace("/rate");
+        router.replace(stores.length ? "/rate" : "/route");
       }
     } catch {
       router.replace("/rate");
@@ -82,6 +95,8 @@ export function RatePage() {
     );
   }
 
+  if (!ready || !stores.length) return null;
+
   return (
     <div className="flex size-full flex-col bg-background text-foreground">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -101,9 +116,9 @@ export function RatePage() {
             {t.ratePageBody}
           </p>
           <div className="mt-6 flex flex-col gap-3">
-            <button
+            {stores.includes("bazaar") && <button
               type="button"
-              onClick={() => handleStore(BAZAAR_URL)}
+              onClick={() => handleStore("bazaar")}
               className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 text-start transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span>
@@ -118,10 +133,10 @@ export function RatePage() {
                 </span>
               </span>
               <ExternalLink aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-            </button>
-            <button
+            </button>}
+            {stores.includes("myket") && <button
               type="button"
-              onClick={() => handleStore(MYKET_URL)}
+              onClick={() => handleStore("myket")}
               className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 text-start transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span>
@@ -136,7 +151,7 @@ export function RatePage() {
                 </span>
               </span>
               <ExternalLink aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-            </button>
+            </button>}
           </div>
         </article>
       </div>
