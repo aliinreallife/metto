@@ -5,6 +5,9 @@ import {
   isAndroidTwa,
   isAndroidTwaSync,
   isTwaPackageInstalled,
+  getAvailableRatingStores,
+  getPreferredRatingStore,
+  openAndroidRatingStore,
 } from "./twa";
 
 function memStorage(initial: Record<string, string> = {}) {
@@ -141,5 +144,61 @@ describe("RATE_APP_URI", () => {
     );
     expect(mod.RATE_APP_INTENT_URI).toContain("package=ir.metto.app");
     expect(mod.RATE_APP_INTENT_URI.endsWith(";end")).toBe(true);
+  });
+});
+
+describe("native marketplace availability", () => {
+  it("consumes and strips a launcher snapshot, keeping it for SPA navigation", async () => {
+    const { replaceState } = stubBrowser({
+      href: "https://metto.ir/route?from=1&twa=android&ratingStores=bazaar%2Cmyket&ratingPreferred=myket",
+    });
+    expect(getAvailableRatingStores()).toEqual([]);
+    await expect(isAndroidTwa()).resolves.toBe(true);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/route?from=1");
+    expect(getAvailableRatingStores()).toEqual(["bazaar", "myket"]);
+    expect(getPreferredRatingStore()).toBe("myket");
+  });
+
+  it("fails closed when neither store is installed", async () => {
+    stubBrowser({
+      href: "https://metto.ir/route?twa=android&ratingStores=none&ratingPreferred=choose",
+    });
+    await isAndroidTwa();
+    expect(getAvailableRatingStores()).toEqual([]);
+    expect(getPreferredRatingStore()).toBeNull();
+  });
+
+  it("prefers the only installed store when installer is unknown", async () => {
+    stubBrowser({
+      href: "https://metto.ir/route?twa=android&ratingStores=bazaar&ratingPreferred=choose",
+    });
+    await isAndroidTwa();
+    expect(getPreferredRatingStore()).toBe("bazaar");
+  });
+
+  it("requires an explicit choice when both stores exist without a preferred installer", async () => {
+    stubBrowser({
+      href: "https://metto.ir/route?twa=android&ratingStores=bazaar%2Cmyket&ratingPreferred=choose",
+    });
+    await isAndroidTwa();
+    expect(getPreferredRatingStore()).toBeNull();
+  });
+
+  it("never shows rating in ordinary Chrome just because the APK is installed", async () => {
+    stubBrowser({ relatedApps: [{ id: TWA_PACKAGE }] });
+    expect(getAvailableRatingStores()).toEqual([]);
+  });
+
+  it("explicit Bazaar/Myket choices navigate through the Android review activity", async () => {
+    stubBrowser({
+      href: "https://metto.ir/route?twa=android&ratingStores=bazaar%2Cmyket&ratingPreferred=choose",
+    });
+    await isAndroidTwa();
+    openAndroidRatingStore("bazaar");
+    expect((window as Window).location.href).toContain(
+      "intent://rate-app?store=bazaar#Intent;scheme=metto;package=ir.metto.app;",
+    );
+    openAndroidRatingStore("myket");
+    expect((window as Window).location.href).toContain("rate-app?store=myket");
   });
 });
