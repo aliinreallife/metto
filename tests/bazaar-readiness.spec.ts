@@ -47,6 +47,8 @@ test.describe("install choices: browser vs TWA", () => {
     ).toBeVisible({ timeout: 10_000 });
     await expect(page.locator(`#install a[href="${MYKET_HREF}"]`)).toBeVisible();
     await expect(page.locator(`#install a[href="${BAZAAR_HREF}"]`)).toBeVisible();
+    await expect(page.locator(`#install a[href="${BAZAAR_HREF}"]`)).toContainText("کافه بازار");
+    await expect(page.locator(`#install a[href="${BAZAAR_HREF}"]`)).not.toContainText("به‌زودی");
     await expect(
       page.locator(`#install a[href="${DIRECT_APK_HREF}"]`),
     ).toBeVisible();
