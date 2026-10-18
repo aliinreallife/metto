@@ -23,7 +23,7 @@ import { shortPlaceLabel, reverseGeocode } from "@/lib/geocoding";
 import { StationDetail } from "@/components/station-detail";
 import { MapPickCard } from "@/components/map-pick-card";
 import { WalkSuggestCard } from "@/components/route-panel";
-import { directWalkVerdict } from "@/lib/route-planning";
+import { chooseMapRouteMode, directWalkVerdict } from "@/lib/route-planning";
 import { cn } from "@/lib/utils";
 
 // Feature flag: dismiss buttons on the map place info/warning cards.
@@ -370,12 +370,31 @@ export function MapPage() {
     };
   }, [placeMarkers, initialParams.from, initialParams.to, route]);
 
+  // Preference is scoped to the actual endpoints; opening a different shared
+  // map link restores the walking-first default, without a reset effect.
+  const journeyKey = JSON.stringify([
+    initialParams.from, initialParams.to,
+    initialParams.originPin?.lat, initialParams.originPin?.lng,
+    initialParams.destPlace?.lat, initialParams.destPlace?.lng,
+  ]);
+  const [alternativeChoice, setAlternativeChoice] = useState<{
+    journeyKey: string;
+    showMetro: boolean;
+  } | null>(null);
+  const showMetroAlternative =
+    alternativeChoice?.journeyKey === journeyKey && alternativeChoice.showMetro;
+  const mapRouteMode = chooseMapRouteMode(
+    walkGuide?.verdict ?? null,
+    Boolean(showMetroAlternative),
+  );
+
   return (
     <div className="relative isolate z-0 flex flex-1 min-h-0 flex-col overflow-hidden">
       <RealMap
         lang={lang}
         mapMode={mapMode}
-        route={route}
+        route={mapRouteMode === "metro" ? route : null}
+        deemphasizeMetro={mapRouteMode === "walking"}
         originId={initialParams.from}
         destId={initialParams.to}
         selectedId={selectedId}
@@ -388,7 +407,7 @@ export function MapPage() {
         onViewChange={handleViewChange}
         placeMarkers={placeMarkers}
         pendingPick={picked && pickedLabel ? { ...picked, label: pickedLabel } : null}
-        directWalk={walkGuide ? walkGuide.line : null}
+        directWalk={mapRouteMode === "walking" ? walkGuide?.line ?? null : null}
       />
 
       {/* Top overlay stack: banner/notice/place cards lay out in normal
@@ -416,6 +435,14 @@ export function MapPage() {
             lang={lang}
             walkMin={walkGuide.verdict.walkMin}
             distanceKm={walkGuide.verdict.walkKm}
+            action={{
+              label: showMetroAlternative ? t.viewWalkingRoute : t.viewMetroAlternative,
+              active: Boolean(showMetroAlternative),
+              onClick: () => setAlternativeChoice({
+                journeyKey,
+                showMetro: !showMetroAlternative,
+              }),
+            }}
           />
         )}
 
