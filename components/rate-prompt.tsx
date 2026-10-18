@@ -391,7 +391,7 @@ export function RateMettoAction({
   useEffect(() => {
     let live = true;
     void isAndroidTwa().then((v) => {
-      if (live) setInTwa(v);
+      if (live) setCanRate(v && getAvailableRatingStores().length > 0);
     });
     return () => {
       live = false;
