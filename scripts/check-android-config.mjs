@@ -118,8 +118,8 @@ ok(
 );
 
 // "Rate Metto" helper (RateAppActivity + StoreResolver): installer-source
-// routing to the exact installing store (Bazaar/Myket/Play) with a /rate
-// web fallback for unknown installs. Deliberately GMS-free.
+// routing to Bazaar/Myket direct review screens, gated on installation.
+// Deliberately GMS-free.
 ok(
   manifestXml.includes('android:name=".RateAppActivity"'),
   "AndroidManifest declares .RateAppActivity (Rate Metto target)",
@@ -148,8 +148,11 @@ const rateJava = readFileSync(
   "utf8",
 );
 ok(
-  rateJava.includes("getInstallSourceInfo") && rateJava.includes("getInstallerPackageName"),
-  "RateAppActivity detects installer via getInstallSourceInfo (API 30+) with getInstallerPackageName fallback",
+  readFileSync(resolve(repoRoot, "android/app/src/main/java/ir/metto/app/StoreAvailability.java"), "utf8")
+    .includes("getInstallSourceInfo") &&
+  readFileSync(resolve(repoRoot, "android/app/src/main/java/ir/metto/app/StoreAvailability.java"), "utf8")
+    .includes("getInstallerPackageName"),
+  "StoreAvailability detects installer via modern and legacy PackageManager APIs",
 );
 ok(
   rateJava.includes("com.farsitel.bazaar") || readFileSync(
@@ -184,6 +187,29 @@ ok(
 ok(
   !rateJava.includes("play-services") && !rateJava.includes("PlayCore") && !rateJava.includes("ReviewManager"),
   "RateAppActivity uses no GMS/Play Core dependency (listing intents only)",
+);
+
+ok(
+  manifestXml.includes('<package android:name="com.farsitel.bazaar" />') &&
+    manifestXml.includes('<package android:name="ir.mservices.market" />'),
+  "AndroidManifest allows Bazaar/Myket installed-app checks on Android 11+",
+);
+ok(
+  launcherJava.includes('appendQueryParameter("ratingStores"') &&
+    launcherJava.includes('appendQueryParameter("ratingPreferred"'),
+  "LauncherActivity exports native rating capabilities to the TWA",
+);
+ok(
+  rateJava.includes("Intent.ACTION_EDIT") &&
+    rateJava.includes("myket://comment?id=") &&
+    rateJava.includes("StoreAvailability.isInstalled"),
+  "RateAppActivity launches direct Bazaar/Myket review intents only for installed stores",
+);
+ok(
+  twaTs.includes("getAvailableRatingStores") &&
+    twaTs.includes("ratingStores") &&
+    twaTs.includes("openAndroidRatingStore"),
+  "Web TWA layer consumes native-only marketplace availability and launches chosen store",
 );
 
 if (fail.length) {
