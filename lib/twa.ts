@@ -191,7 +191,8 @@ export async function isAndroidTwa(): Promise<boolean> {
           sessionStorage.setItem(RATING_STORES_KEY, [...new Set(stores)].join(","));
           sessionStorage.setItem(
             RATING_PREFERRED_KEY,
-            stores.includes(preferred) ? preferred : "choose",
+            (preferred === "bazaar" || preferred === "myket") && stores.includes(preferred)
+              ? preferred : "choose",
           );
         } catch {
           // Storage disabled => hide rating rather than guessing.
