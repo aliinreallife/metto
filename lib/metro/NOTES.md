@@ -58,7 +58,10 @@ timetable) segments advance the same ledger, so `travelTimeOnly`
 
 Now operational: Shahr-e Parand, Shahr-e Ziba, Shahran, Kouhsar,
 Ayatollah Kashani (physical/L6), Shohada-ye Kan, Meydan-e Khorasan,
-Varzeshgah-e Takhti. Still under construction: Vavan (track through it
+Varzeshgah-e Takhti. At Shohada-ye Hefdah-e Shahrivar, only Line 7
+boarding is operational; Line 6 boarding and transfer are under construction
+(as of 2026-10-17) while operational Line 6 tracks permit pass-through.
+Still under construction: Vavan (track through it
 is operational), Chaharbagh, and the southern L6 tail Haram / Abdol-Azim
 Sq / Ebn-e Babviyeh / Cheshmeh Ali (+ their 4 tracks).
 

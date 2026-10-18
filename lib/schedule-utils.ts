@@ -2,7 +2,8 @@ import type { TrainSchedule, DayType, LineScheduleData } from "./schedule-data";
 export type { DayType } from "./schedule-data";
 import {
   getStation,
-  getStationLines,
+  getOperationalStationLines,
+  canBoardAtStation,
   resolveStationId,
 } from "./metro/selectors";
 import { parseServiceTimeToMinutes, tehranParts } from "./tehran-time";
@@ -191,6 +192,7 @@ export function getNextDepartures(
   at?: Date,
 ): Departure[] {
   const stationId = normId(stationIdInput);
+  if (!canBoardAtStation(stationId, line)) return [];
   const dt = dayType ?? getCurrentDayType();
   // Tehran wall clock — never the device timezone. Timetable service times
   // are Tehran-local, and so is the dayType above; mixing in device-local
@@ -237,7 +239,7 @@ export function getStationDepartures(
   const stationId = normId(stationIdInput);
   const station = getStation(stationId);
   if (!station) return [];
-  return getStationLines(stationId).map((line) => ({
+  return getOperationalStationLines(stationId).map((line) => ({
     line,
     departures: getNextDepartures(stationId, line, dayType, maxPerLine),
   }));
@@ -249,6 +251,7 @@ export function getAllDepartures(
   dayType?: DayType,
 ): Departure[] {
   const stationId = normId(stationIdInput);
+  if (!canBoardAtStation(stationId, line)) return [];
   const dt = dayType ?? getCurrentDayType();
   const results: Departure[] = [];
 

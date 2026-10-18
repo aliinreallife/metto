@@ -208,7 +208,7 @@ export const ROUTES: MetroRoute[] = [
       { stationId: "imam-hossein", status: "operational" },
       { stationId: "meydan-e-shohada", status: "operational" },
       { stationId: "amirkabir", status: "operational" },
-      { stationId: "shohada-ye-hefdah-e-shahrivar", status: "operational" },
+      { stationId: "shohada-ye-hefdah-e-shahrivar", status: "under_construction" },
       { stationId: "meydan-e-khorasan", status: "operational" },
       { stationId: "shahid-rezaei", status: "operational" },
       { stationId: "besat", status: "operational" },
