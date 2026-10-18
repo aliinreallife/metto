@@ -6,6 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 // /privacy + donation clarification work in FA and EN.
 
 const MYKET_HREF = "https://myket.ir/app/ir.metto.app";
+const BAZAAR_HREF = "https://cafebazaar.ir/app/ir.metto.app";
 const DIRECT_APK_HREF = "https://github.com/aliinreallife/metto/releases/latest";
 
 /**
@@ -35,7 +36,7 @@ async function scrollIntoViewStable(page: Page, selector: string) {
 }
 
 test.describe("install choices: browser vs TWA", () => {
-  test("normal browser still sees the APK/Myket store choices", async ({
+  test("normal browser sees the APK/Myket/Bazaar store choices", async ({
     page,
   }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -45,9 +46,30 @@ test.describe("install choices: browser vs TWA", () => {
       page.getByText("اپ اندروید (APK)", { exact: false }),
     ).toBeVisible({ timeout: 10_000 });
     await expect(page.locator(`#install a[href="${MYKET_HREF}"]`)).toBeVisible();
+    await expect(page.locator(`#install a[href="${BAZAAR_HREF}"]`)).toBeVisible();
     await expect(
       page.locator(`#install a[href="${DIRECT_APK_HREF}"]`),
     ).toBeVisible();
+  });
+
+  test("English website shows the live Cafe Bazaar store", async ({ context, page }) => {
+    await context.addInitScript(() => {
+      try {
+        window.localStorage.setItem("lang", "en");
+      } catch {
+        // Storage unavailable — the test premise needs it.
+      }
+    });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(
+      page.getByRole("heading", { name: "Metro routing, simple and fast" }),
+    ).toBeVisible({ timeout: 15_000 });
+    await scrollIntoViewStable(page, "#install");
+    const bazaar = page.locator(`#install a[href="${BAZAAR_HREF}"]`);
+    await expect(bazaar).toBeVisible();
+    await expect(bazaar).toContainText("Cafe Bazaar");
+    await expect(bazaar).toContainText("Android");
+    await expect(bazaar).not.toContainText("Coming soon");
   });
 
   test("Android TWA hides the alternate distribution block (no flash)", async ({
@@ -62,6 +84,7 @@ test.describe("install choices: browser vs TWA", () => {
       page.getByText("اپ اندروید (APK)", { exact: false }),
     ).toHaveCount(0);
     await expect(page.locator(`#install a[href="${MYKET_HREF}"]`)).toHaveCount(0);
+    await expect(page.locator(`#install a[href="${BAZAAR_HREF}"]`)).toHaveCount(0);
     await expect(
       page.locator(`#install a[href="${DIRECT_APK_HREF}"]`),
     ).toHaveCount(0);
