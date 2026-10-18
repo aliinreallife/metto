@@ -637,6 +637,21 @@ export function directWalkVerdict(args: {
   };
 }
 
+/**
+ * One decision for how a map presents a journey. A suggested direct walk is
+ * the default view, not an overlay on a highlighted slower metro itinerary.
+ * An explicitly requested metro alternative is allowed only when a distinct
+ * metro journey exists. Same-station walking has no train alternative.
+ */
+export function chooseMapRouteMode(
+  verdict: DirectWalkVerdict | null,
+  showMetroAlternative: boolean,
+): "walking" | "metro" {
+  if (!verdict) return "metro";
+  if (verdict.kind === "same-station") return "walking";
+  return showMetroAlternative ? "metro" : "walking";
+}
+
 // ---- Shareable URL state (web planner) ----
 
 export type TimeMode = "now" | "depart" | "arrive";
