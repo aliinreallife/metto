@@ -47,6 +47,7 @@ const useIsomorphicLayoutEffect =
 const INSTALL_TARGETS = {
   twa: "https://github.com/aliinreallife/metto/releases/latest",
   myket: "https://myket.ir/app/ir.metto.app",
+  bazar: "https://cafebazaar.ir/app/ir.metto.app",
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -185,7 +186,7 @@ export function PwaStrip() {
       primary: true,
     },
     { key: "myket", title: t.myket, note: t.myketNote, Icon: (p) => <BagIcon {...p} />, href: INSTALL_TARGETS.myket },
-    { key: "bazar", title: t.bazar, note: t.bazarNote, Icon: (p) => <StoreIcon {...p} />, disabled: true },
+    { key: "bazar", title: t.bazar, note: t.bazarNote, Icon: (p) => <StoreIcon {...p} />, href: INSTALL_TARGETS.bazar },
     { key: "play", title: t.play, note: t.playNote, Icon: (p) => <PlayIcon {...p} />, disabled: true },
   ];
 
