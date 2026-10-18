@@ -4,7 +4,7 @@ import { useId, useMemo } from "react";
 import { MapPin, Flag, Clock, Zap, Calendar, Ban } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
-import { getStationLines } from "@/lib/metro/selectors";
+import { getStationLines, getOperationalStationLines } from "@/lib/metro/selectors";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import { AMENITY_LABELS, STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { geoUrl, formatDistance } from "@/lib/geo";
@@ -29,7 +29,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const lines = getStationLines(station.id);
-  const linesKey = lines.join(",");
+  const boardableLines = getOperationalStationLines(station.id);
+  const linesKey = boardableLines.join(",");
   const underConstruction = station.status !== "operational";
 
   const activeAmenities = Object.entries(station.amenities).filter(
@@ -37,7 +38,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
   );
 
   const departures = useMemo(() => {
-    const grouped = lines.map((line) => ({
+    const grouped = boardableLines.map((line) => ({
       line,
       departures: getNextDepartures(station.id, line, getCurrentDayType(undefined, isHolidayDate), 2),
     }));
@@ -77,9 +78,14 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
               {t.underConstruction}
             </span>
           )}
-          {lines.length > 1 && (
+          {boardableLines.length > 1 && (
             <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               {t.interchange}
+            </span>
+          )}
+          {lines.length > boardableLines.length && station.status === "operational" && (
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {isFa ? "برخی خطوط هنوز فعال نیستند" : "Some lines not open"}
             </span>
           )}
           {distance !== undefined && (
