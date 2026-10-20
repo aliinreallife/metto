@@ -1,4 +1,5 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 
 // Regression: Leaflet tiles must never paint above the bottom navigation
 // after offline panning. Reproduces the failure sequence (load → offline →

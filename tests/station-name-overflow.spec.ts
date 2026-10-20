@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 
 test.describe("long station names", () => {
   test("Namayeshgah-e Shahr-e Aftab stays inside the route selector at 320px", async ({ page }) => {

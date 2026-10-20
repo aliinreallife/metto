@@ -283,6 +283,26 @@ describe("bounded offline walking reuse", () => {
     expect((await getWalkingRoute(B, A, true, deps))?.route).toEqual(reverse);
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
+  it("pauses other legs after a transport timeout, preserves cached paths, and resumes after cooldown", async () => {
+    let time = NOW;
+    vi.spyOn(Date, "now").mockImplementation(() => time);
+    const fetcher = vi.fn()
+      .mockRejectedValueOnce(new DOMException("Timed out", "TimeoutError"))
+      .mockImplementationOnce(async () => Response.json(route(time)));
+    vi.stubGlobal("fetch", fetcher);
+    const deps = { ...defaults, now: () => time, storage: backend() };
+    expect(await Promise.all([
+      getWalkingRoute(A, B, true, deps), getWalkingRoute(B, A, true, deps),
+    ])).toEqual([null, null]);
+    expect(fetcher).toHaveBeenCalledOnce();
+    const reverse = { ...route(), requestKey: walkingKey(B, A)!, coordinates: [...route().coordinates].reverse() };
+    expect(await getWalkingRoute(B, A, true, { ...deps, storage: backend(reverse) }))
+      .toEqual({ route: reverse, saved: true });
+    expect(fetcher).toHaveBeenCalledOnce();
+    time += 60_001;
+    expect((await getWalkingRoute(A, B, true, deps))?.route).toEqual(route(time));
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
   it("reuses a saved path offline and never sends a request", async () => {
     const fetchRoute = vi.fn();
     const result = await getWalkingRoute(A, B, false, { ...defaults, storage: backend(route()), fetchRoute });

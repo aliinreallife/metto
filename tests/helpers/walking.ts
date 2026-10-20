@@ -1,8 +1,8 @@
-import type { Page } from "@playwright/test";
+import { test as base, type BrowserContext, type Page } from "@playwright/test";
 
 /** Keep the real service worker enabled; its forwarded requests bypass
  * Playwright's page/context routing after it takes control. */
-export async function mockWalkingApi(page: Page, response: (url: string) => {
+export async function mockWalkingApi(page: Page | BrowserContext, response: (url: string) => {
   status?: number; body: unknown;
 }) {
   await page.exposeFunction("mettoWalkingFixture", response);
@@ -22,6 +22,16 @@ export async function mockWalkingApi(page: Page, response: (url: string) => {
   });
 }
 
-export async function unavailableWalkingApi(page: Page) {
+export async function unavailableWalkingApi(page: Page | BrowserContext) {
   await mockWalkingApi(page, () => ({ status: 503, body: { error: "Unavailable" } }));
 }
+
+/** Unrelated browser suites must not spend live routing quota or trigger the
+ * cooldown shared by production. Dedicated walking tests supply their own
+ * fixtures; keep the actual service worker for offline/cache coverage. */
+export const networkSafeTest = base.extend<{ context: BrowserContext }>({
+  context: async ({ context }, provide) => {
+    await unavailableWalkingApi(context);
+    await provide(context);
+  },
+});

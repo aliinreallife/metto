@@ -37,12 +37,12 @@ const CARTO_TILE_HOSTS: ReadonlySet<string> = new Set([
 
 /**
  * The labeled basemap and the legacy style used by older app sessions:
- * `https://{s}.basemaps.cartocdn.com/{dark_all|dark_nolabels}/{z}/{x}/{y}[@2x].png[?key=…]`
+ * `https://{s}.basemaps.cartocdn.com/{light_all|dark_all|dark_nolabels}/{z}/{x}/{y}[@2x].png[?key=…]`
  * (Leaflet `{r}` renders as `@2x` on retina displays; `?key=` stays part of
  * the cache key and is never logged or surfaced anywhere.)
  */
 const CARTO_TILE_PATH: RegExp =
-  /^\/(?:dark_all|dark_nolabels)\/\d+\/\d+\/\d+(@2x)?\.png$/;
+  /^\/(?:light_all|dark_all|dark_nolabels)\/\d+\/\d+\/\d+(@2x)?\.png$/;
 
 export interface CartoTileRequestShape {
   hostname: string;

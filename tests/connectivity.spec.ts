@@ -1,4 +1,5 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 
 // Effective-connectivity (verified reachability) regression suite.
 // Uses the mobile viewport so the bottom tab bar is exercised.

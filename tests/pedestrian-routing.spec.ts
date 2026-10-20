@@ -46,6 +46,31 @@ async function preparedOffline(page: Page) {
   await expect.poll(() => status.getAttribute("data-phase"), { timeout: 60_000 }).toMatch(/^(ready|offline-ready)$/);
 }
 
+for (const [from, to] of [
+  ["shahid-sadr", "shahid-madani"],
+  ["basij", "mirdamad"],
+  ["ahang", "aliabad"],
+  ["daneshgah-e-tarbiat-modarres", "meydan-e-azadi"],
+]) {
+  test(`long station trip avoids unused walking calls: ${from} to ${to}`, async ({ page }) => {
+    await prepare(page);
+    const calls = await streetFixture(page);
+    await page.goto(`/route?from=${from}&to=${to}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("route-summary-stats")).toBeVisible();
+    // Let the walking debounce and React updates settle after the plan arrives.
+    await page.waitForTimeout(1800);
+    expect(calls).toEqual([]);
+    await page.getByRole("link", { name: "Map", exact: true }).last().click();
+    await expect(page.locator('[aria-label="Metro on real map"]')).toBeVisible();
+    const params = new URL(page.url()).searchParams;
+    expect(STATION_MAP.get(params.get("from") ?? "")?.id).toBe(STATION_MAP.get(from)?.id);
+    expect(STATION_MAP.get(params.get("to") ?? "")?.id).toBe(STATION_MAP.get(to)?.id);
+    await preparedOffline(page);
+    await page.waitForTimeout(1800);
+    expect(calls).toEqual([]);
+  });
+}
+
 test("street geometry and distances persist offline; uncached endpoints stay approximate", async ({ page, context }) => {
   await prepare(page);
   const calls = await streetFixture(page);

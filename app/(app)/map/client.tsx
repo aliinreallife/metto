@@ -143,7 +143,7 @@ export function MapPage() {
   const destStation = initialParams.to ? STATION_MAP.get(initialParams.to)?.location : null;
   const walkOrigin = placeMarkers.find((point) => point.role === "origin") ?? originStation;
   const walkDest = placeMarkers.find((point) => point.role === "dest") ?? destStation;
-  const walking = useTripWalking(walkOrigin, walkDest, originStation, destStation);
+  const walking = useTripWalking(walkOrigin, walkDest, originStation, destStation, route);
   const walkingPaths = useMemo(() => ({
     origin: walking.access.route?.coordinates,
     dest: walking.egress.route?.coordinates,

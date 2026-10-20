@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 import AxeBuilder from "@axe-core/playwright";
 
 // Bazaar-readiness regressions: the TWA must not expose alternate app

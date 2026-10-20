@@ -364,6 +364,14 @@
   display: none;
 }
 
+/* Only the CARTO light raster is normalized. Keep satellite imagery, metro
+   lines, walking paths, badges, controls and attribution in their own colors.
+   Inverting the light palette gives Persian glyphs a dark halo; brightness
+   lifts their fill without adding a second, doubled label layer. */
+.metto-minimalist-tiles {
+  filter: invert(1) grayscale(1) brightness(2.8);
+}
+
 .station-label {
   background: var(--background) !important;
   border: 1px solid var(--border) !important;
