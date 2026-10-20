@@ -11,7 +11,7 @@ import {
 
 const tile = (overrides: Partial<Parameters<typeof isCartoTileRequest>[0]> = {}) => ({
   hostname: "b.basemaps.cartocdn.com",
-  pathname: "/dark_nolabels/11/1315/806.png",
+  pathname: "/dark_all/11/1315/806.png",
   method: "GET",
   destination: "image",
   ...overrides,
@@ -27,7 +27,12 @@ describe("carto tile matcher", () => {
   });
   it("matches retina tiles and keyed URLs (query is part of the key)", () => {
     expect(
-      isCartoTileRequest(tile({ pathname: "/dark_nolabels/14/8809/5375@2x.png" })),
+      isCartoTileRequest(tile({ pathname: "/dark_all/14/8809/5375@2x.png" })),
+    ).toBe(true);
+  });
+  it("keeps the legacy unlabeled style available to older app sessions", () => {
+    expect(
+      isCartoTileRequest(tile({ pathname: "/dark_nolabels/11/1315/806.png" })),
     ).toBe(true);
   });
   it("rejects Esri satellite and label endpoints", () => {
@@ -78,6 +83,11 @@ describe("carto tile matcher", () => {
     ).toBe(false);
   });
   it("rejects non-tile CARTO paths and non-image/non-GET requests", () => {
+    for (const style of ["dark_only_labels", "dark_all_extra", "light_all"]) {
+      expect(
+        isCartoTileRequest(tile({ pathname: `/${style}/11/1315/806.png` })),
+      ).toBe(false);
+    }
     expect(
       isCartoTileRequest(tile({ pathname: "/rastertiles/voyager/11/1315/806.png" })),
     ).toBe(false);

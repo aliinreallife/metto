@@ -332,11 +332,11 @@ test.describe("Map reconnect recovery", () => {
     // kept so the map still issues real tile requests-shaped traffic.)
     await page.evaluate(async () => {
       const res = await fetch(
-        "https://a.basemaps.cartocdn.com/dark_nolabels/11/1315/806.png",
+        "https://a.basemaps.cartocdn.com/dark_all/11/1315/806.png",
       );
       const cache = await caches.open("metto-carto-tiles");
       await cache.put(
-        "https://a.basemaps.cartocdn.com/dark_nolabels/11/1315/806.png",
+        "https://a.basemaps.cartocdn.com/dark_all/11/1315/806.png",
         res.clone(),
       );
     });

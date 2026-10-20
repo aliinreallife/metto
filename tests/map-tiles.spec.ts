@@ -10,7 +10,7 @@ const PNG_1PX = Buffer.from(
 );
 
 const TILE_KEY_RE =
-  /^https:\/\/[abcd]\.basemaps\.cartocdn\.com\/dark_nolabels\/\d+\/\d+\/\d+(@2x)?\.png/;
+  /^https:\/\/[abcd]\.basemaps\.cartocdn\.com\/dark_all\/\d+\/\d+\/\d+(@2x)?\.png/;
 
 async function storageUsage(page: {
   evaluate: <T>(fn: () => Promise<T> | T) => Promise<T>;
@@ -78,6 +78,21 @@ async function foreignCachedUrls(page: {
 }
 
 test.describe("CARTO opportunistic tile cache", () => {
+  // Playwright 1.48 gates worker request routing behind this flag. Enable
+  // it only here: other suites deliberately model page/worker requests
+  // differently. Restore it before the next file reuses this worker.
+  const workerNetworkFlag = process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS;
+  test.beforeAll(() => {
+    process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1";
+  });
+  test.afterAll(() => {
+    if (workerNetworkFlag === undefined) {
+      delete process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS;
+    } else {
+      process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = workerNetworkFlag;
+    }
+  });
+
   test.beforeEach(async ({ context }: { context: BrowserContext }) => {
     // Mock every CARTO tile with a 1px PNG served with real CORS headers
     // (mirrors the live CDN's Access-Control-Allow-Origin: *): realistic
@@ -92,7 +107,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     );
   });
 
-  test("viewed tiles cached bounded, served offline, misses fail cleanly", async ({
+  test("viewed labeled tiles cached bounded, served offline, misses fail cleanly", async ({
     context,
   }) => {
     const swErrors: string[] = [];
@@ -132,7 +147,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     // valid ACAO header this fetch would reject instead).
     const cdnCors = await page.evaluate(async () => {
       const res = await fetch(
-        "https://a.basemaps.cartocdn.com/dark_nolabels/11/1315/806.png",
+        "https://a.basemaps.cartocdn.com/dark_all/11/1315/806.png",
       );
       return { status: res.status, type: res.type };
     });
@@ -145,13 +160,14 @@ test.describe("CARTO opportunistic tile cache", () => {
     // between two reads cannot skew the assertions.
     const entries = await page.evaluate(async () => {
       const cache = await caches.open("metto-carto-tiles");
-      const out: { url: string; status: number; type: string }[] = [];
+      const out: { url: string; status: number; type: string; bytes: number }[] = [];
       for (const req of await cache.keys()) {
         const res = await cache.match(req);
         out.push({
           url: req.url,
           status: res ? res.status : -1,
           type: res ? res.type : "missing",
+          bytes: res ? (await res.arrayBuffer()).byteLength : -1,
         });
       }
       return out;
@@ -164,6 +180,9 @@ test.describe("CARTO opportunistic tile cache", () => {
     // Every cached entry is a real CORS response — never opaque.
     expect(entries.every((e) => e.status === 200 && e.type === "cors")).toBe(true);
     expect(entries.some((e) => e.type === "opaque")).toBe(false);
+    // Prove the worker used our mock, rather than silently reaching the
+    // live CDN (which could otherwise make this test pass on CI).
+    expect(entries.every((e) => e.bytes === PNG_1PX.byteLength)).toBe(true);
     expect(await foreignCachedUrls(page)).toEqual([]);
 
     const after = await storageUsage(page);
@@ -172,8 +191,13 @@ test.describe("CARTO opportunistic tile cache", () => {
     );
 
     // Offline: cold revisit serves cached tiles, misses fail handled.
-    // Drop the tile mock first so offline fetches genuinely fail.
+    // Replace success mocks with network failures, including worker
+    // fetches. Playwright 1.48 can miss offline emulation for a worker
+    // restarted during the cold revisit; never let that reach the CDN.
     await context.unroute("https://*.basemaps.cartocdn.com/**");
+    await context.route("https://*.basemaps.cartocdn.com/**", (route) =>
+      route.abort("internetdisconnected"),
+    );
     await context.setOffline(true);
     await page.close();
     const offlinePage = await context.newPage();
@@ -209,23 +233,20 @@ test.describe("CARTO opportunistic tile cache", () => {
     );
     expect(cachedLoads).toBe(true);
 
-    // Uncached tile offline: handled failure (fetch rejects to the caller),
-    // no unhandled Serwist rejection, banner remains. Deliberately a bare
-    // fetch(), not an image: worker-subrequest fetches are not covered by
-    // offline emulation, so an image load here would succeed over the live
-    // network and prove nothing — while a page-initiated fetch is genuinely
-    // offline and must reject.
-    const miss = await offlinePage.evaluate(async () => {
-      try {
-        const res = await fetch(
-          "https://a.basemaps.cartocdn.com/dark_nolabels/18/1/1.png",
-        );
-        return `status:${res.status}`;
-      } catch {
-        return "threw";
-      }
-    });
-    expect(miss).toBe("threw");
+    // Uncached tile offline: exercise the same image-destination worker
+    // route as Leaflet. Worker network failures are mocked above, so this
+    // must fail without a live fetch or an unhandled Serwist rejection.
+    const miss = await offlinePage.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = "https://a.basemaps.cartocdn.com/dark_all/18/1/1.png";
+        }),
+    );
+    expect(miss).toBe(false);
     expect(await foreignCachedUrls(offlinePage)).toEqual([]);
     expect(swErrors).toHaveLength(0);
 
