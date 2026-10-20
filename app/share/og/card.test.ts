@@ -1,30 +1,9 @@
-// Structural contract for the minimal share card (no pixels: Satori byte
-// output is unstable, so this pins hierarchy + copy instead).
-// Covers: از/به heading order, box-drawn DownArrow (no handmade LeftArrow),
-// line chips in travel order, and teaser compliance (no stops/transfers/
-// timing/strip/slogan anywhere in the tree).
+// Structural contract for the final route teaser. Satori PNG bytes are not a
+// stable snapshot target, so these tests pin useful copy, endpoint layout,
+// duration/transfer wording, and the deliberate boundary around exact timing.
 import { describe, expect, it } from "vitest";
 import type { ReactElement, ReactNode } from "react";
 import { renderShareCard } from "./card";
-import type { ShareMapModel } from "./map";
-
-function fakeMap(): ShareMapModel {
-  return {
-    edges: [],
-    dots: [],
-    pins: [],
-    connectors: [],
-    legs: [
-      { line: 1, label: "۱ خط", color: "#E0001F", stops: 9 },
-      { line: 3, label: "۳ خط", color: "#67C5F5", stops: 4 },
-    ],
-    numStops: 13,
-    numTransfers: 1,
-    interchangeIds: ["shahid-beheshti"],
-    joints: [],
-    dimJoints: [],
-  };
-}
 
 interface ElProps {
   children?: ReactNode;
@@ -38,8 +17,6 @@ function asEl(node: ReactNode): ReactElement<ElProps> | null {
   return null;
 }
 
-/** Expand a hookless function component (RtlRow/RtlWords/BrandRow and co.
-//  are all pure output — safe to call directly for structural inspection). */
 function resolve(node: ReactNode): ReactNode {
   const el = asEl(node);
   if (el && typeof el.type === "function") {
@@ -48,7 +25,6 @@ function resolve(node: ReactNode): ReactNode {
   return node;
 }
 
-/** All string leaves of an element tree, in render order. */
 function texts(node: ReactNode, out: string[] = []): string[] {
   if (typeof node === "string" || typeof node === "number") {
     out.push(String(node));
@@ -68,88 +44,111 @@ function texts(node: ReactNode, out: string[] = []): string[] {
   return out;
 }
 
-/** True when any element in the tree is a function component called `name`. */
-function usesComponent(node: ReactNode, name: string): boolean {
-  if (Array.isArray(node)) return node.some((n) => usesComponent(n, name));
-  const el = asEl(node);
-  if (!el) return false;
-  if (typeof el.type === "function" && el.type.name === name) return true;
-  return usesComponent(el.props.children, name);
-}
-
-/** Backgrounds of 14px circle divs (line-legend dots), in render order. */
-function legendColors(node: ReactNode, out: string[] = []): string[] {
+function backgrounds(node: ReactNode, out: string[] = []): string[] {
   if (Array.isArray(node)) {
-    node.forEach((n) => legendColors(n, out));
+    node.forEach((n) => backgrounds(n, out));
     return out;
   }
   node = resolve(node);
   if (Array.isArray(node)) {
-    node.forEach((n) => legendColors(n, out));
+    node.forEach((n) => backgrounds(n, out));
     return out;
   }
   const el = asEl(node);
   if (!el) return out;
-  const style = el.props.style;
-  if (
-    style?.width === "14px" &&
-    style?.borderRadius === "50%" &&
-    typeof style.background === "string"
-  ) {
-    out.push(style.background);
+  if (typeof el.props.style?.background === "string") {
+    out.push(el.props.style.background);
   }
-  legendColors(el.props.children, out);
+  backgrounds(el.props.children, out);
   return out;
 }
 
-const tree = () => renderShareCard("تجریش", "تئاتر شهر", fakeMap());
+const tree = () =>
+  renderShareCard({
+    originDisplay: "نمایشگاه شهر آفتاب",
+    destDisplay: "اقدسیه",
+    durationMinutes: 32,
+    numTransfers: 1,
+    numStops: 12,
+  });
 
-describe("minimal share card", () => {
-  it("orders brand, از/origin, arrow, به/destination, line legend", () => {
+describe("final branded share card", () => {
+  it("uses Metto identity, slogan, CTA, and route endpoints", () => {
     const all = texts(tree());
     for (const s of [
-      "متو",
       "metto.ir",
-      "از",
-      "تجریش",
-      "به",
-      "تئاتر",
+      "مبدأ",
+      "مقصد",
+      "نمایشگاه",
       "شهر",
-      "۱ خط",
-      "۳ خط",
+      "آفتاب",
+      "اقدسیه",
+      "تو",
+      "مترو",
+      "گم",
+      "شدی؟",
+      "ما",
+      "هم",
+      "شده",
+      "بودیم",
+      "جزئیات",
+      "کامل",
+      "مسیر",
+      "در",
     ]) {
       expect(all).toContain(s);
     }
-    expect(all.indexOf("از")).toBeLessThan(all.indexOf("تجریش"));
-    expect(all.indexOf("تجریش")).toBeLessThan(all.indexOf("به"));
-    expect(all.indexOf("به")).toBeLessThan(all.indexOf("تئاتر"));
-    expect(all.indexOf("تئاتر")).toBeLessThan(all.indexOf("۱ خط"));
+    expect(all.join(" ")).not.toContain("مسیریاب مترو تهران");
   });
 
-  it("draws a box-only direction arrow, never the handmade one", () => {
-    expect(usesComponent(tree(), "DownArrow")).toBe(true);
-    expect(usesComponent(tree(), "LeftArrow")).toBe(false);
-  });
-
-  it("shows leg-colored line dots in travel order", () => {
-    expect(legendColors(tree())).toEqual(["#E0001F", "#67C5F5"]);
-    const all = texts(tree());
-    expect(all.indexOf("۱ خط")).toBeLessThan(all.indexOf("۳ خط"));
-  });
-
-  it("renders teaser-only copy (no meta/timing/strip/slogan)", () => {
+  it("contains the natural two-line duration and transfer sentence", () => {
+    // PersianLine deliberately splits multi-word copy into separate nodes and
+    // reverses their visual order for Satori/RTL stability. Pin the words, not
+    // an implementation-impossible multi-word text node.
     const all = texts(tree());
     for (const s of [
-      "ایستگاه",
+      "مسیرت",
+      "۳۲",
+      "دقیقه",
+      "طول",
+      "می‌کشه",
+      "و",
+      "یه",
       "تعویض",
-      "بدون",
-      "رسیدن",
-      "حرکت",
-      "منتظر",
-      "گیج",
-      "نقشه",
-      "مسیریابی",
+      "خط",
+      "داری.",
+      "۱۲",
+      "ایستگاه",
     ]) {
+      expect(all).toContain(s);
+    }
+    expect(all.join(" ")).not.toContain("تعداد ایستگاه");
+  });
+
+  it("handles a direct route without awkward zero-transfer wording", () => {
+    const all = texts(
+      renderShareCard({
+        originDisplay: "تجریش",
+        destDisplay: "شهید بهشتی",
+        durationMinutes: 18,
+        numTransfers: 0,
+        numStops: 5,
+      }),
+    );
+    for (const s of ["بدون", "تعویض", "خط", "می‌ری."]) {
+      expect(all).toContain(s);
+    }
+    expect(all.join(" ")).not.toContain("۰ تعویض");
+  });
+
+  it("uses the final design red", () => {
+    const colors = backgrounds(tree());
+    expect(colors.filter((c) => c === "#DC1830").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("keeps exact timetable details and line instructions out of the teaser", () => {
+    const all = texts(tree()).join(" ");
+    for (const s of ["رسیدن تا", "حرکت در", "نقشه", "خط ۱", "خط ۲", "۱۳:۳۵"]) {
       expect(all).not.toContain(s);
     }
   });

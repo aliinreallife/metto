@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { X, Zap, ChevronDown } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
-import { getStation, getStationLines } from "@/lib/metro/selectors";
+import { getStation, getOperationalStationLines } from "@/lib/metro/selectors";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import {
   getAllDepartures,
@@ -54,7 +54,7 @@ export function StationTimesheet({
       directions: { direction: string; directionName: string; times: { time: string; isExpress: boolean }[] }[];
     }[] = [];
 
-    for (const line of getStationLines(station.id)) {
+    for (const line of getOperationalStationLines(station.id)) {
       const allDeps = getAllDepartures(station.id, line, dayType);
 
       // Group by direction

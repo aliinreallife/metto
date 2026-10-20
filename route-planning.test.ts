@@ -21,6 +21,7 @@ import type { LineScheduleData } from "./lib/schedule-data";
 import {
   describePlanDay,
   directWalkVerdict,
+  chooseMapRouteMode,
   formatCountdown,
   getArriveByViewState,
   getDayTypeForServiceDate,
@@ -664,6 +665,38 @@ describe("walk suggestion rule", () => {
   it("never suggests on non-finite input", () => {
     expect(shouldSuggestWalk(Number.NaN, 600)).toBe(false);
     expect(shouldSuggestWalk(5, Number.POSITIVE_INFINITY)).toBe(false);
+  });
+});
+
+describe("map walking-first presentation", () => {
+  it("defaults to walking when a complete metro detour is slower", () => {
+    const verdict = directWalkVerdict({
+      origin: { lat: 35.6689, lng: 51.4458 },
+      dest: { lat: 35.6642, lng: 51.4465 },
+      sameStation: false,
+      metroTotalSeconds: 40 * 60,
+      accessMinutes: 3,
+    });
+    expect(verdict?.kind).toBe("beats-metro");
+    expect(chooseMapRouteMode(verdict, false)).toBe("walking");
+    expect(chooseMapRouteMode(verdict, true)).toBe("metro");
+  });
+
+  it("keeps metro visible when direct walking does not win", () => {
+    expect(chooseMapRouteMode(null, false)).toBe("metro");
+    expect(chooseMapRouteMode(null, true)).toBe("metro");
+  });
+
+  it("never presents a fake metro alternative between the same station", () => {
+    const verdict = directWalkVerdict({
+      origin: { lat: 35.7, lng: 51.4 },
+      dest: { lat: 35.7001, lng: 51.4001 },
+      sameStation: true,
+      metroTotalSeconds: null,
+      accessMinutes: 0,
+    });
+    expect(chooseMapRouteMode(verdict, false)).toBe("walking");
+    expect(chooseMapRouteMode(verdict, true)).toBe("walking");
   });
 });
 

@@ -1,27 +1,62 @@
-// Minimal route social-preview card (Satori-compatible host elements only).
-//
-// The 1200x630 canvas is intentionally split 720/480:
-// - 720px live route map on the left (full-height, divider drawn inside it
-//   so the canvas math stays exact: 720 + 480 = 1200)
-// - 480px RTL route summary on the right
-//
-// Social previews answer only the glanceable questions: where from, where
-// to, and which lines. Stops/transfers/timing/strip/slogan stay in Metto —
-// the image is a teaser, and the share URL still carries the full state.
-//
-// RTL note: Satori does not reliably reorder Persian paragraphs. Multi-word
-// Persian is therefore rendered as explicit word nodes inside row-reverse
-// flex containers, preserving visual RTL without browser bidi assumptions.
+// Metto route social-preview card (Satori-compatible host elements).
+// Geometry follows the approved 1200x630 browser mockup. The Tehran background
+// is the exact SVG artwork from that mockup. Satori does not reliably perform
+// Persian bidi word ordering, so Persian copy is laid out explicitly.
 
-import type { CSSProperties, ReactNode } from "react";
-import { OG_PANEL, type ShareLineLeg, type ShareMapModel } from "./map";
+import { Children, type CSSProperties, type ReactNode } from "react";
 
-const BRAND_RED = "#cc0e2d";
-const INFO_W = 480;
-const INFO_PAD_X = 48;
-const DIM_TRACK_OPACITY = 0.35;
+const BRAND_RED = "#DC1830";
+const BG = "#0A1218";
+const TEXT = "#FCFCFC";
+const SENTENCE = "#D3D8DF";
+const MUTED = "#C3C8CF";
+const LABEL = "#A9AFB9";
 
-function RtlRow({
+export interface ShareCardData {
+  originDisplay: string;
+  destDisplay: string;
+  durationMinutes: number | null;
+  numTransfers: number | null;
+  numStops: number | null;
+  cityArtworkDataUri?: string;
+}
+
+function faNumber(value: number): string {
+  return String(value).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
+}
+
+function PersianLine({
+  text,
+  gap = 7,
+  style,
+}: {
+  text: string;
+  gap?: number;
+  style?: CSSProperties;
+}) {
+  const words = text.trim().split(/\s+/).filter(Boolean).reverse();
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        alignItems: "baseline",
+        gap,
+        whiteSpace: "nowrap",
+        ...style,
+      }}
+    >
+      {words.map((word, index) => (
+        <div key={`${word}-${index}`} dir="rtl" style={{ display: "flex", whiteSpace: "nowrap" }}>
+          {word}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function VisualRtlRow({
   children,
   gap = 0,
   style,
@@ -30,422 +65,368 @@ function RtlRow({
   gap?: number;
   style?: CSSProperties;
 }) {
+  const visualChildren = Children.toArray(children).reverse();
   return (
     <div
-      dir="rtl"
       style={{
         display: "flex",
-        flexDirection: "row-reverse",
+        flexDirection: "row",
+        justifyContent: "flex-end",
         alignItems: "center",
         gap,
         ...style,
       }}
     >
-      {children}
+      {visualChildren}
     </div>
   );
 }
 
-function RtlWords({
-  text,
-  gap = 10,
-  style,
-}: {
-  text: string;
-  gap?: number;
-  style?: CSSProperties;
-}) {
-  return (
-    <RtlRow gap={gap} style={style}>
-      {text.split(" ").map((word, i) => (
-        <div
-          key={`${word}-${i}`}
-          style={{
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            minWidth: 0,
-          }}
-        >
-          {word}
-        </div>
-      ))}
-    </RtlRow>
-  );
+function stationFontSize(name: string): number {
+  const length = name.length;
+  if (length <= 16) return 42;
+  if (length <= 24) return 38;
+  if (length <= 32) return 34;
+  if (length <= 42) return 30;
+  return 26;
 }
 
-function BrandRow() {
+function stationLines(name: string): string[] {
+  const clean = name.trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (clean.length <= 20 || words.length < 2) return [clean];
+
+  let bestIndex = 1;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (let index = 1; index < words.length; index += 1) {
+    const first = words.slice(0, index).join(" ");
+    const second = words.slice(index).join(" ");
+    const score = Math.max(first.length, second.length) * 2 + Math.abs(first.length - second.length);
+    if (score < bestScore) {
+      bestScore = score;
+      bestIndex = index;
+    }
+  }
+  return [words.slice(0, bestIndex).join(" "), words.slice(bestIndex).join(" ")];
+}
+
+function StopChip({ numStops }: { numStops: number | null }) {
+  if (numStops === null || numStops <= 0) return null;
   return (
-    <RtlRow gap={12} style={{ width: "100%" }}>
-      <div
-        style={{
-          width: "30px",
-          height: "30px",
-          borderRadius: "9px",
-          background: BRAND_RED,
-          flexShrink: 0,
-        }}
-      />
-      <div
-        style={{
-          fontSize: 34,
-          fontWeight: 700,
-          lineHeight: 1,
-          color: "#fafafa",
-        }}
-      >
-        متو
-      </div>
-      <div
-        style={{
-          width: "1px",
-          height: "24px",
-          background: "#34343a",
-          flexShrink: 0,
-          marginLeft: "3px",
-          marginRight: "3px",
-        }}
-      />
-      <div
-        dir="ltr"
-        style={{
-          fontSize: 24,
-          lineHeight: 1,
-          color: "#a1a1aa",
-          whiteSpace: "nowrap",
-        }}
-      >
-        metto.ir
-      </div>
-    </RtlRow>
+    <div
+      style={{
+        position: "absolute",
+        right: 140,
+        top: 0,
+        display: "flex",
+        padding: "2px 16px 4px",
+        borderRadius: 999,
+        border: "2px solid rgba(220,24,48,.65)",
+        background: "rgba(220,24,48,.12)",
+        color: TEXT,
+        fontSize: 24,
+        lineHeight: 1.35,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <PersianLine text={`${faNumber(numStops)} ایستگاه`} gap={5} />
+    </div>
   );
 }
 
 function StationBlock({
   label,
   name,
-  fontSize,
+  top,
+  numStops = null,
 }: {
-  label: "از" | "به";
+  label: "مبدأ" | "مقصد";
   name: string;
-  fontSize: number;
+  top: number;
+  numStops?: number | null;
 }) {
+  const lines = stationLines(name);
+  const fontSize = stationFontSize(name);
   return (
     <div
       style={{
+        position: "absolute",
+        top,
+        right: 0,
         width: "100%",
+        height: 136,
         display: "flex",
         flexDirection: "column",
-        gap: "5px",
+        alignItems: "flex-end",
+        paddingRight: 56,
+        paddingLeft: 2,
+        overflow: "hidden",
       }}
     >
-      <RtlRow style={{ width: "100%" }}>
-        <div
-          style={{
-            fontSize: 22,
-            fontWeight: 400,
-            color: "#8d8d97",
-          }}
-        >
-          {label}
-        </div>
-      </RtlRow>
-      <RtlWords
-        text={name}
-        gap={10}
+      <div
+        dir="rtl"
+        style={{
+          display: "flex",
+          color: LABEL,
+          fontSize: 26,
+          lineHeight: 1.3,
+          fontWeight: 700,
+          marginBottom: 2,
+          textAlign: "right",
+        }}
+      >
+        {label}
+      </div>
+      {label === "مقصد" ? <StopChip numStops={numStops} /> : null}
+      <div
         style={{
           width: "100%",
-          fontSize,
-          fontWeight: 700,
-          lineHeight: 1.17,
-          color: "#fafafa",
-          whiteSpace: "nowrap",
+          maxHeight: 100,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
           overflow: "hidden",
-          maxWidth: "100%",
+          color: TEXT,
+          fontSize,
+          fontWeight: 800,
+          lineHeight: 1.16,
         }}
-      />
+      >
+        {lines.map((line, index) => (
+          <PersianLine key={`${line}-${index}`} text={line} gap={7} style={{ width: "100%" }} />
+        ))}
+      </div>
     </div>
   );
 }
 
-// Box-only down arrow: avoids relying on arrow glyphs that may be absent
-// from the embedded Vazirmatn fonts in the production ImageResponse
-// runtime. Shaft + two rotated caps, all muted so it stays subtle.
-function DownArrow() {
+function RouteDot({ top, destination = false }: { top: number; destination?: boolean }) {
   return (
     <div
       style={{
-        width: "30px",
-        height: "42px",
-        position: "relative",
+        position: "absolute",
+        right: 9,
+        top,
+        width: 22,
+        height: 22,
+        boxSizing: "border-box",
+        borderRadius: "50%",
+        background: destination ? BG : BRAND_RED,
+        border: destination ? `5px solid ${BRAND_RED}` : "none",
+        boxShadow: destination ? "none" : `0 0 0 7px ${BG}, 0 0 24px 5px rgba(220,24,48,.50)`,
         display: "flex",
-        alignSelf: "center",
-        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+function Effect({ text }: { text: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        position: "relative",
+        isolation: "isolate",
+        color: TEXT,
+        fontWeight: 900,
+        whiteSpace: "nowrap",
+        padding: "0 2px",
       }}
     >
       <div
         style={{
           position: "absolute",
-          left: "13px",
-          top: 0,
-          width: "4px",
-          height: "29px",
-          borderRadius: "2px",
-          background: "#71717a",
+          zIndex: 0,
+          left: -1,
+          right: -1,
+          bottom: 5,
+          height: 8,
+          borderRadius: 999,
+          background: BRAND_RED,
+          opacity: 0.72,
+          transform: "skewX(-8deg)",
+          display: "flex",
         }}
       />
-      <div
-        style={{
-          position: "absolute",
-          left: "7px",
-          top: "23px",
-          width: "4px",
-          height: "16px",
-          borderRadius: "2px",
-          background: "#71717a",
-          transform: "rotate(-45deg)",
-          transformOrigin: "center",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: "19px",
-          top: "23px",
-          width: "4px",
-          height: "16px",
-          borderRadius: "2px",
-          background: "#71717a",
-          transform: "rotate(45deg)",
-          transformOrigin: "center",
-        }}
-      />
+      <PersianLine text={text} gap={4} style={{ position: "relative", zIndex: 1 }} />
     </div>
   );
 }
 
-// Compact line legend in travel order, straight from the map model's legs
-// (line/label/color — no topology logic duplicated here). Dots only, never
-// pills.
-function LineLegend({ legs }: { legs: ShareLineLeg[] }) {
-  if (legs.length === 0) return null;
+function RtlText({ text }: { text: string }) {
+  return <PersianLine text={text} gap={4} />;
+}
+
+function TripSentence({
+  durationMinutes,
+  numTransfers,
+}: Pick<ShareCardData, "durationMinutes" | "numTransfers">) {
+  if (durationMinutes === null && numTransfers === null) return null;
+
+  const transferCore =
+    numTransfers === null
+      ? null
+      : numTransfers === 0
+        ? "بدون تعویض"
+        : numTransfers === 1
+          ? "یه تعویض"
+          : `${faNumber(numTransfers)} تعویض`;
+
   return (
-    <RtlRow
-      gap={18}
+    <div
       style={{
-        width: "100%",
-        minHeight: "34px",
+        position: "absolute",
+        right: 0,
+        top: 312,
+        width: 380,
+        height: 96,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-end",
+        justifyContent: "flex-end",
+        color: SENTENCE,
+        fontSize: 24,
+        lineHeight: 1.42,
+        fontWeight: 600,
+        overflow: "hidden",
       }}
     >
-      {legs.map((leg) => (
-        <RtlRow key={leg.line} gap={9}>
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 400,
-              color: "#d4d4d8",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {leg.label}
-          </div>
-          <div
-            style={{
-              width: "14px",
-              height: "14px",
-              borderRadius: "50%",
-              background: leg.color,
-              flexShrink: 0,
-            }}
-          />
-        </RtlRow>
-      ))}
-    </RtlRow>
+      {durationMinutes !== null ? (
+        <VisualRtlRow gap={4} style={{ width: "100%" }}>
+          <RtlText text="مسیرت" />
+          <Effect text={`${faNumber(durationMinutes)} دقیقه`} />
+          <RtlText text="طول می‌کشه" />
+        </VisualRtlRow>
+      ) : null}
+      {transferCore !== null ? (
+        <VisualRtlRow gap={4} style={{ width: "100%" }}>
+          <RtlText text="و" />
+          <Effect text={transferCore} />
+          <RtlText text={numTransfers === 0 ? "خط می‌ری." : "خط داری."} />
+        </VisualRtlRow>
+      ) : null}
+    </div>
   );
 }
 
-function stationFontSize(origin: string, destination: string): number {
-  const longest = Math.max(origin.length, destination.length);
-  // Tiers verified against renders: 14-char names (e.g. تهران (صادقیه))
-  // already overflow 384px at 55px, so the 55px tier stops at 12 chars.
-  if (longest <= 9) return 62;
-  if (longest <= 12) return 55;
-  if (longest <= 20) return 47;
-  return 39;
-}
-
-export function renderShareCard(
-  originDisplay: string,
-  destDisplay: string,
-  map: ShareMapModel | null,
-) {
-  const nameSize = stationFontSize(originDisplay, destDisplay);
-
+export function renderShareCard({
+  originDisplay,
+  destDisplay,
+  durationMinutes,
+  numTransfers,
+  numStops,
+  cityArtworkDataUri,
+}: ShareCardData) {
   return (
     <div
       style={{
         width: "100%",
         height: "100%",
         display: "flex",
-        flexDirection: "row",
-        direction: "ltr",
-        background: "#08090b",
-        color: "#fafafa",
+        background:
+          "radial-gradient(900px 520px at 78% 8%,rgba(220,24,48,.10),rgba(220,24,48,0) 62%), radial-gradient(700px 420px at 12% 100%,rgba(70,110,150,.10),rgba(70,110,150,0) 70%), #0A1218",
+        color: TEXT,
         fontFamily: "Vazirmatn",
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* Full-height live map: the route is the visual hook in social feeds. */}
+      {cityArtworkDataUri ? (
+        <img
+          aria-hidden="true"
+          alt=""
+          src={cityArtworkDataUri}
+          width={1200}
+          height={630}
+          style={{ position: "absolute", left: 0, top: 0, width: 1200, height: 630, display: "flex" }}
+        />
+      ) : null}
+
       <div
         style={{
-          width: `${OG_PANEL.w}px`,
-          height: `${OG_PANEL.h}px`,
-          position: "relative",
+          position: "absolute",
+          left: 64,
+          top: 104,
+          width: 620,
           display: "flex",
-          background: "#0d0e11",
-          overflow: "hidden",
-          flexShrink: 0,
+          flexDirection: "column",
+          alignItems: "stretch",
+          fontSize: 84,
+          lineHeight: 1.3,
+          fontWeight: 900,
+          letterSpacing: 0,
         }}
       >
-        {map && (
-          <div style={{ display: "flex" }}>
-            {map.edges.map((e, i) => (
-              <div
-                key={`e${i}`}
-                style={{
-                  position: "absolute",
-                  left: e.cx - e.len / 2,
-                  top: e.cy - e.thick / 2,
-                  width: e.len,
-                  height: e.thick,
-                  background: e.color,
-                  opacity: e.opacity,
-                  borderRadius: e.thick / 2,
-                  transform: `rotate(${e.deg}deg)`,
-                  transformOrigin: "center",
-                }}
-              />
-            ))}
-            {map.connectors.map((e, i) => (
-              <div
-                key={`c${i}`}
-                style={{
-                  position: "absolute",
-                  left: e.cx - e.len / 2,
-                  top: e.cy - e.thick / 2,
-                  width: e.len,
-                  height: e.thick,
-                  background: e.color,
-                  opacity: e.opacity,
-                  borderRadius: e.thick / 2,
-                  transform: `rotate(${e.deg}deg)`,
-                  transformOrigin: "center",
-                }}
-              />
-            ))}
-            {map.dimJoints.map((d, i) => (
-              <div
-                key={`w${i}`}
-                style={{
-                  position: "absolute",
-                  left: d.x - d.r,
-                  top: d.y - d.r,
-                  width: d.r * 2,
-                  height: d.r * 2,
-                  borderRadius: "50%",
-                  background: d.fill,
-                  opacity: DIM_TRACK_OPACITY,
-                }}
-              />
-            ))}
-            {map.dots.map((d, i) => (
-              <div
-                key={`d${i}`}
-                style={{
-                  position: "absolute",
-                  left: d.x - d.r,
-                  top: d.y - d.r,
-                  width: d.r * 2,
-                  height: d.r * 2,
-                  borderRadius: "50%",
-                  background: d.fill,
-                }}
-              />
-            ))}
-            {map.joints.map((d, i) => (
-              <div
-                key={`j${i}`}
-                style={{
-                  position: "absolute",
-                  left: d.x - d.r,
-                  top: d.y - d.r,
-                  width: d.r * 2,
-                  height: d.r * 2,
-                  borderRadius: "50%",
-                  background: d.fill,
-                }}
-              />
-            ))}
-            {map.pins.map((d, i) => (
-              <div
-                key={`p${i}`}
-                style={{
-                  position: "absolute",
-                  left: d.x - d.r,
-                  top: d.y - d.r,
-                  width: d.r * 2,
-                  height: d.r * 2,
-                  borderRadius: "50%",
-                  background: d.fill,
-                }}
-              />
-            ))}
-          </div>
-        )}
-        {/* Divider drawn INSIDE the map panel so the canvas math stays
-            exact (720 map + 480 info = 1200); a border would add width. */}
+        <PersianLine text="تو مترو گم شدی؟" gap={16} style={{ width: "100%", color: TEXT }} />
+        <PersianLine text="ما هم شده بودیم" gap={16} style={{ width: "100%", color: BRAND_RED }} />
+      </div>
+
+      <div style={{ position: "absolute", right: 64, top: 30, width: 470, height: 410, display: "flex" }}>
         <div
           style={{
             position: "absolute",
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: "1px",
-            background: "#191a1f",
+            right: 18,
+            top: 64,
+            width: 4,
+            height: 104,
+            background: "linear-gradient(180deg,#DC1830,rgba(220,24,48,.55))",
+            display: "flex",
           }}
         />
+        <div
+          style={{
+            position: "absolute",
+            right: 18,
+            top: 126,
+            width: 4,
+            height: 66,
+            background: "linear-gradient(180deg,rgba(220,24,48,.55),#DC1830)",
+            display: "flex",
+          }}
+        />
+        <RouteDot top={44} />
+        <RouteDot top={188} destination />
+        <StationBlock label="مبدأ" name={originDisplay} top={0} />
+        <StationBlock label="مقصد" name={destDisplay} top={144} numStops={numStops} />
+        <TripSentence durationMinutes={durationMinutes} numTransfers={numTransfers} />
       </div>
 
-      {/* Minimal route summary: details are intentionally deferred to Metto. */}
       <div
-        dir="rtl"
         style={{
-          width: `${INFO_W}px`,
-          height: "630px",
+          position: "absolute",
+          left: 46,
+          top: 514,
+          width: 640,
+          height: 76,
+          borderRadius: 38,
+          background:
+            "linear-gradient(90deg, rgba(10,18,24,.96) 0%, rgba(10,18,24,.93) 28%, rgba(10,18,24,.82) 50%, rgba(10,18,24,.50) 72%, rgba(10,18,24,.16) 90%, rgba(10,18,24,0) 100%)",
           display: "flex",
-          flexDirection: "column",
-          padding: `44px ${INFO_PAD_X}px 42px`,
-          background: "#08090b",
-          flexShrink: 0,
-          overflow: "hidden",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: 64,
+          top: 540,
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "baseline",
+          gap: 16,
         }}
       >
-        <BrandRow />
-
-        <div style={{ height: "58px", flexShrink: 0 }} />
-
-        <StationBlock label="از" name={originDisplay} fontSize={nameSize} />
-
-        <div style={{ height: "18px", flexShrink: 0 }} />
-        <DownArrow />
-        <div style={{ height: "12px", flexShrink: 0 }} />
-
-        <StationBlock label="به" name={destDisplay} fontSize={nameSize} />
-
-        <div style={{ flexGrow: 1, display: "flex" }} />
-
-        {map && <LineLegend legs={map.legs} />}
+        <div
+          dir="ltr"
+          style={{ display: "flex", color: BRAND_RED, fontSize: 46, lineHeight: 1, fontWeight: 800 }}
+        >
+          metto.ir
+        </div>
+        <PersianLine
+          text="جزئیات کامل مسیر در"
+          gap={8}
+          style={{ color: MUTED, fontSize: 34, lineHeight: 1, fontWeight: 600 }}
+        />
       </div>
     </div>
   );

@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   authors: [{ name: "aliinreallife" }],
   creator: "aliinreallife",
   publisher: "aliinreallife",
-  applicationName: "متو — metto",
+  applicationName: "متو",
   referrer: "origin-when-cross-origin",
   openGraph: {
     type: "website",
@@ -120,7 +120,16 @@ export const viewport: Viewport = {
   userScalable: true,
 };
 
-const jsonLd = {
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "متو",
+  alternateName: ["metto", "metto.ir"],
+  url: `${siteUrl}/`,
+  inLanguage: ["fa", "en"],
+};
+
+const appJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   name: "متو",
@@ -163,8 +172,14 @@ export default function RootLayout({
     >
       <head>
         <script
+          id="website-json-ld"
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          id="app-json-ld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(appJsonLd) }}
         />
       </head>
       <body className="flex h-dvh flex-col font-sans antialiased">

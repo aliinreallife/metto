@@ -42,6 +42,8 @@ type Props = {
    *  replaces the pin-to-station stubs. */
   directWalk?: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; coordinates?: [number, number][] } | null
   walkingPaths?: { origin?: [number, number][]; dest?: [number, number][] }
+  /** True when walking is the recommendation: show the network as context, not a highlighted route. */
+  deemphasizeMetro?: boolean
   /** Map-local clear control (rendered with the zoom/locate stack). */
   onClearRoute?: () => void
   showClearRoute?: boolean
@@ -141,7 +143,7 @@ function buildLabelIcon(
   })
 }
 
-export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick, directWalk, walkingPaths }: Props) {
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick, directWalk, walkingPaths, deemphasizeMetro = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
@@ -603,7 +605,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         {
           color: LINE_COLORS[e.line],
           weight: inRoute ? 6 : 4,
-          opacity: hasRoute ? (inRoute ? 1 : 0.25) : underConstruction ? 0.55 : 0.85,
+          opacity: hasRoute ? (inRoute ? 1 : 0.25) : deemphasizeMetro ? 0.2 : underConstruction ? 0.55 : 0.85,
           dashArray: underConstruction ? "2 6" : undefined,
         },
       ).addTo(layer)
@@ -668,7 +670,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     // Re-add GPS marker on top if it exists
     if (gpsMarkerRef.current) gpsMarkerRef.current.addTo(layer)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleLabels is an imperative Leaflet helper (new identity every render); the listed inputs are the real triggers.
-  }, [edges, route, routeStations, routeEdgeKeys, originId, destId, selectedId, isFa, onSelect])
+  }, [edges, route, routeStations, routeEdgeKeys, originId, destId, selectedId, isFa, onSelect, deemphasizeMetro])
 
   // Fit to the route bounds when it changes (no place pins: keep old behavior).
   useEffect(() => {

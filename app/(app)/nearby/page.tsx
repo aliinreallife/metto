@@ -3,16 +3,16 @@ import { NearbyPage } from "./client";
 
 export const metadata: Metadata = {
   // TODO(multi-city): Tehran-scoped until /[city]/nearby lands.
-  title: "مترو نزدیک من",
+  title: "نزدیک‌ترین ایستگاه مترو به من | فاصله و مسیر",
   description:
-    "نزدیک‌ترین ایستگاه مترو به موقعیتت را با GPS پیدا کن و فاصله و امکانات ایستگاه را ببین.",
+    "با موقعیت مکانی یا انتخاب ایستگاه، نزدیک‌ترین ایستگاه مترو تهران را پیدا کن و فاصله، مسیر و امکاناتی مثل آسانسور و سرویس بهداشتی را ببین.",
   alternates: {
     canonical: "/nearby",
   },
   openGraph: {
-    title: "مترو نزدیک من | متو",
+    title: "نزدیک‌ترین ایستگاه مترو به من | فاصله و مسیر | متو",
     description:
-      "نزدیک‌ترین ایستگاه مترو به موقعیتت را با GPS پیدا کن.",
+      "نزدیک‌ترین ایستگاه مترو تهران را با فاصله، مسیر و امکانات ایستگاه پیدا کن.",
     url: "https://metto.ir/nearby",
     images: [
       {
@@ -26,9 +26,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "مترو نزدیک من | متو",
+    title: "نزدیک‌ترین ایستگاه مترو به من | فاصله و مسیر | متو",
     description:
-      "نزدیک‌ترین ایستگاه مترو به موقعیتت را با GPS پیدا کن.",
+      "نزدیک‌ترین ایستگاه مترو تهران را با فاصله، مسیر و امکانات ایستگاه پیدا کن.",
     images: ["/socialprev.png"],
   },
 };

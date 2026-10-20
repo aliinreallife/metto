@@ -4,8 +4,6 @@
 import { describe, expect, it } from "vitest";
 import { generateMetadata } from "./page";
 
-const AT = encodeURIComponent("2026-10-09T10:05:00Z");
-
 describe("share generateMetadata", () => {
   it("emits dynamic route tags for valid share state", async () => {
     const meta = await generateMetadata({
@@ -46,7 +44,7 @@ describe("share generateMetadata", () => {
     });
   });
 
-  it(`uses the exact UTC instant from the URL (arrive ${AT})`, async () => {
+  it("keeps the exact URL instant behind the link instead of exposing it in social copy", async () => {
     const meta = await generateMetadata({
       searchParams: Promise.resolve({
         city: "tehran",
@@ -56,8 +54,15 @@ describe("share generateMetadata", () => {
         at: "2026-10-09T10:05:00Z",
       }),
     });
-    // The anchor is always the URL instant rendered Tehran-local,
-    // regardless of server "now" (Level 1 echoes the selection as-is).
-    expect(meta.title).toContain("۱۳:۳۵");
+
+    // Social copy teases the journey; opening the share URL still restores the
+    // exact arrive-by state and UTC instant in the planner. Compare parsed
+    // semantics because URL canonicalization may add millisecond precision.
+    expect(String(meta.title)).not.toContain("۱۳:۳۵");
+    expect(String(meta.title)).not.toContain("رسیدن تا");
+    const og = meta.openGraph as Record<string, unknown>;
+    const shareUrl = new URL(String(og["url"]));
+    expect(shareUrl.searchParams.get("timeMode")).toBe("arrive");
+    expect(shareUrl.searchParams.get("at")).toBe("2026-10-09T10:05:00.000Z");
   });
 });

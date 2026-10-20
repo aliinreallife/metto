@@ -55,6 +55,51 @@ export const RATE_APP_INTENT_URI =
   `S.browser_fallback_url=${encodeURIComponent(RATE_FALLBACK_URL)};end`;
 
 const SESSION_KEY = "metto.twa";
+const RATING_STORES_KEY = "metto.ratingStores.v1";
+const RATING_PREFERRED_KEY = "metto.ratingPreferred.v1";
+export type RatingStore = "bazaar" | "myket";
+
+/**
+ * Browser JavaScript cannot enumerate installed Android apps. The native TWA
+ * launcher supplies this capability snapshot; missing data means unavailable.
+ * Never use getInstalledRelatedApps() to infer marketplace availability.
+ */
+export function getAvailableRatingStores(): RatingStore[] {
+  if (!isAndroidTwaSync()) return [];
+  try {
+    const raw = sessionStorage.getItem(RATING_STORES_KEY);
+    return raw?.split(",").filter(
+      (store): store is RatingStore => store === "bazaar" || store === "myket",
+    ) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export function getPreferredRatingStore(): RatingStore | null {
+  const stores = getAvailableRatingStores();
+  if (!stores.length) return null;
+  try {
+    const preferred = sessionStorage.getItem(RATING_PREFERRED_KEY);
+    if ((preferred === "bazaar" || preferred === "myket") && stores.includes(preferred)) {
+      return preferred;
+    }
+  } catch {
+    // No preferences: use the only available store, if any.
+  }
+  return stores.length === 1 ? stores[0] : null;
+}
+
+/** Explicit choice from /rate; the native activity re-checks installation. */
+export function openAndroidRatingStore(store: RatingStore): void {
+  if (!getAvailableRatingStores().includes(store)) return;
+  const fallback = store === "bazaar"
+    ? "https://cafebazaar.ir/app/ir.metto.app"
+    : "https://myket.ir/app/ir.metto.app";
+  window.location.href =
+    `intent://rate-app?store=${store}#Intent;scheme=metto;package=${TWA_PACKAGE};` +
+    `S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
+}
 
 function readSessionFlag(): boolean {
   try {
@@ -134,6 +179,26 @@ export async function isAndroidTwa(): Promise<boolean> {
       const url = new URL(window.location.href);
       if (url.searchParams.get(TWA_LAUNCH_PARAM) === TWA_LAUNCH_VALUE) {
         rememberTwa();
+        // Snapshot is native-only and intentionally fail-closed for old TWAs.
+        // Each fresh launcher visit clears stale availability (including when
+        // there are no stores installed) before removing these query params.
+        const rawStores = url.searchParams.get("ratingStores") ?? "";
+        const stores = rawStores.split(",").filter(
+          (store) => store === "bazaar" || store === "myket",
+        );
+        const preferred = url.searchParams.get("ratingPreferred") ?? "";
+        try {
+          sessionStorage.setItem(RATING_STORES_KEY, [...new Set(stores)].join(","));
+          sessionStorage.setItem(
+            RATING_PREFERRED_KEY,
+            (preferred === "bazaar" || preferred === "myket") && stores.includes(preferred)
+              ? preferred : "choose",
+          );
+        } catch {
+          // Storage disabled => hide rating rather than guessing.
+        }
+        url.searchParams.delete("ratingStores");
+        url.searchParams.delete("ratingPreferred");
         url.searchParams.delete(TWA_LAUNCH_PARAM);
         const rest = url.searchParams.toString();
         window.history.replaceState(

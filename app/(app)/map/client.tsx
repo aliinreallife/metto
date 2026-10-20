@@ -29,7 +29,7 @@ import { shortPlaceLabel, reverseGeocode } from "@/lib/geocoding";
 import { StationDetail } from "@/components/station-detail";
 import { MapPickCard } from "@/components/map-pick-card";
 import { WalkSuggestCard } from "@/components/route-panel";
-import { directWalkVerdict } from "@/lib/route-planning";
+import { chooseMapRouteMode, directWalkVerdict } from "@/lib/route-planning";
 import { cn } from "@/lib/utils";
 
 // Feature flag: dismiss buttons on the map place info/warning cards.
@@ -396,12 +396,31 @@ export function MapPage() {
     };
   }, [walkOrigin, walkDest, initialParams.from, initialParams.to, route, walking.accessMinutes, walking.direct.route]);
 
+  // Preference is scoped to the actual endpoints; opening a different shared
+  // map link restores the walking-first default, without a reset effect.
+  const journeyKey = JSON.stringify([
+    initialParams.from, initialParams.to,
+    initialParams.originPin?.lat, initialParams.originPin?.lng,
+    initialParams.destPlace?.lat, initialParams.destPlace?.lng,
+  ]);
+  const [alternativeChoice, setAlternativeChoice] = useState<{
+    journeyKey: string;
+    showMetro: boolean;
+  } | null>(null);
+  const showMetroAlternative =
+    alternativeChoice?.journeyKey === journeyKey && alternativeChoice.showMetro;
+  const mapRouteMode = chooseMapRouteMode(
+    walkGuide?.verdict ?? null,
+    Boolean(showMetroAlternative),
+  );
+
   return (
     <div data-testid="map-route-state" data-route-start={route?.departedAtMs} className="relative isolate z-0 flex flex-1 min-h-0 flex-col overflow-hidden">
       <RealMap
         lang={lang}
         mapMode={mapMode}
-        route={route}
+        route={mapRouteMode === "metro" ? route : null}
+        deemphasizeMetro={mapRouteMode === "walking"}
         originId={initialParams.from}
         destId={initialParams.to}
         selectedId={selectedId}
@@ -414,7 +433,7 @@ export function MapPage() {
         onViewChange={handleViewChange}
         placeMarkers={placeMarkers}
         pendingPick={picked && pickedLabel ? { ...picked, label: pickedLabel } : null}
-        directWalk={walkGuide ? walkGuide.line : null}
+        directWalk={mapRouteMode === "walking" ? walkGuide?.line ?? null : null}
         walkingPaths={walkingPaths}
       />
 
@@ -444,14 +463,22 @@ export function MapPage() {
             walkMin={walkGuide.verdict.walkMin}
             distanceKm={walkGuide.verdict.walkKm}
             approximate={!walking.direct.route || walking.accessApproximate}
+            action={{
+              label: showMetroAlternative ? t.viewWalkingRoute : t.viewMetroAlternative,
+              active: Boolean(showMetroAlternative),
+              onClick: () => setAlternativeChoice({
+                journeyKey,
+                showMetro: !showMetroAlternative,
+              }),
+            }}
           />
         )}
         {routeStale && <RouteRefreshNotice lang={lang} focusTarget='[aria-label="Metro on real map"]' onRefresh={() => setRefreshVersion((version) => version + 1)} />}
         {(walkGuide || placeMarkers.length > 0) && (
           <WalkingRouteInfo lang={lang} onMap
-            loading={walkGuide ? walking.direct.loading : walking.access.loading || walking.egress.loading}
-            hasPath={walkGuide ? !!walking.direct.route : !!(walking.access.route || walking.egress.route)}
-            saved={walkGuide ? walking.direct.saved : walking.access.saved || walking.egress.saved} />
+            loading={mapRouteMode === "walking" ? walking.direct.loading : walking.access.loading || walking.egress.loading}
+            hasPath={mapRouteMode === "walking" ? !!walking.direct.route : !!(walking.access.route || walking.egress.route)}
+            saved={mapRouteMode === "walking" ? walking.direct.saved : walking.access.saved || walking.egress.saved} />
         )}
 
         {/* One-time save notice: informational only, online only, never

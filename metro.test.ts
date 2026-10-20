@@ -23,7 +23,7 @@ import {
   resolveStationId,
 } from "./lib/metro/selectors";
 import { validateMetro } from "./lib/metro/validation";
-import { findRoute } from "./lib/route";
+import { computeRouteTopology, findRoute } from "./lib/route";
 
 describe("metro dataset validation", () => {
   it("has no consistency errors", () => {
@@ -96,7 +96,66 @@ describe("metro dataset validation", () => {
     // its Line 4 stop is under construction while Line 6 is operational.
     expect(isOperationalInterchange("ayatollah-kashani")).toBe(false);
     expect(getOperationalStationLines("ayatollah-kashani")).toEqual([6]);
-    expect(isOperationalInterchange("shohada-ye-hefdah-e-shahrivar")).toBe(true);
+    expect(isOperationalInterchange("shohada-ye-hefdah-e-shahrivar")).toBe(false);
+  });
+
+  it("keeps 17 Shahrivar Line 7 boardable but closes Line 6 access and transfer", () => {
+    const stationId = "shohada-ye-hefdah-e-shahrivar";
+    expect(getStation(stationId)?.status).toBe("operational");
+    expect(getStationLines(stationId)).toEqual([6, 7]);
+    expect(getOperationalStationLines(stationId)).toEqual([7]);
+    expect(getStopStatus("line-6-main", stationId)).toBe("under_construction");
+    expect(getStopStatus("line-7-main", stationId)).toBe("operational");
+    expect(canBoardAtStation(stationId, 6)).toBe(false);
+    expect(canBoardAtStation(stationId, 7)).toBe(true);
+    expect(canTransferAtStation(stationId, 6, 7)).toBe(false);
+    expect(canTransferAtStation(stationId, 7, 6)).toBe(false);
+    expect(isOperationalInterchange(stationId)).toBe(false);
+
+    // Trains still pass through on the existing operational Line 6 track.
+    const throughNeighbors = getOperationalNeighbors(stationId)
+      .filter((n) => n.lineId === 6)
+      .map((n) => n.stationId)
+      .sort();
+    expect(throughNeighbors).toEqual(["amirkabir", "meydan-e-khorasan"]);
+    const throughRoute = findRoute("amirkabir", "meydan-e-khorasan");
+    expect(throughRoute).not.toBeNull();
+    expect(throughRoute!.path).toContain(stationId);
+
+    // Existing Line 7 boarding remains valid.
+    const onLine7 = findRoute("meydan-e-giyam", stationId);
+    expect(onLine7).not.toBeNull();
+    expect(onLine7!.path).toContain(stationId);
+  });
+
+  it("counts passenger stops per arriving line, not any other line at a shared station", () => {
+    // Line 6 trains run through 17 Shahrivar while the Line 6 platform is
+    // closed, even though the physical Line 7 station is operating.
+    const route = computeRouteTopology("amirkabir", "meydan-e-khorasan");
+    expect(route).not.toBeNull();
+    expect(route!.path).toEqual([
+      "amirkabir",
+      "shohada-ye-hefdah-e-shahrivar",
+      "meydan-e-khorasan",
+    ]);
+    expect(route!.hops.map((hop) => hop.line)).toEqual([6, 6]);
+    expect(route!.numStops).toBe(1);
+  });
+
+  it("uses a real interchange rather than an unfinished cross-line stop", () => {
+    const from = "shohada-ye-hefdah-e-shahrivar";
+    const to = "meydan-e-khorasan";
+    const metro = computeRouteTopology(from, to);
+    expect(metro).not.toBeNull();
+    expect(metro!.hops[0].line).toBe(7);
+    expect(metro!.hops.at(-1)?.line).toBe(6);
+    expect(metro!.path.length).toBeGreaterThan(3);
+    expect(metro!.numTransfers).toBeGreaterThan(0);
+    for (const change of metro!.segments.map((seg) => seg.changeFromPrevious)) {
+      if (change.type !== "line_transfer") continue;
+      expect(change.stationId).not.toBe(from);
+      expect(canTransferAtStation(change.stationId, change.fromLineId, change.toLineId)).toBe(true);
+    }
   });
 
   it("models Kashani per-line stop status", () => {
