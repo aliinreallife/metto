@@ -36,7 +36,7 @@ import {
 import { tehranMinuteToInstant } from "@/lib/tehran-time";
 import { useScheduleData } from "@/lib/use-schedule-data";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
-import { reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
+import { displayPlaceLabel, reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
 import {
   nearestStations,
   formatDistance,
@@ -852,7 +852,7 @@ function PlaceCard({
     <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
       <Building2 aria-hidden="true" className="size-4 shrink-0 text-primary md:size-5" />
       <span className="min-w-0 flex-1 truncate">
-        <span className="font-medium">{info.placeName}</span>
+        <span className="font-medium">{displayPlaceLabel(info.placeName, lang)}</span>
         <span aria-hidden="true" className="mx-1.5 text-muted-foreground">→</span>
         <span>
           {t.nearestStation}: <span className="font-medium">{stationName}</span>

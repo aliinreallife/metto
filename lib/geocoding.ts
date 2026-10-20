@@ -1,4 +1,4 @@
-import { type Lang } from "./i18n"
+import { STRINGS, type Lang } from "./i18n"
 
 export type PlaceResult = {
   displayName: string
@@ -130,6 +130,27 @@ export async function reverseGeocode(
     reverseCache.set(cacheKey, null)
     return null
   }
+}
+
+/** Recognize coordinate-only names that older map picks saved in links/storage.
+ * Keep the actual lat/lng in pin data: only the visible label changes.
+ */
+export function isUnresolvedMapPointLabel(label: string): boolean {
+  const text = label.trim()
+  if (!text || text === STRINGS.fa.selectedMapPoint || text === STRINGS.en.selectedMapPoint) return true
+  // The old map fallback saved a full coordinate pair. Some map displays
+  // truncated it to its first component, which also needs sanitization.
+  if (/^[+-]?\d{1,2}\.\d{3,}$/.test(text)) return true
+  const pair = text.match(/^([+-]?\d{1,2}(?:\.\d+)?)\s*[,،]\s*([+-]?\d{1,3}(?:\.\d+)?)$/)
+  if (!pair) return false
+  return Math.abs(Number(pair[1])) <= 90 && Math.abs(Number(pair[2])) <= 180
+}
+
+/** A user-facing label for both map pins and planner cards. */
+export function displayPlaceLabel(label: string, lang: Lang): string {
+  return isUnresolvedMapPointLabel(label)
+    ? STRINGS[lang].selectedMapPoint
+    : shortPlaceLabel(label)
 }
 
 // Shorten a long Nominatim display_name to its first component for map
