@@ -45,21 +45,6 @@ async function preparedOffline(page: Page) {
   await expect.poll(() => status.getAttribute("data-phase"), { timeout: 60_000 }).toMatch(/^(ready|offline-ready)$/);
 }
 
-async function walkingCacheCount(page: Page) {
-  return page.evaluate(async () => {
-    if (!(await indexedDB.databases()).some((db) => db.name === "metto-walking")) return 0;
-    const db = await new Promise<IDBDatabase>((resolve) => {
-      const request = indexedDB.open("metto-walking", 1); request.onsuccess = () => resolve(request.result);
-    });
-    if (!db.objectStoreNames.contains("routes")) { db.close(); return 0; }
-    const tx = db.transaction("routes", "readonly");
-    const count = await new Promise<number>((resolve) => {
-      const request = tx.objectStore("routes").count(); request.onsuccess = () => resolve(request.result);
-    });
-    db.close(); return count;
-  });
-}
-
 test("street geometry and distances persist offline; uncached endpoints stay approximate", async ({ page, context }) => {
   await prepare(page);
   const calls = await streetFixture(page);
@@ -173,39 +158,23 @@ test("saved walking geometry remains bounded after new routes are loaded", async
 });
 
 for (const lang of ["en", "fa"] as const) {
-  test(`Now stays stable until manual refresh, including foreground resync (${lang})`, async ({ page }) => {
+  test(`Now routes update automatically without reloading (${lang})`, async ({ page }) => {
     await page.clock.install({ time: NOW });
     await page.addInitScript((language) => localStorage.setItem("lang", language), lang);
-    const calls = await streetFixture(page);
+    await unavailableWalkingApi(page);
     await page.goto("/route?from=tajrish&to=shahid-beheshti", { waitUntil: "domcontentloaded" });
-    await preparedOffline(page);
     const summary = page.getByTestId("route-summary-stats");
     await expect(summary).toBeVisible();
     const oldStart = Number(await summary.getAttribute("data-route-start"));
-    const text = await summary.innerText();
-    await expect.poll(() => walkingCacheCount(page)).toBeGreaterThan(0);
-    const requestsBefore = calls.length;
     await page.clock.fastForward(75_000);
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
-    const stale = page.getByTestId("route-stale-notice");
-    await expect(stale).toBeVisible();
-    await accessible(page);
-    await page.emulateMedia({ colorScheme: "dark" });
-    await accessible(page, '[data-testid="route-stale-notice"]');
-    await page.emulateMedia({ colorScheme: "light" });
-    expect(Number(await summary.getAttribute("data-route-start"))).toBe(oldStart);
-    expect(await summary.innerText()).toBe(text);
-    const refresh = stale.getByRole("button", { name: lang === "en" ? "Refresh route" : "تازه‌سازی مسیر", exact: true });
-    await refresh.focus(); await refresh.press("Enter");
-    await expect(stale).toHaveCount(0);
-    expect(Number(await summary.getAttribute("data-route-start"))).toBeGreaterThan(oldStart);
-    await expect(summary).toBeFocused();
-    expect(calls.length).toBe(requestsBefore);
-    expect(new URL(page.url()).searchParams.has("timeMode")).toBe(false);
+    await expect.poll(async () => Number(await summary.getAttribute("data-route-start"))).toBeGreaterThan(oldStart);
+    await expect(page.getByTestId("route-stale-notice")).toHaveCount(0);
+    await expect(page.getByTestId("departure-option")).toHaveCount(0);
   });
 }
 
-test("map Now route also refreshes only on request", async ({ page }) => {
+test("map route automatically updates without manual reload", async ({ page }) => {
   await page.clock.install({ time: NOW });
   await page.addInitScript(() => { localStorage.setItem("lang", "en"); localStorage.setItem("metto.mapSaveNoticeSeen", "1"); });
   await unavailableWalkingApi(page);
@@ -215,11 +184,7 @@ test("map Now route also refreshes only on request", async ({ page }) => {
   const start = Number(await state.getAttribute("data-route-start"));
   expect(start).toBeGreaterThan(0);
   await page.clock.fastForward(75_000);
-  const stale = page.getByTestId("route-stale-notice");
-  await expect(stale).toBeVisible();
-  expect(Number(await state.getAttribute("data-route-start"))).toBe(start);
-  await stale.getByRole("button", { name: "Refresh route" }).click();
-  await expect(stale).toHaveCount(0);
-  expect(Number(await state.getAttribute("data-route-start"))).toBeGreaterThan(start);
-  await expect(page.locator('[aria-label="Metro on real map"]')).toBeFocused();
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect.poll(async () => Number(await state.getAttribute("data-route-start"))).toBeGreaterThan(start);
+  await expect(page.getByTestId("route-stale-notice")).toHaveCount(0);
 });

@@ -343,33 +343,17 @@ test.describe("map route controls", () => {
     expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(firstCardBox!.y + 2);
   });
 
-  test("walk-first view lets passengers inspect the real detouring metro itinerary", async ({
-    page,
-  }) => {
-    // Regression: 17 Shahrivar Line 7 -> Meydan Khorasan Line 6.
-    // The Line 6 platform at 17 Shahrivar cannot board or transfer yet;
-    // if a passenger insists on taking metro, it is a long interchange route.
+  test("faster walking appears alongside the metro itinerary without a toggle", async ({ page }) => {
     await suppressSaveNotice(page);
     await page.goto(
       `/map?from=shohada-ye-hefdah-e-shahrivar&to=meydan-e-khorasan&op=35.6689,51.4458,${encodeURIComponent("قیام")}&dp=35.6642,51.4465,${encodeURIComponent("طیب")}`,
       { waitUntil: "domcontentloaded" },
     );
     await mapReady(page);
-    const overlay = ".leaflet-overlay-pane";
-    await expect(page.getByTestId("walk-suggest")).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator(`${overlay} path[stroke="#a3a3a3"]`)).toHaveCount(1);
-    await expect(page.locator(`${overlay} path[stroke-width="6"]`)).toHaveCount(0);
-    const toggle = page.getByTestId("map-route-mode-toggle");
-    await expect(toggle).toHaveText("نمایش مسیر مترو");
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-pressed", "true");
-    await expect(toggle).toHaveText("نمایش مسیر پیاده‌روی");
-    await expect(page.locator(`${overlay} path[stroke="#a3a3a3"]`)).toHaveCount(0);
-    await expect(page.locator(`${overlay} path[stroke-width="6"]`)).not.toHaveCount(0);
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-pressed", "false");
-    await expect(page.locator(`${overlay} path[stroke="#a3a3a3"]`)).toHaveCount(1);
-    await expect(page.locator(`${overlay} path[stroke-width="6"]`)).toHaveCount(0);
+    await expect(page.getByTestId("walk-suggest")).toBeVisible();
+    await expect(page.getByTestId("map-route-mode-toggle")).toHaveCount(0);
+    await expect(page.locator(".leaflet-overlay-pane path[stroke='#a3a3a3']")).toHaveCount(1);
+    await expect(page.locator(".leaflet-overlay-pane path[stroke-width='6']")).not.toHaveCount(0);
   });
 
   test("far pins keep pin-to-station stubs, no direct line", async ({
