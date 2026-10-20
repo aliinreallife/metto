@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
+import styles from "./real-map.module.css"
 import { Plus, Minus, LocateFixed, Loader2, X } from "lucide-react"
 import { LINE_COLORS } from "@/lib/metro/lines";
 import {
@@ -437,7 +438,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     labelsLayerRef.current = labelsLayer
 
     const minimalistLayer = L.tileLayer(MINIMALIST_URL, {
-      className: "metto-minimalist-tiles",
+      className: cn("metto-minimalist-tiles", styles.basemap),
       maxZoom: 20,
       attribution: MINIMALIST_ATTR,
       subdomains: "abcd",
