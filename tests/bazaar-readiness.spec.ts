@@ -68,7 +68,9 @@ test.describe("install choices: browser vs TWA", () => {
       page.getByRole("heading", { name: "Metro routing, simple and fast" }),
     ).toBeVisible({ timeout: 15_000 });
     await scrollIntoViewStable(page, "#install");
-    const bazaar = page.locator(`#install a[href="${BAZAAR_HREF}"]`);
+    // Hydration can briefly leave FA and EN install cards together. Match
+    // the intended English link rather than an ambiguous pair of anchors.
+    const bazaar = page.locator(`#install a[href="${BAZAAR_HREF}"]`).filter({ hasText: "Cafe Bazaar" }).first();
     await expect(bazaar).toBeVisible();
     await expect(bazaar).toContainText("Cafe Bazaar");
     await expect(bazaar).toContainText("Android");

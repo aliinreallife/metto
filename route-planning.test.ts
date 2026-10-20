@@ -670,17 +670,26 @@ describe("walk suggestion rule", () => {
 describe("direct walk verdict", () => {
   const a = { lat: 35.7265, lng: 51.2427 };
   const b = { lat: 35.7265, lng: 51.2426 };
+  const street = (from: typeof a, to: typeof a, distanceMeters = 100, durationSeconds = 120) => ({
+    requestKey: "test-walk",
+    coordinates: [[from.lng, from.lat], [to.lng, to.lat]] as [number, number][],
+    distanceMeters,
+    durationSeconds,
+    savedAt: Date.now(),
+  });
 
   it("shares the wait-free comparison between the planner and map", () => {
     const points = {
       origin: { lat: 35.7, lng: 51.3 },
-      dest: { lat: 35.75, lng: 51.3 },
+      dest: { lat: 35.705, lng: 51.3 },
       sameStation: false,
       accessMinutes: 0,
       initialWaitSeconds: 315 * 60,
     };
-    expect(directWalkVerdict({ ...points, metroTotalSeconds: (315 + 29) * 60 })).toBeNull();
-    expect(directWalkVerdict({ ...points, metroTotalSeconds: (315 + 100) * 60 })?.metroMin).toBe(100);
+    const walkingRoute = street(points.origin, points.dest, 750, 10 * 60);
+    expect(directWalkVerdict({ ...points, walkingRoute: null, metroTotalSeconds: (315 + 100) * 60 })).toBeNull();
+    expect(directWalkVerdict({ ...points, walkingRoute, metroTotalSeconds: (315 + 9) * 60 })).toBeNull();
+    expect(directWalkVerdict({ ...points, walkingRoute, metroTotalSeconds: (315 + 29) * 60 })?.metroMin).toBe(29);
   });
 
   it("returns same-station data without any metro comparison", () => {
@@ -702,9 +711,32 @@ describe("direct walk verdict", () => {
       sameStation: false,
       metroTotalSeconds: 60 * 60,
       accessMinutes: 0,
+      walkingRoute: street(a, b),
     });
     expect(v?.kind).toBe("beats-metro");
     expect(v?.metroMin).toBe(60);
+  });
+
+  it("rejects long mapped walks, unavailable directions and borderline time savings", () => {
+    const far = { lat: 35.745, lng: a.lng };
+    const longRoute = street(a, far, 2600, 30 * 60);
+    expect(directWalkVerdict({
+      origin: a, dest: far, sameStation: false, accessMinutes: 0,
+      metroTotalSeconds: 80 * 60, walkingRoute: longRoute,
+    })).toBeNull();
+    expect(directWalkVerdict({
+      origin: a, dest: b, sameStation: false, accessMinutes: 0,
+      metroTotalSeconds: 3 * 60, walkingRoute: street(a, b),
+    })).toBeNull();
+    expect(directWalkVerdict({
+      origin: a, dest: b, sameStation: false, accessMinutes: 0,
+      metroTotalSeconds: 80 * 60,
+    })).toBeNull();
+    // Same-station pins have no metro alternative and stay informative.
+    expect(directWalkVerdict({
+      origin: a, dest: far, sameStation: true, accessMinutes: 0,
+      metroTotalSeconds: null,
+    })?.kind).toBe("same-station");
   });
 
   it("returns null for identical points, missing points, or a metro win", () => {

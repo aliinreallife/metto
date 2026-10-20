@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { unavailableWalkingApi } from "./helpers/walking";
+import { haversineKm } from "../lib/geo";
+import { mockWalkingApi, unavailableWalkingApi } from "./helpers/walking";
 
 // Walk suggestion: when walking the whole way beats the metro journey, the
 // planner nudges with a walk card above the (still visible) metro result.
@@ -19,9 +20,19 @@ function tehranDatePlusDays(days: number): string {
 
 test.describe("walk suggestion", () => {
   test.beforeEach(async ({ page }) => {
-    // These cases exercise the explicit approximate fallback; street paths
-    // and provider failures are covered in pedestrian-routing.spec.ts.
-    await unavailableWalkingApi(page);
+    await mockWalkingApi(page, (url) => {
+      const params = new URL(url).searchParams;
+      const from = { lat: Number(params.get("fromLat")), lng: Number(params.get("fromLng")) };
+      const to = { lat: Number(params.get("toLat")), lng: Number(params.get("toLng")) };
+      const distanceMeters = Math.max(100, Math.ceil(haversineKm(from.lat, from.lng, to.lat, to.lng) * 1100));
+      return { body: {
+        requestKey: `${from.lat.toFixed(5)},${from.lng.toFixed(5)}>${to.lat.toFixed(5)},${to.lng.toFixed(5)}`,
+        coordinates: [[from.lng, from.lat], [to.lng, to.lat]],
+        distanceMeters,
+        durationSeconds: distanceMeters / (5000 / 3600),
+        savedAt: Date.now(),
+      } };
+    });
   });
   test("suggests walking when the metro ride loses (saadi → mellat, 577 m)", async ({
     page,
@@ -36,12 +47,20 @@ test.describe("walk suggestion", () => {
     );
     const card = page.getByTestId("walk-suggest");
     await expect(card).toBeVisible({ timeout: 15_000 });
-    await expect(card).toContainText("پیاده‌روی شاید سریع‌تر باشد");
-    await expect(card).toContainText("۷ دقیقه");
+    await expect(card).toContainText("احتمالاً پیاده‌روی سریع‌تر است");
+    await expect(card).toContainText("۸ دقیقه");
     // The metro result stays below — a nudge, never a replacement.
     await expect(
       page.getByText("ایستگاه", { exact: true }).first(),
     ).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("verified short walking routes are also suggested on the map", async ({ page }) => {
+    // The walking fixture timestamps routes at the current time; keep the
+    // browser clock aligned so the client accepts the response as fresh.
+    await page.goto("/map?from=saadi&to=mellat", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("walk-suggest")).toContainText("احتمالاً پیاده‌روی سریع‌تر است", { timeout: 15_000 });
+    await expect(page.locator("path.metto-walking-path")).toHaveCount(1);
   });
 
   test("stays quiet on long journeys (tajrish → karaj)", async ({ page }) => {
@@ -85,8 +104,15 @@ test.describe("walk suggestion", () => {
     );
     const card = page.getByTestId("walk-suggest");
     await expect(card).toBeVisible({ timeout: 15_000 });
-    await expect(card).toContainText("پیاده‌روی شاید سریع‌تر باشد");
+    await expect(card).toContainText("احتمالاً پیاده‌روی سریع‌تر است");
     await expect(card).toContainText("۲ دقیقه");
+  });
+
+  test("long same-station walks suggest another transport option", async ({ page }) => {
+    await page.goto("/route?from=chitgar&to=chitgar&op=35.7265,51.2427,Origin&dp=35.7500,51.2427,Destination");
+    await expect(page.getByTestId("walk-suggest")).toContainText("شاید وسیلهٔ دیگری مناسب‌تر باشد");
+    await page.goto("/map?from=chitgar&to=chitgar&op=35.7265,51.2427,Origin&dp=35.7500,51.2427,Destination");
+    await expect(page.getByTestId("map-place-card")).toContainText("شاید وسیلهٔ دیگری مناسب‌تر باشد");
   });
 
   for (const lang of ["en", "fa"] as const) {
@@ -130,4 +156,11 @@ test.describe("walk suggestion", () => {
     await page.waitForTimeout(3_000);
     await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
   });
+});
+
+test("a failed street request never claims walking beats the metro", async ({ page }) => {
+  await unavailableWalkingApi(page);
+  await page.goto("/route?from=saadi&to=mellat");
+  await expect(page.getByTestId("route-summary-stats")).toBeVisible();
+  await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
 });

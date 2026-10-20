@@ -18,7 +18,7 @@ import {
   formatDistance,
   estimateWalkMinutes,
   formatWalkTime,
-  isTooFarToWalk,
+  isLongWalk,
   parsePlaceParam,
   encodePlacePin,
   nearestStations,
@@ -165,7 +165,7 @@ export function MapPage() {
           walkText: formatWalkTime(walkMin, lang),
           approximate: !street,
           saved: m.role === "origin" ? walking.access.saved : walking.egress.saved,
-          tooFar: isTooFarToWalk(km),
+          tooFar: isLongWalk(km, walkMin),
         };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
@@ -272,7 +272,7 @@ export function MapPage() {
       walkText: formatWalkTime(walkMin, lang),
       approximate: !walking.direct.route,
       saved: walking.direct.saved,
-      tooFar: isTooFarToWalk(walkKm),
+      tooFar: isLongWalk(walkKm, walkMin),
     };
   }, [placeMarkers, isFa, lang, walking.direct.route, walking.direct.saved]);
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
@@ -380,7 +380,7 @@ export function MapPage() {
       metroTotalSeconds: route?.status === "complete" ? route.totalSeconds : null,
       initialWaitSeconds: route?.initialWaitSeconds,
       accessMinutes: walking.accessMinutes,
-      walkingRoute: walking.direct.route,
+      walkingRoute: walking.accessApproximate ? null : walking.direct.route,
     });
     if (!verdict) return null;
     return {
@@ -391,7 +391,7 @@ export function MapPage() {
         coordinates: walking.direct.route?.coordinates,
       },
     };
-  }, [walkOrigin, walkDest, initialParams.from, initialParams.to, route, walking.accessMinutes, walking.direct.route]);
+  }, [walkOrigin, walkDest, initialParams.from, initialParams.to, route, walking.accessMinutes, walking.accessApproximate, walking.direct.route]);
 
   return (
     <div data-testid="map-route-state" data-route-start={route?.departedAtMs} className="relative isolate z-0 flex flex-1 min-h-0 flex-col overflow-hidden">
@@ -500,7 +500,7 @@ export function MapPage() {
               </p>
               {mergedPlaceInfo.tooFar && (
                 <p className="mt-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-                  {t.tooFarFromStation} (~{mergedPlaceInfo.walkText})
+                  {t.longWalkConsiderTransport}
                 </p>
               )}
             </div>
@@ -535,7 +535,7 @@ export function MapPage() {
               </p>
               {p.tooFar && (
                 <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
-                  {t.tooFarFromStation} (~{p.walkText})
+                  {t.longWalkConsiderTransport}
                 </p>
               )}
             </div>

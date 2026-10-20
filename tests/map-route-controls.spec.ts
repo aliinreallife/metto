@@ -350,11 +350,11 @@ test.describe("map route controls", () => {
     ).toHaveCount(0);
   });
 
-  test("close pins on different stations draw the direct walk line", async ({
+  test("close pins on different stations do not promote an unverified walk", async ({
     page,
   }) => {
-    // Pins ~150 m apart whose stations are a 57-minute metro ride apart:
-    // walking wins, so the picture walks straight instead of into metro.
+    // A short straight line might beat the metro, but the street API is
+    // unavailable here: do not present walking as a verified alternative.
     await suppressSaveNotice(page);
     await page.goto(
       `/map?from=shahid-ashrafi-esfahani&to=tehran-sadeghiyeh&op=35.7275,51.3346,${encodeURIComponent("مرزداران")}&dp=35.7261,51.3345,${encodeURIComponent("اباذر")}`,
@@ -362,37 +362,24 @@ test.describe("map route controls", () => {
     );
     await mapReady(page);
     const overlay = ".leaflet-overlay-pane";
-    await expect(
-      page.locator(`${overlay} path[stroke="#a3a3a3"]`),
-    ).toHaveCount(1, { timeout: 15_000 });
-    await expect(
-      page.locator(`${overlay} path[stroke="#22c55e"]`),
-    ).toHaveCount(0);
-    await expect(
-      page.locator(`${overlay} path[stroke="#ef4444"]`),
-    ).toHaveCount(0);
-    // Both place cards still describe their own stations.
     await expect(page.getByTestId("map-place-card")).toHaveCount(2);
-    // One walk toast says it, first in the top stack.
-    const toast = page.getByTestId("walk-suggest");
-    await expect(toast).toBeVisible({ timeout: 15_000 });
-    await expect(toast).toContainText("پیاده‌روی شاید سریع‌تر باشد");
-    const toastBox = await toast.boundingBox();
-    const firstCardBox = await page.getByTestId("map-place-card").first().boundingBox();
-    expect(toastBox && firstCardBox).toBeTruthy();
-    expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(firstCardBox!.y + 2);
+    await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
+    await expect(page.locator(`${overlay} path[stroke="#a3a3a3"]`)).toHaveCount(0);
+    // The origin and destination station approaches remain visible.
+    await expect(page.locator(`${overlay} path[stroke="#22c55e"]`)).not.toHaveCount(0);
+    await expect(page.locator(`${overlay} path[stroke="#ef4444"]`)).not.toHaveCount(0);
   });
 
-  test("faster walking appears alongside the metro itinerary without a toggle", async ({ page }) => {
+  test("unverified walking never displaces the metro itinerary", async ({ page }) => {
     await suppressSaveNotice(page);
     await page.goto(
       `/map?from=shohada-ye-hefdah-e-shahrivar&to=meydan-e-khorasan&op=35.6689,51.4458,${encodeURIComponent("قیام")}&dp=35.6642,51.4465,${encodeURIComponent("طیب")}`,
       { waitUntil: "domcontentloaded" },
     );
     await mapReady(page);
-    await expect(page.getByTestId("walk-suggest")).toBeVisible();
+    await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
     await expect(page.getByTestId("map-route-mode-toggle")).toHaveCount(0);
-    await expect(page.locator(".leaflet-overlay-pane path[stroke='#a3a3a3']")).toHaveCount(1);
+    await expect(page.locator(".leaflet-overlay-pane path[stroke='#a3a3a3']")).toHaveCount(0);
     await expect(page.locator(".leaflet-overlay-pane path[stroke-width='6']")).not.toHaveCount(0);
   });
 
@@ -421,22 +408,22 @@ test.describe("map route controls", () => {
     ).not.toHaveCount(0, { timeout: 15_000 });
   });
 
-  test("includes station walks in the full journey even for a long direct walk", async ({ page }) => {
+  test("long unverified walks keep metro and warn about other transport", async ({ page }) => {
     await suppressSaveNotice(page);
     await page.goto(routeUrl(), { waitUntil: "domcontentloaded" });
     await mapReady(page);
-    // Neither the ride nor the station walks alone exceeds the direct walk;
-    // their sum does. Distance alone must not decide the comparison.
-    await expect(page.getByTestId("walk-suggest")).toBeVisible();
-    await expect(page.locator("path.metto-walking-approximation[stroke='#a3a3a3']")).toHaveCount(1);
-    await expect(page.locator("path.metto-walking-approximation[stroke='#22c55e']")).toHaveCount(0);
+    // Long walks near the start or end are not evidence that walking the
+    // full journey wins. Show an access warning and retain the metro.
+    await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
+    await expect(page.getByTestId("map-place-card").last()).toContainText("شاید وسیلهٔ دیگری مناسب‌تر باشد");
+    await expect(page.locator("path.metto-walking-approximation[stroke='#a3a3a3']")).toHaveCount(0);
   });
 
-  test("close pins count access walks: direct line despite short ride", async ({
+  test("close pins preserve station approaches until street walking is verified", async ({
     page,
   }) => {
-    // Pins ~600 m apart, but ~16 min of station access walks dwarf the walk
-    // while the ride alone is 6 min: same rule as the planner suggestion.
+    // A plausible short walk must not be promoted from the approximate
+    // origin/destination access estimate alone.
     await suppressSaveNotice(page);
     await page.goto(
       `/map?from=eram-e-sabz&to=varzeshgah-e-azadi&op=35.7222,51.2934,${encodeURIComponent("ارم")}&dp=35.7202,51.2872,${encodeURIComponent("ورزشگاه آزادی")}`,
@@ -444,18 +431,10 @@ test.describe("map route controls", () => {
     );
     await mapReady(page);
     const overlay = ".leaflet-overlay-pane";
-    await expect(
-      page.locator(`${overlay} path[stroke="#a3a3a3"]`),
-    ).toHaveCount(1, { timeout: 15_000 });
-    await expect(
-      page.locator(`${overlay} path[stroke="#22c55e"]`),
-    ).toHaveCount(0);
-    await expect(
-      page.locator(`${overlay} path[stroke="#ef4444"]`),
-    ).toHaveCount(0);
-    await expect(page.getByTestId("walk-suggest")).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(page.locator(`${overlay} path[stroke="#a3a3a3"]`)).toHaveCount(0);
+    await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
+    await expect(page.locator(`${overlay} path[stroke="#22c55e"]`)).not.toHaveCount(0);
+    await expect(page.locator(`${overlay} path[stroke="#ef4444"]`)).not.toHaveCount(0);
   });
 
   test("haram/kahrizak control: far pins, no toast, metro stays", async ({
