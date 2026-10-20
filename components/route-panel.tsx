@@ -9,7 +9,6 @@ import {
   Compass,
   Flag,
   Moon,
-  Repeat,
   TrainFront,
   Footprints,
   Zap,
@@ -145,15 +144,12 @@ export function WalkSuggestCard({
   distanceKm,
   approximate = true,
   sameStation = false,
-  action,
 }: {
   lang: Lang;
   walkMin: number;
   distanceKm: number;
   approximate?: boolean;
   sameStation?: boolean;
-  /** Optional map-only alternative. Not needed for planner's inline nudge. */
-  action?: { label: string; onClick: () => void; active: boolean };
 }) {
   const t = STRINGS[lang];
   return (
@@ -169,17 +165,6 @@ export function WalkSuggestCard({
         <span className="tnum text-xs text-muted-foreground md:text-sm">
           {approximate ? "~" : ""}{formatWalkTime(walkMin, lang)} · {formatDistance(distanceKm, lang)} {t.walkDistance}
         </span>
-        {action && (
-          <button
-            type="button"
-            data-testid="map-route-mode-toggle"
-            aria-pressed={action.active}
-            onClick={action.onClick}
-            className="mt-1 rounded-md px-2 py-1 text-xs font-semibold text-primary underline-offset-2 hover:bg-primary/10 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            {action.label}
-          </button>
-        )}
       </div>
     </div>
   );
@@ -190,7 +175,6 @@ export function RoutePanel({
   lang,
   plan,
   afterStats,
-  onUseDeparture,
 }: {
   route: RouteResult;
   lang: Lang;
@@ -198,10 +182,7 @@ export function RoutePanel({
   plan?: { mode: "depart" | "arrive"; atMs: number };
   /** Optional content placed immediately below the three route summary cards. */
   afterStats?: ReactNode;
-  /** Plan from the selected scheduled departure, excluding the initial wait. */
-  onUseDeparture?: () => void;
 }) {
-  const summaryRef = useRef<HTMLDivElement>(null);
   const loaded = useScheduleData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
@@ -291,7 +272,7 @@ export function RoutePanel({
           </p>
         </div>
       )}
-      <div ref={summaryRef} role="group" aria-label={t.routeSummary} tabIndex={-1} data-route-start={route.departedAtMs}
+      <div role="group" aria-label={t.routeSummary} tabIndex={-1} data-route-start={route.departedAtMs}
         className="grid grid-cols-3 gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:gap-4" data-testid="route-summary-stats">
         <Stat
           icon={<TrainFront aria-hidden="true" className="size-5 md:size-6" />}
@@ -324,24 +305,6 @@ export function RoutePanel({
         />
       </div>
       {afterStats}
-      {longWait && route.trips[0] && onUseDeparture && (
-        <div data-testid="departure-option" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
-          <p className="text-sm font-medium">
-            {t.departureAt}{" "}
-            <span dir="ltr" className="tnum">{persianDigits(route.trips[0].departTime, lang)}</span>
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              onUseDeparture();
-              requestAnimationFrame(() => summaryRef.current?.focus());
-            }}
-            className="min-h-[44px] rounded-lg bg-foreground px-3 py-2 text-sm font-bold text-background hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            {t.useDeparture}
-          </button>
-        </div>
-      )}
       {topWarning && (
         <div
           role={topWarning.severity === "red" ? "alert" : "status"}
@@ -355,20 +318,6 @@ export function RoutePanel({
           <span className="min-w-0">{topWarning.message}</span>
         </div>
       )}
-      {route.numTransfers > 0 && (
-        <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
-          <Repeat aria-hidden="true" className="size-3.5" />
-          <span>{persianDigits(route.numTransfers, lang)} {isFa ? "تعویض خط" : "transfers"}</span>
-        </div>
-      )}
-
-      {route.numTrainChanges > 0 && (
-        <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
-          <Repeat aria-hidden="true" className="size-3.5" />
-          <span>{persianDigits(route.numTrainChanges, lang)} {isFa ? "تعویض قطار" : "train changes"}</span>
-        </div>
-      )}
-
       <p className="text-xs text-muted-foreground">{t.timeNote}</p>
 
       <ol className="flex flex-col gap-3">
