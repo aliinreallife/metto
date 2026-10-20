@@ -48,7 +48,7 @@ import {
   tehranParts,
 } from "./tehran-time";
 import { STRINGS, persianDigits, type Lang } from "./i18n";
-import { directWalk } from "./geo";
+import { directWalk, isLongWalk } from "./geo";
 import { validWalkingRoute, type WalkingRoute } from "./walking/route";
 
 export type RouteTimePreference =
@@ -611,8 +611,9 @@ export type DirectWalkVerdict =
 /**
  * Single shared walk verdict for the planner and the map. Null when either
  * point is missing, when both are the same point (no walk to suggest), or —
- * outside same-station — when the metro wins. Callers render from the data;
- * nobody re-derives the rule.
+ * outside same-station — when the metro wins or mapped walking data is
+ * unavailable. Never compare straight-line guesses to a scheduled metro trip.
+ * Callers render from the data; nobody re-derives the rule.
  */
 export function directWalkVerdict(args: {
   origin: { lat: number; lng: number } | null | undefined;
@@ -625,23 +626,29 @@ export function directWalkVerdict(args: {
 }): DirectWalkVerdict | null {
   const straight = directWalk(args.origin ?? null, args.dest ?? null);
   if (!straight) return null;
-  const walk = validWalkingRoute(args.walkingRoute)
+  const streetWalk = validWalkingRoute(args.walkingRoute)
     ? { walkKm: args.walkingRoute.distanceMeters / 1000, walkMin: args.walkingRoute.durationSeconds / 60 }
-    : straight;
-  if (!walk) return null;
+    : null;
+  // Same-station pins have no train alternative: show a labelled approximate
+  // walk if mapped pedestrian directions are unavailable.
   if (args.sameStation) {
+    const walk = streetWalk ?? straight;
     return { kind: "same-station", walkKm: walk.walkKm, walkMin: walk.walkMin, metroMin: null, accessMin: 0 };
   }
-  if (args.metroTotalSeconds === null) return null;
+  // Never compare a straight-line estimate, an unfinished provider request,
+  // or an uncomfortably long mapped walk against a real metro journey.
+  if (args.metroTotalSeconds === null || !streetWalk || isLongWalk(streetWalk.walkKm, streetWalk.walkMin)) return null;
   const accessMinutes = Number.isFinite(args.accessMinutes) ? Math.max(0, args.accessMinutes) : 0;
-  if (!shouldSuggestWalk(walk.walkMin, args.metroTotalSeconds, args.accessMinutes, args.initialWaitSeconds)) {
-    return null;
-  }
+  const metroMinutes = Math.max(0, args.metroTotalSeconds - Math.max(0, args.initialWaitSeconds ?? 0)) / 60 + accessMinutes;
+  // Small theoretical savings can disappear with walking pace and station
+  // entrance variations. Require at least 2 minutes or 20% of walk duration.
+  if (!shouldSuggestWalk(streetWalk.walkMin, args.metroTotalSeconds, accessMinutes, args.initialWaitSeconds) ||
+      metroMinutes - streetWalk.walkMin < Math.max(2, streetWalk.walkMin * 0.2)) return null;
   return {
     kind: "beats-metro",
-    walkKm: walk.walkKm,
-    walkMin: walk.walkMin,
-    metroMin: Math.round(Math.max(0, args.metroTotalSeconds - Math.max(0, args.initialWaitSeconds ?? 0)) / 60 + accessMinutes),
+    walkKm: streetWalk.walkKm,
+    walkMin: streetWalk.walkMin,
+    metroMin: Math.round(metroMinutes),
     accessMin: Math.round(accessMinutes),
   };
 }

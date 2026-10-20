@@ -25,10 +25,15 @@ describe("walking request policy", () => {
     // ~11.1 minutes at 6 km/h versus ~13.3 at the usual 5 km/h.
     expect(shouldRequestDirectWalk(a, nearby, a, nearby, plan(12 * 60))).toBe(true);
   });
-  it("retains real direct routing for exact pins whose station approaches may involve detours", () => {
+  it("retains real direct routing for nearby pins whose station approaches may involve detours", () => {
     const pin = { lat: a.lat + 0.001, lng: a.lng };
-    expect(shouldRequestDirectWalk(pin, b, a, b, plan())).toBe(true);
+    const nearby = { lat: a.lat + 0.005, lng: a.lng };
+    expect(shouldRequestDirectWalk(pin, nearby, a, nearby, plan())).toBe(true);
     expect(shouldRequestDirectWalk(a, pin, a, a, null)).toBe(true);
+  });
+  it("avoids direct routing for walks too long to recommend", () => {
+    expect(shouldRequestDirectWalk(a, b, a, b, plan(100 * 60))).toBe(false);
+    expect(shouldRequestDirectWalk(a, b, a, a, null)).toBe(false);
   });
   it("does not request walking for identical, invalid or unsupported endpoints", () => {
     for (const point of [null, a, { lat: NaN, lng: a.lng }, { lat: 36, lng: 52 }]) {

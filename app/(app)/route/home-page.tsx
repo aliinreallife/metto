@@ -43,6 +43,7 @@ import {
   haversineKm,
   estimateWalkMinutes,
   formatWalkTime,
+  isLongWalk,
   buildMapHref,
   encodePlacePin,
   parsePlaceParam,
@@ -477,7 +478,7 @@ function RouteView({
     metroTotalSeconds: route?.status === "complete" ? route.totalSeconds : null,
     initialWaitSeconds: route?.initialWaitSeconds,
     accessMinutes: walking.accessMinutes,
-    walkingRoute: walking.direct.route,
+    walkingRoute: walking.accessApproximate ? null : walking.direct.route,
   });
   const timeCardRef = useRef<HTMLDivElement>(null);
   const gpsLangRef = useRef(lang);
@@ -847,20 +848,26 @@ function PlaceCard({
   const walkMin = walkingRoute ? walkingRoute.durationSeconds / 60 : estimateWalkMinutes(info.distanceKm);
   const distanceKm = walkingRoute ? walkingRoute.distanceMeters / 1000 : info.distanceKm;
 
-  // Warnings live on the /map page only — this card stays a single line.
   return (
     <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
       <Building2 aria-hidden="true" className="size-4 shrink-0 text-primary md:size-5" />
-      <span className="min-w-0 flex-1 truncate">
-        <span className="font-medium">{info.placeName}</span>
-        <span aria-hidden="true" className="mx-1.5 text-muted-foreground">→</span>
-        <span>
-          {t.nearestStation}: <span className="font-medium">{stationName}</span>
-        </span>
-        <span className="ms-1.5 text-muted-foreground">
-          {" "}({formatDistance(distanceKm, lang)} · {walkingRoute ? "" : "~"}{formatWalkTime(walkMin, lang)} {t.walkTime})
-        </span>
-      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate">
+          <span className="font-medium">{info.placeName}</span>
+          <span aria-hidden="true" className="mx-1.5 text-muted-foreground">→</span>
+          <span>
+            {t.nearestStation}: <span className="font-medium">{stationName}</span>
+          </span>
+          <span className="ms-1.5 text-muted-foreground">
+            {" "}({formatDistance(distanceKm, lang)} · {walkingRoute ? "" : "~"}{formatWalkTime(walkMin, lang)} {t.walkTime})
+          </span>
+        </div>
+        {isLongWalk(distanceKm, walkMin) && (
+          <p className="mt-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            {t.longWalkConsiderTransport}
+          </p>
+        )}
+      </div>
       <button
         type="button"
         onClick={onClear}

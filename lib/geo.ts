@@ -70,6 +70,7 @@ export const WALK_KM_PER_H = 5;
 // Beyond this straight-line distance we warn that the place is too far to
 // comfortably walk from its nearest station.
 export const TOO_FAR_WALK_KM = 1.5;
+export const LONG_WALK_MINUTES = 20;
 
 export function estimateWalkMinutes(distanceKm: number): number {
   if (!Number.isFinite(distanceKm) || distanceKm <= 0) return 0;
@@ -81,6 +82,12 @@ export function isTooFarToWalk(
   thresholdKm: number = TOO_FAR_WALK_KM,
 ): boolean {
   return Number.isFinite(distanceKm) && distanceKm > thresholdKm;
+}
+
+/** Comfort limit for walking recommendations, not a route-finding limit. */
+export function isLongWalk(distanceKm: number, minutes: number): boolean {
+  return isTooFarToWalk(distanceKm) ||
+    (Number.isFinite(minutes) && minutes > LONG_WALK_MINUTES);
 }
 
 /**
