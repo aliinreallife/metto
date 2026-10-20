@@ -49,6 +49,7 @@ import {
 } from "./tehran-time";
 import { STRINGS, persianDigits, type Lang } from "./i18n";
 import { directWalk } from "./geo";
+import { validWalkingRoute, type WalkingRoute } from "./walking/route";
 
 export type RouteTimePreference =
   | { mode: "now" }
@@ -581,23 +582,24 @@ export function formatCountdown(
 }
 
 /**
- * True when walking the whole way beats the metro journey: suggest walking
- * instead of forcing a slower ride. Strictly-less keeps ties on metro.
- * The access/egress walks to and from the stations count too: when they
- * alone exceed the direct walk, the full journey must as well.
+ * Compare walking with the metro journey after boarding. Waiting for the
+ * first train (especially before opening) must not make a fast ride lose.
+ * Transfer walks/waits stay in the comparison. Strictly-less keeps ties on metro.
+ * Include the walks to and from the stations in the metro alternative.
  */
 export function shouldSuggestWalk(
   walkMinutes: number,
   metroTotalSeconds: number,
   accessEgressMinutes = 0,
+  initialWaitSeconds = 0,
 ): boolean {
-  if (!Number.isFinite(walkMinutes) || !Number.isFinite(metroTotalSeconds)) {
+  if (!Number.isFinite(walkMinutes) || !Number.isFinite(metroTotalSeconds) ||
+      !Number.isFinite(initialWaitSeconds)) {
     return false;
   }
-  if (!Number.isFinite(accessEgressMinutes)) return walkMinutes < metroTotalSeconds / 60;
-  return (
-    walkMinutes < metroTotalSeconds / 60 || walkMinutes < accessEgressMinutes
-  );
+  const journeyMinutes = Math.max(0, metroTotalSeconds - Math.max(0, initialWaitSeconds)) / 60;
+  const accessMinutes = Number.isFinite(accessEgressMinutes) ? Math.max(0, accessEgressMinutes) : 0;
+  return walkMinutes < journeyMinutes + accessMinutes;
 }
 
 export type DirectWalkVerdict =
@@ -617,23 +619,30 @@ export function directWalkVerdict(args: {
   dest: { lat: number; lng: number } | null | undefined;
   sameStation: boolean;
   metroTotalSeconds: number | null;
+  initialWaitSeconds?: number;
   accessMinutes: number;
+  walkingRoute?: WalkingRoute | null;
 }): DirectWalkVerdict | null {
-  const walk = directWalk(args.origin ?? null, args.dest ?? null);
+  const straight = directWalk(args.origin ?? null, args.dest ?? null);
+  if (!straight) return null;
+  const walk = validWalkingRoute(args.walkingRoute)
+    ? { walkKm: args.walkingRoute.distanceMeters / 1000, walkMin: args.walkingRoute.durationSeconds / 60 }
+    : straight;
   if (!walk) return null;
   if (args.sameStation) {
     return { kind: "same-station", walkKm: walk.walkKm, walkMin: walk.walkMin, metroMin: null, accessMin: 0 };
   }
   if (args.metroTotalSeconds === null) return null;
-  if (!shouldSuggestWalk(walk.walkMin, args.metroTotalSeconds, args.accessMinutes)) {
+  const accessMinutes = Number.isFinite(args.accessMinutes) ? Math.max(0, args.accessMinutes) : 0;
+  if (!shouldSuggestWalk(walk.walkMin, args.metroTotalSeconds, args.accessMinutes, args.initialWaitSeconds)) {
     return null;
   }
   return {
     kind: "beats-metro",
     walkKm: walk.walkKm,
     walkMin: walk.walkMin,
-    metroMin: Math.round(args.metroTotalSeconds / 60),
-    accessMin: Math.round(args.accessMinutes),
+    metroMin: Math.round(Math.max(0, args.metroTotalSeconds - Math.max(0, args.initialWaitSeconds ?? 0)) / 60 + accessMinutes),
+    accessMin: Math.round(accessMinutes),
   };
 }
 

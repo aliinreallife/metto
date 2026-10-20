@@ -38,15 +38,20 @@ pnpm lint
 
 ## Environment variables
 
-Copy `.env.example` to `.env.local`. Only needed for holiday-aware timetables (without them the app falls back to weekday/weekend logic):
+Copy `.env.example` to `.env.local` for optional holiday-aware timetables and pedestrian street routing. Core metro planning works without these services:
 
 | Variable | Purpose |
 |---|---|
 | `TIMESTAMP_IR_API_KEY` | Server-side key for timestamp.ir (sent as `X-API-Key`, never to browser) |
 | `CRON_SECRET` | Protects `GET /api/cron/sync-holidays` (`Authorization: Bearer <secret>`) |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Holiday cache (or `KV_REST_API_URL` / `KV_REST_API_TOKEN` from the Vercel Marketplace integration) |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Holiday cache and shared pedestrian API quota (or `KV_REST_API_URL` / `KV_REST_API_TOKEN` from the Vercel Marketplace integration) |
+| `OPENROUTESERVICE_API_KEY` | Optional, server-only key for pedestrian street routes. Cached paths work offline; unavailable paths remain clearly marked as approximate. |
 
 Set them in Vercel Project Settings → Environment Variables for production.
+
+Pedestrian directions use `https://api.heigit.org/v2/directions/foot-walking/geojson` (the successor to `api.openrouteservice.org`). The server keeps the key private, caches each endpoint pair for a day, and reserves at most 35 requests per rolling minute and 1,900 per rolling 24 hours. With Redis configured this budget is atomic and shared across Vercel instances; without Redis it only limits each process, so the provider's shared quota remains the final limit. Configure Redis to enforce the shared budget in production. A failed configured quota store stops new provider calls. Provider quota errors trigger a cooldown and approximate fallback.
+
+Browsers reuse walking paths for seven days online or up to thirty days offline, retaining at most twenty paths in IndexedDB. No background polling requests street routes. Uncached offline paths and unavailable directions use clearly marked straight-line estimates; core offline metro routing does not depend on the pedestrian API. Street paths use pedestrian access rules from OpenStreetMap, rather than car one-way rules; unmapped crossings and exact station entrances may still be missing.
 
 ## How it works
 

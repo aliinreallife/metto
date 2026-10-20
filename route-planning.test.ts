@@ -177,6 +177,28 @@ describe("depart-at planning", () => {
     },
   ];
 
+  it("planning from the selected departure keeps a later train that arrives sooner", () => {
+    const tripLookup = scriptForward([{
+      from: "tehran-sadeghiyeh", to: "tarasht", line: 2, status: "found",
+      departures: [
+        { depart: "05:30", arrive: "06:10" },
+        { depart: "05:35", arrive: "06:00" },
+      ],
+    }]);
+    const original = planRoute("tehran-sadeghiyeh", "tarasht", {
+      mode: "depart-at", at: MON(0, 15),
+    }, { tripLookup })!;
+    expect(original.trips[0]?.departTime).toBe("05:35");
+    const selected = new Date(original.departedAtMs + original.initialWaitSeconds * 1000);
+    const replanned = planRoute("tehran-sadeghiyeh", "tarasht", {
+      mode: "depart-at", at: selected,
+    }, { tripLookup })!;
+    expect(replanned.trips[0]?.departTime).toBe("05:35");
+    expect(replanned.initialWaitSeconds).toBe(0);
+    expect(replanned.estimatedArrival).toBe(original.estimatedArrival);
+    expect(replanned.totalSeconds).toBe(original.totalSeconds - original.initialWaitSeconds);
+  });
+
   it("a train at 08:29 cannot be used for reach-station-at 08:30", () => {
     const r = planRoute("tehran-sadeghiyeh", "tarasht", {
       mode: "depart-at",
@@ -616,7 +638,27 @@ describe("walk suggestion rule", () => {
     // 10-minute metro ride, but 6 + 6 minutes of station walks beat a
     // 10-minute direct walk on their own.
     expect(shouldSuggestWalk(10, 10 * 60, 12)).toBe(true);
-    expect(shouldSuggestWalk(13, 10 * 60, 12)).toBe(false);
+    expect(shouldSuggestWalk(13, 10 * 60, 12)).toBe(true);
+    expect(shouldSuggestWalk(23, 10 * 60, 12)).toBe(false);
+  });
+
+  it("adds station walks to the journey, without the initial wait or double-counting transfers", () => {
+    expect(shouldSuggestWalk(20, (315 + 15) * 60, 10, 315 * 60)).toBe(true);
+    expect(shouldSuggestWalk(25, (315 + 15) * 60, 10, 315 * 60)).toBe(false);
+    expect(shouldSuggestWalk(26, (315 + 15) * 60, 10, 315 * 60)).toBe(false);
+    expect(shouldSuggestWalk(20, 15 * 60, Number.NaN)).toBe(false);
+  });
+
+  it("excludes the first train wait, while retaining transfer time", () => {
+    // Reported overnight case: a 73-minute walk cannot beat a 29-minute
+    // journey just because the first train is 315 minutes away.
+    expect(shouldSuggestWalk(73, (315 + 29) * 60, 0, 315 * 60)).toBe(false);
+    expect(shouldSuggestWalk(29, (315 + 29) * 60, 0, 315 * 60)).toBe(false);
+    expect(shouldSuggestWalk(7, (315 + 17) * 60, 0, 315 * 60)).toBe(true);
+    // Once aboard, connection walks and waits still count.
+    expect(shouldSuggestWalk(30, (315 + 20 + 15) * 60, 0, 315 * 60)).toBe(true);
+    expect(shouldSuggestWalk(10, (315 + 5) * 60, 12, 315 * 60)).toBe(true);
+    expect(shouldSuggestWalk(5, 600, 0, Number.NaN)).toBe(false);
   });
 
   it("never suggests on non-finite input", () => {
@@ -628,6 +670,18 @@ describe("walk suggestion rule", () => {
 describe("direct walk verdict", () => {
   const a = { lat: 35.7265, lng: 51.2427 };
   const b = { lat: 35.7265, lng: 51.2426 };
+
+  it("shares the wait-free comparison between the planner and map", () => {
+    const points = {
+      origin: { lat: 35.7, lng: 51.3 },
+      dest: { lat: 35.75, lng: 51.3 },
+      sameStation: false,
+      accessMinutes: 0,
+      initialWaitSeconds: 315 * 60,
+    };
+    expect(directWalkVerdict({ ...points, metroTotalSeconds: (315 + 29) * 60 })).toBeNull();
+    expect(directWalkVerdict({ ...points, metroTotalSeconds: (315 + 100) * 60 })?.metroMin).toBe(100);
+  });
 
   it("returns same-station data without any metro comparison", () => {
     const v = directWalkVerdict({

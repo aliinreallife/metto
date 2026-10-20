@@ -55,6 +55,12 @@ import {
   type GeoErrorKind,
 } from "@/lib/geolocation";
 import { LocationErrorActions } from "@/components/location-error";
+import { useRouteClock } from "@/lib/use-route-clock";
+import { isNowRouteStale } from "@/lib/route-freshness";
+import { RouteRefreshNotice } from "@/components/route-refresh-notice";
+import { useTripWalking } from "@/lib/walking/use-walking-route";
+import type { WalkingRoute } from "@/lib/walking/route";
+import { WalkingRouteInfo } from "@/components/walking-route-info";
 
 export type PlaceInfo = {
   placeName: string;
@@ -130,14 +136,9 @@ export function HomePage() {
   const [planAtMs, setPlanAtMs] = useState<number | null>(
     () => parseTimeModeParams(searchParams).at?.getTime() ?? null,
   );
-  // Refreshing clock so a selected time visibly passes (past-time states).
-  // Only wired into advanced-mode routing; "now" never re-routes on a tick.
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  useEffect(() => {
-    if (timeMode === "now") return;
-    const id = setInterval(() => setNowMs(Date.now()), 30_000);
-    return () => clearInterval(id);
-  }, [timeMode]);
+  const nowMs = useRouteClock();
+  // The clock marks stale results; only an explicit refresh replaces a Now journey.
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   // Restore place pins from shareable URL params (?oPlat/oPlng/oPlabel…).
   const [originPlaceInfo, setOriginPlaceInfo] = useState<PlaceInfo | null>(() => {
@@ -255,7 +256,7 @@ export function HomePage() {
     // never a network request inside routing).
     return findRoute(originId, destId, { isHolidayDate });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [originId, destId, loaded, isHolidayDate, timeMode, planAtMs, planTick]);
+  }, [originId, destId, loaded, isHolidayDate, timeMode, planAtMs, planTick, refreshVersion]);
 
   // Forward Now route for arrive-by comparison (classifies a null plan as
   // missed / no_service / generic without inferring from the bare null).
@@ -297,6 +298,7 @@ export function HomePage() {
   }
 
   function useNow() {
+    setRefreshVersion((version) => version + 1);
     setTimeMode("now");
     setPlanAtMs(null);
   }
@@ -468,6 +470,20 @@ function RouteView({
   // Inline travel-time card expansion (active plans start expanded).
   // Edit-time entry points expand + scroll here instead of opening a modal.
   const [timeExpanded, setTimeExpanded] = useState(() => timeMode !== "now");
+  const nowRouteStale = timeMode === "now" && !!route && isNowRouteStale(route.departedAtMs, nowMs);
+  const originStationPoint = originId ? STATION_MAP.get(originId)?.location : null;
+  const destStationPoint = destId ? STATION_MAP.get(destId)?.location : null;
+  const originPoint = originPlaceInfo ?? originStationPoint;
+  const destPoint = destPlaceInfo ?? destStationPoint;
+  const walking = useTripWalking(originPoint, destPoint, originStationPoint, destStationPoint);
+  const walkVerdict = directWalkVerdict({
+    origin: originPoint, dest: destPoint,
+    sameStation: !!originId && originId === destId,
+    metroTotalSeconds: route?.status === "complete" ? route.totalSeconds : null,
+    initialWaitSeconds: route?.initialWaitSeconds,
+    accessMinutes: walking.accessMinutes,
+    walkingRoute: walking.direct.route,
+  });
   const timeCardRef = useRef<HTMLDivElement>(null);
   const gpsLangRef = useRef(lang);
   // Latest lang for the async reverse-geocode callback (read long after render).
@@ -554,7 +570,7 @@ function RouteView({
       ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng, label: destPlaceInfo.placeName }
       : null,
   });
-  const showViewOnMap = originPlaceInfo !== null || destPlaceInfo !== null;
+  const showViewOnMap = originPlaceInfo !== null || destPlaceInfo !== null || walkVerdict !== null;
 
   return (
     <div className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10">
@@ -596,6 +612,7 @@ function RouteView({
             <PlaceCard
               lang={lang}
               info={originPlaceInfo}
+              walkingRoute={walking.access.route}
               onClear={clearOriginPlace}
             />
           )}
@@ -637,6 +654,7 @@ function RouteView({
             <PlaceCard
               lang={lang}
               info={destPlaceInfo}
+              walkingRoute={walking.egress.route}
               onClear={clearDestPlace}
             />
           )}
@@ -652,6 +670,13 @@ function RouteView({
               onPlanAtMs={setPlanAtMs}
             />
           </div>
+          {nowRouteStale && <RouteRefreshNotice lang={lang} onRefresh={onUseNow} />}
+          {originPoint && destPoint && (originPlaceInfo || destPlaceInfo || walkVerdict) && (
+            <WalkingRouteInfo lang={lang}
+              loading={walking.direct.loading || walking.access.loading || walking.egress.loading}
+              hasPath={!!(walking.direct.route || walking.access.route || walking.egress.route)}
+              saved={walking.direct.saved || walking.access.saved || walking.egress.saved} />
+          )}
           {showViewOnMap && (
             <Link
               href={mapHref}
@@ -744,29 +769,19 @@ function RouteView({
           </>
         ) : route ? (
           <>
-            {(() => {
-              // Walk-vs-metro nudge through the shared verdict helper (same
-              // rule as the map): exact place coords when pinned, else
-              // station coords.
-              const verdict = directWalkVerdict({
-                origin: originPlaceInfo
-                  ? { lat: originPlaceInfo.lat, lng: originPlaceInfo.lng }
-                  : originId ? STATION_MAP.get(originId)?.location ?? null : null,
-                dest: destPlaceInfo
-                  ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng }
-                  : destId ? STATION_MAP.get(destId)?.location ?? null : null,
-                sameStation: false,
-                metroTotalSeconds: route.totalSeconds,
-                accessMinutes: estimateWalkMinutes(
-                  (originPlaceInfo?.distanceKm ?? 0) + (destPlaceInfo?.distanceKm ?? 0),
-                ),
-              });
-              if (!verdict) return null;
-              return <WalkSuggestCard lang={lang} walkMin={verdict.walkMin} distanceKm={verdict.walkKm} />;
-            })()}
+            {walkVerdict && <WalkSuggestCard lang={lang} walkMin={walkVerdict.walkMin} distanceKm={walkVerdict.walkKm}
+              approximate={!walking.direct.route || walking.accessApproximate} />}
             <RoutePanel
               route={route}
               lang={lang}
+              onUseDeparture={nowRouteStale ? undefined : () => {
+                // Anchor to the selected departure, not the requested
+                // start or a wall-clock-only value that loses the date.
+                const departureMs = route.departedAtMs + route.initialWaitSeconds * 1000;
+                setPlanAtMs(Math.floor(departureMs / 60_000) * 60_000);
+                setTimeMode("depart");
+                setTimeExpanded(true);
+              }}
               plan={
                 timeMode !== "now" && planAtMs !== null
                   ? { mode: timeMode, atMs: planAtMs }
@@ -793,23 +808,8 @@ function RouteView({
           </>
         ) : !selected ? (
           <>
-            {originId && destId && originId === destId && (() => {
-              // Same-station short-circuit never routes, so distinct exact
-              // pins would otherwise get no walk comparison at all.
-              const verdict = directWalkVerdict({
-                origin: originPlaceInfo
-                  ? { lat: originPlaceInfo.lat, lng: originPlaceInfo.lng }
-                  : originId ? STATION_MAP.get(originId)?.location ?? null : null,
-                dest: destPlaceInfo
-                  ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng }
-                  : destId ? STATION_MAP.get(destId)?.location ?? null : null,
-                sameStation: true,
-                metroTotalSeconds: null,
-                accessMinutes: 0,
-              });
-              if (!verdict) return null;
-              return <WalkSuggestCard lang={lang} walkMin={verdict.walkMin} distanceKm={verdict.walkKm} />;
-            })()}
+            {walkVerdict?.kind === "same-station" && <WalkSuggestCard lang={lang} walkMin={walkVerdict.walkMin} distanceKm={walkVerdict.walkKm}
+              approximate={!walking.direct.route} sameStation />}
             <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground md:px-5 md:py-8 md:text-base">
             <p>
               {originId && destId && originId === destId
@@ -847,16 +847,19 @@ function PlaceCard({
   lang,
   info,
   onClear,
+  walkingRoute,
 }: {
   lang: Lang;
   info: PlaceInfo;
   onClear: () => void;
+  walkingRoute?: WalkingRoute | null;
 }) {
   const t = STRINGS[lang];
   const isFa = lang === "fa";
   const station = STATION_MAP.get(info.stationId);
   const stationName = station ? (isFa ? station.name.fa : station.name.en) : info.stationId;
-  const walkMin = estimateWalkMinutes(info.distanceKm);
+  const walkMin = walkingRoute ? walkingRoute.durationSeconds / 60 : estimateWalkMinutes(info.distanceKm);
+  const distanceKm = walkingRoute ? walkingRoute.distanceMeters / 1000 : info.distanceKm;
 
   // Warnings live on the /map page only — this card stays a single line.
   return (
@@ -869,7 +872,7 @@ function PlaceCard({
           {t.nearestStation}: <span className="font-medium">{stationName}</span>
         </span>
         <span className="ms-1.5 text-muted-foreground">
-          {" "}({formatDistance(info.distanceKm, lang)} · ~{formatWalkTime(walkMin, lang)} {t.walkTime})
+          {" "}({formatDistance(distanceKm, lang)} · {walkingRoute ? "" : "~"}{formatWalkTime(walkMin, lang)} {t.walkTime})
         </span>
       </span>
       <button

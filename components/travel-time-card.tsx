@@ -71,7 +71,7 @@ export function TravelTimeCard({
         <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-start">
           <span className="flex items-center gap-1.5">
             <span className="font-semibold">{t.travelTime}</span>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/70">
               {t.optionalBadge}
             </span>
           </span>

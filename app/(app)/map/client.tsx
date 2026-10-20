@@ -7,6 +7,12 @@ import { Loader2, Layers, Satellite, Building2, AlertTriangle, Footprints, X, Wi
 import { useMetro } from "@/app/providers";
 import { STATION_MAP, findRoute } from "@/lib/route";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
+import { useScheduleData } from "@/lib/use-schedule-data";
+import { useTripWalking } from "@/lib/walking/use-walking-route";
+import { useRouteClock } from "@/lib/use-route-clock";
+import { isNowRouteStale } from "@/lib/route-freshness";
+import { RouteRefreshNotice } from "@/components/route-refresh-notice";
+import { WalkingRouteInfo } from "@/components/walking-route-info";
 import { useConnectivity } from "@/lib/offline/use-connectivity";
 import { STRINGS } from "@/lib/i18n";
 import {
@@ -116,10 +122,16 @@ export function MapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  const scheduleLoaded = useScheduleData();
+  const nowMs = useRouteClock();
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const route = useMemo(() => {
-    if (!initialParams.from || !initialParams.to || initialParams.from === initialParams.to) return null;
+    if (!scheduleLoaded || !initialParams.from || !initialParams.to || initialParams.from === initialParams.to) return null;
     return findRoute(initialParams.from, initialParams.to, { isHolidayDate });
-  }, [initialParams.from, initialParams.to, isHolidayDate]);
+    // Refresh is explicit; clock ticks only update the stale notice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialParams.from, initialParams.to, isHolidayDate, scheduleLoaded, refreshVersion]);
+  const routeStale = !!route && isNowRouteStale(route.departedAtMs, nowMs);
 
   const placeMarkers = useMemo(() => {
     const markers: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest"; stationId: string | null }> = [];
@@ -132,24 +144,36 @@ export function MapPage() {
     return markers;
   }, [initialParams]);
 
+  const originStation = initialParams.from ? STATION_MAP.get(initialParams.from)?.location : null;
+  const destStation = initialParams.to ? STATION_MAP.get(initialParams.to)?.location : null;
+  const walkOrigin = placeMarkers.find((point) => point.role === "origin") ?? originStation;
+  const walkDest = placeMarkers.find((point) => point.role === "dest") ?? destStation;
+  const walking = useTripWalking(walkOrigin, walkDest, originStation, destStation);
+  const walkingPaths = useMemo(() => ({
+    origin: walking.access.route?.coordinates,
+    dest: walking.egress.route?.coordinates,
+  }), [walking.access.route, walking.egress.route]);
+
   const placeInfos = useMemo(() => {
     return placeMarkers
       .map((m) => {
         const station = m.stationId ? STATION_MAP.get(m.stationId) : null;
         if (!station) return null;
-        const km = haversineKm(m.lat, m.lng, station.location.lat, station.location.lng);
-        const walkMin = estimateWalkMinutes(km);
+        const street = m.role === "origin" ? walking.access.route : walking.egress.route;
+        const km = street ? street.distanceMeters / 1000 : haversineKm(m.lat, m.lng, station.location.lat, station.location.lng);
+        const walkMin = street ? street.durationSeconds / 60 : estimateWalkMinutes(km);
         return {
           role: m.role,
           label: m.label,
           stationName: isFa ? station.name.fa : station.name.en,
           distanceText: formatDistance(km, lang),
           walkText: formatWalkTime(walkMin, lang),
+          approximate: !street,
           tooFar: isTooFarToWalk(km),
         };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
-  }, [placeMarkers, isFa, lang]);
+  }, [placeMarkers, isFa, lang, walking.access.route, walking.egress.route]);
 
   // Walking context for the pending pick (nearest station only informs the
   // card + route endpoints; the exact point stays the visible endpoint).
@@ -242,17 +266,18 @@ export function MapPage() {
     const originStation = origin.stationId ? STATION_MAP.get(origin.stationId) : null;
     const destStation = dest.stationId ? STATION_MAP.get(dest.stationId) : null;
     if (!originStation || originStation.id !== destStation?.id) return null;
-    const walkKm = haversineKm(origin.lat, origin.lng, dest.lat, dest.lng);
-    const walkMin = estimateWalkMinutes(walkKm);
+    const walkKm = walking.direct.route ? walking.direct.route.distanceMeters / 1000 : haversineKm(origin.lat, origin.lng, dest.lat, dest.lng);
+    const walkMin = walking.direct.route ? walking.direct.route.durationSeconds / 60 : estimateWalkMinutes(walkKm);
     return {
       originLabel: origin.label,
       destLabel: dest.label,
       stationName: isFa ? originStation.name.fa : originStation.name.en,
       distanceText: formatDistance(walkKm, lang),
       walkText: formatWalkTime(walkMin, lang),
+      approximate: !walking.direct.route,
       tooFar: isTooFarToWalk(walkKm),
     };
-  }, [placeMarkers, isFa, lang]);
+  }, [placeMarkers, isFa, lang, walking.direct.route]);
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
     center: initialParams.center,
     zoom: initialParams.zoom,
@@ -345,20 +370,20 @@ export function MapPage() {
   // one toast saying so. The merged same-station card already carries that
   // message, so the toast only appears for the beats-metro case.
   const walkGuide = useMemo(() => {
-    const origin = placeMarkers.find((m) => m.role === "origin");
-    const dest = placeMarkers.find((m) => m.role === "dest");
+    const origin = walkOrigin;
+    const dest = walkDest;
     if (!origin || !dest) return null;
-    const legKm = (m: { lat: number; lng: number; stationId: string | null }) => {
-      const st = m.stationId ? STATION_MAP.get(m.stationId) : null;
-      return st ? haversineKm(m.lat, m.lng, st.location.lat, st.location.lng) : 0;
-    };
     const verdict = directWalkVerdict({
       origin: { lat: origin.lat, lng: origin.lng },
       dest: { lat: dest.lat, lng: dest.lng },
       sameStation:
         initialParams.from !== null && initialParams.from === initialParams.to,
-      metroTotalSeconds: route ? route.totalSeconds : null,
-      accessMinutes: estimateWalkMinutes(legKm(origin) + legKm(dest)),
+      // A partial/no-service route is not a completed metro journey that
+      // can support a "walking is faster" comparison.
+      metroTotalSeconds: route?.status === "complete" ? route.totalSeconds : null,
+      initialWaitSeconds: route?.initialWaitSeconds,
+      accessMinutes: walking.accessMinutes,
+      walkingRoute: walking.direct.route,
     });
     if (!verdict) return null;
     return {
@@ -366,12 +391,13 @@ export function MapPage() {
       line: {
         from: { lat: origin.lat, lng: origin.lng },
         to: { lat: dest.lat, lng: dest.lng },
+        coordinates: walking.direct.route?.coordinates,
       },
     };
-  }, [placeMarkers, initialParams.from, initialParams.to, route]);
+  }, [walkOrigin, walkDest, initialParams.from, initialParams.to, route, walking.accessMinutes, walking.direct.route]);
 
   return (
-    <div className="relative isolate z-0 flex flex-1 min-h-0 flex-col overflow-hidden">
+    <div data-testid="map-route-state" data-route-start={route?.departedAtMs} className="relative isolate z-0 flex flex-1 min-h-0 flex-col overflow-hidden">
       <RealMap
         lang={lang}
         mapMode={mapMode}
@@ -389,6 +415,7 @@ export function MapPage() {
         placeMarkers={placeMarkers}
         pendingPick={picked && pickedLabel ? { ...picked, label: pickedLabel } : null}
         directWalk={walkGuide ? walkGuide.line : null}
+        walkingPaths={walkingPaths}
       />
 
       {/* Top overlay stack: banner/notice/place cards lay out in normal
@@ -416,7 +443,15 @@ export function MapPage() {
             lang={lang}
             walkMin={walkGuide.verdict.walkMin}
             distanceKm={walkGuide.verdict.walkKm}
+            approximate={!walking.direct.route || walking.accessApproximate}
           />
+        )}
+        {routeStale && <RouteRefreshNotice lang={lang} focusTarget='[aria-label="Metro on real map"]' onRefresh={() => setRefreshVersion((version) => version + 1)} />}
+        {(walkGuide || placeMarkers.length > 0) && (
+          <WalkingRouteInfo lang={lang} onMap
+            loading={walkGuide ? walking.direct.loading : walking.access.loading || walking.egress.loading}
+            hasPath={walkGuide ? !!walking.direct.route : !!(walking.access.route || walking.egress.route)}
+            saved={walkGuide ? walking.direct.saved : walking.access.saved || walking.egress.saved} />
         )}
 
         {/* One-time save notice: informational only, online only, never
@@ -449,12 +484,12 @@ export function MapPage() {
               <Footprints aria-hidden="true" className="size-5 text-primary" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold md:text-base">{t.walkFaster}</p>
+              <p className="text-sm font-bold md:text-base">{t.walkBetweenPlaces}</p>
               <p className="tnum mt-0.5 truncate text-xs text-muted-foreground md:text-sm">
                 {mergedPlaceInfo.originLabel}
                 <span aria-hidden="true" className="mx-1.5">→</span>
                 {mergedPlaceInfo.destLabel}
-                {" · "}{mergedPlaceInfo.distanceText} · ~{mergedPlaceInfo.walkText} {t.walkTime}
+                {" · "}{mergedPlaceInfo.distanceText} · {mergedPlaceInfo.approximate ? "~" : ""}{mergedPlaceInfo.walkText} {t.walkTime}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {t.nearestStation}: {mergedPlaceInfo.stationName}
@@ -485,7 +520,7 @@ export function MapPage() {
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{p.label}</p>
               <p className="mt-0.5 text-muted-foreground">
-                {t.nearestStation}: {p.stationName} · {p.distanceText} · ~{p.walkText} {t.walkTime}
+                {t.nearestStation}: {p.stationName} · {p.distanceText} · {p.approximate ? "~" : ""}{p.walkText} {t.walkTime}
               </p>
               {p.tooFar && (
                 <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
