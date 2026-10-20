@@ -45,21 +45,6 @@ async function preparedOffline(page: Page) {
   await expect.poll(() => status.getAttribute("data-phase"), { timeout: 60_000 }).toMatch(/^(ready|offline-ready)$/);
 }
 
-async function walkingCacheCount(page: Page) {
-  return page.evaluate(async () => {
-    if (!(await indexedDB.databases()).some((db) => db.name === "metto-walking")) return 0;
-    const db = await new Promise<IDBDatabase>((resolve) => {
-      const request = indexedDB.open("metto-walking", 1); request.onsuccess = () => resolve(request.result);
-    });
-    if (!db.objectStoreNames.contains("routes")) { db.close(); return 0; }
-    const tx = db.transaction("routes", "readonly");
-    const count = await new Promise<number>((resolve) => {
-      const request = tx.objectStore("routes").count(); request.onsuccess = () => resolve(request.result);
-    });
-    db.close(); return count;
-  });
-}
-
 test("street geometry and distances persist offline; uncached endpoints stay approximate", async ({ page, context }) => {
   await prepare(page);
   const calls = await streetFixture(page);
