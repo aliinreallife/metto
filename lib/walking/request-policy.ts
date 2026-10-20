@@ -1,4 +1,4 @@
-import { haversineKm } from "../geo";
+import { estimateWalkMinutes, haversineKm, isLongWalk } from "../geo";
 import { shouldSuggestWalk } from "../route-planning";
 import type { RouteResult } from "../route";
 import { walkingKey, type WalkPoint } from "./route";
@@ -19,6 +19,10 @@ export function shouldRequestDirectWalk(
   metro: WalkingMetroPlan,
 ): boolean {
   if (!origin || !dest || !walkingKey(origin, dest)) return false;
+  const directKm = haversineKm(origin.lat, origin.lng, dest.lat, dest.lng);
+  // Never spend a direct pedestrian request on walks already too long to
+  // recommend. Station approaches are routed separately for useful warnings.
+  if (isLongWalk(directKm, estimateWalkMinutes(directKm))) return false;
   // Exact place pins still need real direct/access/exit comparisons. A long
   // station approach can change the winner after street routing completes.
   if (!samePoint(origin, originStation) || !samePoint(dest, destStation)) return true;

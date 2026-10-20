@@ -21,7 +21,7 @@ import { STATION_MAP, type RouteResult } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatTehranClock } from "@/lib/tehran-time";
 import { formatCountdown } from "@/lib/route-planning";
-import { formatDistance, formatWalkTime } from "@/lib/geo";
+import { formatDistance, formatWalkTime, isLongWalk } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import {
   getNextDepartures,
@@ -152,16 +152,25 @@ export function WalkSuggestCard({
   sameStation?: boolean;
 }) {
   const t = STRINGS[lang];
+  const longWalk = sameStation && isLongWalk(distanceKm, walkMin);
   return (
     <div
       data-testid="walk-suggest"
-      className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"
+      className={cn(
+        "flex items-center gap-3 rounded-xl border bg-card px-4 py-3",
+        longWalk ? "border-amber-500/40" : "border-border",
+      )}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
-        <Footprints aria-hidden="true" className="size-5 text-primary" />
+      <span className={cn(
+        "flex size-10 shrink-0 items-center justify-center rounded-full",
+        longWalk ? "bg-amber-500/15" : "bg-primary/15",
+      )}>
+        {longWalk
+          ? <AlertTriangle aria-hidden="true" className="size-5 text-amber-600 dark:text-amber-400" />
+          : <Footprints aria-hidden="true" className="size-5 text-primary" />}
       </span>
       <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-        <span className="text-sm font-bold md:text-base">{sameStation ? t.walkBetweenPlaces : approximate ? t.walkMaybeFaster : t.walkFaster}</span>
+        <span className="text-sm font-bold md:text-base">{longWalk ? t.longWalkConsiderTransport : sameStation ? t.walkBetweenPlaces : approximate ? t.walkMaybeFaster : t.walkFaster}</span>
         <span className="tnum text-xs text-muted-foreground md:text-sm">
           {approximate ? "~" : ""}{formatWalkTime(walkMin, lang)} · {formatDistance(distanceKm, lang)} {t.walkDistance}
         </span>

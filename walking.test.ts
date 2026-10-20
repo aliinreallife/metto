@@ -65,7 +65,7 @@ describe("pedestrian route validation", () => {
   it("uses actual pedestrian duration rather than a straight-line shortcut in comparisons", () => {
     // Straight-line estimate ~2 min would win, but a real 10-min detour loses to 5-min metro.
     const args = { origin: A, dest: B, sameStation: false, metroTotalSeconds: 300, accessMinutes: 0 };
-    expect(directWalkVerdict(args)).not.toBeNull();
+    expect(directWalkVerdict(args)).toBeNull(); // An estimate cannot trigger a recommendation.
     expect(directWalkVerdict({ ...args, walkingRoute: { ...route(), durationSeconds: 600 } })).toBeNull();
     expect(directWalkVerdict({ ...args, walkingRoute: route() })?.walkMin).toBe(3);
   });
