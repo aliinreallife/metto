@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
 import { unavailableWalkingApi } from "./helpers/walking";
 
 // Walk suggestion: when walking the whole way beats the metro journey, the
