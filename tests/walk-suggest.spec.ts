@@ -55,6 +55,13 @@ test.describe("walk suggestion", () => {
     ).toBeVisible({ timeout: 15_000 });
   });
 
+  test("verified short walking routes are also suggested on the map", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-09-07T10:00:00+03:30"));
+    await page.goto("/map?from=saadi&to=mellat", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("walk-suggest")).toContainText("احتمالاً پیاده‌روی سریع‌تر است", { timeout: 15_000 });
+    await expect(page.locator("path.metto-walking-path")).toHaveCount(1);
+  });
+
   test("stays quiet on long journeys (tajrish → karaj)", async ({ page }) => {
     await page.goto(`/route?from=tajrish&to=karaj`, {
       waitUntil: "domcontentloaded",
