@@ -15,7 +15,7 @@ const loadWalkingRoute = unstable_cache(async (fromLat: number, fromLng: number,
   if (!apiKey || !await walkingQuota.reserve()) throw new WalkingError(503);
   let response: Response;
   try {
-    response = await fetch("https://api.heigit.org/v2/directions/foot-walking/geojson", {
+    response = await fetch("https://api.heigit.org/openrouteservice/v2/directions/foot-walking/geojson", {
       method: "POST",
       headers: { Authorization: apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({ coordinates: [[fromLng, fromLat], [toLng, toLat]], instructions: false }),
@@ -32,7 +32,7 @@ const loadWalkingRoute = unstable_cache(async (fromLat: number, fromLng: number,
   const route = parsePedestrianRoute(await response.json(), { lat: fromLat, lng: fromLng }, { lat: toLat, lng: toLng });
   if (!route) throw new WalkingError(502);
   return route;
-}, ["pedestrian-heigit-v1"], { revalidate: 86_400 });
+}, ["pedestrian-heigit-v2"], { revalidate: 86_400 });
 
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;

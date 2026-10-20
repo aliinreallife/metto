@@ -79,7 +79,7 @@ describe("server-only pedestrian API", () => {
     const result = await GET(request());
     expect(result.status).toBe(200);
     const [url, init] = fetcher.mock.calls[0];
-    expect(url).toBe("https://api.heigit.org/v2/directions/foot-walking/geojson");
+    expect(url).toBe("https://api.heigit.org/openrouteservice/v2/directions/foot-walking/geojson");
     expect(init.method).toBe("POST");
     expect(init.headers.Authorization).toBe("test-walking-key");
     expect(JSON.parse(init.body).coordinates).toEqual([[A.lng, A.lat], [B.lng, B.lat]]);
