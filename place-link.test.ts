@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { displayPlaceLabel, isUnresolvedMapPointLabel } from "./lib/geocoding";
 import {
   buildMapHref,
   buildTabHref,
@@ -10,6 +11,24 @@ import {
   nearestStations,
   parsePlaceParam,
 } from "./lib/geo";
+
+describe("selected map point labels", () => {
+  it("uses localized descriptions for coordinates previously saved as names", () => {
+    for (const raw of ["35.6316, 51.2794", "35.6316,51.2794", "35.6316، 51.2794", "35.6316"]) {
+      expect(isUnresolvedMapPointLabel(raw)).toBe(true);
+      expect(displayPlaceLabel(raw, "fa")).toBe("نقطه انتخاب‌شده روی نقشه");
+      expect(displayPlaceLabel(raw, "en")).toBe("Selected map point");
+    }
+  });
+
+  it("localizes a saved generic label across languages, without obscuring real place names", () => {
+    expect(displayPlaceLabel("نقطه انتخاب‌شده روی نقشه", "en")).toBe("Selected map point");
+    expect(displayPlaceLabel("Selected map point", "fa")).toBe("نقطه انتخاب‌شده روی نقشه");
+    expect(displayPlaceLabel("آزادگان، تهران", "fa")).toBe("آزادگان، تهران");
+    expect(displayPlaceLabel("Iran Mall, Tehran, Iran", "en")).toBe("Iran Mall");
+    expect(isUnresolvedMapPointLabel("Azadegan")).toBe(false);
+  });
+});
 
 describe("compact place params (op/dp)", () => {
   it("round-trips lat/lng/label through encode/decode", () => {

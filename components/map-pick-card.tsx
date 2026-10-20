@@ -21,7 +21,7 @@ export function MapPickCard({
   onClose,
 }: {
   lang: Lang;
-  /** Resolved place label, or coordinate fallback while geocoding. */
+  /** Resolved place name, or localized map-point label while geocoding. */
   title: string;
   stationName: string;
   distanceText: string;

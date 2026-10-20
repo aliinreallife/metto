@@ -155,7 +155,7 @@ test.describe("map route controls", () => {
     page,
   }) => {
     await suppressSaveNotice(page);
-    // Nominatim fails → coordinate fallback label.
+    // Nominatim fails → a readable localized fallback, never raw coordinates.
     await page.route("**://nominatim.openstreetmap.org/**", (route) =>
       route.abort("blockedbyclient"),
     );
@@ -166,10 +166,7 @@ test.describe("map route controls", () => {
     const pick = page.getByTestId("map-pick-card");
     await expect(pick).toContainText("انتخاب این نقطه");
     await expect(pick).toContainText("نزدیک‌ترین ایستگاه");
-    // Coordinate fallback while geocoding fails.
-    const title = (await pick.locator("h3").textContent()) ?? "";
-    expect(title).toMatch(/^\d{2}\.\d{4}, \d{2}\.\d{4}$/);
-    const [pickLat, pickLng] = title.split(",").map(Number);
+    await expect(pick.locator("h3")).toHaveText("نقطه انتخاب‌شده روی نقشه");
 
     await pick.getByRole("button", { name: "تنظیم به‌عنوان مبدأ" }).click();
 
@@ -179,14 +176,22 @@ test.describe("map route controls", () => {
     const op = url.searchParams.get("op");
     expect(op).toBeTruthy();
     const [opLat, opLng] = op!.split(",").slice(0, 2).map(Number);
-    // Exact clicked coordinate survives (4dp pin encoding).
-    expect(opLat).toBeCloseTo(pickLat, 4);
-    expect(opLng).toBeCloseTo(pickLng, 4);
+    // Coordinates still survive in the shareable URL for accurate routing,
+    // but they are not used as the visible name.
+    expect(op!.split(",")[0]).toMatch(/^\d{2}\.\d{4}$/);
+    expect(op!.split(",")[1]).toMatch(/^\d{2}\.\d{4}$/);
+    expect(opLat).toBeGreaterThan(35);
+    expect(opLng).toBeGreaterThan(51);
+    expect(op!).toContain("نقطه انتخاب‌شده روی نقشه");
     await expect(pick).toHaveCount(0);
     // Origin pin card renders for the new endpoint.
     await expect(page.getByTestId("map-place-card")).toHaveCount(1, {
       timeout: 15_000,
     });
+    await expect(page.getByTestId("map-place-card")).toContainText("نقطه انتخاب‌شده روی نقشه");
+    await expect(page.getByTestId("map-place-card")).not.toContainText(/\d{2}\.\d{4}/);
+    await page.goto(`/route?from=${url.searchParams.get("from")}&op=${encodeURIComponent(op!)}`);
+    await expect(page.getByText("نقطه انتخاب‌شده روی نقشه", { exact: true })).toBeVisible();
   });
 
   test("pick point → set as destination redraws route, stays on /map", async ({
@@ -214,6 +219,17 @@ test.describe("map route controls", () => {
     await expect(endpointStrokes(page)).not.toHaveCount(0, {
       timeout: 15_000,
     });
+  });
+
+  test("older coordinate-labelled links render readable labels on both pages", async ({ page }) => {
+    await suppressSaveNotice(page);
+    const op = encodeURIComponent("35.6316,51.2794,35.6316, 51.2794");
+    await page.goto(`/map?from=chitgar&op=${op}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("map-place-card")).toContainText("نقطه انتخاب‌شده روی نقشه");
+    await expect(page.getByTestId("map-place-card")).not.toContainText("35.6316");
+    await page.goto(`/route?from=chitgar&op=${op}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByText("نقطه انتخاب‌شده روی نقشه", { exact: true })).toBeVisible();
+    await expect(page.getByText("35.6316", { exact: false })).toHaveCount(0);
   });
 
   test("resolved reverse-geocode label shows in the pick card", async ({
@@ -253,9 +269,33 @@ test.describe("map route controls", () => {
       waitUntil: "domcontentloaded",
     });
     await mapReady(page);
-    const dot = page.locator(".metro-station-dot").first();
-    await expect(dot).toBeAttached({ timeout: 15_000 });
-    await dot.click({ force: true });
+    const dots = page.locator(".metro-station-dot");
+    await expect(dots.first()).toBeAttached({ timeout: 15_000 });
+    // First in DOM order may be clipped outside the Leaflet viewport.
+    // Pick a visible, unobstructed dot instead of forcing an offscreen click.
+    const viewport = await page.locator('[aria-label="Metro on real map"]').boundingBox();
+    expect(viewport).toBeTruthy();
+    const index = await dots.evaluateAll((nodes, box) => {
+      let bestIndex = -1;
+      let bestDistance = Infinity;
+      nodes.forEach((node, i) => {
+        const b = node.getBoundingClientRect();
+        const x = b.left + b.width / 2;
+        const y = b.top + b.height / 2;
+        if (x < box.x + 40 || x > box.x + box.width - 40 ||
+            y < box.y + 60 || y > box.y + box.height - 60) return;
+        const target = document.elementFromPoint(x, y);
+        if (target !== node && !node.contains(target)) return;
+        const distance = Math.hypot(x - (box.x + box.width / 2), y - (box.y + box.height / 2));
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = i;
+        }
+      });
+      return bestIndex;
+    }, viewport!);
+    expect(index).toBeGreaterThanOrEqual(0);
+    await dots.nth(index).click();
 
     await expect(page.getByTestId("map-station-card")).toBeVisible({
       timeout: 15_000,

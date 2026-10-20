@@ -4,7 +4,7 @@ import { unavailableWalkingApi } from "./helpers/walking";
 // Map label regression: pin labels must follow their pins. Probe-driven
 // investigation (fixed camera, moving pins) showed correct behavior; these
 // specs lock it so a future engine change cannot silently freeze labels.
-// Persian UI by default. Nominatim always intercepted (coords fallback).
+// Persian UI by default. Nominatim is intercepted (friendly fallback label).
 
 async function mapReady(page: Page) {
   await expect(page.locator('[aria-label="Metro on real map"]')).toBeVisible({
@@ -65,35 +65,22 @@ test.describe("map label movement", () => {
     await expect(page.getByTestId("map-pick-card")).toBeVisible({
       timeout: 10_000,
     });
-    const titleA = await page.getByTestId("map-pick-card").locator("h3").textContent();
-    expect(titleA).toMatch(/^\d{2}\.\d{4}, \d{2}\.\d{4}$/);
-    // Poll: engine placement (debounced + measured) lands just after the
-    // card renders; a single-shot probe races it on slow machines.
-    await expect
-      .poll(async () => labelBox(page, titleA!.slice(0, 7)), { timeout: 10_000 })
-      .not.toBeNull();
-    const posA = await labelBox(page, titleA!.slice(0, 7));
+    const title = "نقطه انتخاب‌شده روی نقشه";
+    await expect(page.getByTestId("map-pick-card").locator("h3")).toHaveText(title);
+    // The fallback title is now intentionally stable across different pins.
+    // Verify movement by geometry, not a coordinate string changing.
+    await expect.poll(async () => labelBox(page, title), { timeout: 10_000 }).not.toBeNull();
+    const posA = await labelBox(page, title);
     expect(posA).not.toBeNull();
 
-    // Re-pick directly while the card is still open: the same logical
-    // label node is reused (no removal in between), so this deterministically
-    // exercises the in-place update path — not the recreate path.
     await page.mouse.click(box!.x + box!.width * 0.75, box!.y + box!.height * 0.7);
-    const card = page.getByTestId("map-pick-card");
-    await expect(card.locator("h3")).not.toHaveText(titleA!, { timeout: 10_000 });
-    const titleB = await card.locator("h3").textContent();
-    expect(titleB).toMatch(/^\d{2}\.\d{4}, \d{2}\.\d{4}$/);
-    expect(titleB).not.toBe(titleA);
-    await expect
-      .poll(async () => labelBox(page, titleB!.slice(0, 7)), { timeout: 10_000 })
-      .not.toBeNull();
-    const posB = await labelBox(page, titleB!.slice(0, 7));
-    expect(posB).not.toBeNull();
-    // The label physically moved with the pin (far beyond jitter).
-    const moved = Math.hypot(posB!.x - posA!.x, posB!.y - posA!.y);
-    expect(moved).toBeGreaterThan(200);
-    // No stale label left behind at the old text.
-    await expect(page.getByText(titleA!, { exact: true })).toHaveCount(0);
+    await expect(page.getByTestId("map-pick-card").locator("h3")).toHaveText(title);
+    await expect.poll(async () => {
+      const next = await labelBox(page, title);
+      return next ? Math.hypot(next.x - posA!.x, next.y - posA!.y) : 0;
+    }, { timeout: 10_000 }).toBeGreaterThan(200);
+    // Re-picking moves the same logical pending label; no duplicate remains.
+    await expect(page.locator(".leaflet-marker-icon").filter({ hasText: title })).toHaveCount(1);
   });
 
   test("origin pin label is replaced on re-pick, dest label untouched", async ({

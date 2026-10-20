@@ -23,7 +23,7 @@ import {
   encodePlacePin,
   nearestStations,
 } from "@/lib/geo";
-import { shortPlaceLabel, reverseGeocode } from "@/lib/geocoding";
+import { displayPlaceLabel, reverseGeocode } from "@/lib/geocoding";
 import { StationDetail } from "@/components/station-detail";
 import { MapPickCard } from "@/components/map-pick-card";
 import { WalkSuggestCard } from "@/components/route-panel";
@@ -82,7 +82,7 @@ export function MapPage() {
   const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(null);
   const [resolved, setResolved] = useState<{ lat: number; lng: number; label: string } | null>(null);
 
-  // Reverse-geocode the pending pick (coords fallback until it resolves).
+  // Reverse-geocode the pending pick (a localized place label until it resolves).
   // Only the async callback writes state, guarded by coordinate identity so
   // a late result can never overwrite a newer pick.
   useEffect(() => {
@@ -131,13 +131,13 @@ export function MapPage() {
   const placeMarkers = useMemo(() => {
     const markers: Array<{ lat: number; lng: number; label: string; role: "origin" | "dest"; stationId: string | null }> = [];
     if (initialParams.originPin) {
-      markers.push({ ...initialParams.originPin, label: shortPlaceLabel(initialParams.originPin.label), role: "origin", stationId: initialParams.from });
+      markers.push({ ...initialParams.originPin, label: displayPlaceLabel(initialParams.originPin.label, lang), role: "origin", stationId: initialParams.from });
     }
     if (initialParams.destPlace) {
-      markers.push({ ...initialParams.destPlace, label: shortPlaceLabel(initialParams.destPlace.label), role: "dest", stationId: initialParams.to });
+      markers.push({ ...initialParams.destPlace, label: displayPlaceLabel(initialParams.destPlace.label, lang), role: "dest", stationId: initialParams.to });
     }
     return markers;
-  }, [initialParams]);
+  }, [initialParams, lang]);
 
   const originStation = initialParams.from ? STATION_MAP.get(initialParams.from)?.location : null;
   const destStation = initialParams.to ? STATION_MAP.get(initialParams.to)?.location : null;
@@ -189,9 +189,9 @@ export function MapPage() {
 
   const pickedLabel =
     picked && resolved && resolved.lat === picked.lat && resolved.lng === picked.lng
-      ? shortPlaceLabel(resolved.label)
+      ? displayPlaceLabel(resolved.label, lang)
       : picked
-        ? `${picked.lat.toFixed(4)}, ${picked.lng.toFixed(4)}`
+        ? t.selectedMapPoint
         : null;
 
   const [selectedId, setSelectedId] = useState<string | null>(initialParams.station);
