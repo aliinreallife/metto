@@ -1,10 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Playwright 1.48 gates worker request routing/offline emulation behind
-// this flag. Tile-cache tests must mock the worker's fetches too, so they
-// never silently hit the live CDN after the page gains SW control.
-process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS ??= "1";
-
 // Production-only offline suite. Run after a real production build:
 //   pnpm build && pnpm test:e2e:offline
 // (CI) or against an already-running prod server via BASE_URL.

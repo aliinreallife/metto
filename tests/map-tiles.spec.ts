@@ -78,6 +78,21 @@ async function foreignCachedUrls(page: {
 }
 
 test.describe("CARTO opportunistic tile cache", () => {
+  // Playwright 1.48 gates worker request routing behind this flag. Enable
+  // it only here: other suites deliberately model page/worker requests
+  // differently. Restore it before the next file reuses this worker.
+  const workerNetworkFlag = process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS;
+  test.beforeAll(() => {
+    process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1";
+  });
+  test.afterAll(() => {
+    if (workerNetworkFlag === undefined) {
+      delete process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS;
+    } else {
+      process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = workerNetworkFlag;
+    }
+  });
+
   test.beforeEach(async ({ context }: { context: BrowserContext }) => {
     // Mock every CARTO tile with a 1px PNG served with real CORS headers
     // (mirrors the live CDN's Access-Control-Allow-Origin: *): realistic
@@ -176,8 +191,13 @@ test.describe("CARTO opportunistic tile cache", () => {
     );
 
     // Offline: cold revisit serves cached tiles, misses fail handled.
-    // Drop the tile mock first so offline fetches genuinely fail.
+    // Replace success mocks with network failures, including worker
+    // fetches. Playwright 1.48 can miss offline emulation for a worker
+    // restarted during the cold revisit; never let that reach the CDN.
     await context.unroute("https://*.basemaps.cartocdn.com/**");
+    await context.route("https://*.basemaps.cartocdn.com/**", (route) =>
+      route.abort("internetdisconnected"),
+    );
     await context.setOffline(true);
     await page.close();
     const offlinePage = await context.newPage();
@@ -214,9 +234,8 @@ test.describe("CARTO opportunistic tile cache", () => {
     expect(cachedLoads).toBe(true);
 
     // Uncached tile offline: exercise the same image-destination worker
-    // route as Leaflet. Worker network emulation is enabled in the config;
-    // the mock was removed above, so this must fail without a live fetch
-    // or an unhandled Serwist rejection.
+    // route as Leaflet. Worker network failures are mocked above, so this
+    // must fail without a live fetch or an unhandled Serwist rejection.
     const miss = await offlinePage.evaluate(
       () =>
         new Promise<boolean>((resolve) => {
