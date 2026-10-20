@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { STATION_MAP } from "../lib/route";
+import { unavailableWalkingApi } from "./helpers/walking";
 
 // Map route controls: clear-route button + arbitrary point picking.
 // Persian UI by default (no stored lang). Nominatim is always intercepted —
@@ -67,6 +69,10 @@ async function clickEmptyMap(page: Page) {
 }
 
 test.describe("map route controls", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-09-07T10:00:00+03:30"));
+    await unavailableWalkingApi(page);
+  });
   test("clear removes route, pins, params — planner storage survives", async ({
     page,
   }) => {
@@ -330,7 +336,7 @@ test.describe("map route controls", () => {
     // One walk toast says it, first in the top stack.
     const toast = page.getByTestId("walk-suggest");
     await expect(toast).toBeVisible({ timeout: 15_000 });
-    await expect(toast).toContainText("پیاده‌روی سریع‌تر است");
+    await expect(toast).toContainText("پیاده‌روی شاید سریع‌تر باشد");
     const toastBox = await toast.boundingBox();
     const firstCardBox = await page.getByTestId("map-place-card").first().boundingBox();
     expect(toastBox && firstCardBox).toBeTruthy();
@@ -370,7 +376,10 @@ test.describe("map route controls", () => {
     page,
   }) => {
     await suppressSaveNotice(page);
-    await page.goto(routeUrl(), { waitUntil: "domcontentloaded" });
+    // Keep both pins near their stations: the shared control URL's old
+    // destination was 6.5 km from its station, making the full metro trip lose.
+    const dest = STATION_MAP.get(TO)!.location;
+    await page.goto(`/map?from=${FROM}&to=${TO}&op=35.8022,51.4350,Origin&dp=${dest.lat + 0.001},${dest.lng},Destination`, { waitUntil: "domcontentloaded" });
     await mapReady(page);
     const overlay = ".leaflet-overlay-pane";
     await expect(page.getByTestId("map-place-card")).toHaveCount(2, {
@@ -386,6 +395,17 @@ test.describe("map route controls", () => {
     await expect(
       page.locator(`${overlay} path[stroke="#ef4444"]`),
     ).not.toHaveCount(0, { timeout: 15_000 });
+  });
+
+  test("includes station walks in the full journey even for a long direct walk", async ({ page }) => {
+    await suppressSaveNotice(page);
+    await page.goto(routeUrl(), { waitUntil: "domcontentloaded" });
+    await mapReady(page);
+    // Neither the ride nor the station walks alone exceeds the direct walk;
+    // their sum does. Distance alone must not decide the comparison.
+    await expect(page.getByTestId("walk-suggest")).toBeVisible();
+    await expect(page.locator("path.metto-walking-approximation[stroke='#a3a3a3']")).toHaveCount(1);
+    await expect(page.locator("path.metto-walking-approximation[stroke='#22c55e']")).toHaveCount(0);
   });
 
   test("close pins count access walks: direct line despite short ride", async ({

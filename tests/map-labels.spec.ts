@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { unavailableWalkingApi } from "./helpers/walking";
 
 // Map label regression: pin labels must follow their pins. Probe-driven
 // investigation (fixed camera, moving pins) showed correct behavior; these
@@ -36,6 +37,9 @@ async function labelBox(page: Page, text: string) {
 }
 
 test.describe("map label movement", () => {
+  test.beforeEach(async ({ page }) => {
+    await unavailableWalkingApi(page);
+  });
   test("pending pick label follows re-picks at a fixed camera", async ({
     page,
   }) => {
@@ -109,7 +113,7 @@ test.describe("map label movement", () => {
     await expect(merged).toHaveCount(1, { timeout: 15_000 });
     await expect(merged).toContainText("نقطه الف");
     await expect(merged).toContainText("نقطه ب");
-    await expect(merged).toContainText("پیاده‌روی سریع‌تر است");
+    await expect(merged).toContainText("پیاده‌روی بین این دو نقطه");
 
     const box = await page
       .locator('[aria-label="Metro on real map"]')

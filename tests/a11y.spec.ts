@@ -215,6 +215,9 @@ test.describe("route search keyboard flow", () => {
 
   test("timetable sheet traps focus and restores it on close", async ({ page }) => {
     await waitForAppReady(page, "/stations");
+    // Timetable loading changes each card's height. Wait for that layout
+    // change before clicking so a cold load cannot move the opener mid-click.
+    await expect(page.getByText(/در حال بارگذاری زمان‌بندی|Loading schedule/).first()).toBeHidden({ timeout: 30_000 });
     // Open the first station's timetable sheet (FA "برنامه" / EN "Timetable").
     const sheetButton = page.getByRole("button", { name: /برنامه|Timetable/ }).first();
     await expect(sheetButton).toBeVisible({ timeout: 15_000 });

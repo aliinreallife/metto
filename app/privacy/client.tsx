@@ -36,6 +36,13 @@ const COPY: Record<"fa" | "en", { title: string; intro: string; back: string; se
         ps: ["تصویرهای نقشه از CARTO و Esri بارگذاری می‌شوند. نام و نشان آن‌ها روی نقشه دیده می‌شود."],
       },
       {
+        h: "مسیر پیاده‌روی",
+        ps: [
+          "برای پیدا کردن مسیر خیابانی پیاده‌روی، مختصات ابتدا و انتهای بخش‌های پیاده‌روی از طریق متو به openrouteservice فرستاده می‌شود. کلید سرویس در مرورگر قرار نمی‌گیرد.",
+          "مسیرهای دریافت‌شده روی دستگاه ذخیره می‌شوند تا دوباره و آفلاین هم قابل استفاده باشند. اگر مسیر خیابانی موجود نباشد، فاصله و زمان با برچسب تقریبی نمایش داده می‌شود.",
+        ],
+      },
+      {
         h: "آمار فنی",
         ps: [
           "در نسخه نهایی، آمار پایه استفاده و عملکرد از طریق Vercel Analytics و Speed Insights جمع می‌شود.",
@@ -91,6 +98,13 @@ const COPY: Record<"fa" | "en", { title: string; intro: string; back: string; se
       {
         h: "Map",
         ps: ["Map imagery loads from CARTO and Esri. Their attribution is shown on the map."],
+      },
+      {
+        h: "Walking routes",
+        ps: [
+          "To find pedestrian street routes, the endpoints of walking sections are sent through metto to openrouteservice. The service key is never sent to your browser.",
+          "Loaded paths are stored on your device for reuse, including offline. When no street path is available, walking distance and time are labelled approximate.",
+        ],
       },
       {
         h: "Analytics",

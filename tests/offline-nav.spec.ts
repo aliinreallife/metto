@@ -83,6 +83,8 @@ test.describe("Offline bottom navigation", () => {
     context,
   }) => {
     const page = await context.newPage();
+    // Navigation assertions need an operating journey, independent of run time.
+    await page.clock.setFixedTime(new Date("2026-09-07T10:00:00+03:30"));
     await page.goto("/route?from=ahang&to=aliabad", {
       waitUntil: "domcontentloaded",
     });
@@ -170,6 +172,8 @@ test.describe("Offline bottom navigation", () => {
     context,
   }) => {
     const page = await context.newPage();
+    // Navigation assertions need an operating journey, independent of run time.
+    await page.clock.setFixedTime(new Date("2026-09-07T10:00:00+03:30"));
     await page.goto("/route", { waitUntil: "domcontentloaded" });
     await waitForOfflineReady(page);
     await context.setOffline(true);
@@ -193,6 +197,8 @@ test.describe("Offline bottom navigation", () => {
     // Truly cold: only `/` is ever loaded online. In particular NO
     // query-bearing document may be warmed into `metto-pages` first.
     const page = await context.newPage();
+    // Navigation assertions need an operating journey, independent of run time.
+    await page.clock.setFixedTime(new Date("2026-09-07T10:00:00+03:30"));
     await page.goto("/route", { waitUntil: "domcontentloaded" });
     await waitForOfflineReady(page);
 

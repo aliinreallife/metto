@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlarmClock,
   ArrowRight,
@@ -143,11 +143,15 @@ export function WalkSuggestCard({
   lang,
   walkMin,
   distanceKm,
+  approximate = true,
+  sameStation = false,
   action,
 }: {
   lang: Lang;
   walkMin: number;
   distanceKm: number;
+  approximate?: boolean;
+  sameStation?: boolean;
   /** Optional map-only alternative. Not needed for planner's inline nudge. */
   action?: { label: string; onClick: () => void; active: boolean };
 }) {
@@ -161,9 +165,9 @@ export function WalkSuggestCard({
         <Footprints aria-hidden="true" className="size-5 text-primary" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-        <span className="text-sm font-bold md:text-base">{t.walkFaster}</span>
+        <span className="text-sm font-bold md:text-base">{sameStation ? t.walkBetweenPlaces : approximate ? t.walkMaybeFaster : t.walkFaster}</span>
         <span className="tnum text-xs text-muted-foreground md:text-sm">
-          {formatWalkTime(walkMin, lang)} · {formatDistance(distanceKm, lang)} {t.walkDistance}
+          {approximate ? "~" : ""}{formatWalkTime(walkMin, lang)} · {formatDistance(distanceKm, lang)} {t.walkDistance}
         </span>
         {action && (
           <button
@@ -186,6 +190,7 @@ export function RoutePanel({
   lang,
   plan,
   afterStats,
+  onUseDeparture,
 }: {
   route: RouteResult;
   lang: Lang;
@@ -193,7 +198,10 @@ export function RoutePanel({
   plan?: { mode: "depart" | "arrive"; atMs: number };
   /** Optional content placed immediately below the three route summary cards. */
   afterStats?: ReactNode;
+  /** Plan from the selected scheduled departure, excluding the initial wait. */
+  onUseDeparture?: () => void;
 }) {
+  const summaryRef = useRef<HTMLDivElement>(null);
   const loaded = useScheduleData();
   const t = STRINGS[lang];
   const isFa = lang === "fa";
@@ -253,9 +261,7 @@ export function RoutePanel({
     if (longWait) {
       return {
         severity: "amber" as const,
-        message: isFa
-          ? `اولین حرکت بعد از ${persianDigits(firstWait, lang)} دقیقه`
-          : `First train in ${firstWait} min`,
+        message: `${t.departureIn} ${persianDigits(firstWait, lang)} ${t.minEst}`,
       };
     }
 
@@ -285,7 +291,8 @@ export function RoutePanel({
           </p>
         </div>
       )}
-      <div className="grid grid-cols-3 gap-3 md:gap-4" data-testid="route-summary-stats">
+      <div ref={summaryRef} role="group" aria-label={t.routeSummary} tabIndex={-1} data-route-start={route.departedAtMs}
+        className="grid grid-cols-3 gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:gap-4" data-testid="route-summary-stats">
         <Stat
           icon={<TrainFront aria-hidden="true" className="size-5 md:size-6" />}
           value={persianDigits(route.numStops + 1, lang)}
@@ -296,8 +303,8 @@ export function RoutePanel({
           value={
             firstWait > 0 ? (
               <span className="whitespace-nowrap">
-                <span className="text-xl font-semibold text-muted-foreground/70 md:text-2xl">{persianDigits(firstWait, lang)}</span>
-                <span className="text-base text-muted-foreground/40 md:text-xl"> + </span>
+                <span className="text-xl font-semibold text-foreground/70 md:text-2xl">{persianDigits(firstWait, lang)}</span>
+                <span className="text-base text-muted-foreground md:text-xl"> + </span>
                 <span className="text-xl md:text-2xl">{persianDigits(restMins, lang)}</span>
               </span>
             ) : (
@@ -317,6 +324,24 @@ export function RoutePanel({
         />
       </div>
       {afterStats}
+      {longWait && route.trips[0] && onUseDeparture && (
+        <div data-testid="departure-option" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
+          <p className="text-sm font-medium">
+            {t.departureAt}{" "}
+            <span dir="ltr" className="tnum">{persianDigits(route.trips[0].departTime, lang)}</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              onUseDeparture();
+              requestAnimationFrame(() => summaryRef.current?.focus());
+            }}
+            className="min-h-[44px] rounded-lg bg-foreground px-3 py-2 text-sm font-bold text-background hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            {t.useDeparture}
+          </button>
+        </div>
+      )}
       {topWarning && (
         <div
           role={topWarning.severity === "red" ? "alert" : "status"}
@@ -501,7 +526,7 @@ function SegmentCard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="tnum text-2xl font-bold leading-none md:text-3xl" style={{ color }}>
+              <span className="tnum text-2xl font-bold leading-none text-foreground md:text-3xl">
                 {persianDigits(trip ? trip.departTime : (next?.time ?? "—"), lang)}
               </span>
               {(trip?.train.isExpress || next?.isExpress) && (
@@ -511,7 +536,7 @@ function SegmentCard({
                 </span>
               )}
             </div>
-            <p className="mt-0.5 break-words text-xs text-muted-foreground">
+            <p className="mt-0.5 break-words text-xs text-foreground/70">
               {isFa ? "به سمت" : "→"} {name(terminal)}
               {trip ? (
                 <>
@@ -534,7 +559,7 @@ function SegmentCard({
               const nextDifferent = next ? nextDep.find((d) => d.time !== next.time) : null;
               if (!nextDifferent) return null;
               return (
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                <p className="mt-0.5 text-[11px] text-foreground/70">
                   {isFa ? "بعدی:" : "Then:"}{" "}
                   <span className="tnum font-semibold">{persianDigits(nextDifferent.time, lang)}</span>
                   {nextDifferent.isExpress && (
@@ -573,10 +598,10 @@ function SegmentCard({
               {t.line} {persianDigits(line, lang)}
             </span>
             <span
-              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold md:px-3 md:py-2 md:text-sm"
-              style={{ backgroundColor: `${color}22`, color }}
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground md:px-3 md:py-2 md:text-sm"
+              style={{ backgroundColor: `${color}22` }}
             >
-              <Compass aria-hidden="true" className="size-4 shrink-0" />
+              <Compass aria-hidden="true" className="size-4 shrink-0" style={{ color }} />
               <span className="shrink-0">{t.towards}</span>
               <span className="min-w-0 flex-1 truncate font-bold" title={name(terminal)}>{name(terminal)}</span>
             </span>

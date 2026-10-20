@@ -208,7 +208,7 @@ export function geoUrl(
 // HTTPS Google Maps directions URL — safe desktop/laptop fallback.
 // Opens a normal browser directions page in a new tab.
 export function googleMapsDirectionsUrl(dest: { lat: number; lng: number }): string {
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+  return `https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=${encodeURIComponent(
     `${dest.lat},${dest.lng}`,
   )}`;
 }

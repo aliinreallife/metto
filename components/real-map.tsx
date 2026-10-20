@@ -40,7 +40,8 @@ type Props = {
   pendingPick?: { lat: number; lng: number; label: string } | null
   /** Pre-decided direct walk line (shared verdict helper): when present it
    *  replaces the pin-to-station stubs. */
-  directWalk?: { from: { lat: number; lng: number }; to: { lat: number; lng: number } } | null
+  directWalk?: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; coordinates?: [number, number][] } | null
+  walkingPaths?: { origin?: [number, number][]; dest?: [number, number][] }
   /** True when walking is the recommendation: show the network as context, not a highlighted route. */
   deemphasizeMetro?: boolean
   /** Map-local clear control (rendered with the zoom/locate stack). */
@@ -142,7 +143,7 @@ function buildLabelIcon(
   })
 }
 
-export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick, directWalk, deemphasizeMetro = false }: Props) {
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick, directWalk, walkingPaths, deemphasizeMetro = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
@@ -691,61 +692,44 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     layer.clearLayers()
 
-    if (!placeMarkers || placeMarkers.length === 0) return
+    if (!placeMarkers?.length && !directWalk) return
 
-    // No pin markers: places are marked by their engine label plus the
-    // dashed walk connector below. GPS keeps its blue dot.
-    // Direct pin-to-pin walk line, decided by the caller through the shared
-    // verdict helper: this component only renders it. It replaces the two
-    // pin-to-station stubs, which would otherwise route the picture back
-    // into a slower metro ride.
-    const originPm = placeMarkers.find((pm) => pm.role === "origin")
-    const destPm = placeMarkers.find((pm) => pm.role === "dest")
-    const directWalkLine =
-      originPm && destPm && directWalk
-        ? { from: originPm, to: destPm }
-        : null
     const pts: [number, number][] = []
-    if (directWalkLine) {
-      pts.push([directWalkLine.from.lat, directWalkLine.from.lng])
-      pts.push([directWalkLine.to.lat, directWalkLine.to.lng])
-      L.polyline(
-        [
-          [directWalkLine.from.lat, directWalkLine.from.lng],
-          [directWalkLine.to.lat, directWalkLine.to.lng],
-        ],
-        {
-          color: "#a3a3a3",
-          weight: 3,
-          opacity: 0.9,
-          dashArray: "6 6",
-          // Display-only connector: clicks pass through to point picking.
-          interactive: false,
-        },
-      ).addTo(layer)
-    } else {
-      for (const pm of placeMarkers) {
-        pts.push([pm.lat, pm.lng])
-
-        // Dashed "walk" connector from the searched place to its station.
-        const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
-        if (st) {
-          L.polyline(
-            [
-              [pm.lat, pm.lng],
-              [st.location.lat, st.location.lng],
-            ],
-            {
-              color: pm.role === "origin" ? "#22c55e" : "#ef4444",
-              weight: 3,
-              opacity: 0.9,
-              dashArray: "6 6",
-              // Display-only connector: clicks pass through to point picking.
-              interactive: false,
-            },
-          ).addTo(layer)
-          pts.push([st.location.lat, st.location.lng])
+    const drawWalk = (from: { lat: number; lng: number }, to: { lat: number; lng: number }, coordinates: [number, number][] | undefined, color: string) => {
+      const path: [number, number][] = coordinates
+        ? coordinates.map(([lng, lat]) => [lat, lng])
+        : [[from.lat, from.lng], [to.lat, to.lng]]
+      L.polyline(path, {
+        color, weight: 3, opacity: 0.9, interactive: false, smoothFactor: 0,
+        dashArray: coordinates ? undefined : "6 6",
+        className: coordinates ? "metto-walking-path" : "metto-walking-approximation",
+      }).addTo(layer)
+      // The provider may snap to a nearby footpath. Keep the short approach
+      // separate and dashed instead of claiming it is mapped street geometry.
+      if (coordinates) {
+        const approaches: [number, number][][] = [
+          [[from.lat, from.lng], path[0]],
+          [path[path.length - 1], [to.lat, to.lng]],
+        ]
+        for (const approach of approaches) {
+          if (approach[0][0] === approach[1][0] && approach[0][1] === approach[1][1]) continue
+          L.polyline(approach, { color, weight: 2, dashArray: "3 5", interactive: false,
+            className: "metto-walking-approximation" }).addTo(layer)
         }
+      }
+      pts.push([from.lat, from.lng], ...path, [to.lat, to.lng])
+    }
+    if (directWalk) {
+      drawWalk(directWalk.from, directWalk.to, directWalk.coordinates, "#a3a3a3")
+    } else {
+      for (const pm of placeMarkers ?? []) {
+        const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
+        pts.push([pm.lat, pm.lng])
+        if (!st) continue
+        const coordinates = pm.role === "origin" ? walkingPaths?.origin : walkingPaths?.dest
+        const from = pm.role === "origin" ? pm : st.location
+        const to = pm.role === "origin" ? st.location : pm
+        drawWalk(from, to, coordinates, pm.role === "origin" ? "#22c55e" : "#ef4444")
       }
     }
 
@@ -763,7 +747,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     } else if (pts.length > 1) {
       map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
     }
-  }, [placeMarkers, route, directWalk])
+  }, [placeMarkers, route, directWalk, walkingPaths])
 
   // Pending arbitrary pick: exact-coordinate marker in its own layer. The
   // label goes through the shared engine (pendingPick extra above), so it
