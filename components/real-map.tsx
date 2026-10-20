@@ -63,9 +63,12 @@ const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_BASEMAP_KEY
 // watermark) — far better than a blank map. Append the key only when set,
 // and never gate layer creation on it: a missing key must degrade to
 // watermarked tiles, not to zero tile layers (white/blank background).
+// Include streets and place names in the same raster tile (no extra label
+// layer or requests). CARTO controls their zoom-dependent detail and font;
+// our station/pin labels keep the app's self-hosted Vazirmatn font.
 const MINIMALIST_URL = CARTO_KEY
-  ? `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
-  : `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png`
+  ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+  : `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png`
 const MINIMALIST_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>'
 

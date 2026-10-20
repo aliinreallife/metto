@@ -10,7 +10,7 @@ const PNG_1PX = Buffer.from(
 );
 
 const TILE_KEY_RE =
-  /^https:\/\/[abcd]\.basemaps\.cartocdn\.com\/dark_nolabels\/\d+\/\d+\/\d+(@2x)?\.png/;
+  /^https:\/\/[abcd]\.basemaps\.cartocdn\.com\/dark_all\/\d+\/\d+\/\d+(@2x)?\.png/;
 
 async function storageUsage(page: {
   evaluate: <T>(fn: () => Promise<T> | T) => Promise<T>;
@@ -92,7 +92,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     );
   });
 
-  test("viewed tiles cached bounded, served offline, misses fail cleanly", async ({
+  test("viewed labeled tiles cached bounded, served offline, misses fail cleanly", async ({
     context,
   }) => {
     const swErrors: string[] = [];
@@ -132,7 +132,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     // valid ACAO header this fetch would reject instead).
     const cdnCors = await page.evaluate(async () => {
       const res = await fetch(
-        "https://a.basemaps.cartocdn.com/dark_nolabels/11/1315/806.png",
+        "https://a.basemaps.cartocdn.com/dark_all/11/1315/806.png",
       );
       return { status: res.status, type: res.type };
     });
@@ -209,23 +209,21 @@ test.describe("CARTO opportunistic tile cache", () => {
     );
     expect(cachedLoads).toBe(true);
 
-    // Uncached tile offline: handled failure (fetch rejects to the caller),
-    // no unhandled Serwist rejection, banner remains. Deliberately a bare
-    // fetch(), not an image: worker-subrequest fetches are not covered by
-    // offline emulation, so an image load here would succeed over the live
-    // network and prove nothing — while a page-initiated fetch is genuinely
-    // offline and must reject.
-    const miss = await offlinePage.evaluate(async () => {
-      try {
-        const res = await fetch(
-          "https://a.basemaps.cartocdn.com/dark_nolabels/18/1/1.png",
-        );
-        return `status:${res.status}`;
-      } catch {
-        return "threw";
-      }
-    });
-    expect(miss).toBe("threw");
+    // Uncached tile offline: exercise the same image-destination worker
+    // route as Leaflet. Worker network emulation is enabled in the config;
+    // the mock was removed above, so this must fail without a live fetch
+    // or an unhandled Serwist rejection.
+    const miss = await offlinePage.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = "https://a.basemaps.cartocdn.com/dark_all/18/1/1.png";
+        }),
+    );
+    expect(miss).toBe(false);
     expect(await foreignCachedUrls(offlinePage)).toEqual([]);
     expect(swErrors).toHaveLength(0);
 
