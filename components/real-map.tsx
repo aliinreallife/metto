@@ -563,6 +563,21 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     }
   }, [mapMode])
 
+  const hasWalkingPath = !!(directWalk?.coordinates?.length || walkingPaths?.origin?.length || walkingPaths?.dest?.length)
+  // Walking sources share the basemap's compact attribution control instead
+  // of covering the map with another card. Satellite imagery has no OSM
+  // attribution of its own, so include the pedestrian map source there too.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !hasWalkingPath) return
+    const sources = [
+      `<a href="https://openrouteservice.org/" target="_blank" rel="noopener noreferrer">openrouteservice<span class="sr-only"> — ${STRINGS[lang].opensInNewTab}</span></a>`,
+    ]
+    if (mapMode === "satellite") sources.push('&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>')
+    for (const source of sources) map.attributionControl.addAttribution(source)
+    return () => { for (const source of sources) map.attributionControl.removeAttribution(source) }
+  }, [hasWalkingPath, lang, mapMode])
+
   // Retry the active basemap layer(s) when EFFECTIVE connectivity returns,
   // so tiles that failed while offline start loading without any zoom/pan
   // gesture. Runs only on a settled offline → online transition of the

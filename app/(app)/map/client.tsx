@@ -164,11 +164,12 @@ export function MapPage() {
           distanceText: formatDistance(km, lang),
           walkText: formatWalkTime(walkMin, lang),
           approximate: !street,
+          saved: m.role === "origin" ? walking.access.saved : walking.egress.saved,
           tooFar: isTooFarToWalk(km),
         };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
-  }, [placeMarkers, isFa, lang, walking.access.route, walking.egress.route]);
+  }, [placeMarkers, isFa, lang, walking.access.route, walking.egress.route, walking.access.saved, walking.egress.saved]);
 
   // Walking context for the pending pick (nearest station only informs the
   // card + route endpoints; the exact point stays the visible endpoint).
@@ -270,9 +271,10 @@ export function MapPage() {
       distanceText: formatDistance(walkKm, lang),
       walkText: formatWalkTime(walkMin, lang),
       approximate: !walking.direct.route,
+      saved: walking.direct.saved,
       tooFar: isTooFarToWalk(walkKm),
     };
-  }, [placeMarkers, isFa, lang, walking.direct.route]);
+  }, [placeMarkers, isFa, lang, walking.direct.route, walking.direct.saved]);
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
     center: initialParams.center,
     zoom: initialParams.zoom,
@@ -479,7 +481,14 @@ export function MapPage() {
               <Footprints aria-hidden="true" className="size-5 text-primary" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold md:text-base">{t.walkBetweenPlaces}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-bold md:text-base">{t.walkBetweenPlaces}</p>
+                {(mergedPlaceInfo.approximate || mergedPlaceInfo.saved) && (
+                  <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                    {mergedPlaceInfo.approximate ? t.walkRouteApproximateLabel : t.walkRouteSavedLabel}
+                  </span>
+                )}
+              </div>
               <p className="tnum mt-0.5 truncate text-xs text-muted-foreground md:text-sm">
                 {mergedPlaceInfo.originLabel}
                 <span aria-hidden="true" className="mx-1.5">→</span>
@@ -513,7 +522,14 @@ export function MapPage() {
               <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{p.label}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="min-w-0 truncate font-medium">{p.label}</p>
+                {(p.approximate || p.saved) && (
+                  <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                    {p.approximate ? t.walkRouteApproximateLabel : t.walkRouteSavedLabel}
+                  </span>
+                )}
+              </div>
               <p className="mt-0.5 text-muted-foreground">
                 {t.nearestStation}: {p.stationName} · {p.distanceText} · {p.approximate ? "~" : ""}{p.walkText} {t.walkTime}
               </p>

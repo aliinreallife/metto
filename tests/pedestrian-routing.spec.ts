@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { haversineKm } from "../lib/geo";
 import { STATION_MAP } from "../lib/route";
+import { STRINGS, type Lang } from "../lib/i18n";
 import { mockWalkingApi, unavailableWalkingApi } from "./helpers/walking";
 
 const NOW = new Date("2026-09-07T10:00:00+03:30").getTime();
@@ -15,12 +16,12 @@ async function accessible(page: Page, selector?: string) {
     .map((v) => `${v.id}: ${v.help}`)).toEqual([]);
 }
 
-async function prepare(page: Page) {
+async function prepare(page: Page, lang: Lang = "en") {
   await page.clock.setFixedTime(new Date(NOW));
-  await page.addInitScript(() => {
-    localStorage.setItem("lang", "en");
+  await page.addInitScript((language) => {
+    localStorage.setItem("lang", language);
     localStorage.setItem("metto.mapSaveNoticeSeen", "1");
-  });
+  }, lang);
 }
 
 async function streetFixture(page: Page) {
@@ -59,6 +60,9 @@ test("street geometry and distances persist offline; uncached endpoints stay app
   await expect(card).toContainText("12 min");
   await expect(card).not.toContainText("~");
   await expect(page.getByTestId("walking-route-info")).toContainText("Solid lines");
+  const explanationBounds = await page.getByTestId("walking-route-info").boundingBox();
+  expect(explanationBounds?.height).toBeLessThanOrEqual(1);
+  await expect(page.locator(".leaflet-control-attribution").getByRole("link", { name: /openrouteservice/ })).toBeVisible();
   await accessible(page);
   await preparedOffline(page);
   const initialRequests = calls.length;
@@ -67,13 +71,76 @@ test("street geometry and distances persist offline; uncached endpoints stay app
   await expect(path).toHaveCount(1);
   await expect(card).toContainText("1.0 km");
   await expect(page.getByTestId("walking-route-info")).toContainText("previously loaded");
+  await expect(card).toContainText("Saved");
   expect(calls.length).toBe(initialRequests);
   await page.goto(mapUrl(0.01), { waitUntil: "domcontentloaded" });
   await expect(page.locator('[aria-label="Metro on real map"]')).toBeVisible();
   await expect(page.getByTestId("walking-route-info")).toContainText("approximate");
   await expect(path).toHaveCount(0);
+  await expect(card).toContainText("Approximate");
   await expect(page.locator("path.metto-walking-approximation")).not.toHaveCount(0);
   expect(calls.length).toBe(initialRequests);
+});
+
+for (const lang of ["en", "fa"] as const) {
+  test(`new origin and destination work offline without a document reload (${lang})`, async ({ page, context }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepare(page, lang);
+    const calls = await streetFixture(page);
+    await page.goto("/map?map=35.702,51.4,14", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[aria-label="Metro on real map"]')).toBeVisible();
+    await preparedOffline(page);
+    await context.setOffline(true);
+    await expect(page.getByTestId("map-offline-banner")).toBeVisible();
+    const initialRequests = calls.length;
+    const documents: string[] = [];
+    page.on("request", (request) => { if (request.resourceType() === "document") documents.push(request.url()); });
+    await page.evaluate(() => { document.documentElement.dataset.offlineMapDocument = "original"; });
+    const t = STRINGS[lang];
+
+    for (const [index, role] of (["origin", "dest"] as const).entries()) {
+      const map = await page.locator('[aria-label="Metro on real map"]').boundingBox();
+      expect(map).toBeTruthy();
+      await page.mouse.click(map!.x + map!.width * (index === 0 ? 0.2 : 0.8), map!.y + map!.height * 0.62);
+      const pick = page.getByTestId("map-pick-card");
+      await expect(pick).toBeVisible();
+      await pick.getByRole("button", { name: role === "origin" ? t.setAsOrigin : t.setDestination, exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`[?&]${role === "origin" ? "op" : "dp"}=`));
+      await expect(pick).toHaveCount(0);
+      await expect(page.locator("html")).toHaveAttribute("data-offline-map-document", "original");
+    }
+
+    const params = new URL(page.url()).searchParams;
+    expect(params.get("from")).toBeTruthy();
+    expect(params.get("to")).toBeTruthy();
+    expect(params.get("op")).not.toBe(params.get("dp"));
+    await expect(page.locator("path.metto-walking-path")).toHaveCount(0);
+    await expect(page.locator("path.metto-walking-approximation")).not.toHaveCount(0);
+    await expect(page.getByTestId("map-place-card").first()).toContainText(t.walkRouteApproximateLabel);
+    expect(documents).toEqual([]);
+    expect(calls.length).toBe(initialRequests);
+    await accessible(page);
+  });
+}
+
+test("walking credits remain compact across basemaps and clear with their paths", async ({ page }) => {
+  await prepare(page);
+  await streetFixture(page);
+  await page.goto(mapUrl(), { waitUntil: "domcontentloaded" });
+  const credits = page.locator(".leaflet-control-attribution");
+  const provider = credits.getByRole("link", { name: /openrouteservice/ });
+  const osm = credits.getByRole("link", { name: /OpenStreetMap/ });
+  await expect(provider).toBeVisible();
+  await expect(osm).toHaveCount(1);
+  await page.getByRole("button", { name: STRINGS.en.satellite, exact: true }).click();
+  await expect(provider).toHaveCount(1);
+  await expect(osm).toHaveCount(1);
+  await page.getByRole("button", { name: STRINGS.en.minimalist, exact: true }).click();
+  await expect(provider).toHaveCount(1);
+  await expect(osm).toHaveCount(1);
+  await page.getByRole("button", { name: STRINGS.en.clearRoute, exact: true }).click();
+  await expect(provider).toHaveCount(0);
+  await expect(osm).toHaveCount(1);
 });
 
 test("provider failure leaves dashed approximations and does not retry in a loop", async ({ page }) => {
