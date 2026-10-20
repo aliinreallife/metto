@@ -145,13 +145,14 @@ test.describe("CARTO opportunistic tile cache", () => {
     // between two reads cannot skew the assertions.
     const entries = await page.evaluate(async () => {
       const cache = await caches.open("metto-carto-tiles");
-      const out: { url: string; status: number; type: string }[] = [];
+      const out: { url: string; status: number; type: string; bytes: number }[] = [];
       for (const req of await cache.keys()) {
         const res = await cache.match(req);
         out.push({
           url: req.url,
           status: res ? res.status : -1,
           type: res ? res.type : "missing",
+          bytes: res ? (await res.arrayBuffer()).byteLength : -1,
         });
       }
       return out;
@@ -164,6 +165,9 @@ test.describe("CARTO opportunistic tile cache", () => {
     // Every cached entry is a real CORS response — never opaque.
     expect(entries.every((e) => e.status === 200 && e.type === "cors")).toBe(true);
     expect(entries.some((e) => e.type === "opaque")).toBe(false);
+    // Prove the worker used our mock, rather than silently reaching the
+    // live CDN (which could otherwise make this test pass on CI).
+    expect(entries.every((e) => e.bytes === PNG_1PX.byteLength)).toBe(true);
     expect(await foreignCachedUrls(page)).toEqual([]);
 
     const after = await storageUsage(page);
