@@ -5,7 +5,7 @@ import { parsePedestrianRoute, usableSavedWalk, validWalkingRoute, walkingKey, t
 import type { WalkStorage } from "./lib/walking/store";
 import { directWalkVerdict } from "./lib/route-planning";
 import { googleMapsDirectionsUrl } from "./lib/geo";
-import { walkingQuota, createWalkingQuota } from "./lib/walking/quota";
+import { walkingQuota, createWalkingQuota, WalkingQuotaStoreError } from "./lib/walking/quota";
 
 // Next's persistent cache needs a server request context. Exercise the actual
 // provider/API behavior here; browser reuse is checked by the offline E2E tests.
@@ -30,6 +30,9 @@ beforeEach(() => {
   resetWalkingMemoryForTests();
   vi.spyOn(walkingQuota, "reserve").mockResolvedValue(true);
   vi.spyOn(walkingQuota, "cooldown").mockResolvedValue(undefined);
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
@@ -104,7 +107,7 @@ describe("server-only pedestrian API", () => {
       .mockResolvedValueOnce(Response.json({ features: [] }));
     vi.stubGlobal("fetch", fetcher);
     const limited = await GET(request());
-    expect(limited.status).toBe(503);
+    expect(limited.status).toBe(429);
     expect(limited.headers.get("Retry-After")).toBe("60");
     expect(walkingQuota.cooldown).toHaveBeenCalledOnce();
     expect((await GET(request())).status).toBe(503);
@@ -115,8 +118,96 @@ describe("server-only pedestrian API", () => {
     vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
     vi.mocked(walkingQuota.reserve).mockResolvedValue(false);
     const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
-    expect((await GET(request())).status).toBe(503);
+    expect((await GET(request())).status).toBe(429);
     expect(fetcher).not.toHaveBeenCalled();
+  });
+  it.each([{ status: 404, code: 2010 }, { status: 400, code: 2009 }])(
+    "treats provider $status/code $code as unavailable endpoints, without a global cooldown",
+    async ({ status, code }) => {
+      vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
+      const privateMessage = "private provider message with coordinates 35.7,51.4";
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ error: { code, message: privateMessage } }, { status })));
+      const result = await GET(request());
+      expect(result.status).toBe(422);
+      expect(result.headers.get("Retry-After")).toBeNull();
+      expect(result.headers.get("Cache-Control")).toBe("no-store");
+      const body = await result.json();
+      expect(body.code).toBe("route_unavailable");
+      expect(walkingQuota.cooldown).not.toHaveBeenCalled();
+      expect(console.info).toHaveBeenCalledWith("[walking]", {
+        code: "route_unavailable", status: 422, providerStatus: status, providerCode: code,
+      });
+      const output = JSON.stringify({ body, logs: vi.mocked(console.info).mock.calls });
+      expect(output).not.toContain(privateMessage);
+      expect(output).not.toContain("test-walking-key");
+      expect(output).not.toContain("35.7");
+      expect(console.error).not.toHaveBeenCalled();
+    },
+  );
+  it("rejects a distant snapped footpath without claiming the provider is down", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(response())));
+    const result = await GET(request("fromLat=35.702&fromLng=51.4&toLat=35.701&toLng=51.401"));
+    expect(result.status).toBe(422);
+    expect((await result.json()).code).toBe("endpoints_off_footpath");
+    expect(result.headers.get("Retry-After")).toBeNull();
+    expect(walkingQuota.cooldown).not.toHaveBeenCalled();
+  });
+  it("retains genuine provider outages even if their body carries a route error code", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ error: { code: 2010 } }, { status: 503 })));
+    const result = await GET(request());
+    expect(result.status).toBe(503);
+    expect(result.headers.get("Retry-After")).toBe("60");
+    expect((await result.json()).code).toBe("provider_request_failed");
+    expect(walkingQuota.cooldown).toHaveBeenCalledOnce();
+    expect(console.error).toHaveBeenCalledWith("[walking]", {
+      code: "provider_request_failed", status: 503, providerStatus: 503, providerCode: 2010,
+    });
+  });
+  it("identifies invalid provider JSON without logging its contents", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
+    const privateBody = "private provider response";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(privateBody)));
+    const result = await GET(request());
+    expect(result.status).toBe(502);
+    expect((await result.json()).code).toBe("provider_invalid_response");
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(privateBody);
+  });
+  it.each([401, 403])("identifies provider authentication failure (%i) without exposing its response", async (status) => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ error: { message: "test-walking-key" } }, { status })));
+    const result = await GET(request());
+    expect(result.status).toBe(503);
+    expect((await result.json()).code).toBe("provider_auth_failed");
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("test-walking-key");
+  });
+  it("distinguishes provider timeouts from network failures", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(Object.assign(new Error("private timeout URL"), { name: "TimeoutError" })));
+    const result = await GET(request());
+    expect(result.status).toBe(503);
+    expect((await result.json()).code).toBe("provider_timeout");
+    expect(walkingQuota.cooldown).toHaveBeenCalledOnce();
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("private timeout URL");
+  });
+  it("distinguishes an unavailable shared quota store from an exhausted budget", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
+    vi.mocked(walkingQuota.reserve).mockRejectedValue(new WalkingQuotaStoreError());
+    const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+    const result = await GET(request());
+    expect(result.status).toBe(503);
+    expect((await result.json()).code).toBe("quota_store_unavailable");
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it("does not leak unexpected exception messages", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
+    vi.mocked(walkingQuota.reserve).mockRejectedValue(new Error("private Redis URL and token"));
+    const result = await GET(request());
+    expect(result.status).toBe(503);
+    const body = await result.json();
+    expect(body.code).toBe("unexpected_error");
+    expect(JSON.stringify({ body, logs: vi.mocked(console.error).mock.calls })).not.toContain("private Redis URL and token");
   });
 });
 
@@ -147,8 +238,15 @@ describe("walking quota budgets", () => {
     const quota = createWalkingQuota({ now: () => NOW, sharedReserve, sharedCooldown });
     expect(await quota.reserve()).toBe(true);
     expect(await quota.reserve()).toBe(false);
-    expect(await quota.reserve()).toBe(false);
+    await expect(quota.reserve()).rejects.toBeInstanceOf(WalkingQuotaStoreError);
     await quota.cooldown(); expect(sharedCooldown).toHaveBeenCalledOnce();
+  });
+  it("keeps a local cooldown when the shared store fails, without logging secrets", async () => {
+    const quota = createWalkingQuota({ now: () => NOW, sharedCooldown: async () => { throw new Error("private Redis URL and token"); } });
+    await quota.cooldown();
+    expect(await quota.reserve()).toBe(false);
+    expect(console.warn).toHaveBeenCalledWith("[walking]", { code: "quota_cooldown_store_unavailable" });
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("private Redis URL and token");
   });
 });
 
@@ -157,6 +255,34 @@ describe("bounded offline walking reuse", () => {
     return { read: vi.fn().mockResolvedValue(value), write: vi.fn().mockResolvedValue(undefined) } satisfies WalkStorage;
   }
   const defaults = { now: () => NOW, wait: async () => {} };
+  it("keeps unrelated walking legs working after an endpoint has no route", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const reverse = { ...route(), requestKey: walkingKey(B, A)!, coordinates: [...route().coordinates].reverse() };
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(Response.json({ error: "Walking directions unavailable", code: "route_unavailable" }, { status: 422 }))
+      .mockResolvedValueOnce(Response.json(reverse));
+    vi.stubGlobal("fetch", fetcher);
+    const deps = { ...defaults, storage: backend() };
+    expect(await getWalkingRoute(A, B, true, deps)).toBeNull();
+    expect((await getWalkingRoute(B, A, true, deps))?.route).toEqual(reverse);
+    expect(await getWalkingRoute(A, B, true, deps)).toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+  it.each([429, 503])("still pauses queued walking legs after a shared %i failure and resumes later", async (status) => {
+    let time = NOW;
+    vi.spyOn(Date, "now").mockImplementation(() => time);
+    const reverse = { ...route(), requestKey: walkingKey(B, A)!, coordinates: [...route().coordinates].reverse() };
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(Response.json({ error: "Unavailable" }, { status, headers: { "Retry-After": "60" } }))
+      .mockResolvedValueOnce(Response.json(reverse));
+    vi.stubGlobal("fetch", fetcher);
+    const deps = { ...defaults, now: () => time, storage: backend() };
+    expect(await Promise.all([getWalkingRoute(A, B, true, deps), getWalkingRoute(B, A, true, deps)])).toEqual([null, null]);
+    expect(fetcher).toHaveBeenCalledOnce();
+    time += 60_001;
+    expect((await getWalkingRoute(B, A, true, deps))?.route).toEqual(reverse);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
   it("reuses a saved path offline and never sends a request", async () => {
     const fetchRoute = vi.fn();
     const result = await getWalkingRoute(A, B, false, { ...defaults, storage: backend(route()), fetchRoute });

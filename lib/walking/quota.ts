@@ -21,6 +21,10 @@ return 1
 const QUOTA_KEY = "metto:walking:quota:v1";
 const COOLDOWN_KEY = "metto:walking:cooldown:v1";
 
+export class WalkingQuotaStoreError extends Error {
+  constructor() { super("Walking quota store unavailable"); }
+}
+
 export function createWalkingQuota(deps: {
   now?: () => number;
   sharedReserve?: () => Promise<boolean>;
@@ -35,7 +39,7 @@ export function createWalkingQuota(deps: {
       if (time < cooldownUntil) return false;
       if (deps.sharedReserve) {
         // An unavailable configured quota store must not spend provider quota.
-        try { return await deps.sharedReserve(); } catch { return false; }
+        try { return await deps.sharedReserve(); } catch { throw new WalkingQuotaStoreError(); }
       }
       // This fallback protects one process. A shared serverless budget requires
       // the existing optional Upstash/KV binding (see README).
@@ -47,7 +51,10 @@ export function createWalkingQuota(deps: {
     },
     async cooldown() {
       cooldownUntil = now() + MINUTE;
-      try { await deps.sharedCooldown?.(); } catch { /* Local cooldown still applies. */ }
+      try { await deps.sharedCooldown?.(); } catch {
+        // Local cooldown still applies; never log a Redis URL, token or error body.
+        console.warn("[walking]", { code: "quota_cooldown_store_unavailable" });
+      }
     },
   };
 }

@@ -61,17 +61,22 @@ export function walkingRouteMatches(route: WalkingRoute, from: WalkPoint, to: Wa
     haversineKm(to.lat, to.lng, last[1], last[0]) <= 0.15;
 }
 
-/** Reject wrong profiles, malformed paths and distant snaps rather than inventing a street route. */
-export function parsePedestrianRoute(value: unknown, from: WalkPoint, to: WalkPoint, now = Date.now()): WalkingRoute | null {
-  if (!value || typeof value !== "object") return null;
+type PedestrianRouteResult =
+  | { route: WalkingRoute; reason?: never }
+  | { route: null; reason: "invalid_response" | "snap_too_far" };
+
+/** Separate unsupported endpoints from a malformed provider response. */
+export function parsePedestrianRouteResult(value: unknown, from: WalkPoint, to: WalkPoint, now = Date.now()): PedestrianRouteResult {
+  const invalid = { route: null, reason: "invalid_response" } as const;
+  if (!value || typeof value !== "object") return invalid;
   const data = value as {
     metadata?: { query?: { profile?: string } };
     features?: { geometry?: { type?: string; coordinates?: unknown }; properties?: { summary?: { distance?: number; duration?: number } } }[];
   };
   const profile = data.metadata?.query?.profile;
-  if (profile && profile !== "foot-walking") return null;
+  if (profile && profile !== "foot-walking") return invalid;
   const feature = data.features?.[0];
-  if (feature?.geometry?.type !== "LineString") return null;
+  if (feature?.geometry?.type !== "LineString") return invalid;
   const route = {
     requestKey: walkingKey(from, to),
     coordinates: feature.geometry.coordinates,
@@ -79,18 +84,25 @@ export function parsePedestrianRoute(value: unknown, from: WalkPoint, to: WalkPo
     durationSeconds: feature.properties?.summary?.duration,
     savedAt: now,
   };
-  if (!validWalkingRoute(route)) return null;
+  if (!validWalkingRoute(route)) return invalid;
   const first = route.coordinates[0];
   const last = route.coordinates[route.coordinates.length - 1];
   const startGap = haversineKm(from.lat, from.lng, first[1], first[0]);
   const endGap = haversineKm(to.lat, to.lng, last[1], last[0]);
   // Station entrance data is not yet available. Keep small last-metre
   // approaches explicit; never snap across a neighbourhood to claim success.
-  if (startGap > 0.15 || endGap > 0.15) return null;
+  if (startGap > 0.15 || endGap > 0.15) return { route: null, reason: "snap_too_far" };
   const approachMeters = (startGap + endGap) * 1000;
   return {
-    ...route,
-    distanceMeters: route.distanceMeters + approachMeters,
-    durationSeconds: route.durationSeconds + approachMeters / (5000 / 3600),
+    route: {
+      ...route,
+      distanceMeters: route.distanceMeters + approachMeters,
+      durationSeconds: route.durationSeconds + approachMeters / (5000 / 3600),
+    },
   };
+}
+
+/** Reject wrong profiles, malformed paths and distant snaps rather than inventing a street route. */
+export function parsePedestrianRoute(value: unknown, from: WalkPoint, to: WalkPoint, now = Date.now()): WalkingRoute | null {
+  return parsePedestrianRouteResult(value, from, to, now).route;
 }
