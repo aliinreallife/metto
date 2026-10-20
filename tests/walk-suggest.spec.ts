@@ -91,56 +91,14 @@ test.describe("walk suggestion", () => {
   });
 
   for (const lang of ["en", "fa"] as const) {
-    test(`long initial waits do not favor walking; use selected departure (${lang})`, async ({ page }) => {
-      await page.setViewportSize({ width: 390, height: 844 });
+    test(`long initial waits keep the metro result and never show a duplicate departure CTA (${lang})`, async ({ page }) => {
       const at = tehranDatePlusDays(6).replace("T10:00", "T00:15");
       await page.clock.setFixedTime(new Date(at));
       await page.addInitScript((language) => localStorage.setItem("lang", language), lang);
-      await page.goto('/route?from=tajrish&to=shahid-beheshti', { waitUntil: 'domcontentloaded' });
-
-      const option = page.getByTestId("departure-option");
-      await expect(option).toBeVisible();
+      await page.goto("/route?from=tajrish&to=shahid-beheshti", { waitUntil: "domcontentloaded" });
+      await expect(page.getByTestId("route-summary-stats")).toBeVisible();
       await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
-      const stats = page.getByTestId("route-summary-stats");
-      const arrival = await stats.locator(":scope > div").nth(2).locator(".tnum").textContent();
-      const departure = (await option.locator(".tnum").innerText())
-        .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit))).padStart(5, "0");
-      const label = lang === "en" ? "Use this departure" : "انتخاب این حرکت";
-      const button = option.getByRole("button", { name: label, exact: true });
-      if (lang === "en") {
-        for (const colorScheme of ["light", "dark"] as const) {
-          await page.emulateMedia({ colorScheme });
-          const results = await new AxeBuilder({ page })
-            .include('[data-testid="departure-option"], [data-testid="route-summary-stats"]')
-            .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
-          expect(results.violations.filter((v) => ["moderate", "serious", "critical"].includes(v.impact ?? ""))).toEqual([]);
-        }
-        await page.emulateMedia({ colorScheme: "light" });
-      }
-      if (lang === "en") {
-        await button.focus();
-        await expect(button).toBeFocused();
-        await button.press("Enter");
-      } else {
-        await button.click();
-      }
-      await expect.poll(() => new URL(page.url()).searchParams.get("timeMode")).toBe("depart");
-      const selected = new URL(page.url()).searchParams.get("at");
-      expect(new Date(selected!).getTime()).toBeGreaterThan(new Date(at).getTime());
-      expect(new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Asia/Tehran", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-      }).format(new Date(selected!))).toBe(departure);
-      await expect(option).toHaveCount(0);
-      await expect(stats).toBeFocused();
-      await expect(stats).toContainText(lang === "en" ? "travel time" : "دقیقه سفر");
-      await expect(stats.locator(":scope > div").nth(2).locator(".tnum")).toHaveText(arrival!);
-      await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
-
-      // The selected departure is an ordinary shareable departure plan.
-      await page.reload({ waitUntil: "domcontentloaded" });
-      await expect(stats).toBeVisible();
-      await expect(option).toHaveCount(0);
-      expect(new URL(page.url()).searchParams.get("at")).toBe(selected);
+      await expect(page.getByTestId("departure-option")).toHaveCount(0);
     });
   }
 
