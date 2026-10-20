@@ -56,8 +56,6 @@ import {
 } from "@/lib/geolocation";
 import { LocationErrorActions } from "@/components/location-error";
 import { useRouteClock } from "@/lib/use-route-clock";
-import { isNowRouteStale } from "@/lib/route-freshness";
-import { RouteRefreshNotice } from "@/components/route-refresh-notice";
 import { useTripWalking } from "@/lib/walking/use-walking-route";
 import type { WalkingRoute } from "@/lib/walking/route";
 import { WalkingRouteInfo } from "@/components/walking-route-info";
@@ -138,7 +136,6 @@ export function HomePage() {
   );
   const nowMs = useRouteClock();
   // The clock marks stale results; only an explicit refresh replaces a Now journey.
-  const [refreshVersion, setRefreshVersion] = useState(0);
 
   // Restore place pins from shareable URL params (?oPlat/oPlng/oPlabel…).
   const [originPlaceInfo, setOriginPlaceInfo] = useState<PlaceInfo | null>(() => {
@@ -231,7 +228,7 @@ export function HomePage() {
 
   // Tick only invalidates advanced-mode routing (past transitions + plan
   // freshness); "now" keeps its historical compute-once behavior.
-  const planTick = timeMode === "now" ? 0 : nowMs;
+  const planTick = nowMs;
   // A selected time in the past is never silently clamped: the UI shows an
   // explicit "time has passed" state instead of routing from a moved instant.
   const isPastTime =
@@ -256,7 +253,7 @@ export function HomePage() {
     // never a network request inside routing).
     return findRoute(originId, destId, { isHolidayDate });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [originId, destId, loaded, isHolidayDate, timeMode, planAtMs, planTick, refreshVersion]);
+  }, [originId, destId, loaded, isHolidayDate, timeMode, planAtMs, planTick]);
 
   // Forward Now route for arrive-by comparison (classifies a null plan as
   // missed / no_service / generic without inferring from the bare null).
@@ -298,7 +295,6 @@ export function HomePage() {
   }
 
   function useNow() {
-    setRefreshVersion((version) => version + 1);
     setTimeMode("now");
     setPlanAtMs(null);
   }
@@ -470,7 +466,6 @@ function RouteView({
   // Inline travel-time card expansion (active plans start expanded).
   // Edit-time entry points expand + scroll here instead of opening a modal.
   const [timeExpanded, setTimeExpanded] = useState(() => timeMode !== "now");
-  const nowRouteStale = timeMode === "now" && !!route && isNowRouteStale(route.departedAtMs, nowMs);
   const originStationPoint = originId ? STATION_MAP.get(originId)?.location : null;
   const destStationPoint = destId ? STATION_MAP.get(destId)?.location : null;
   const originPoint = originPlaceInfo ?? originStationPoint;
@@ -670,7 +665,6 @@ function RouteView({
               onPlanAtMs={setPlanAtMs}
             />
           </div>
-          {nowRouteStale && <RouteRefreshNotice lang={lang} onRefresh={onUseNow} />}
           {originPoint && destPoint && (originPlaceInfo || destPlaceInfo || walkVerdict) && (
             <WalkingRouteInfo lang={lang}
               loading={walking.direct.loading || walking.access.loading || walking.egress.loading}
@@ -774,14 +768,6 @@ function RouteView({
             <RoutePanel
               route={route}
               lang={lang}
-              onUseDeparture={nowRouteStale ? undefined : () => {
-                // Anchor to the selected departure, not the requested
-                // start or a wall-clock-only value that loses the date.
-                const departureMs = route.departedAtMs + route.initialWaitSeconds * 1000;
-                setPlanAtMs(Math.floor(departureMs / 60_000) * 60_000);
-                setTimeMode("depart");
-                setTimeExpanded(true);
-              }}
               plan={
                 timeMode !== "now" && planAtMs !== null
                   ? { mode: timeMode, atMs: planAtMs }
