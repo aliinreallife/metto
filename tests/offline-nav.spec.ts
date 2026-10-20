@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 
 // Offline bottom-navigation: tapping static tabs while offline must open
 // them via full-document navigation (served from precache), because

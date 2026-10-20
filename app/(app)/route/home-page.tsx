@@ -470,7 +470,7 @@ function RouteView({
   const destStationPoint = destId ? STATION_MAP.get(destId)?.location : null;
   const originPoint = originPlaceInfo ?? originStationPoint;
   const destPoint = destPlaceInfo ?? destStationPoint;
-  const walking = useTripWalking(originPoint, destPoint, originStationPoint, destStationPoint);
+  const walking = useTripWalking(originPoint, destPoint, originStationPoint, destStationPoint, route);
   const walkVerdict = directWalkVerdict({
     origin: originPoint, dest: destPoint,
     sameStation: !!originId && originId === destId,

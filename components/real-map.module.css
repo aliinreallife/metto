@@ -1,0 +1,7 @@
+/* The light raster's Persian text gets a dark halo and brighter fill.
+   Apply the palette only to sized CARTO tile images. Satellite imagery,
+   metro/walking overlays, badges, controls and attribution keep their colors.
+   Keep this beside the map import so it ships with the map stylesheet. */
+.basemap :global(.leaflet-tile) {
+  filter: invert(1) grayscale(1) brightness(2.8);
+}

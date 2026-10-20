@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 
 const QA_FROM = "namayeshgah-e-shahr-e-aftab";
 const QA_TO = "aghdasiyeh";

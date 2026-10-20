@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
+import styles from "./real-map.module.css"
 import { Plus, Minus, LocateFixed, Loader2, X } from "lucide-react"
 import { LINE_COLORS } from "@/lib/metro/lines";
 import {
@@ -63,17 +64,18 @@ const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_BASEMAP_KEY
 // watermark) — far better than a blank map. Append the key only when set,
 // and never gate layer creation on it: a missing key must degrade to
 // watermarked tiles, not to zero tile layers (white/blank background).
-// Include streets and place names in the same raster tile (no extra label
-// layer or requests). CARTO controls their zoom-dependent detail and font;
-// our station/pin labels keep the app's self-hosted Vazirmatn font.
+// CARTO's dark_all raster has dark Persian text baked into dark roads.
+// Normalize the labeled light palette to dark in .metto-minimalist-tiles:
+// one tile layer, readable names, and the same bounded offline cache.
+// Station/pin labels keep their own self-hosted Vazirmatn styling.
 const MINIMALIST_URL = CARTO_KEY
-  ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
-  : `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png`
+  ? `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+  : `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png`
 const MINIMALIST_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
 // Fallback behind the tiles while they load (or when offline/blocked).
-// Must match the CARTO dark_matter base so minimalist mode never flashes
+// Keep the backdrop dark while the normalized tiles load, without flashing
 // the pale Leaflet/page background through tile gaps.
 export const MINIMALIST_BG = "#151515"
 
@@ -436,6 +438,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     labelsLayerRef.current = labelsLayer
 
     const minimalistLayer = L.tileLayer(MINIMALIST_URL, {
+      className: cn("metto-minimalist-tiles", styles.basemap),
       maxZoom: 20,
       attribution: MINIMALIST_ATTR,
       subdomains: "abcd",

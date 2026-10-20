@@ -100,13 +100,15 @@ hang, never a misleading empty state):
 - CARTO raster tiles the user has **actually viewed** may be retained in a
   small service-worker cache (`metto-carto-tiles`): **≤ 300 entries (LRU),
   ≤ 30 days retention**, browser Cache Storage only, never server-side.
-- Minimalist mode uses the labeled `dark_all` style: streets and place
-  names are part of each tile, so they add no separate label requests and
-  remain visible when that tile is cached offline. CARTO controls their
-  font, language and zoom-dependent detail; app-rendered station and pin
-  labels use self-hosted Vazirmatn. The previous `dark_nolabels` style is
-  still allowed for older sessions, within the same cache bounds. New
-  labeled tiles need to be viewed online once before they work offline.
+- Minimalist mode uses labeled `light_all` raster tiles with a dark palette
+  applied only to that Leaflet tile layer. This improves the baked Persian
+  label contrast while keeping one tile request per tile. The palette also
+  applies offline; raw provider images are cached. Metro/walking overlays,
+  station badges, satellite imagery and attribution retain their own colors.
+  CARTO controls the street font, language and zoom detail; app-rendered
+  station and pin labels use self-hosted Vazirmatn. Previous `dark_all` and
+  `dark_nolabels` styles remain allowed for older sessions, within the same
+  cache bounds. The new tiles need to be viewed online once to work offline.
 - Policy basis: **CARTO Basemaps Terms and Conditions** (live copy:
   `https://carto.com/legal/basemap-terms`; text verified as last updated
   **26 Aug 2026**), §9.c, which prohibits bulk downloading, server-side

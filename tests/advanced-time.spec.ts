@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 import AxeBuilder from "@axe-core/playwright";
 
 // Travel-time card: Now / at-station / arrive-by planning, expanded inline

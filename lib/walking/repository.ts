@@ -20,7 +20,15 @@ async function fetchWalkingRoute(from: WalkPoint, to: WalkPoint): Promise<unknow
     fromLat: from.lat.toFixed(5), fromLng: from.lng.toFixed(5),
     toLat: to.lat.toFixed(5), toLng: to.lng.toFixed(5),
   });
-  const response = await fetch(`/api/walking?${params}`, { signal: AbortSignal.timeout(10_000) });
+  let response: Response;
+  try {
+    response = await fetch(`/api/walking?${params}`, { signal: AbortSignal.timeout(10_000) });
+  } catch {
+    // No HTTP response means a reachability/timeout failure, not a bad pair.
+    // Pause queued legs too; cached routes are still read before this gate.
+    providerRetryAfter = Math.max(providerRetryAfter, Date.now() + 60_000);
+    throw new Error("Walking directions unavailable");
+  }
   if (!response.ok) {
     const seconds = Number(response.headers.get("Retry-After"));
     // A provider outage affects every pair, not just one key. Avoid a cascade

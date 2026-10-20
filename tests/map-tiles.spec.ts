@@ -1,16 +1,72 @@
-import { expect, test, type BrowserContext } from "@playwright/test";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 
 // Opportunistic CARTO tile cache: mocked tiles only, no live servers.
 // Verifies recently-viewed tiles are retained (bounded), served offline,
 // and that misses fail cleanly with zero Serwist `no-response` noise while
 // Esri/Nominatim stay completely uncached.
-const PNG_1PX = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+// Synthetic provider palette: light land (245) and a gray glyph fill (190).
+// Never redistribute a real provider tile as a test fixture.
+const PNG_TILE = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAEklEQVR4nGP4+vXr/3379v0HACDKBxh1s8iSAAAAAElFTkSuQmCC",
   "base64",
 );
 
 const TILE_KEY_RE =
-  /^https:\/\/[abcd]\.basemaps\.cartocdn\.com\/dark_all\/\d+\/\d+\/\d+(@2x)?\.png/;
+  /^https:\/\/[abcd]\.basemaps\.cartocdn\.com\/light_all\/\d+\/\d+\/\d+(@2x)?\.png/;
+
+async function assertReadablePalette(page: Page) {
+  const tiles = page.locator(".metto-minimalist-tiles img.leaflet-tile-loaded");
+  await expect(tiles).not.toHaveCount(0);
+  await expect.poll(() => tiles.evaluateAll((nodes) => {
+    const zoom = (node: Element) => Number(new URL((node as HTMLImageElement).src).pathname.split("/")[2]);
+    const newest = Math.max(...nodes.map(zoom));
+    // Leaflet retains old zoom levels during fade-out. Tag a current tile,
+    // rather than keeping an index that changes when old tiles are pruned.
+    for (const node of nodes) node.removeAttribute("data-contrast-probe");
+    const candidate = nodes.find((node) => {
+      const tile = node.getBoundingClientRect();
+      const map = node.closest(".leaflet-container")!.getBoundingClientRect();
+      return zoom(node) === newest && tile.x >= map.x && tile.right <= map.right &&
+        tile.y >= map.y && tile.bottom <= map.bottom;
+    });
+    candidate?.setAttribute("data-contrast-probe", "true");
+    return !!candidate;
+  }), { timeout: 10_000 }).toBe(true);
+  // Isolate the rendered tile from SVG lines/markers while sampling. This
+  // tests browser pixels, not just the presence of a CSS filter string.
+  const pane = page.locator(".leaflet-tile-pane");
+  const original = await pane.evaluate((el) => {
+    const old = (el as HTMLElement).style.zIndex;
+    (el as HTMLElement).style.zIndex = "9999";
+    return old;
+  });
+  let png: Buffer;
+  try {
+    await page.waitForTimeout(250); // Leaflet tile fade-in.
+    png = await page.locator('[data-contrast-probe="true"]').screenshot({ animations: "disabled", timeout: 10_000 });
+  } finally {
+    await pane.evaluate((el, value) => { (el as HTMLElement).style.zIndex = value; }, original);
+  }
+  const { background, glyph } = await page.evaluate(async (bytes) => {
+    const bitmap = await createImageBitmap(new Blob([new Uint8Array(bytes)], { type: "image/png" }));
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width; canvas.height = bitmap.height;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(bitmap, 0, 0);
+    function luminance(x: number) {
+      const rgb = ctx.getImageData(Math.floor(bitmap.width * x), Math.floor(bitmap.height / 2), 1, 1).data;
+      const linear = Array.from(rgb).slice(0, 3).map((v) => {
+        const s = v / 255;
+        return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      });
+      return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+    }
+    return { background: luminance(0.125), glyph: luminance(0.875) };
+  }, Array.from(png));
+  expect(background).toBeLessThan(0.1);
+  expect((glyph + 0.05) / (background + 0.05)).toBeGreaterThanOrEqual(4.5);
+}
 
 async function storageUsage(page: {
   evaluate: <T>(fn: () => Promise<T> | T) => Promise<T>;
@@ -94,7 +150,7 @@ test.describe("CARTO opportunistic tile cache", () => {
   });
 
   test.beforeEach(async ({ context }: { context: BrowserContext }) => {
-    // Mock every CARTO tile with a 1px PNG served with real CORS headers
+    // Mock every CARTO tile with a synthetic PNG and real CORS headers
     // (mirrors the live CDN's Access-Control-Allow-Origin: *): realistic
     // headers, zero live use.
     await context.route("https://*.basemaps.cartocdn.com/**", (route) =>
@@ -102,7 +158,7 @@ test.describe("CARTO opportunistic tile cache", () => {
         status: 200,
         contentType: "image/png",
         headers: { "Access-Control-Allow-Origin": "*" },
-        body: PNG_1PX,
+        body: PNG_TILE,
       }),
     );
   });
@@ -112,6 +168,7 @@ test.describe("CARTO opportunistic tile cache", () => {
   }) => {
     const swErrors: string[] = [];
     const page = await context.newPage();
+    await page.addInitScript(() => localStorage.setItem("metto.mapSaveNoticeSeen", "1"));
     page.on("console", (msg) => {
       const text = msg.text();
       if (/no-response|workbox/i.test(text) && !text.includes("[metto Offline]")) {
@@ -147,7 +204,7 @@ test.describe("CARTO opportunistic tile cache", () => {
     // valid ACAO header this fetch would reject instead).
     const cdnCors = await page.evaluate(async () => {
       const res = await fetch(
-        "https://a.basemaps.cartocdn.com/dark_all/11/1315/806.png",
+        "https://a.basemaps.cartocdn.com/light_all/11/1315/806.png",
       );
       return { status: res.status, type: res.type };
     });
@@ -182,8 +239,15 @@ test.describe("CARTO opportunistic tile cache", () => {
     expect(entries.some((e) => e.type === "opaque")).toBe(false);
     // Prove the worker used our mock, rather than silently reaching the
     // live CDN (which could otherwise make this test pass on CI).
-    expect(entries.every((e) => e.bytes === PNG_1PX.byteLength)).toBe(true);
+    expect(entries.every((e) => e.bytes === PNG_TILE.byteLength)).toBe(true);
     expect(await foreignCachedUrls(page)).toEqual([]);
+    for (const colorScheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme });
+      await assertReadablePalette(page);
+    }
+    // Camera changes live in component state, not the URL. Reopen the
+    // area/zoom just viewed, rather than an uncached default zoom level.
+    const offlineUrl = new URL("/map?map=35.7,51.38,13", page.url()).href;
 
     const after = await storageUsage(page);
     console.log(
@@ -207,7 +271,7 @@ test.describe("CARTO opportunistic tile cache", () => {
         swErrors.push(`offline:${msg.type()}: ${text.slice(0, 220)}`);
       }
     });
-    await offlinePage.goto("/map", { waitUntil: "domcontentloaded" });
+    await offlinePage.goto(offlineUrl, { waitUntil: "domcontentloaded" });
     await expect(
       offlinePage.locator('[aria-label="Metro on real map"]'),
     ).toBeVisible({ timeout: 30_000 });
@@ -232,6 +296,7 @@ test.describe("CARTO opportunistic tile cache", () => {
       urls[0],
     );
     expect(cachedLoads).toBe(true);
+    await assertReadablePalette(offlinePage);
 
     // Uncached tile offline: exercise the same image-destination worker
     // route as Leaflet. Worker network failures are mocked above, so this
@@ -243,7 +308,7 @@ test.describe("CARTO opportunistic tile cache", () => {
           img.crossOrigin = "anonymous";
           img.onload = () => resolve(true);
           img.onerror = () => resolve(false);
-          img.src = "https://a.basemaps.cartocdn.com/dark_all/18/1/1.png";
+          img.src = "https://a.basemaps.cartocdn.com/light_all/18/1/1.png";
         }),
     );
     expect(miss).toBe(false);

@@ -1,4 +1,5 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 import fs from "node:fs";
 import path from "node:path";
 

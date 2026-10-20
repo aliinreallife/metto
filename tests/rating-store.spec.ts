@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { networkSafeTest as test } from "./helpers/walking";
 
 /**
  * Browser tests emulate only the native launch parameters supplied by the

@@ -5,6 +5,7 @@ import { useConnectivity } from "../offline/use-connectivity";
 import { haversineKm, estimateWalkMinutes } from "../geo";
 import { getWalkingRoute, type WalkResult } from "./repository";
 import { walkingKey, type WalkPoint } from "./route";
+import { shouldRequestDirectWalk, type WalkingMetroPlan } from "./request-policy";
 
 export function useWalkingRoute(from: WalkPoint | null | undefined, to: WalkPoint | null | undefined) {
   const { online } = useConnectivity();
@@ -31,8 +32,10 @@ export function useWalkingRoute(from: WalkPoint | null | undefined, to: WalkPoin
 }
 
 export function useTripWalking(origin: WalkPoint | null | undefined, dest: WalkPoint | null | undefined,
-  originStation: WalkPoint | null | undefined, destStation: WalkPoint | null | undefined) {
-  const direct = useWalkingRoute(origin, dest);
+  originStation: WalkPoint | null | undefined, destStation: WalkPoint | null | undefined,
+  metro: WalkingMetroPlan) {
+  const requestDirect = shouldRequestDirectWalk(origin, dest, originStation, destStation, metro);
+  const direct = useWalkingRoute(requestDirect ? origin : null, requestDirect ? dest : null);
   const sameStation = !!originStation && !!destStation &&
     originStation.lat === destStation.lat && originStation.lng === destStation.lng;
   // A same-station journey is a direct walk; do not spend two extra requests
