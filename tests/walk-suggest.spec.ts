@@ -56,7 +56,8 @@ test.describe("walk suggestion", () => {
   });
 
   test("verified short walking routes are also suggested on the map", async ({ page }) => {
-    await page.clock.setFixedTime(new Date("2026-09-07T10:00:00+03:30"));
+    // The walking fixture timestamps routes at the current time; keep the
+    // browser clock aligned so the client accepts the response as fresh.
     await page.goto("/map?from=saadi&to=mellat", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("walk-suggest")).toContainText("احتمالاً پیاده‌روی سریع‌تر است", { timeout: 15_000 });
     await expect(page.locator("path.metto-walking-path")).toHaveCount(1);
