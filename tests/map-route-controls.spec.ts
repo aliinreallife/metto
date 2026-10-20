@@ -269,9 +269,33 @@ test.describe("map route controls", () => {
       waitUntil: "domcontentloaded",
     });
     await mapReady(page);
-    const dot = page.locator(".metro-station-dot").first();
-    await expect(dot).toBeAttached({ timeout: 15_000 });
-    await dot.click({ force: true });
+    const dots = page.locator(".metro-station-dot");
+    await expect(dots.first()).toBeAttached({ timeout: 15_000 });
+    // First in DOM order may be clipped outside the Leaflet viewport.
+    // Pick a visible, unobstructed dot instead of forcing an offscreen click.
+    const viewport = await page.locator('[aria-label="Metro on real map"]').boundingBox();
+    expect(viewport).toBeTruthy();
+    const index = await dots.evaluateAll((nodes, box) => {
+      let bestIndex = -1;
+      let bestDistance = Infinity;
+      nodes.forEach((node, i) => {
+        const b = node.getBoundingClientRect();
+        const x = b.left + b.width / 2;
+        const y = b.top + b.height / 2;
+        if (x < box.x + 40 || x > box.x + box.width - 40 ||
+            y < box.y + 60 || y > box.y + box.height - 60) return;
+        const target = document.elementFromPoint(x, y);
+        if (target !== node && !node.contains(target)) return;
+        const distance = Math.hypot(x - (box.x + box.width / 2), y - (box.y + box.height / 2));
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = i;
+        }
+      });
+      return bestIndex;
+    }, viewport!);
+    expect(index).toBeGreaterThanOrEqual(0);
+    await dots.nth(index).click();
 
     await expect(page.getByTestId("map-station-card")).toBeVisible({
       timeout: 15_000,
