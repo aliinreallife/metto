@@ -17,8 +17,9 @@ describe("walking request policy", () => {
   it("waits for a usable metro plan instead of firing during schedule loading", () => {
     expect(shouldRequestDirectWalk(a, b, a, b, null)).toBe(false);
   });
-  it("still requests walking candidates when a metro detour or transfer makes walking competitive", () => {
-    expect(shouldRequestDirectWalk(a, b, a, b, plan(80 * 60))).toBe(true);
+  it("still requests short walking candidates when a metro detour makes walking competitive", () => {
+    const nearby = { lat: a.lat + 0.005, lng: a.lng };
+    expect(shouldRequestDirectWalk(a, nearby, a, nearby, plan(80 * 60))).toBe(true);
   });
   it("keeps borderline walks: brisk screening is more generous than the normal 5 km/h estimate", () => {
     const nearby = { lat: 35.71, lng: a.lng };

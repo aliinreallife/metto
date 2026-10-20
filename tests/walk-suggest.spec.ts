@@ -100,14 +100,6 @@ test.describe("walk suggestion", () => {
     await expect(card).toContainText("۲ دقیقه");
   });
 
-  test("a failed street request never claims walking beats the metro", async ({ page }) => {
-    // Use a page-level route override to exercise the missing-geometry state.
-    await unavailableWalkingApi(page);
-    await page.goto("/route?from=saadi&to=mellat");
-    await expect(page.getByTestId("route-summary-stats")).toBeVisible();
-    await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
-  });
-
   test("long same-station walks suggest another transport option", async ({ page }) => {
     await page.goto("/route?from=chitgar&to=chitgar&op=35.7265,51.2427,Origin&dp=35.7500,51.2427,Destination");
     await expect(page.getByTestId("walk-suggest")).toContainText("شاید وسیلهٔ دیگری مناسب‌تر باشد");
@@ -156,4 +148,11 @@ test.describe("walk suggestion", () => {
     await page.waitForTimeout(3_000);
     await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
   });
+});
+
+test("a failed street request never claims walking beats the metro", async ({ page }) => {
+  await unavailableWalkingApi(page);
+  await page.goto("/route?from=saadi&to=mellat");
+  await expect(page.getByTestId("route-summary-stats")).toBeVisible();
+  await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
 });
