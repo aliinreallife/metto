@@ -672,11 +672,17 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleLabels is an imperative Leaflet helper (new identity every render); the listed inputs are the real triggers.
   }, [edges, route, routeStations, routeEdgeKeys, originId, destId, selectedId, isFa, onSelect, deemphasizeMetro])
 
-  // Fit to the route bounds when it changes (no place pins: keep old behavior).
+  // Recomputed live timetables must never recenter a map the user has panned.
+  const lastRouteFitRef = useRef<string | null>(null)
+  const lastPlaceFitRef = useRef<string | null>(null)
+  // Fit when the actual path changes, not whenever its departure minute changes.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !route || route.path.length === 0) return
     if (placeMarkers && placeMarkers.length > 0) return
+    const fitKey = route.path.join("|")
+    if (lastRouteFitRef.current === fitKey) return
+    lastRouteFitRef.current = fitKey
     const pts = route.path
       .map((id) => STATION_MAP.get(id))
       .filter(Boolean)
@@ -742,10 +748,14 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       }
     }
 
-    if (pts.length === 1) {
-      map.setView(pts[0], 14)
-    } else if (pts.length > 1) {
-      map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
+    const fitKey = JSON.stringify({ places: placeMarkers?.map((p) => [p.lat, p.lng, p.stationId, p.role]), path: route?.path, walk: directWalk ? [directWalk.from, directWalk.to] : null })
+    if (lastPlaceFitRef.current !== fitKey) {
+      lastPlaceFitRef.current = fitKey
+      if (pts.length === 1) {
+        map.setView(pts[0], 14)
+      } else if (pts.length > 1) {
+        map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
+      }
     }
   }, [placeMarkers, route, directWalk, walkingPaths])
 
