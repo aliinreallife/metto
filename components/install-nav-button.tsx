@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Download, Share, X } from "lucide-react";
+import { IosInstallGuide } from "@/components/ios-install-guide";
+import type { Lang } from "@/lib/i18n";
 import { isTwaPackageInstalled } from "@/lib/twa";
 import {
   isIosDevice,
@@ -19,8 +21,7 @@ export function resolveInstallHeaderAction(isIos: boolean): InstallHeaderAction 
 
 type Props = {
   label: string;
-  iosGuideTitle: string;
-  iosGuideSteps: string;
+  lang: Lang;
   closeLabel: string;
 };
 
@@ -29,8 +30,7 @@ const buttonClass =
 
 export function InstallNavButton({
   label,
-  iosGuideTitle,
-  iosGuideSteps,
+  lang,
   closeLabel,
 }: Props) {
   const [platform, setPlatform] = useState<"unknown" | "ios" | "other">("unknown");
@@ -38,7 +38,7 @@ export function InstallNavButton({
   const [isStandalone, setIsStandalone] = useState(false);
   const [twaInstalled, setTwaInstalled] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,14 +81,13 @@ export function InstallNavButton({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setGuideOpen(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    requestAnimationFrame(() => closeRef.current?.focus());
+    // Native modal semantics keep keyboard focus inside and make the
+    // background inert. showModal also handles Escape and focus restoration.
+    const dialog = dialogRef.current;
+    dialog?.showModal();
 
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
+      dialog?.close();
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus();
     };
@@ -122,64 +121,42 @@ export function InstallNavButton({
   const guidePortal =
     guideOpen && typeof document !== "undefined"
       ? createPortal(
-          <div
-            className="fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-black/50"
-            style={{
-              paddingTop: "max(1rem, env(safe-area-inset-top))",
-              paddingRight: "max(1rem, env(safe-area-inset-right))",
-              paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
-              paddingLeft: "max(1rem, env(safe-area-inset-left))",
+          <dialog
+            ref={dialogRef}
+            aria-labelledby="ios-install-guide-title"
+            onClose={() => setGuideOpen(false)}
+            onCancel={(event) => {
+              event.preventDefault();
+              setGuideOpen(false);
             }}
-            onClick={() => setGuideOpen(false)}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setGuideOpen(false);
+            }}
+            className="m-auto w-[calc(100%-2rem)] max-w-sm overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/50"
+            style={{
+              maxHeight: "calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))",
+            }}
           >
-            <div className="flex min-h-full items-center justify-center">
-              <div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="ios-install-guide-title"
-                aria-describedby="ios-install-guide-steps"
-                className="relative w-full max-w-sm overflow-y-auto rounded-2xl border border-border bg-card p-5 text-foreground shadow-2xl"
-                style={{
-                  maxHeight:
-                    "calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))",
-                }}
-                onClick={(event) => event.stopPropagation()}
+            <div className="relative p-5 sm:p-6">
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setGuideOpen(false)}
+                aria-label={closeLabel}
+                className="absolute end-2 top-2 flex size-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
-                <button
-                  ref={closeRef}
-                  type="button"
-                  onClick={() => setGuideOpen(false)}
-                  aria-label={closeLabel}
-                  className="absolute end-3 top-3 flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <X className="size-5" />
-                </button>
-
-                <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                  <Share className="size-5" />
-                </div>
-                <h2
-                  id="ios-install-guide-title"
-                  className="mt-4 pe-10 text-lg font-bold"
-                >
-                  {iosGuideTitle}
-                </h2>
-                <p
-                  id="ios-install-guide-steps"
-                  className="mt-2 text-sm leading-7 text-muted-foreground"
-                >
-                  {iosGuideSteps}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setGuideOpen(false)}
-                  className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
-                >
-                  {closeLabel}
-                </button>
-              </div>
+                <X className="size-5" aria-hidden="true" />
+              </button>
+              <IosInstallGuide lang={lang} titleId="ios-install-guide-title" headingLevel={2} />
+              <button
+                type="button"
+                onClick={() => setGuideOpen(false)}
+                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                {closeLabel}
+              </button>
             </div>
-          </div>,
+          </dialog>,
           document.body,
         )
       : null;

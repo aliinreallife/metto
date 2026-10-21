@@ -14,6 +14,8 @@ import {
 import { WELCOME_CONTENT } from "../content";
 import { cn } from "@/lib/utils";
 import { Reveal } from "./Reveal";
+import { isIosDevice } from "@/components/pwa";
+import { IosInstallGuide } from "@/components/ios-install-guide";
 import {
   ArrowIcon,
   BagIcon,
@@ -77,6 +79,7 @@ export function PwaStrip() {
   // This browser installed the PWA before (our own memory — see
   // install-status.ts for why the browser itself can't always tell us).
   const [remembered, setRemembered] = useState(false);
+  const [isIos, setIsIos] = useState(false);
 
   // First-paint TWA suppression (see the stores block below): the sync
   // wrapper signal (android-app referrer, ?twa=android launcher param, or
@@ -94,6 +97,7 @@ export function PwaStrip() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount hydration from browser-only APIs (display-mode/localStorage); initializers would crash on the server or hydrate mismatched UI.
     setPwaStandalone(isStandalone());
+    setIsIos(isIosDevice(navigator.userAgent, navigator.platform, navigator.maxTouchPoints));
     setRemembered(readRememberedInstall());
     const onPrompt = (e: Event) => {
       e.preventDefault();
@@ -150,6 +154,7 @@ export function PwaStrip() {
   });
   const showBadge = shouldShowInstallBadge(status);
   const showButton = shouldShowPwaButton(status);
+  const showIosGuide = isIos && !pwaStandalone && !installedEvent && !inTwa;
   const badgeTitle =
     status === "in-twa"
       ? t.installedTwa
@@ -225,7 +230,7 @@ export function PwaStrip() {
                 {badgeTitle}
               </span>
             )}
-            {showButton && (
+            {showButton && !isIos && (
               <button
                 type="button"
                 onClick={install}
@@ -250,30 +255,41 @@ export function PwaStrip() {
               {heroCta}
             </Link>
           </div>
-          <p id="pwa-install-hint" className="mt-2.5 max-w-xl text-[11px] leading-5 text-muted-foreground">{hintLine}</p>
-          <p className="mt-2 flex max-w-xl items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
-            <OfflineIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-            {t.sameApp}
-          </p>
-          <details className="group mt-2.5 max-w-xl">
-            <summary className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline">
-              {t.hintTitle}
-            </summary>
-            <div className="mt-2 rounded-lg border border-border bg-card p-3">
-              <ol className="list-decimal space-y-1 ps-5 text-[11px] leading-5 text-muted-foreground">
-                {t.steps.map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
-              <p className="mt-2 border-t border-border pt-2 text-[11px] leading-5 text-muted-foreground/80">
-                {t.detectionNote}
+          {showIosGuide && (
+            <section aria-labelledby="landing-ios-install-title" className="mt-6 max-w-xl rounded-2xl border border-primary/25 bg-card p-5 shadow-sm sm:p-6">
+              <IosInstallGuide lang={lang} titleId="landing-ios-install-title" />
+            </section>
+          )}
+          {!showIosGuide && (
+            <p id="pwa-install-hint" className="mt-2.5 max-w-xl text-[11px] leading-5 text-muted-foreground">{hintLine}</p>
+          )}
+          {!isIos && (
+            <>
+              <p className="mt-2 flex max-w-xl items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
+                <OfflineIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                {t.sameApp}
               </p>
-            </div>
-          </details>
+              <details className="group mt-2.5 max-w-xl">
+                <summary className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline">
+                  {t.hintTitle}
+                </summary>
+                <div className="mt-2 rounded-lg border border-border bg-card p-3">
+                  <ol className="list-decimal space-y-1 ps-5 text-[11px] leading-5 text-muted-foreground">
+                    {t.steps.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
+                  <p className="mt-2 border-t border-border pt-2 text-[11px] leading-5 text-muted-foreground/80">
+                    {t.detectionNote}
+                  </p>
+                </div>
+              </details>
+            </>
+          )}
         </Reveal>
 
         {/* Alternate-distribution block (direct APK, Myket, …): shown to
-            normal browser/PWA visitors only. Inside the Android wrapper
+            non-iOS browser/PWA visitors only. Inside the Android wrapper
             (TWA) it is suppressed — store guidelines prohibit pointing
             users at competing distribution channels from inside a
             store-installed app — while the web/PWA install path above is
@@ -281,7 +297,7 @@ export function PwaStrip() {
             flashes. Merely having the wrapper installed while browsing
             (twaOnDevice) does NOT hide it: that is still the normal
             website. */}
-        {!inTwa && (
+        {!inTwa && !isIos && (
         <Reveal delay={60}>
           <div className="mt-8">
             <div className="flex flex-wrap items-baseline justify-between gap-2">

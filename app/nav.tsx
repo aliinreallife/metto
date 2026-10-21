@@ -220,8 +220,7 @@ export function AppNav() {
         <div className="flex items-center gap-2 md:gap-3">
           <InstallNavButton
             label={t.install}
-            iosGuideTitle={t.installIosHint}
-            iosGuideSteps={t.installIosSteps}
+            lang={lang}
             closeLabel={t.close}
           />
           <button

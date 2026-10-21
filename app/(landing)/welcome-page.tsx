@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT } from "./content";
 import { Hero } from "./components/Hero";
@@ -51,6 +51,7 @@ export function WelcomePage() {
   const { lang } = useMetro();
   const t = WELCOME_CONTENT[lang];
   const dir = lang === "fa" ? "rtl" : "ltr";
+  const scrollContainer = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -100,7 +101,9 @@ export function WelcomePage() {
       try {
         const hash = window.location.hash;
         if (!hash || hash.length <= 1) return;
-        const el = document.getElementById(hash.slice(1));
+        // During hydration recovery the previous server tree may briefly
+        // coexist with this one. Scroll this mounted page, not that old tree.
+        const el = scrollContainer.current?.querySelector(`#${CSS.escape(hash.slice(1))}`);
         if (!el) return;
         el.scrollIntoView({ behavior: "auto", block: "start" });
       } catch {
@@ -108,21 +111,25 @@ export function WelcomePage() {
       }
     };
     scrollToHash();
+    // Language restoration changes section heights, and Next can restore
+    // scroll during hydration. Reassert the explicit destination after layout.
+    const frame = window.requestAnimationFrame(scrollToHash);
     // Late assets (fonts/images) can shift layout after the first scroll;
     // re-assert once everything settled. hashchange covers in-page jumps.
     window.addEventListener("hashchange", scrollToHash);
     window.addEventListener("load", scrollToHash);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("hashchange", scrollToHash);
       window.removeEventListener("load", scrollToHash);
     };
-  }, []);
+  }, [lang]);
 
   // Block layout for the scroll container (not flex): children stack at
   // content height and this container scrolls. A flex column here would
   // starve <main> of height and shrink its overflow-hidden sections to zero.
   return (
-    <div dir={dir} className="min-h-0 flex-1 overflow-y-auto bg-background pb-[env(safe-area-inset-bottom)] text-foreground">
+    <div ref={scrollContainer} dir={dir} className="min-h-0 flex-1 overflow-y-auto bg-background pb-[env(safe-area-inset-bottom)] text-foreground">
       {/* Synchronous pre-paint redirect: old ?from/to links and the
           returning-visitor flag ("route.seen") both land on /route BEFORE
           first paint, so there is no flash-of-landing. Parser-blocking by
