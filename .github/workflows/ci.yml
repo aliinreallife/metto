@@ -49,6 +49,9 @@ jobs:
       - name: Check pinned Metto data snapshot
         run: pnpm metro-data:source-check
 
+      - name: Check local import tool syntax
+        run: node --check scripts/import-metto-data.mjs
+
       - name: Typecheck
         run: pnpm typecheck
 

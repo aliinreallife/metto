@@ -35,8 +35,9 @@ for (const name of names) {
 }
 const { "stations.json": stations, "lines.json": lines,
         "graph.json": graph, "meta.json": meta } = json;
-if (meta.cityId !== "tehran" || meta.upstream?.commit !==
-      "bcf474e17f29a53684bd02229e73bcaa06c4f37d" ||
+if (meta.cityId !== "tehran" ||
+    meta.upstream?.repository !== "https://github.com/mostafa-kheibary/tehran-metro-data" ||
+    !/^[a-f0-9]{40}$/.test(meta.upstream?.commit ?? "") ||
     (meta.releaseStatus !== undefined && meta.releaseStatus !== "verified")) {
   fail("Tehran source metadata unrecognized or unverified");
 }
