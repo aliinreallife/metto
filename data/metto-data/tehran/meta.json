@@ -1,0 +1,22 @@
+{
+  "cityId": "tehran",
+  "datasetVersion": "2026.10.22",
+  "generatedAt": "2026-09-11T14:35:21.093Z",
+  "importer": "importers/tehran.ts",
+  "upstream": {
+    "repository": "https://github.com/mostafa-kheibary/tehran-metro-data",
+    "commit": "bcf474e17f29a53684bd02229e73bcaa06c4f37d",
+    "file": "upstream-tehran-metro/data/stations.json"
+  },
+  "counts": {
+    "stations": 151,
+    "lines": 7,
+    "routes": 9,
+    "segments": 163,
+    "transfers": 2,
+    "cities": 1,
+    "agencies": 1,
+    "networks": 1
+  },
+  "contributorIds": []
+}

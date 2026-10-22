@@ -46,6 +46,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Check pinned Metto data snapshot
+        run: pnpm metro-data:source-check
+
       - name: Typecheck
         run: pnpm typecheck
 

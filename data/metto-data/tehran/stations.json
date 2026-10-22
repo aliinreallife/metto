@@ -1,0 +1,4231 @@
+[
+  {
+    "id": "tehran:station:tajrish",
+    "cityId": "tehran",
+    "names": {
+      "fa": "تجریش",
+      "en": "Tajrish"
+    },
+    "location": {
+      "lat": 35.80464927254761,
+      "lng": 51.43348783883829
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Tajrish"
+    }
+  },
+  {
+    "id": "tehran:station:gheytariyeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "قیطریه",
+      "en": "Gheytariyeh"
+    },
+    "location": {
+      "lat": 35.79304519418441,
+      "lng": 51.435008131547185
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Gheytariyeh"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-sadr",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید صدر",
+      "en": "Shahid Sadr"
+    },
+    "location": {
+      "lat": 35.78517256576695,
+      "lng": 51.435841867673915
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Sadr"
+    }
+  },
+  {
+    "id": "tehran:station:qolhak",
+    "cityId": "tehran",
+    "names": {
+      "fa": "قلهک",
+      "en": "Qolhak"
+    },
+    "location": {
+      "lat": 35.772803086807926,
+      "lng": 51.43794821185644
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Qolhak"
+    }
+  },
+  {
+    "id": "tehran:station:doctor-shariati",
+    "cityId": "tehran",
+    "names": {
+      "fa": "دکتر شریعتی",
+      "en": "Doctor Shariati"
+    },
+    "location": {
+      "lat": 35.76267935499542,
+      "lng": 51.44424182534614
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Doctor Shariati"
+    }
+  },
+  {
+    "id": "tehran:station:mirdamad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میرداماد",
+      "en": "Mirdamad"
+    },
+    "location": {
+      "lat": 35.75982627256205,
+      "lng": 51.433819296509455
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Mirdamad"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-haghani",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید حقانی",
+      "en": "Shahid Haghani"
+    },
+    "location": {
+      "lat": 35.75627557912093,
+      "lng": 51.42661575418256
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Haghani"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-hemmat",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید همت",
+      "en": "Shahid Hemmat"
+    },
+    "location": {
+      "lat": 35.748052365109096,
+      "lng": 51.425991738835656
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Hemmat"
+    }
+  },
+  {
+    "id": "tehran:station:mosalla-ye-imam-khomeini",
+    "cityId": "tehran",
+    "names": {
+      "fa": "مصلی امام خمینی",
+      "en": "Mosalla-ye Imam Khomeini"
+    },
+    "location": {
+      "lat": 35.74046332086735,
+      "lng": 51.427096058695945
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Mosalla-ye Imam Khomeini"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-beheshti",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید بهشتی",
+      "en": "Shahid Beheshti"
+    },
+    "location": {
+      "lat": 35.730966425953845,
+      "lng": 51.42707272534462
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": true,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Beheshti"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-mofattah",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید مفتح",
+      "en": "Shahid Mofattah"
+    },
+    "location": {
+      "lat": 35.7245795929327,
+      "lng": 51.42783745418104
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Mofattah"
+    }
+  },
+  {
+    "id": "tehran:station:ayatollah-taleghani",
+    "cityId": "tehran",
+    "names": {
+      "fa": "آیت‌الله طالقانی",
+      "en": "Ayatollah Taleghani"
+    },
+    "location": {
+      "lat": 35.70745447349628,
+      "lng": 51.42549816356315
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": null,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Ayatollah Taleghani"
+    }
+  },
+  {
+    "id": "tehran:station:darvazeh-dolat",
+    "cityId": "tehran",
+    "names": {
+      "fa": "دروازه دولت",
+      "en": "Darvazeh Dolat"
+    },
+    "location": {
+      "lat": 35.70178021056275,
+      "lng": 51.425749525343356
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": true,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Darvazeh Dolat"
+    }
+  },
+  {
+    "id": "tehran:station:saadi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "سعدی",
+      "en": "Sa'adi"
+    },
+    "location": {
+      "lat": 35.69333496668028,
+      "lng": 51.42453935232323
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Sa'adi"
+    }
+  },
+  {
+    "id": "tehran:station:imam-khomeini",
+    "cityId": "tehran",
+    "names": {
+      "fa": "امام خمینی",
+      "en": "Imam Khomeini"
+    },
+    "location": {
+      "lat": 35.68552517258591,
+      "lng": 51.41988539650591
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": true,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Imam Khomeini"
+    }
+  },
+  {
+    "id": "tehran:station:panzdah-e-khordad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "پانزده خرداد",
+      "en": "Panzdah-e Khordad"
+    },
+    "location": {
+      "lat": 35.67800327258833,
+      "lng": 51.41753379650562
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Panzdah-e Khordad"
+    }
+  },
+  {
+    "id": "tehran:station:khayyam",
+    "cityId": "tehran",
+    "names": {
+      "fa": "خیام",
+      "en": "Khayyam"
+    },
+    "location": {
+      "lat": 35.673200056951956,
+      "lng": 51.416903425342056
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Khayyam"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-mohammadiyeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان محمدیه",
+      "en": "Meydan-e Mohammadiyeh"
+    },
+    "location": {
+      "lat": 35.66823308587964,
+      "lng": 51.4160060658123
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Mohammadiyeh"
+    }
+  },
+  {
+    "id": "tehran:station:shoush",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شوش",
+      "en": "Shoush"
+    },
+    "location": {
+      "lat": 35.657419184572184,
+      "lng": 51.41413394685172
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shoush"
+    }
+  },
+  {
+    "id": "tehran:station:payaneh-jonoub-jonoub-terminal",
+    "cityId": "tehran",
+    "names": {
+      "fa": "پایانه جنوبی",
+      "en": "Payaneh Jonoub(Jonoub Terminal)"
+    },
+    "location": {
+      "lat": 35.65076177259719,
+      "lng": 51.416637846256535
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Payaneh Jonoub(Jonoub Terminal)"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-bokharaei",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید بخارایی",
+      "en": "Shahid Bokharaei"
+    },
+    "location": {
+      "lat": 35.640656695868415,
+      "lng": 51.414943338696624
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Bokharaei"
+    }
+  },
+  {
+    "id": "tehran:station:aliabad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "علی‌آباد",
+      "en": "Aliabad"
+    },
+    "location": {
+      "lat": 35.629762515281406,
+      "lng": 51.41611118115705
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Aliabad"
+    }
+  },
+  {
+    "id": "tehran:station:javanmard-e-ghassab",
+    "cityId": "tehran",
+    "names": {
+      "fa": "جوانمرد قصاب",
+      "en": "Javanmard-e Ghassab"
+    },
+    "location": {
+      "lat": 35.60993278245109,
+      "lng": 51.419522067666
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Javanmard-e Ghassab"
+    }
+  },
+  {
+    "id": "tehran:station:shahr-e-rey",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهر ری",
+      "en": "Shahr-e Rey"
+    },
+    "location": {
+      "lat": 35.59472807905189,
+      "lng": 51.42233516766524
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahr-e Rey"
+    }
+  },
+  {
+    "id": "tehran:station:palayeshgah",
+    "cityId": "tehran",
+    "names": {
+      "fa": "پالایشگاه",
+      "en": "Palayeshgah"
+    },
+    "location": {
+      "lat": 35.55974358258574,
+      "lng": 51.3994788965002
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": true,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Palayeshgah"
+    }
+  },
+  {
+    "id": "tehran:station:shahed-baghershahr",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شاهد - باقرشهر",
+      "en": "Shahed - BagherShahr"
+    },
+    "location": {
+      "lat": 35.54699212568495,
+      "lng": 51.38257987565447
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": true,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahed - BagherShahr"
+    }
+  },
+  {
+    "id": "tehran:station:namayeshgah-e-shahr-e-aftab",
+    "cityId": "tehran",
+    "names": {
+      "fa": "نمایشگاه شهر آفتاب",
+      "en": "Namayeshgah-e Shahr-e Aftab"
+    },
+    "location": {
+      "lat": 35.53987425194572,
+      "lng": 51.349153496499326
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Namayeshgah-e Shahr-e Aftab"
+    }
+  },
+  {
+    "id": "tehran:station:vavan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "واوان",
+      "en": "Vavan"
+    },
+    "location": {
+      "lat": 35.514507,
+      "lng": 51.30011
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "under_construction",
+    "sourceKeys": {
+      "upstreamKey": "Vavan"
+    }
+  },
+  {
+    "id": "tehran:station:emam-khomeini-airport",
+    "cityId": "tehran",
+    "names": {
+      "fa": "فرودگاه امام خمینی",
+      "en": "Emam Khomeini Airport"
+    },
+    "location": {
+      "lat": 35.406838494162756,
+      "lng": 51.154226667656715
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": true,
+      "coffeeShop": true,
+      "fastFood": true,
+      "groceryStore": true,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Emam Khomeini Airport"
+    }
+  },
+  {
+    "id": "tehran:station:shahr-e-parand",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهر پرند",
+      "en": "Shahr-e Parand"
+    },
+    "location": {
+      "lat": 35.46441271365459,
+      "lng": 50.976677065935476
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahr-e Parand"
+    }
+  },
+  {
+    "id": "tehran:station:holy-shrine-of-imam-khomeini",
+    "cityId": "tehran",
+    "names": {
+      "fa": "حرم مطهر امام خمینی",
+      "en": "Holy Shrine of Imam Khomeini"
+    },
+    "location": {
+      "lat": 35.54518486863606,
+      "lng": 51.373194344395415
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Holy Shrine of Imam Khomeini"
+    }
+  },
+  {
+    "id": "tehran:station:kahrizak",
+    "cityId": "tehran",
+    "names": {
+      "fa": "کهریزک",
+      "en": "Kahrizak"
+    },
+    "location": {
+      "lat": 35.521557736592776,
+      "lng": 51.36925401927023
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Kahrizak"
+    }
+  },
+  {
+    "id": "tehran:station:farhangsara",
+    "cityId": "tehran",
+    "names": {
+      "fa": "فرهنگسرا",
+      "en": "Farhangsara"
+    },
+    "location": {
+      "lat": 35.73000736469926,
+      "lng": 51.54689530764591
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Farhangsara"
+    }
+  },
+  {
+    "id": "tehran:station:tehranpars",
+    "cityId": "tehran",
+    "names": {
+      "fa": "تهرانپارس",
+      "en": "Tehranpars"
+    },
+    "location": {
+      "lat": 35.731032252220864,
+      "lng": 51.53174534920288
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Tehranpars"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-bagheri",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید باقری",
+      "en": "Shahid Bagheri"
+    },
+    "location": {
+      "lat": 35.73310824018062,
+      "lng": 51.516413791466555
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": true,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Bagheri"
+    }
+  },
+  {
+    "id": "tehran:station:daneshgah-e-elm-o-sanat",
+    "cityId": "tehran",
+    "names": {
+      "fa": "دانشگاه علم و صنعت",
+      "en": "Daneshgah-e Elm-o San'at"
+    },
+    "location": {
+      "lat": 35.734610428888075,
+      "lng": 51.50501472056151
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Daneshgah-e Elm-o San'at"
+    }
+  },
+  {
+    "id": "tehran:station:sarsabz",
+    "cityId": "tehran",
+    "names": {
+      "fa": "سرسبز",
+      "en": "Sarsabz"
+    },
+    "location": {
+      "lat": 35.73531978593998,
+      "lng": 51.49491362733336
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Sarsabz"
+    }
+  },
+  {
+    "id": "tehran:station:janbazan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "جانبازان",
+      "en": "Janbazan"
+    },
+    "location": {
+      "lat": 35.73342366377895,
+      "lng": 51.48459698476707
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Janbazan"
+    }
+  },
+  {
+    "id": "tehran:station:fadak",
+    "cityId": "tehran",
+    "names": {
+      "fa": "فدک",
+      "en": "Fadak"
+    },
+    "location": {
+      "lat": 35.72654128306413,
+      "lng": 51.475803967952544
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Fadak"
+    }
+  },
+  {
+    "id": "tehran:station:sabalan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "سبلان",
+      "en": "Sabalan"
+    },
+    "location": {
+      "lat": 35.718205558895995,
+      "lng": 51.46465670720315
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Sabalan"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-madani",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید مدنی",
+      "en": "Shahid Madani"
+    },
+    "location": {
+      "lat": 35.70920813139492,
+      "lng": 51.453372800456044
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Madani"
+    }
+  },
+  {
+    "id": "tehran:station:imam-hossein",
+    "cityId": "tehran",
+    "names": {
+      "fa": "امام حسین",
+      "en": "Imam Hossein"
+    },
+    "location": {
+      "lat": 35.702215852360844,
+      "lng": 51.44572070502451
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Imam Hossein"
+    }
+  },
+  {
+    "id": "tehran:station:darvazeh-shemiran",
+    "cityId": "tehran",
+    "names": {
+      "fa": "دروازه شمیران",
+      "en": "Darvazeh Shemiran"
+    },
+    "location": {
+      "lat": 35.69908634681844,
+      "lng": 51.43769983388175
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Darvazeh Shemiran"
+    }
+  },
+  {
+    "id": "tehran:station:baharistan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "بهارستان",
+      "en": "Baharistan"
+    },
+    "location": {
+      "lat": 35.69191347602845,
+      "lng": 51.432758239912324
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Baharistan"
+    }
+  },
+  {
+    "id": "tehran:station:mellat",
+    "cityId": "tehran",
+    "names": {
+      "fa": "ملت",
+      "en": "Mellat"
+    },
+    "location": {
+      "lat": 35.688484046889265,
+      "lng": 51.42682095105412
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Mellat"
+    }
+  },
+  {
+    "id": "tehran:station:hasan-abad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "حسن آباد",
+      "en": "Hasan Abad"
+    },
+    "location": {
+      "lat": 35.686415244197384,
+      "lng": 51.41012096766948
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Hasan Abad"
+    }
+  },
+  {
+    "id": "tehran:station:daneshgah-e-imam-ali",
+    "cityId": "tehran",
+    "names": {
+      "fa": "دانشگاه امام علی",
+      "en": "Daneshgah-e Imam Ali"
+    },
+    "location": {
+      "lat": 35.687225660229096,
+      "lng": 51.399424318005046
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Daneshgah-e Imam Ali"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-horr",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان حر",
+      "en": "Meydan-e Horr"
+    },
+    "location": {
+      "lat": 35.690962448655995,
+      "lng": 51.388446693930064
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Horr"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-navab-e-safavi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید نواب صفوی",
+      "en": "Shahid Navab-e Safavi"
+    },
+    "location": {
+      "lat": 35.69446218774433,
+      "lng": 51.37923331665502
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Navab-e Safavi"
+    }
+  },
+  {
+    "id": "tehran:station:shademan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شادمان",
+      "en": "Shademan"
+    },
+    "location": {
+      "lat": 35.70066539490897,
+      "lng": 51.36350496310954
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shademan"
+    }
+  },
+  {
+    "id": "tehran:station:daneshgah-e-sharif",
+    "cityId": "tehran",
+    "names": {
+      "fa": "دانشگاه شریف",
+      "en": "Daneshgah-e Sharif"
+    },
+    "location": {
+      "lat": 35.7058048453456,
+      "lng": 51.35363318140592
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Daneshgah-e Sharif"
+    }
+  },
+  {
+    "id": "tehran:station:tarasht",
+    "cityId": "tehran",
+    "names": {
+      "fa": "طرشت",
+      "en": "Tarasht"
+    },
+    "location": {
+      "lat": 35.716167999536054,
+      "lng": 51.34343870910494
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Tarasht"
+    }
+  },
+  {
+    "id": "tehran:station:tehran-sadeghiyeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "تهران (صادقیه)",
+      "en": "Tehran (Sadeghiyeh)"
+    },
+    "location": {
+      "lat": 35.717576979751065,
+      "lng": 51.33096191268742
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": true,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Tehran (Sadeghiyeh)"
+    }
+  },
+  {
+    "id": "tehran:station:qaem",
+    "cityId": "tehran",
+    "names": {
+      "fa": "قائم",
+      "en": "Qa'em"
+    },
+    "location": {
+      "lat": 35.7987685128104,
+      "lng": 51.5209879438365
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Qa'em"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-mahallati",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید محلاتی",
+      "en": "Shahid Mahallati"
+    },
+    "location": {
+      "lat": 35.79790926564732,
+      "lng": 51.5081728391952
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Mahallati"
+    }
+  },
+  {
+    "id": "tehran:station:aghdasiyeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "اقدسیه",
+      "en": "Aghdasiyeh"
+    },
+    "location": {
+      "lat": 35.80036394698206,
+      "lng": 51.483775336766335
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Aghdasiyeh"
+    }
+  },
+  {
+    "id": "tehran:station:nobonyad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "نوبنیاد",
+      "en": "Nobonyad"
+    },
+    "location": {
+      "lat": 35.790715615863185,
+      "lng": 51.47868420919925
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Nobonyad"
+    }
+  },
+  {
+    "id": "tehran:station:hossein-abad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "حسین‌آباد",
+      "en": "Hossein Abad"
+    },
+    "location": {
+      "lat": 35.778856448057304,
+      "lng": 51.478771138837
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Hossein Abad"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-heravi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان هروی",
+      "en": "Meydan-e Heravi"
+    },
+    "location": {
+      "lat": 35.77186464474175,
+      "lng": 51.47339266788893
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Heravi"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-zeynoddin",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید زین‌الدین",
+      "en": "Shahid Zeynoddin"
+    },
+    "location": {
+      "lat": 35.760523492375995,
+      "lng": 51.46548920364399
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Zeynoddin"
+    }
+  },
+  {
+    "id": "tehran:station:khajeh-abdollah-e-ansari",
+    "cityId": "tehran",
+    "names": {
+      "fa": "خواجه عبدالله انصاری",
+      "en": "Khajeh Abdollah-e Ansari"
+    },
+    "location": {
+      "lat": 35.743425883530044,
+      "lng": 51.463469815304826
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Khajeh Abdollah-e Ansari"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-sayyad-shirazi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید صیاد شیرازی",
+      "en": "Shahid Sayyad Shirazi"
+    },
+    "location": {
+      "lat": 35.73536131951541,
+      "lng": 51.458426696508255
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Sayyad Shirazi"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-ghodousi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید قدوسی",
+      "en": "Shahid Ghodousi"
+    },
+    "location": {
+      "lat": 35.73144645262075,
+      "lng": 51.44437452890492
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Ghodousi"
+    }
+  },
+  {
+    "id": "tehran:station:sohrevardi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "سهروردی",
+      "en": "Sohrevardi"
+    },
+    "location": {
+      "lat": 35.73106228632752,
+      "lng": 51.436983861080726
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Sohrevardi"
+    }
+  },
+  {
+    "id": "tehran:station:mirza-ye-shirazi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میرزا شیرازی",
+      "en": "Mirza-ye Shirazi"
+    },
+    "location": {
+      "lat": 35.728102353394476,
+      "lng": 51.41744408700073
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Mirza-ye Shirazi"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-jahad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان جهاد",
+      "en": "Meydan-e Jahad"
+    },
+    "location": {
+      "lat": 35.72060101981384,
+      "lng": 51.40821158345821
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Jahad"
+    }
+  },
+  {
+    "id": "tehran:station:teatr-e-shahr",
+    "cityId": "tehran",
+    "names": {
+      "fa": "تئاتر شهر",
+      "en": "Teatr-e Shahr"
+    },
+    "location": {
+      "lat": 35.70115619978607,
+      "lng": 51.40534185101572
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": true,
+      "fastFood": true,
+      "groceryStore": true,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Teatr-e Shahr"
+    }
+  },
+  {
+    "id": "tehran:station:moniriyeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "منیریه",
+      "en": "Moniriyeh"
+    },
+    "location": {
+      "lat": 35.681079689206186,
+      "lng": 51.40158998370889
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Moniriyeh"
+    }
+  },
+  {
+    "id": "tehran:station:mahdiyeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "مهدیه",
+      "en": "Mahdiyeh"
+    },
+    "location": {
+      "lat": 35.667066187380414,
+      "lng": 51.39929005768028
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Mahdiyeh"
+    }
+  },
+  {
+    "id": "tehran:station:rahahan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "راه آهن",
+      "en": "Rahahan"
+    },
+    "location": {
+      "lat": 35.658659693529906,
+      "lng": 51.39834374868766
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Rahahan"
+    }
+  },
+  {
+    "id": "tehran:station:javadiyeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "جوادیه",
+      "en": "Javadiyeh"
+    },
+    "location": {
+      "lat": 35.65911627746628,
+      "lng": 51.388141527579855
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Javadiyeh"
+    }
+  },
+  {
+    "id": "tehran:station:zamzam",
+    "cityId": "tehran",
+    "names": {
+      "fa": "زمزم",
+      "en": "Zamzam"
+    },
+    "location": {
+      "lat": 35.65258765923896,
+      "lng": 51.37329904910739
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Zamzam"
+    }
+  },
+  {
+    "id": "tehran:station:shahrak-e-shariaty",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهرک شریعتی",
+      "en": "Shahrak-e Shariaty"
+    },
+    "location": {
+      "lat": 35.64433913304947,
+      "lng": 51.36927744889414
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahrak-e Shariaty"
+    }
+  },
+  {
+    "id": "tehran:station:abdol-abad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "عبدل آباد",
+      "en": "Abdol Abad"
+    },
+    "location": {
+      "lat": 35.63813580890704,
+      "lng": 51.36016010714025
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Abdol Abad"
+    }
+  },
+  {
+    "id": "tehran:station:nemat-abad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "نعمت آباد",
+      "en": "Nemat Abad"
+    },
+    "location": {
+      "lat": 35.63389614355468,
+      "lng": 51.347081546602425
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Nemat Abad"
+    }
+  },
+  {
+    "id": "tehran:station:azadegan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "آزادگان",
+      "en": "Azadegan"
+    },
+    "location": {
+      "lat": 35.62732694905995,
+      "lng": 51.335490511644274
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Azadegan"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-kolahdooz",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید کلاهدوز",
+      "en": "Shahid Kolahdooz"
+    },
+    "location": {
+      "lat": 35.698258629647235,
+      "lng": 51.49985618004835
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Kolahdooz"
+    }
+  },
+  {
+    "id": "tehran:station:nirou-havaei",
+    "cityId": "tehran",
+    "names": {
+      "fa": "نیروهوایی",
+      "en": "Nirou Havaei"
+    },
+    "location": {
+      "lat": 35.69293668867253,
+      "lng": 51.488247662419106
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Nirou Havaei"
+    }
+  },
+  {
+    "id": "tehran:station:nabard",
+    "cityId": "tehran",
+    "names": {
+      "fa": "نبرد",
+      "en": "Nabard"
+    },
+    "location": {
+      "lat": 35.69159833444614,
+      "lng": 51.47746281806465
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": true,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Nabard"
+    }
+  },
+  {
+    "id": "tehran:station:piroozi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "پیروزی",
+      "en": "Piroozi"
+    },
+    "location": {
+      "lat": 35.69100756244922,
+      "lng": 51.46791847268905
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Piroozi"
+    }
+  },
+  {
+    "id": "tehran:station:ebn-e-sina",
+    "cityId": "tehran",
+    "names": {
+      "fa": "ابن سینا",
+      "en": "Ebn-e Sina"
+    },
+    "location": {
+      "lat": 35.69064287074757,
+      "lng": 51.456541439825315
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Ebn-e Sina"
+    }
+  },
+  {
+    "id": "tehran:station:ferdowsi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "فردوسی",
+      "en": "Ferdowsi"
+    },
+    "location": {
+      "lat": 35.701335063593696,
+      "lng": 51.418506516640896
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Ferdowsi"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-enghelab-e-eslami",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان انقلاب اسلامی",
+      "en": "Meydan-e Enghelab-e Eslami"
+    },
+    "location": {
+      "lat": 35.70118753104048,
+      "lng": 51.389983004854955
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": true,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Enghelab-e Eslami"
+    }
+  },
+  {
+    "id": "tehran:station:towhid",
+    "cityId": "tehran",
+    "names": {
+      "fa": "توحید",
+      "en": "Towhid"
+    },
+    "location": {
+      "lat": 35.70085257588454,
+      "lng": 51.378564150294714
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Towhid"
+    }
+  },
+  {
+    "id": "tehran:station:doctor-habibollah",
+    "cityId": "tehran",
+    "names": {
+      "fa": "دکتر حبیب‌الله",
+      "en": "Doctor Habibollah"
+    },
+    "location": {
+      "lat": 35.700688779675005,
+      "lng": 51.356038792281
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Doctor Habibollah"
+    }
+  },
+  {
+    "id": "tehran:station:ostad-moin",
+    "cityId": "tehran",
+    "names": {
+      "fa": "استاد معین",
+      "en": "Ostad Mo'in"
+    },
+    "location": {
+      "lat": 35.700121277637706,
+      "lng": 51.344610347765624
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Ostad Mo'in"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-azadi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان آزادی",
+      "en": "Meydan-e Azadi"
+    },
+    "location": {
+      "lat": 35.701162131955776,
+      "lng": 51.333326937560194
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Azadi"
+    }
+  },
+  {
+    "id": "tehran:station:bimeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "بیمه",
+      "en": "Bimeh"
+    },
+    "location": {
+      "lat": 35.69963393508256,
+      "lng": 51.320203078841026
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": true,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Bimeh"
+    }
+  },
+  {
+    "id": "tehran:station:mehrabad-airport-terminal-1-2",
+    "cityId": "tehran",
+    "names": {
+      "fa": "پایانه ۱ و ۲ فرودگاه مهرآباد",
+      "en": "Mehrabad Airport Terminal 1&2"
+    },
+    "location": {
+      "lat": 35.69582428567988,
+      "lng": 51.32412755578428
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Mehrabad Airport Terminal 1&2"
+    }
+  },
+  {
+    "id": "tehran:station:mehrabad-airport-terminal-4-6",
+    "cityId": "tehran",
+    "names": {
+      "fa": "پایانه ۴ و ۶ فرودگاه مهرآباد",
+      "en": "Mehrabad Airport Terminal 4&6"
+    },
+    "location": {
+      "lat": 35.688655093664195,
+      "lng": 51.3311217144775
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Mehrabad Airport Terminal 4&6"
+    }
+  },
+  {
+    "id": "tehran:station:shahrak-e-ekbatan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهرک اکباتان",
+      "en": "Shahrak-e Ekbatan"
+    },
+    "location": {
+      "lat": 35.70542641649221,
+      "lng": 51.3076514993387
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahrak-e Ekbatan"
+    }
+  },
+  {
+    "id": "tehran:station:allameh-jafari",
+    "cityId": "tehran",
+    "names": {
+      "fa": "علامه جعفری",
+      "en": "Allameh Jafari"
+    },
+    "location": {
+      "lat": 35.73071888431695,
+      "lng": 51.30725541293873
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Allameh Jafari"
+    }
+  },
+  {
+    "id": "tehran:station:chaharbagh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "چهارباغ",
+      "en": "Chaharbagh"
+    },
+    "location": {
+      "lat": 35.7506525742434,
+      "lng": 51.30401221869391
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": false,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "under_construction",
+    "sourceKeys": {
+      "upstreamKey": "Chaharbagh"
+    }
+  },
+  {
+    "id": "tehran:station:eram-e-sabz",
+    "cityId": "tehran",
+    "names": {
+      "fa": "ارم سبز",
+      "en": "Eram-e Sabz"
+    },
+    "location": {
+      "lat": 35.71779722200492,
+      "lng": 51.30178953947772
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": true,
+      "coffeeShop": true,
+      "fastFood": true,
+      "groceryStore": true,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Eram-e Sabz"
+    }
+  },
+  {
+    "id": "tehran:station:varzeshgah-e-azadi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "ورزشگاه آزادی",
+      "en": "Varzeshgah-e Azadi"
+    },
+    "location": {
+      "lat": 35.717234943300866,
+      "lng": 51.28403182648372
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Varzeshgah-e Azadi"
+    }
+  },
+  {
+    "id": "tehran:station:chitgar",
+    "cityId": "tehran",
+    "names": {
+      "fa": "چیتگر",
+      "en": "Chitgar"
+    },
+    "location": {
+      "lat": 35.717051515872264,
+      "lng": 51.243843136928454
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Chitgar"
+    }
+  },
+  {
+    "id": "tehran:station:iran-khodro",
+    "cityId": "tehran",
+    "names": {
+      "fa": "ایران‌خودرو",
+      "en": "Iran Khodro"
+    },
+    "location": {
+      "lat": 35.725609187647265,
+      "lng": 51.196807349845535
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Iran Khodro"
+    }
+  },
+  {
+    "id": "tehran:station:vardavard",
+    "cityId": "tehran",
+    "names": {
+      "fa": "وردآورد",
+      "en": "Vardavard"
+    },
+    "location": {
+      "lat": 35.74435836939475,
+      "lng": 51.15103133982739
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Vardavard"
+    }
+  },
+  {
+    "id": "tehran:station:garmdareh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "گرم‌دره",
+      "en": "Garmdareh"
+    },
+    "location": {
+      "lat": 35.75103678574071,
+      "lng": 51.081781876919074
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Garmdareh"
+    }
+  },
+  {
+    "id": "tehran:station:atmosphere",
+    "cityId": "tehran",
+    "names": {
+      "fa": "اتمسفر",
+      "en": "Atmosphere"
+    },
+    "location": {
+      "lat": 35.76653088007448,
+      "lng": 51.046564975722
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Atmosphere"
+    }
+  },
+  {
+    "id": "tehran:station:karaj",
+    "cityId": "tehran",
+    "names": {
+      "fa": "کرج",
+      "en": "Karaj"
+    },
+    "location": {
+      "lat": 35.78700975978792,
+      "lng": 51.00270499651076
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Karaj"
+    }
+  },
+  {
+    "id": "tehran:station:mohammadshahr",
+    "cityId": "tehran",
+    "names": {
+      "fa": "محمدشهر",
+      "en": "Mohammadshahr"
+    },
+    "location": {
+      "lat": 35.802094307718946,
+      "lng": 50.96482512274756
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Mohammadshahr"
+    }
+  },
+  {
+    "id": "tehran:station:golshahr",
+    "cityId": "tehran",
+    "names": {
+      "fa": "گلشهر",
+      "en": "Golshahr"
+    },
+    "location": {
+      "lat": 35.82487887349704,
+      "lng": 50.933065067675706
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": true,
+      "coffeeShop": true,
+      "fastFood": true,
+      "groceryStore": true,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Golshahr"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-fakhrizadeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید فخری‌زاده",
+      "en": "Shahid Fakhrizadeh"
+    },
+    "location": {
+      "lat": 35.91758,
+      "lng": 50.7911
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": false
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "__metto__:shahid-fakhrizadeh"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-sepahbod-qasem-soleimani",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید سپهبد قاسم سلیمانی",
+      "en": "Shahid Sepahbod Qasem Soleimani"
+    },
+    "location": {
+      "lat": 35.95882966952798,
+      "lng": 50.71920151458703
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Sepahbod Qasem Soleimani"
+    }
+  },
+  {
+    "id": "tehran:station:haram-e-hazrat-e-abdol-azim",
+    "cityId": "tehran",
+    "names": {
+      "fa": "حرم حضرت عبدالعظیم",
+      "en": "Haram-e Hazrat-e Abdol Azim"
+    },
+    "location": {
+      "lat": 35.5916,
+      "lng": 51.4391
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "under_construction",
+    "sourceKeys": {
+      "upstreamKey": "Haram-e Hazrat-e Abdol Azim"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-hazrat-e-abdol-azim",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان حضرت عبدالعظیم",
+      "en": "Meydan-e Hazrat-e Abdol Azim"
+    },
+    "location": {
+      "lat": 35.5935,
+      "lng": 51.4406
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "under_construction",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Hazrat-e Abdol Azim"
+    }
+  },
+  {
+    "id": "tehran:station:ebn-e-babviyeh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "ابن بابویه",
+      "en": "Ebn-e Babviyeh"
+    },
+    "location": {
+      "lat": 35.6037,
+      "lng": 51.4463
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "under_construction",
+    "sourceKeys": {
+      "upstreamKey": "Ebn-e Babviyeh"
+    }
+  },
+  {
+    "id": "tehran:station:cheshmeh-ali",
+    "cityId": "tehran",
+    "names": {
+      "fa": "چشمه علی",
+      "en": "Cheshmeh Ali"
+    },
+    "location": {
+      "lat": 35.6099,
+      "lng": 51.455
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "under_construction",
+    "sourceKeys": {
+      "upstreamKey": "Cheshmeh Ali"
+    }
+  },
+  {
+    "id": "tehran:station:shohada-ye-dowlat-abad",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهدای دولت‌آباد",
+      "en": "Shohada-ye Dowlat Abad"
+    },
+    "location": {
+      "lat": 35.618896274330154,
+      "lng": 51.46461183910625
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shohada-ye Dowlat Abad"
+    }
+  },
+  {
+    "id": "tehran:station:kiyan-shahr",
+    "cityId": "tehran",
+    "names": {
+      "fa": "کیان شهر",
+      "en": "Kiyan Shahr"
+    },
+    "location": {
+      "lat": 35.632845132735895,
+      "lng": 51.448598964280926
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Kiyan Shahr"
+    }
+  },
+  {
+    "id": "tehran:station:besat",
+    "cityId": "tehran",
+    "names": {
+      "fa": "بعثت",
+      "en": "Be'sat"
+    },
+    "location": {
+      "lat": 35.64472632973612,
+      "lng": 51.44426629272494
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Be'sat"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-rezaei",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید رضایی",
+      "en": "Shahid Rezaei"
+    },
+    "location": {
+      "lat": 35.65237572978883,
+      "lng": 51.44471695119032
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Rezaei"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-khorasan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان خراسان",
+      "en": "Meydan-e Khorasan"
+    },
+    "location": {
+      "lat": 35.66413851159522,
+      "lng": 51.445149666909494
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Khorasan"
+    }
+  },
+  {
+    "id": "tehran:station:shohada-ye-hefdah-e-shahrivar",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهدای هفده شهریور",
+      "en": "Shohada-ye Hefdah-e Shahrivar"
+    },
+    "location": {
+      "lat": 35.668382544515524,
+      "lng": 51.44541700354487
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shohada-ye Hefdah-e Shahrivar"
+    }
+  },
+  {
+    "id": "tehran:station:amirkabir",
+    "cityId": "tehran",
+    "names": {
+      "fa": "امیرکبیر",
+      "en": "Amirkabir"
+    },
+    "location": {
+      "lat": 35.682479930721314,
+      "lng": 51.44702291322249
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Amirkabir"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-shohada",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان شهدا",
+      "en": "Meydan-e Shohada"
+    },
+    "location": {
+      "lat": 35.69046819891562,
+      "lng": 51.447573991000134
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Shohada"
+    }
+  },
+  {
+    "id": "tehran:station:sarbaz",
+    "cityId": "tehran",
+    "names": {
+      "fa": "سرباز",
+      "en": "Sarbaz"
+    },
+    "location": {
+      "lat": 35.708965257212725,
+      "lng": 51.44282476747766
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Sarbaz"
+    }
+  },
+  {
+    "id": "tehran:station:bahar-shiraz-khanevadeh-hospital",
+    "cityId": "tehran",
+    "names": {
+      "fa": "بهار شیراز (بیمارستان خانواده)",
+      "en": "Bahar Shiraz (Khanevadeh Hospital)"
+    },
+    "location": {
+      "lat": 35.7122,
+      "lng": 51.4325
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Bahar Shiraz (Khanevadeh Hospital)"
+    }
+  },
+  {
+    "id": "tehran:station:shohada-ye-haftom-e-tir",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهدای هفتم تیر",
+      "en": "Shohada-ye Haftom-e Tir"
+    },
+    "location": {
+      "lat": 35.71532411227465,
+      "lng": 51.42627241803309
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shohada-ye Haftom-e Tir"
+    }
+  },
+  {
+    "id": "tehran:station:maryam-e-moghaddas",
+    "cityId": "tehran",
+    "names": {
+      "fa": "مریم مقدس (س)",
+      "en": "Maryam-e Moghaddas"
+    },
+    "location": {
+      "lat": 35.71543003739339,
+      "lng": 51.414545041430245
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Maryam-e Moghaddas"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-hazrat-vali-asr",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان حضرت ولیعصر",
+      "en": "Meydan-e Hazrat Vali Asr"
+    },
+    "location": {
+      "lat": 35.71202629383182,
+      "lng": 51.40786886120657
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Hazrat Vali Asr"
+    }
+  },
+  {
+    "id": "tehran:station:bustan-e-laleh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "بوستان لاله",
+      "en": "Bustan-e Laleh"
+    },
+    "location": {
+      "lat": 35.708172999999995,
+      "lng": 51.3908470712869
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Bustan-e Laleh"
+    }
+  },
+  {
+    "id": "tehran:station:karagar",
+    "cityId": "tehran",
+    "names": {
+      "fa": "کارگر",
+      "en": "Karagar"
+    },
+    "location": {
+      "lat": 35.71493526247226,
+      "lng": 51.38957556915313
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Karagar"
+    }
+  },
+  {
+    "id": "tehran:station:daneshgah-e-tarbiat-modarres",
+    "cityId": "tehran",
+    "names": {
+      "fa": "دانشگاه تربیت مدرس",
+      "en": "Daneshgah-e Tarbiat Modarres"
+    },
+    "location": {
+      "lat": 35.72413657282073,
+      "lng": 51.3813022329255
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Daneshgah-e Tarbiat Modarres"
+    }
+  },
+  {
+    "id": "tehran:station:shahrak-e-azmayesh",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهرک آزمایش",
+      "en": "Shahrak-e Azmayesh"
+    },
+    "location": {
+      "lat": 35.73162345726911,
+      "lng": 51.37133820553804
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahrak-e Azmayesh"
+    }
+  },
+  {
+    "id": "tehran:station:marzdaran",
+    "cityId": "tehran",
+    "names": {
+      "fa": "مرزداران",
+      "en": "Marzdaran"
+    },
+    "location": {
+      "lat": 35.73455522161478,
+      "lng": 51.35946088139418
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Marzdaran"
+    }
+  },
+  {
+    "id": "tehran:station:yadegar-e-imam",
+    "cityId": "tehran",
+    "names": {
+      "fa": "یادگار امام",
+      "en": "Yadegar-e Imam"
+    },
+    "location": {
+      "lat": 35.7349857300152,
+      "lng": 51.34616137121202
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Yadegar-e Imam"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-ashrafi-esfahani",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید اشرفی اصفهانی",
+      "en": "Shahid Ashrafi Esfahani"
+    },
+    "location": {
+      "lat": 35.73600106730899,
+      "lng": 51.33175593750171
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Ashrafi Esfahani"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-sattari",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید ستاری",
+      "en": "Shahid Sattari"
+    },
+    "location": {
+      "lat": 35.736882178757604,
+      "lng": 51.319948407717405
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Sattari"
+    }
+  },
+  {
+    "id": "tehran:station:ayatollah-kashani",
+    "cityId": "tehran",
+    "names": {
+      "fa": "آیت‌الله کاشانی",
+      "en": "Ayatollah Kashani"
+    },
+    "location": {
+      "lat": 35.74100968403951,
+      "lng": 51.30259777850838
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": false,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": false,
+      "prayerRoom": null,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Ayatollah Kashani"
+    }
+  },
+  {
+    "id": "tehran:station:shahr-e-ziba",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهر زیبا",
+      "en": "Shahr-e Ziba"
+    },
+    "location": {
+      "lat": 35.745683564857195,
+      "lng": 51.29469436724632
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahr-e Ziba"
+    }
+  },
+  {
+    "id": "tehran:station:shahran",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهران",
+      "en": "Shahran"
+    },
+    "location": {
+      "lat": 35.75395279299403,
+      "lng": 51.288140667283
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahran"
+    }
+  },
+  {
+    "id": "tehran:station:shohada-ye-kan",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهدای کن",
+      "en": "Shohada-ye Kan"
+    },
+    "location": {
+      "lat": 35.76350331872328,
+      "lng": 51.28346118280588
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shohada-ye Kan"
+    }
+  },
+  {
+    "id": "tehran:station:kouhsar",
+    "cityId": "tehran",
+    "names": {
+      "fa": "کوهسار",
+      "en": "Kouhsar"
+    },
+    "location": {
+      "lat": 35.770810717303846,
+      "lng": 51.27914785190507
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Kouhsar"
+    }
+  },
+  {
+    "id": "tehran:station:varzeshgah-e-takhti",
+    "cityId": "tehran",
+    "names": {
+      "fa": "ورزشگاه تختی",
+      "en": "Varzeshgah-e Takhti"
+    },
+    "location": {
+      "lat": 35.67082903161425,
+      "lng": 51.508351640093636
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Varzeshgah-e Takhti"
+    }
+  },
+  {
+    "id": "tehran:station:basij",
+    "cityId": "tehran",
+    "names": {
+      "fa": "بسیج",
+      "en": "Basij"
+    },
+    "location": {
+      "lat": 35.6667482543179,
+      "lng": 51.49085866766856
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Basij"
+    }
+  },
+  {
+    "id": "tehran:station:ahang",
+    "cityId": "tehran",
+    "names": {
+      "fa": "آهنگ",
+      "en": "Ahang"
+    },
+    "location": {
+      "lat": 35.66953177750175,
+      "lng": 51.47382899650526
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Ahang"
+    }
+  },
+  {
+    "id": "tehran:station:chehel-tan-e-doulab",
+    "cityId": "tehran",
+    "names": {
+      "fa": "چهل تن دولاب",
+      "en": "Chehel Tan-e Doulab"
+    },
+    "location": {
+      "lat": 35.66793780192468,
+      "lng": 51.46256923399226
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Chehel Tan-e Doulab"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-giyam",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان قیام",
+      "en": "Meydan-e Giyam"
+    },
+    "location": {
+      "lat": 35.67000475397928,
+      "lng": 51.4373240157089
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Giyam"
+    }
+  },
+  {
+    "id": "tehran:station:mowlavi",
+    "cityId": "tehran",
+    "names": {
+      "fa": "مولوی",
+      "en": "Mowlavi"
+    },
+    "location": {
+      "lat": 35.668181587846355,
+      "lng": 51.41601339759233
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Mowlavi"
+    }
+  },
+  {
+    "id": "tehran:station:helal-ahmar",
+    "cityId": "tehran",
+    "names": {
+      "fa": "هلال احمر",
+      "en": "Helal Ahmar"
+    },
+    "location": {
+      "lat": 35.66800970632861,
+      "lng": 51.38758465752482
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Helal Ahmar"
+    }
+  },
+  {
+    "id": "tehran:station:beryanak",
+    "cityId": "tehran",
+    "names": {
+      "fa": "بریانک",
+      "en": "Beryanak"
+    },
+    "location": {
+      "lat": 35.673191256951,
+      "lng": 51.3808000388323
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Beryanak"
+    }
+  },
+  {
+    "id": "tehran:station:komeyl",
+    "cityId": "tehran",
+    "names": {
+      "fa": "کمیل",
+      "en": "Komeyl"
+    },
+    "location": {
+      "lat": 35.6805029770884,
+      "lng": 51.379828288372224
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Komeyl"
+    }
+  },
+  {
+    "id": "tehran:station:roudaki",
+    "cityId": "tehran",
+    "names": {
+      "fa": "رودکی",
+      "en": "Roudaki"
+    },
+    "location": {
+      "lat": 35.687617922639255,
+      "lng": 51.37908769121558
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Roudaki"
+    }
+  },
+  {
+    "id": "tehran:station:modafean-e-salamat",
+    "cityId": "tehran",
+    "names": {
+      "fa": "مدافعان سلامت",
+      "en": "Modafean-e Salamat"
+    },
+    "location": {
+      "lat": 35.706678505970594,
+      "lng": 51.37734433897117
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Modafean-e Salamat"
+    }
+  },
+  {
+    "id": "tehran:station:boostan-e-goftegou",
+    "cityId": "tehran",
+    "names": {
+      "fa": "بوستان گفتگو",
+      "en": "Boostan-e Goftegou"
+    },
+    "location": {
+      "lat": 35.73256007254948,
+      "lng": 51.382599
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Boostan-e Goftegou"
+    }
+  },
+  {
+    "id": "tehran:station:milad-tower",
+    "cityId": "tehran",
+    "names": {
+      "fa": "برج میلاد",
+      "en": "Milad Tower"
+    },
+    "location": {
+      "lat": 35.74770719166458,
+      "lng": 51.378312966476884
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": true,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Milad Tower"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-sanat",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان صنعت",
+      "en": "Meydan-e San'at"
+    },
+    "location": {
+      "lat": 35.7544706937203,
+      "lng": 51.36739593228225
+    },
+    "amenities": {
+      "wc": false,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": true,
+      "parking": true,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e San'at"
+    }
+  },
+  {
+    "id": "tehran:station:shahid-dadman",
+    "cityId": "tehran",
+    "names": {
+      "fa": "شهید دادمان",
+      "en": "Shahid Dadman"
+    },
+    "location": {
+      "lat": 35.767048177938676,
+      "lng": 51.36612886767306
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": false,
+      "coffeeShop": false,
+      "fastFood": false,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shahid Dadman"
+    }
+  },
+  {
+    "id": "tehran:station:meydan-e-ketab",
+    "cityId": "tehran",
+    "names": {
+      "fa": "میدان کتاب",
+      "en": "Meydan-e Ketab"
+    },
+    "location": {
+      "lat": 35.77730678107591,
+      "lng": 51.35548756724749
+    },
+    "amenities": {
+      "wc": true,
+      "elevator": false,
+      "atm": true,
+      "coffeeShop": false,
+      "fastFood": true,
+      "groceryStore": false,
+      "freeWifi": false,
+      "prayerRoom": false,
+      "parking": false,
+      "police": true
+    },
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Meydan-e Ketab"
+    }
+  }
+]

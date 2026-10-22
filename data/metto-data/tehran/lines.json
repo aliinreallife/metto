@@ -1,0 +1,93 @@
+[
+  {
+    "id": "tehran:line:1",
+    "cityId": "tehran",
+    "agencyId": "tehran:agency:tehran-metro",
+    "networkId": "tehran:network:metro",
+    "mode": "metro",
+    "code": "1",
+    "names": {
+      "fa": "خط 1",
+      "en": "Line 1"
+    },
+    "color": "#E0001F"
+  },
+  {
+    "id": "tehran:line:2",
+    "cityId": "tehran",
+    "agencyId": "tehran:agency:tehran-metro",
+    "networkId": "tehran:network:metro",
+    "mode": "metro",
+    "code": "2",
+    "names": {
+      "fa": "خط 2",
+      "en": "Line 2"
+    },
+    "color": "#2F4389"
+  },
+  {
+    "id": "tehran:line:3",
+    "cityId": "tehran",
+    "agencyId": "tehran:agency:tehran-metro",
+    "networkId": "tehran:network:metro",
+    "mode": "metro",
+    "code": "3",
+    "names": {
+      "fa": "خط 3",
+      "en": "Line 3"
+    },
+    "color": "#67C5F5"
+  },
+  {
+    "id": "tehran:line:4",
+    "cityId": "tehran",
+    "agencyId": "tehran:agency:tehran-metro",
+    "networkId": "tehran:network:metro",
+    "mode": "metro",
+    "code": "4",
+    "names": {
+      "fa": "خط 4",
+      "en": "Line 4"
+    },
+    "color": "#F8E100"
+  },
+  {
+    "id": "tehran:line:5",
+    "cityId": "tehran",
+    "agencyId": "tehran:agency:tehran-metro",
+    "networkId": "tehran:network:metro",
+    "mode": "metro",
+    "code": "5",
+    "names": {
+      "fa": "خط 5",
+      "en": "Line 5"
+    },
+    "color": "#007E46"
+  },
+  {
+    "id": "tehran:line:6",
+    "cityId": "tehran",
+    "agencyId": "tehran:agency:tehran-metro",
+    "networkId": "tehran:network:metro",
+    "mode": "metro",
+    "code": "6",
+    "names": {
+      "fa": "خط 6",
+      "en": "Line 6"
+    },
+    "color": "#EF639F"
+  },
+  {
+    "id": "tehran:line:7",
+    "cityId": "tehran",
+    "agencyId": "tehran:agency:tehran-metro",
+    "networkId": "tehran:network:metro",
+    "mode": "metro",
+    "code": "7",
+    "names": {
+      "fa": "خط 7",
+      "en": "Line 7"
+    },
+    "color": "#7F0B74"
+  }
+]

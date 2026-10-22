@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "city": "tehran",
+  "repository": "https://github.com/aliinreallife/metto-data",
+  "commit": "af057821dee7cbd5fcd2bf9ebde079070d8ac20c",
+  "upstreamReview": "https://github.com/aliinreallife/metto-data/pull/9",
+  "files": {
+    "stations.json": {
+      "gitBlobSha1": "ae8e0dc489728f9bcfff010471469a3bfdadf1f2"
+    },
+    "lines.json": {
+      "gitBlobSha1": "da687ea48c12c64c88d37117c837bc6519d67eb7"
+    },
+    "graph.json": {
+      "gitBlobSha1": "8d24868fdf39b0009e5160768fdb20fbd040b258"
+    },
+    "meta.json": {
+      "gitBlobSha1": "0292ba44a8f92b1020f300c12ebcb210faa5cf9a"
+    }
+  },
+  "policy": {
+    "verifiedCities": [
+      "tehran"
+    ],
+    "excludedCandidates": [
+      "mashhad"
+    ],
+    "line6ShahrivarMettoOverride": true
+  }
+}
