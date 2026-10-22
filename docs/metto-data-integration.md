@@ -25,10 +25,12 @@ hand-maintained Metto metro data to
 ## Source refresh (explicit PR only)
 1. Independently review changes in `metto-data`, confirm Tehran is
    release-ready, and merge/approve its data PR.
-2. At a known pinned `metto-data` commit, copy
-   `data/cities/tehran/{stations,lines,graph,meta}.json` into
-   `data/metto-data/tehran/`, update `manifest.json` with that commit
-   and Git blob hashes, and run `pnpm metro-data:source-check`.
+2. At a reviewed, available local `metto-data` Git commit, run
+   `pnpm metro-data:import --source-dir ../metto-data --revision <40-char-git-sha>`.
+   This imports exactly the committed files with `git show` (not a
+   mutable working-tree copy), pins hashes/provenance, and fails for
+   missing or candidate Tehran releases. It never accesses the network.
+   Review the resulting JSON diff and run `pnpm metro-data:source-check`.
 3. Run `pnpm typecheck`, `pnpm test` and the offline/E2E suite.
    Review semantic changes to topology, boarding, names and aliases.
 4. Only after approval should app runtime imports switch to the adapter.

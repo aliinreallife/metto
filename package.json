@@ -26,7 +26,8 @@
     "changelog:prepare": "node scripts/prepare-changelog.mjs",
     "changelog:extract": "node scripts/extract-changelog-section.mjs",
     "changelog:release-pr": "node scripts/release-pr.mjs",
-    "metro-data:source-check": "node scripts/check-metto-data.mjs"
+    "metro-data:source-check": "node scripts/check-metto-data.mjs",
+    "metro-data:import": "node scripts/import-metto-data.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
