@@ -80,6 +80,6 @@ export const importedTransferRules: TransferRule[] = rawGraph.transfers.map((t) 
   toLineId: Number(localId(t.toLineId, "line")),
   walkSeconds: t.walkSeconds,
   ...(t.confidence ? { confidence: t.confidence as TransferRule["confidence"] } : {}),
-  ...(t.fromRouteId ? { fromRouteId: localId(t.fromRouteId, "route") } : {}),
-  ...(t.toRouteId ? { toRouteId: localId(t.toRouteId, "route") } : {}),
+  ...("fromRouteId" in t && typeof t.fromRouteId === "string" ? { fromRouteId: localId(t.fromRouteId, "route") } : {}),
+  ...("toRouteId" in t && typeof t.toRouteId === "string" ? { toRouteId: localId(t.toRouteId, "route") } : {}),
 }));
