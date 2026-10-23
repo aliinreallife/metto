@@ -76,7 +76,9 @@ export function CityNetworkMap({ stations, edges, lang, selectedId, pathIds = EM
         if (focusedId === station.id) element.focus({ preventScroll: true });
       }
       const label = document.createElement("span"); label.textContent = name; label.lang = lang; label.dir = lang === "fa" ? "rtl" : "ltr";
-      marker.bindTooltip(label, { permanent: !showCity && (active || stations.length < 45), direction: "top", opacity: 0.95 });
+      // Keep the overview readable on phones; a tap or keyboard selection
+      // shows the station name and actions without stacking every label.
+      marker.bindTooltip(label, { permanent: station.id === selectedId, direction: "top", opacity: 0.95 });
     }
   }, [stations, edges, lang, selectedId, pathIds, showCity, onSelect, t.underConstruction]);
   return <div className="relative h-full min-h-80 w-full" data-testid="city-network-map" data-station-count={stations.length} data-route-station-count={pathIds.length}>
