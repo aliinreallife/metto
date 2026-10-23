@@ -5,6 +5,7 @@ import type { Lang } from "@/lib/i18n";
 import { loadScheduleData, refreshScheduleData } from "@/lib/schedule-utils";
 import { isAndroidTwa } from "@/lib/twa";
 import { WebMcpRegistrar } from "@/components/web-mcp";
+import { usePathname } from "next/navigation";
 
 type PlacePin = {
   lat: number;
@@ -58,6 +59,10 @@ export function useMetro() {
 }
 
 export function MetroProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  // The new city preview has its own data and no timetable/MCP integration.
+  // Never advertise Tehran tools or prime its timetable as Mashhad routing.
+  const tehranScope = !pathname?.startsWith("/mashhad");
   const [lang, setLangState] = useState<Lang>("fa");
   const [mapMode, setMapModeState] = useState<"satellite" | "minimalist">("minimalist");
   const [originId, setOriginId] = useState<string | null>(null);
@@ -105,6 +110,7 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     if (savedOriginPlace) setOriginPlace((prev) => prev ?? savedOriginPlace);
     const savedDestPlace = readPlacePin("route.destPlace");
     if (savedDestPlace) setDestPlace((prev) => prev ?? savedDestPlace);
+    if (!tehranScope) return;
     loadScheduleData()
       // Start from last-known-good/bundled immediately; adopt a newer
       // validated timetable in the background without blocking first paint.
@@ -137,7 +143,7 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("online", onOnline);
     };
-  }, [primeScheduleWithRetry]);
+  }, [primeScheduleWithRetry, tehranScope]);
 
   // Keep <html lang/dir> in sync with app language on every app route.
   // This is the shared boundary, so /stations, /nearby, and /map get it
@@ -176,7 +182,7 @@ export function MetroProvider({ children }: { children: ReactNode }) {
 
   return (
     <MetroContext.Provider value={{ lang, setLang, mapMode, setMapMode, originId, setOriginId, destId, setDestId, originPlace, setOriginPlace, destPlace, setDestPlace }}>
-      <WebMcpRegistrar />
+      {tehranScope && <WebMcpRegistrar />}
       {children}
     </MetroContext.Provider>
   );

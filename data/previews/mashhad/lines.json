@@ -1,0 +1,41 @@
+[
+  {
+    "id": "mashhad:line:1",
+    "cityId": "mashhad",
+    "agencyId": "mashhad:agency:mashhad-metro",
+    "networkId": "mashhad:network:metro",
+    "mode": "metro",
+    "code": "1",
+    "names": {
+      "fa": "خط 1",
+      "en": "Line 1"
+    },
+    "color": "#87CEEB"
+  },
+  {
+    "id": "mashhad:line:2",
+    "cityId": "mashhad",
+    "agencyId": "mashhad:agency:mashhad-metro",
+    "networkId": "mashhad:network:metro",
+    "mode": "metro",
+    "code": "2",
+    "names": {
+      "fa": "خط 2",
+      "en": "Line 2"
+    },
+    "color": "#02FA82"
+  },
+  {
+    "id": "mashhad:line:3",
+    "cityId": "mashhad",
+    "agencyId": "mashhad:agency:mashhad-metro",
+    "networkId": "mashhad:network:metro",
+    "mode": "metro",
+    "code": "3",
+    "names": {
+      "fa": "خط 3",
+      "en": "Line 3"
+    },
+    "color": "#FA9702"
+  }
+]

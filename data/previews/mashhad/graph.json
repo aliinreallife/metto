@@ -1,0 +1,575 @@
+{
+  "routes": [
+    {
+      "id": "mashhad:route:line-1-main",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "stops": [
+        {
+          "stationId": "mashhad:station:vakilabad",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:koohestan-park",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:namayeshgah",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:eghbal-e-lahouri",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:sayyad-e-shirazi",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:sadaf",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:haft-e-tir",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:danesh-amooz",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:seyyed-razi",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:kowsar",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:park-e-mellat",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:azadi",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:khayyam",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:palestine",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:taleghani",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:ghaem",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:shariati",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:imam-khomeini",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:basij",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:hefdah-e-shahrivar",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:parvin-etesami",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:ghadir",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:bustan-e-reyhaneh",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:airport",
+          "status": "operational"
+        }
+      ]
+    },
+    {
+      "id": "mashhad:route:line-2-main",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "stops": [
+        {
+          "stationId": "mashhad:station:tabarsi",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:velayat",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:fajr",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:nabovvat",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:shahid-mofatteh",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:railway",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:shohada",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:saadi",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:shariati",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:alandasht",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:kouhsangi",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:shahid-kaveh",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:shahid-fakouri",
+          "status": "operational"
+        }
+      ]
+    },
+    {
+      "id": "mashhad:route:line-3-main",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:3",
+      "stops": [
+        {
+          "stationId": "mashhad:station:imam-reza-terminal",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:basij",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:bab-al-javad",
+          "status": "operational"
+        },
+        {
+          "stationId": "mashhad:station:shohada",
+          "status": "operational"
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "id": "mashhad:segment:line-1-vakilabad-koohestan-park",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:vakilabad",
+      "to": "mashhad:station:koohestan-park",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-koohestan-park-namayeshgah",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:koohestan-park",
+      "to": "mashhad:station:namayeshgah",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-namayeshgah-eghbal-e-lahouri",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:namayeshgah",
+      "to": "mashhad:station:eghbal-e-lahouri",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-eghbal-e-lahouri-sayyad-e-shirazi",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:eghbal-e-lahouri",
+      "to": "mashhad:station:sayyad-e-shirazi",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-sayyad-e-shirazi-sadaf",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:sayyad-e-shirazi",
+      "to": "mashhad:station:sadaf",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-sadaf-haft-e-tir",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:sadaf",
+      "to": "mashhad:station:haft-e-tir",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-haft-e-tir-danesh-amooz",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:haft-e-tir",
+      "to": "mashhad:station:danesh-amooz",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-danesh-amooz-seyyed-razi",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:danesh-amooz",
+      "to": "mashhad:station:seyyed-razi",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-seyyed-razi-kowsar",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:seyyed-razi",
+      "to": "mashhad:station:kowsar",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-kowsar-park-e-mellat",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:kowsar",
+      "to": "mashhad:station:park-e-mellat",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-park-e-mellat-azadi",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:park-e-mellat",
+      "to": "mashhad:station:azadi",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-azadi-khayyam",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:azadi",
+      "to": "mashhad:station:khayyam",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-khayyam-palestine",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:khayyam",
+      "to": "mashhad:station:palestine",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-palestine-taleghani",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:palestine",
+      "to": "mashhad:station:taleghani",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-taleghani-ghaem",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:taleghani",
+      "to": "mashhad:station:ghaem",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-ghaem-shariati",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:ghaem",
+      "to": "mashhad:station:shariati",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-shariati-imam-khomeini",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:shariati",
+      "to": "mashhad:station:imam-khomeini",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-imam-khomeini-basij",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:imam-khomeini",
+      "to": "mashhad:station:basij",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-basij-hefdah-e-shahrivar",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:basij",
+      "to": "mashhad:station:hefdah-e-shahrivar",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-hefdah-e-shahrivar-parvin-etesami",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:hefdah-e-shahrivar",
+      "to": "mashhad:station:parvin-etesami",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-parvin-etesami-ghadir",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:parvin-etesami",
+      "to": "mashhad:station:ghadir",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-ghadir-bustan-e-reyhaneh",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:ghadir",
+      "to": "mashhad:station:bustan-e-reyhaneh",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-1-bustan-e-reyhaneh-airport",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:1",
+      "routeId": "mashhad:route:line-1-main",
+      "from": "mashhad:station:bustan-e-reyhaneh",
+      "to": "mashhad:station:airport",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-tabarsi-velayat",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:tabarsi",
+      "to": "mashhad:station:velayat",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-velayat-fajr",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:velayat",
+      "to": "mashhad:station:fajr",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-fajr-nabovvat",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:fajr",
+      "to": "mashhad:station:nabovvat",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-nabovvat-shahid-mofatteh",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:nabovvat",
+      "to": "mashhad:station:shahid-mofatteh",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-shahid-mofatteh-railway",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:shahid-mofatteh",
+      "to": "mashhad:station:railway",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-railway-shohada",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:railway",
+      "to": "mashhad:station:shohada",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-shohada-saadi",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:shohada",
+      "to": "mashhad:station:saadi",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-saadi-shariati",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:saadi",
+      "to": "mashhad:station:shariati",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-shariati-alandasht",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:shariati",
+      "to": "mashhad:station:alandasht",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-alandasht-kouhsangi",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:alandasht",
+      "to": "mashhad:station:kouhsangi",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-kouhsangi-shahid-kaveh",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:kouhsangi",
+      "to": "mashhad:station:shahid-kaveh",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-2-shahid-kaveh-shahid-fakouri",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:2",
+      "routeId": "mashhad:route:line-2-main",
+      "from": "mashhad:station:shahid-kaveh",
+      "to": "mashhad:station:shahid-fakouri",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-3-imam-reza-terminal-basij",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:3",
+      "routeId": "mashhad:route:line-3-main",
+      "from": "mashhad:station:imam-reza-terminal",
+      "to": "mashhad:station:basij",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-3-basij-bab-al-javad",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:3",
+      "routeId": "mashhad:route:line-3-main",
+      "from": "mashhad:station:basij",
+      "to": "mashhad:station:bab-al-javad",
+      "status": "operational"
+    },
+    {
+      "id": "mashhad:segment:line-3-bab-al-javad-shohada",
+      "cityId": "mashhad",
+      "lineId": "mashhad:line:3",
+      "routeId": "mashhad:route:line-3-main",
+      "from": "mashhad:station:bab-al-javad",
+      "to": "mashhad:station:shohada",
+      "status": "operational"
+    }
+  ],
+  "transfers": [],
+  "aliases": {
+    "VakilAbad": "mashhad:station:vakilabad",
+    "Koohestan Park": "mashhad:station:koohestan-park",
+    "Namayeshgah": "mashhad:station:namayeshgah",
+    "Eghbal-e-Lahouri": "mashhad:station:eghbal-e-lahouri",
+    "Sayyad-e-Shirazi": "mashhad:station:sayyad-e-shirazi",
+    "Sadaf": "mashhad:station:sadaf",
+    "Haft-e-Tir": "mashhad:station:haft-e-tir",
+    "Danesh Amooz": "mashhad:station:danesh-amooz",
+    "Seyyed Razi": "mashhad:station:seyyed-razi",
+    "Kowsar": "mashhad:station:kowsar",
+    "Park-e-Mellat": "mashhad:station:park-e-mellat",
+    "Azadi": "mashhad:station:azadi",
+    "Khayyam": "mashhad:station:khayyam",
+    "Palestine": "mashhad:station:palestine",
+    "Taleghani": "mashhad:station:taleghani",
+    "Ghaem": "mashhad:station:ghaem",
+    "Shariati": "mashhad:station:shariati",
+    "Imam Khomeini": "mashhad:station:imam-khomeini",
+    "Basij": "mashhad:station:basij",
+    "Hefdah-e-Shahrivar": "mashhad:station:hefdah-e-shahrivar",
+    "Parvin Etesami": "mashhad:station:parvin-etesami",
+    "Ghadir": "mashhad:station:ghadir",
+    "Bustan-e Reyhaneh": "mashhad:station:bustan-e-reyhaneh",
+    "Airport": "mashhad:station:airport",
+    "Tabarsi": "mashhad:station:tabarsi",
+    "Velayat": "mashhad:station:velayat",
+    "Fajr": "mashhad:station:fajr",
+    "Nabovvat": "mashhad:station:nabovvat",
+    "shahid mofatteh": "mashhad:station:shahid-mofatteh",
+    "Railway": "mashhad:station:railway",
+    "Shohada": "mashhad:station:shohada",
+    "Sa'adi": "mashhad:station:saadi",
+    "Alandasht": "mashhad:station:alandasht",
+    "Kouhsangi": "mashhad:station:kouhsangi",
+    "shahid kaveh": "mashhad:station:shahid-kaveh",
+    "shahid fakouri": "mashhad:station:shahid-fakouri",
+    "Imam Reza Terminal": "mashhad:station:imam-reza-terminal",
+    "Bab Al-javad": "mashhad:station:bab-al-javad",
+    "Shahid Mofatteh": "mashhad:station:shahid-mofatteh"
+  }
+}

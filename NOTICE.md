@@ -7,6 +7,9 @@ different licenses:
 * Tehran Metro station/network database derived from
   `mostafa-kheibary/tehran-metro-data` → `ODbL-1.0`
   (see `DATA_LICENSE.md` and `LICENSES/ODbL-1.0.txt`).
+* Mashhad candidate database derived from `shahriaarrr/mashhad-metro-data`
+  and © OpenStreetMap contributors → `ODbL-1.0`
+  (see `DATA_LICENSE.md`; the review page also displays attribution).
 * Third-party software and assets → their respective licenses and terms
   (see below). The AGPL covering metto's original code does not
   override those licenses.
@@ -67,8 +70,9 @@ respective licenses and terms, including but not limited to:
 
 ## Deployments of modified versions
 
-The deployed UI currently carries no in-UI source-code or database
-license notices (a deliberate choice; see the gap noted below).
+The public Tehran UI currently carries no in-UI source-code or database
+license notices (a deliberate choice; see the gap noted below). The gated
+Mashhad review page includes database source and license links.
 Anyone deploying a modified version must still provide a prominent
 offer of the Corresponding Source of the version they are actually
 running, as the AGPL requires for network interaction — linking to

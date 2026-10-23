@@ -4,8 +4,9 @@ Metto's runtime network now comes from a reviewed, pinned snapshot of
 [`metto-data`](https://github.com/aliinreallife/metto-data).
 
 ## Current policy
-- Only **Tehran** is approved and bundled. Mashhad remains a candidate and
-  must not be selectable for passenger routing yet.
+- Only **Tehran** is approved for passenger routing. Mashhad remains a candidate
+  in a separate, default-off [review preview](mashhad-preview.md); it must not
+  be selectable for passenger routing yet.
 - `data/metto-data/manifest.json` locks the exact source Git revision and
   Git object hashes of every data artifact.
 - These four JSON files are committed with the app; **Vercel builds and

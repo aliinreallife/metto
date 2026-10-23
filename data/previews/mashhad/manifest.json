@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "cityId": "mashhad",
+  "repository": "https://github.com/aliinreallife/metto-data",
+  "commit": "af057821dee7cbd5fcd2bf9ebde079070d8ac20c",
+  "reviewOnly": true,
+  "releaseStatus": "candidate",
+  "timing": "none",
+  "visibleLineIds": [
+    "mashhad:line:1",
+    "mashhad:line:2"
+  ],
+  "transferLinks": [
+    {
+      "stationId": "mashhad:station:shariati",
+      "fromLineId": "mashhad:line:1",
+      "toLineId": "mashhad:line:2"
+    },
+    {
+      "stationId": "mashhad:station:shariati",
+      "fromLineId": "mashhad:line:2",
+      "toLineId": "mashhad:line:1"
+    }
+  ],
+  "files": {
+    "stations.json": {
+      "gitBlobSha1": "041f4fbdb5dbdff7fcbbf1c7e65c6d5221ec7b51"
+    },
+    "lines.json": {
+      "gitBlobSha1": "21539163b2688446cb8622e38ec3d3ff70e3343e"
+    },
+    "graph.json": {
+      "gitBlobSha1": "d5e0a972a07d81f8d53476a16a9cbfbb74618752"
+    },
+    "meta.json": {
+      "gitBlobSha1": "fed1e3a128326fff294ac858b8489531f7eb4a42"
+    }
+  }
+}
