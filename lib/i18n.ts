@@ -3,6 +3,8 @@ export type Lang = "en" | "fa";
 export const STRINGS = {
   en: {
     chooseCity: "Choose city",
+    cityZoomIn: "Zoom in",
+    cityZoomOut: "Zoom out",
     allCities: "All cities",
     citySameCityOnly: "Choose two stations in the same city.",
     cityCities: "cities",
@@ -244,6 +246,8 @@ export const STRINGS = {
   },
   fa: {
     chooseCity: "انتخاب شهر",
+    cityZoomIn: "بزرگ‌نمایی",
+    cityZoomOut: "کوچک‌نمایی",
     allCities: "همهٔ شهرها",
     citySameCityOnly: "دو ایستگاه را از یک شهر انتخاب کن.",
     cityCities: "شهر",

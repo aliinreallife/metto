@@ -8,6 +8,9 @@ has not been approved. Line 3 remains outside this first scope.
 ## Pages and station identity
 
 - `/` introduces the available cities and uses their actual station/line counts.
+  It retains Metto's original route preview and planner button, with small
+  city links. The app retains the familiar header, search pickers, station
+  cards and map styling; the city selector sits beneath the Metto name.
 - `/tehran` and `/mashhad` have separate landings. Each city has `/route`,
   `/map`, `/stations` and `/nearby` pages beneath its slug.
 - `/cities` combines the station directory; `/cities/map`, `/cities/route`
@@ -61,8 +64,9 @@ not authentication; platform deployment protection still applies.
   returns a city-scoped path with `reviewOnly: true` and `timing: "unavailable"`.
   Unknown/Tehran endpoints, Line 3-only stations, identical endpoints and all
   query parameters besides `from`/`to` return HTTP 400.
-- The FA/EN page has native labelled selectors, a station catalog, transfer
-  steps and URL links. It preserves Tehran's stored origin/destination and
+- The FA/EN planner reuses the existing labelled station-search picker,
+  transfer steps and URL links, with a separate station directory. It
+  preserves Tehran's stored origin/destination and
   does not register Tehran WebMCP tools or prime Tehran's timetable here.
   There is no new offline guarantee, entrance routing or amenities claim.
 - Attribution and machine-readable ODbL database details are in

@@ -61,7 +61,7 @@ function StationRow({
   label: string;
   name: string;
   lines: number[];
-  time: string;
+  time?: string;
   variant: "start" | "end";
 }) {
   return (
@@ -83,10 +83,10 @@ function StationRow({
           <LineBadge key={l} line={l} />
         ))}
       </span>
-      <span className="flex shrink-0 flex-col items-end gap-0.5">
+      {time && <span className="flex shrink-0 flex-col items-end gap-0.5">
         <span className="text-[10px] leading-none text-muted-foreground">{label}</span>
         <span className="tnum text-sm font-bold leading-none">{time}</span>
-      </span>
+      </span>}
     </div>
   );
 }
@@ -96,7 +96,7 @@ function RoutePanel() {
   const t = WELCOME_CONTENT[lang].hero.panel;
   const clock = useTehranClock();
 
-  const demo = useMemo(() => findRoute("tajrish", "tehran-sadeghiyeh"), []);
+  const demo = useMemo(() => clock.time ? findRoute("tajrish", "tehran-sadeghiyeh") : null, [clock.time]);
   const origin = getStation("tajrish");
   const dest = getStation("tehran-sadeghiyeh");
   const originLines = origin ? getStationLines(origin.id) : [1];
@@ -249,6 +249,24 @@ function RoutePanel() {
   );
 }
 
+function MashhadRoutePanel() {
+  const { lang } = useMetro();
+  const t = STRINGS[lang];
+  const from = mashhadPreview.stations.find(s => s.id.endsWith(":vakilabad"))!;
+  const to = mashhadPreview.stations.find(s => s.id.endsWith(":airport"))!;
+  return <div className="relative overflow-hidden rounded-lg border border-border bg-card">
+    <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5 text-[11px] font-bold">
+      <span>{t.cityPreviewTitle}</span><LineBadge line={1} />
+    </div>
+    <div className="px-4 py-5 sm:px-5">
+      <StationRow variant="start" label={t.from} name={from.names[lang]} lines={[1]} />
+      <div className="ms-3.5 my-2 h-24 border-s-[3px] border-primary/60" aria-hidden />
+      <StationRow variant="end" label={t.to} name={to.names[lang]} lines={[1]} />
+      <p className="mt-5 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">{t.cityPathOnly}</p>
+    </div>
+  </div>;
+}
+
 const TICKER_STATIONS: { fa: string; en: string; line: number }[] = [
   { fa: "تجریش", en: "Tajrish", line: 1 },
   { fa: "قیطریه", en: "Gheytariyeh", line: 1 },
@@ -333,7 +351,7 @@ export function Hero({ cityId }: { cityId?: CityId }) {
   const t = { ...WELCOME_CONTENT[lang].hero,
     city: cities.map(c => c.name[lang]).join(" · "),
     sub: cityId === "tehran" ? strings.cityLandingTehran : cityId === "mashhad" ? strings.cityLandingMashhad : strings.multiCityDescription,
-    ctaPrimary: cityId ? WELCOME_CONTENT[lang].hero.ctaPrimary : strings.chooseCity,
+    ctaPrimary: WELCOME_CONTENT[lang].hero.ctaPrimary,
   };
   const isFa = lang === "fa";
   const counts = cityCounts(cityIds, cityId);
@@ -390,14 +408,14 @@ export function Hero({ cityId }: { cityId?: CityId }) {
             <Reveal delay={210}>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
-                  href={cityId ? `/${cityId}/route?lang=${lang}` : `/cities?lang=${lang}`}
+                  href={cityId ? `/${cityId}/route?lang=${lang}` : `/route?lang=${lang}`}
                   className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-bold text-primary-foreground shadow-[0_10px_28px_-14px_var(--primary)] transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
                 >
                   {t.ctaPrimary}
                   <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
                 </Link>
                 <Link
-                  href={cityId ? `/${cityId}/map?lang=${lang}` : `/cities/map?lang=${lang}`}
+                  href={cityId ? `/${cityId}/map?lang=${lang}` : `/map?lang=${lang}`}
                   className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold transition-all duration-200 hover:border-foreground hover:bg-muted active:scale-[0.98]"
                 >
                   <MapIcon className="h-4 w-4 text-primary transition-transform duration-300 group-hover:scale-110" />
@@ -414,6 +432,11 @@ export function Hero({ cityId }: { cityId?: CityId }) {
                 </button>
               </div>
             </Reveal>
+
+            <nav aria-label={strings.chooseCity} data-testid="landing-city-links" className="mt-3 flex flex-wrap gap-x-4 text-xs font-medium text-muted-foreground">
+              {CITIES.filter(c => cityIds.includes(c.slug)).map(c => <Link key={c.slug} href={`/${c.slug}?lang=${lang}`} className="inline-flex min-h-[44px] items-center underline decoration-border underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">{c.name[lang]}</Link>)}
+              <Link href={`/cities?lang=${lang}`} className="inline-flex min-h-[44px] items-center underline decoration-border underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">{strings.allCities}</Link>
+            </nav>
 
             <Reveal delay={270}>
               <p className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
@@ -454,28 +477,13 @@ export function Hero({ cityId }: { cityId?: CityId }) {
 
           <div className="lg:col-span-5">
             <Reveal delay={180} className="lg:ms-auto lg:max-w-sm">
-              <div className={cityId === "tehran" ? "drift-y" : undefined}>
-                {cityId === "tehran" ? <RoutePanel /> : <div className="rounded-xl border bg-card p-5" data-testid="landing-city-cards">
-                  <h2 className="text-lg font-bold">{cityId === "mashhad" ? strings.findRoute : strings.chooseCity}</h2>
-                  {cityId === "mashhad" ? <div className="mt-4">
-                    <p className="font-medium">{mashhadPreview.stations.find(s => s.id.endsWith(":vakilabad"))!.names[lang]} ← {mashhadPreview.stations.find(s => s.id.endsWith(":airport"))!.names[lang]}</p>
-                    <p className="mt-2 text-sm">{strings.cityPathOnly}</p>
-                    <Link href={`/mashhad/route?${new URLSearchParams({ from: "mashhad:station:vakilabad", to: "mashhad:station:airport", lang })}`} className="mt-4 inline-flex min-h-[44px] items-center rounded-lg bg-primary px-4 py-2 text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary">{t.ctaPrimary}</Link>
-                  </div> : <div className="mt-4 grid gap-3">{cities.map(c => {
-                    const count = cityCounts(cityIds, c.slug);
-                    return <Link key={c.slug} href={`/${c.slug}?lang=${lang}`} className="block rounded-xl border p-4 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary">
-                      <span className="font-bold">{c.name[lang]}</span>
-                      {c.slug === "mashhad" && <span className="ms-2 rounded border px-2 py-0.5 text-xs">{strings.cityPreviewBadge}</span>}
-                      <p className="mt-2 text-sm">{persianDigits(count.stations, lang)} {strings.stops} · {persianDigits(count.lines, lang)} {strings.cityLines}</p>
-                      {!c.timing && <p className="mt-2 text-sm">{strings.cityPathOnly}</p>}
-                    </Link>;
-                  })}</div>}
-                </div>}
+              <div className="drift-y">
+                {cityId === "mashhad" ? <MashhadRoutePanel /> : <RoutePanel />}
               </div>
               <p className="mt-3 text-center text-[11px] text-muted-foreground">
-                {cityId === "tehran" ? isFa
+                {cityId === "mashhad" ? strings.cityPreviewBadge : isFa
                   ? "نمایش واقعی زمان‌بندی — همین حالا در تهران"
-                  : "Real timetable, right now in Tehran" : cityId === "mashhad" ? strings.cityPreviewBadge : t.city}
+                  : "Real timetable, right now in Tehran"}
               </p>
             </Reveal>
           </div>

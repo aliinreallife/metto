@@ -2,7 +2,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useMetro } from "@/app/providers";
-import { CITIES } from "@/lib/cities";
+import { ArrowUpDown } from "lucide-react";
+import { CityStationPicker } from "./city-station-picker";
 import { catalogStations } from "@/lib/city-catalog";
 import { STRINGS } from "@/lib/i18n";
 
@@ -13,24 +14,22 @@ export function AllCityRoute() {
   const origin = stations.find(s => s.id === from), destination = stations.find(s => s.id === to);
   const sameCity = origin && destination && origin.cityId === destination.cityId;
   const href = sameCity && origin.id !== destination.id ? `/${origin.cityId}/route?${new URLSearchParams({ from: origin.localId, to: destination.localId, lang })}` : null;
-  const control = "min-h-[44px] rounded-lg border bg-background px-3 py-2 focus-visible:outline-2 focus-visible:outline-primary";
-  return <div className="min-h-0 flex-1 overflow-y-auto p-4" dir={lang === "fa" ? "rtl" : "ltr"}>
-    <div className="mx-auto max-w-xl rounded-xl border p-5">
-      <h1 className="text-xl font-bold">{t.findRoute}</h1><p className="mt-2 text-sm">{t.allCities}</p>
-      <div className="mt-5 grid gap-4">
-        {(["from", "to"] as const).map(role => <div key={role} className="grid gap-2">
-          <label htmlFor={`all-${role}`}>{t[role]}</label>
-          <select id={`all-${role}`} value={role === "from" ? from : to} onChange={e => (role === "from" ? setFrom : setTo)(e.target.value)} className={control}>
-            <option value="">{t[role]}</option>
-            {stations.map(s => <option key={s.id} value={s.id}>{s.names[lang]} · {CITIES.find(c => c.slug === s.cityId)!.name[lang]}</option>)}
-          </select>
-        </div>)}
-        <button className={control} onClick={() => { setFrom(to); setTo(from); }}>{t.swap}</button>
+  return <div className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden p-4 md:items-center md:p-8 lg:p-10" dir={lang === "fa" ? "rtl" : "ltr"}>
+    <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
+      <h1 className="sr-only">{t.findRoute} · {t.allCities}</h1>
+      <div className="flex flex-col gap-2.5">
+        <label htmlFor="all-from" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">{t.from}</label>
+        <CityStationPicker id="all-from" stations={stations} value={from} onChange={setFrom} lang={lang} placeholder={t.searchStations} accentClass="bg-primary" showCity />
+        <label htmlFor="all-to" className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">{t.to}</label>
+        <div className="flex gap-2">
+          <CityStationPicker id="all-to" stations={stations} value={to} onChange={setTo} lang={lang} placeholder={t.searchStations} accentClass="bg-foreground" showCity />
+          <button aria-label={t.swap} className="flex min-h-[44px] w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary" onClick={() => { setFrom(to); setTo(from); }}><ArrowUpDown aria-hidden="true" className="size-4" /></button>
+        </div>
       </div>
-      {origin && destination && !sameCity && <p role="alert" className="mt-4">{t.citySameCityOnly}</p>}
-      {origin && destination && origin.id === destination.id && <p role="alert" className="mt-4">{t.sameStation}</p>}
-      {href && <Link href={href} className="mt-5 inline-flex min-h-[44px] items-center rounded-lg bg-primary px-4 py-2 font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary">{t.findRoute}</Link>}
-      {!origin || !destination ? <p className="mt-4 text-sm">{t.pickBoth}</p> : null}
+      {origin && destination && !sameCity && <p role="alert" className="text-sm">{t.citySameCityOnly}</p>}
+      {origin && destination && origin.id === destination.id && <p role="alert" className="text-sm">{t.sameStation}</p>}
+      {href && <Link href={href} className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary">{t.findRoute}</Link>}
+      {!origin || !destination ? <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">{t.pickBoth}</p> : null}
     </div>
   </div>;
 }

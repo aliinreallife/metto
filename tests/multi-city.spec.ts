@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { pickCityStation } from "./helpers/city-stations";
 import { networkSafeTest as test } from "./helpers/walking";
 
 test.beforeEach(async ({ request }) => {
@@ -9,13 +10,16 @@ test.beforeEach(async ({ request }) => {
 });
 
 test("landing counts match both cities and each city has its own landing", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
   await page.goto("/?lang=en");
   await expect(page.getByText("187 stations · 9 lines", { exact: true })).toBeVisible();
-  await page.getByTestId("landing-city-cards").getByRole("link").filter({ hasText: "Mashhad" }).click();
+  await page.getByTestId("landing-city-links").getByRole("link").filter({ hasText: "Mashhad" }).click();
   await expect(page).toHaveURL(/\/mashhad\?lang=en/);
   await expect(page.getByText("36 stations · 2 lines", { exact: true })).toBeVisible();
   await page.goto("/tehran?lang=en");
   await expect(page.getByText("151 stations · 7 lines", { exact: true })).toBeVisible();
+  expect(errors.filter(message => /hydration/i.test(message))).toEqual([]);
 });
 
 test("switching the normal map shows Mashhad stations and links map selections into routing", async ({ page }) => {
@@ -28,7 +32,7 @@ test("switching the normal map shows Mashhad stations and links map selections i
   await station.focus(); await page.keyboard.press("Enter");
   await page.getByRole("main").getByRole("link", { name: "From", exact: true }).click();
   await expect(page).toHaveURL(/\/mashhad\/route/);
-  await page.getByLabel("To", { exact: true }).selectOption("mashhad:station:airport");
+  await pickCityStation(page, "To", "Airport");
   const result = page.getByTestId("city-route-result");
   await expect(result).toBeVisible();
   await expect(result).not.toContainText(/arrival|minutes|estimated/i);
@@ -45,16 +49,17 @@ test("all-city search keeps stations with the same name separate and routes to t
   await expect(rows.filter({ hasText: "Mashhad" })).toHaveCount(1);
   await rows.filter({ hasText: "Mashhad" }).getByRole("link", { name: "Route here" }).click();
   await expect(page).toHaveURL(/\/mashhad\/route\?/);
-  await expect(page.getByLabel("To", { exact: true })).toHaveValue("mashhad:station:basij");
+  await expect(page.getByLabel("To", { exact: true })).toContainText("Basij");
+  await expect(page).toHaveURL(/to=mashhad%3Astation%3Abasij/);
 });
 
 test("all-city routes reject cross-city pairs and preserve namespaced duplicate choices", async ({ page }) => {
   await page.goto("/cities/route?lang=en");
-  await page.getByLabel("From", { exact: true }).selectOption("tehran:station:basij");
-  await page.getByLabel("To", { exact: true }).selectOption("mashhad:station:basij");
+  await pickCityStation(page, "From", "Basij", "Tehran");
+  await pickCityStation(page, "To", "Basij", "Mashhad");
   await expect(page.getByRole("main").getByRole("alert")).toHaveText("Choose two stations in the same city.");
   await expect(page.getByRole("main").getByRole("link", { name: "Find route", exact: true })).toHaveCount(0);
-  await page.getByLabel("From", { exact: true }).selectOption("mashhad:station:airport");
+  await pickCityStation(page, "From", "Airport", "Mashhad");
   await page.getByRole("main").getByRole("link", { name: "Find route", exact: true }).click();
   await expect(page).toHaveURL(/\/mashhad\/route\?/);
   await expect(page.getByTestId("city-route-result")).toBeVisible();

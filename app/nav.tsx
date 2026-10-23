@@ -198,18 +198,17 @@ export function AppNav() {
 
   return (
     <>
-      <header className="z-20 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-6 md:py-4">
-        <div className="flex min-w-0 items-center gap-2">
-        <TabLink href={getHref("/route")} connectivity={connectivity} ariaLabel={t.appTitle} className="flex items-center gap-2.5 md:gap-3">
+      <header className="z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-6 md:py-4">
+        <div className="flex min-w-0 items-center gap-2.5 md:gap-3">
+        <TabLink href={getHref("/route")} connectivity={connectivity} ariaLabel={t.appTitle} className="flex shrink-0 items-center">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground md:size-10">
             <TrainFront className="size-5 md:size-6" />
           </span>
-          <div className="hidden leading-tight sm:block">
-            <h1 className="text-base font-bold md:text-lg">{t.appTitle}</h1>
-            <p className="text-xs text-muted-foreground md:text-sm">{t.appSubtitle}</p>
-          </div>
         </TabLink>
-        <CitySwitcher />
+          <div className="min-w-0 leading-tight">
+            <h1 className="text-base font-bold md:text-lg">{t.appTitle}</h1>
+            <CitySwitcher compact />
+          </div>
         </div>
 
         {/* desktop tabs */}
