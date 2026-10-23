@@ -1,0 +1,1943 @@
+{
+  "sourceRevision": "b33697a0701441658fdcc7c82798d41a10c57266",
+  "description": "Trusted pre-cutover Metto runtime; amenities preserved without certification",
+  "scheduleSha256": "46fb0992aebd9fa266a44651fc60c93eb8d935d617144df1e1502ffb0f258f2c",
+  "tableHashes": {
+    "stations": "684123603a10bfdeaf29d2b0dc136459acfdbcbfcc36ebfd09c9679aef9615b8",
+    "lines": "2795fd6e191bbbb85cdbf2b8383baa8811407f00e52d85a8cae743e54cfb636b",
+    "routes": "02680198fbfea2f98ab06941d48fb8ecfa9847e017e174bdb10ba3c1015cd1ab",
+    "segments": "ec014f18c31f64f48fc305f2f176d067be581fb6224a9d4198ce3cc114d2f8c8",
+    "segmentStatusOverrides": "51e44c5e9b285d297de99df92c3ad16ec83023b2aa7a08e412d2506996caba3b",
+    "aliases": "9526e396e446ab85b407b57d5104b81f586c7e0b4a99e8ba2f259aafd43f52fb",
+    "transfers": "ac70484567907fd36388b05db0a53bb873d049666542c5de3dd40cd52f0fd92f"
+  },
+  "stationIds": [
+    "tajrish",
+    "gheytariyeh",
+    "shahid-sadr",
+    "qolhak",
+    "doctor-shariati",
+    "mirdamad",
+    "shahid-haghani",
+    "shahid-hemmat",
+    "mosalla-ye-imam-khomeini",
+    "shahid-beheshti",
+    "shahid-mofattah",
+    "ayatollah-taleghani",
+    "darvazeh-dolat",
+    "saadi",
+    "imam-khomeini",
+    "panzdah-e-khordad",
+    "khayyam",
+    "meydan-e-mohammadiyeh",
+    "shoush",
+    "payaneh-jonoub-jonoub-terminal",
+    "shahid-bokharaei",
+    "aliabad",
+    "javanmard-e-ghassab",
+    "shahr-e-rey",
+    "palayeshgah",
+    "shahed-baghershahr",
+    "namayeshgah-e-shahr-e-aftab",
+    "vavan",
+    "emam-khomeini-airport",
+    "shahr-e-parand",
+    "holy-shrine-of-imam-khomeini",
+    "kahrizak",
+    "farhangsara",
+    "tehranpars",
+    "shahid-bagheri",
+    "daneshgah-e-elm-o-sanat",
+    "sarsabz",
+    "janbazan",
+    "fadak",
+    "sabalan",
+    "shahid-madani",
+    "imam-hossein",
+    "darvazeh-shemiran",
+    "baharistan",
+    "mellat",
+    "hasan-abad",
+    "daneshgah-e-imam-ali",
+    "meydan-e-horr",
+    "shahid-navab-e-safavi",
+    "shademan",
+    "daneshgah-e-sharif",
+    "tarasht",
+    "tehran-sadeghiyeh",
+    "qaem",
+    "shahid-mahallati",
+    "aghdasiyeh",
+    "nobonyad",
+    "hossein-abad",
+    "meydan-e-heravi",
+    "shahid-zeynoddin",
+    "khajeh-abdollah-e-ansari",
+    "shahid-sayyad-shirazi",
+    "shahid-ghodousi",
+    "sohrevardi",
+    "mirza-ye-shirazi",
+    "meydan-e-jahad",
+    "teatr-e-shahr",
+    "moniriyeh",
+    "mahdiyeh",
+    "rahahan",
+    "javadiyeh",
+    "zamzam",
+    "shahrak-e-shariaty",
+    "abdol-abad",
+    "nemat-abad",
+    "azadegan",
+    "shahid-kolahdooz",
+    "nirou-havaei",
+    "nabard",
+    "piroozi",
+    "ebn-e-sina",
+    "ferdowsi",
+    "meydan-e-enghelab-e-eslami",
+    "towhid",
+    "doctor-habibollah",
+    "ostad-moin",
+    "meydan-e-azadi",
+    "bimeh",
+    "mehrabad-airport-terminal-1-2",
+    "mehrabad-airport-terminal-4-6",
+    "shahrak-e-ekbatan",
+    "allameh-jafari",
+    "chaharbagh",
+    "eram-e-sabz",
+    "varzeshgah-e-azadi",
+    "chitgar",
+    "iran-khodro",
+    "vardavard",
+    "garmdareh",
+    "atmosphere",
+    "karaj",
+    "mohammadshahr",
+    "golshahr",
+    "shahid-fakhrizadeh",
+    "shahid-sepahbod-qasem-soleimani",
+    "haram-e-hazrat-e-abdol-azim",
+    "meydan-e-hazrat-e-abdol-azim",
+    "ebn-e-babviyeh",
+    "cheshmeh-ali",
+    "shohada-ye-dowlat-abad",
+    "kiyan-shahr",
+    "besat",
+    "shahid-rezaei",
+    "meydan-e-khorasan",
+    "shohada-ye-hefdah-e-shahrivar",
+    "amirkabir",
+    "meydan-e-shohada",
+    "sarbaz",
+    "bahar-shiraz-khanevadeh-hospital",
+    "shohada-ye-haftom-e-tir",
+    "maryam-e-moghaddas",
+    "meydan-e-hazrat-vali-asr",
+    "bustan-e-laleh",
+    "karagar",
+    "daneshgah-e-tarbiat-modarres",
+    "shahrak-e-azmayesh",
+    "marzdaran",
+    "yadegar-e-imam",
+    "shahid-ashrafi-esfahani",
+    "shahid-sattari",
+    "ayatollah-kashani",
+    "shahr-e-ziba",
+    "shahran",
+    "shohada-ye-kan",
+    "kouhsar",
+    "varzeshgah-e-takhti",
+    "basij",
+    "ahang",
+    "chehel-tan-e-doulab",
+    "meydan-e-giyam",
+    "mowlavi",
+    "helal-ahmar",
+    "beryanak",
+    "komeyl",
+    "roudaki",
+    "modafean-e-salamat",
+    "boostan-e-goftegou",
+    "milad-tower",
+    "meydan-e-sanat",
+    "shahid-dadman",
+    "meydan-e-ketab"
+  ],
+  "pairs": 22650,
+  "reachable": 20875,
+  "rows": [
+    {
+      "from": "tajrish",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "bcd4c8a3b846470ee62a9c717864c3ea5dff2ee3ac561a8912472cc5d9987818"
+    },
+    {
+      "from": "gheytariyeh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "25dc18a166d0c48210db7d1212c6a4e007045fb589651960ca96f980df0d0b53"
+    },
+    {
+      "from": "shahid-sadr",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "afe1df532f8e4411f8ba714b01f052ebdbde8e6d98e907c4368102cd69a89d31"
+    },
+    {
+      "from": "qolhak",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "f3221cb6a4d8e59c4f02268fcfba849c4bfc7248c89550436be8b6917d5e05e9"
+    },
+    {
+      "from": "doctor-shariati",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "185f2a2b864476ba605887d8d3fc0e601170121005c4dd78c04c61c4c70dbfdf"
+    },
+    {
+      "from": "mirdamad",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "c400a5e16c69b8ddc417649f04c5e6dbfaa06334047c459414540f7062daee48"
+    },
+    {
+      "from": "shahid-haghani",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "dcca4f52141e29b4c08bc57bc4e084926fdd49d47e6e59d3c3215f54b45b61ff"
+    },
+    {
+      "from": "shahid-hemmat",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "5ed0bbdbce5e3aacab903ef2f78000c9346786e2caf94d4ccda9b8b95e9b0bcc"
+    },
+    {
+      "from": "mosalla-ye-imam-khomeini",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "7c7ebf2c9af8dd3cd6b42eb00f7fd233bfe9cd5c4532be0d834347c4409fe168"
+    },
+    {
+      "from": "shahid-beheshti",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "10d392d5fe6837ca79e760d76789060388fedeba941744b74172936f743dd38d"
+    },
+    {
+      "from": "shahid-mofattah",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "648999bddeb70dfa909b34239759dea62ce1268e9e3beec3e7085971e7a297c0"
+    },
+    {
+      "from": "ayatollah-taleghani",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "ee2ec4ad48b69e521fbf689e7d04a368b41b8bed8f39478c82ab5a40edfc8aaa"
+    },
+    {
+      "from": "darvazeh-dolat",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "f710b6068843e7a78745c27e43ba877fb08fdc7591d5b45c4b226a527a8775ec"
+    },
+    {
+      "from": "saadi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "65febfd3cd29666bd887bc399cd3fcddaeb018e518ceb00666d596cf0a916557"
+    },
+    {
+      "from": "imam-khomeini",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "d1d064816a04cf3ef254e7e631f20bd16b2a17da20734f6fdbcf374218731e33"
+    },
+    {
+      "from": "panzdah-e-khordad",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "202cbdacdc9d66cbe50977fe436aea86fce623e8d97d12c0bb62d4f79af138e9"
+    },
+    {
+      "from": "khayyam",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "b22ad1ae784b81a972c314eafeb7ee4736b890e6b96ad8e392fb0c0761521c3b"
+    },
+    {
+      "from": "meydan-e-mohammadiyeh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "639e0c59524252a5c6606daab45713438968ed9533b4e7f4964660db0d3f714c"
+    },
+    {
+      "from": "shoush",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "685e77b529cb73d594dd2c810cd779f9a1b4756ba872697a9324b9f1e70614db"
+    },
+    {
+      "from": "payaneh-jonoub-jonoub-terminal",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "2aa77d565b2eb1c1ea003c840a7dd06ec9b740f194dfa77a71def696c4a7cc3d"
+    },
+    {
+      "from": "shahid-bokharaei",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "7cc8a4e34400a88e76d183e289a28aee2b4ec83618aca0365d5f32318ae5aed6"
+    },
+    {
+      "from": "aliabad",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "a226f64306e27c702feded0106c6b21a123ddb1312774ba89a2989c4db527345"
+    },
+    {
+      "from": "javanmard-e-ghassab",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "bda885a7d5ed92043d6faa800a84d287c97fa6342d864824790cccb8940a8f05"
+    },
+    {
+      "from": "shahr-e-rey",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "a0bb8111496032157b2749a13199c2a351d37b5022e3c5325b3e21539437f457"
+    },
+    {
+      "from": "palayeshgah",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "655fc86d8e62790a5361c23d5f47aa4a11c58aa3912b75788c1f93d9da6ede94"
+    },
+    {
+      "from": "shahed-baghershahr",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "244f2426f1bfda98c185b057762e6336a1d4b320ebb163eb01e63b3b7b6a97c5"
+    },
+    {
+      "from": "namayeshgah-e-shahr-e-aftab",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "9ae5b2366677e6a0d2adb71872066f5c65a3baab3d24b647edeb1f6ec9eaef45"
+    },
+    {
+      "from": "vavan",
+      "pairs": 150,
+      "reachable": 0,
+      "sha256": "945dbd5c14e7a472256d2ae2647d675165752380e7221bbca62943e1d88ee3fe"
+    },
+    {
+      "from": "emam-khomeini-airport",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "ee68b3859defbf183995c353609bd6a04c6667edcfc599409a2f493ec5f05808"
+    },
+    {
+      "from": "shahr-e-parand",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "bbf81f249189bb7647838797939a243650550152c89958f143e411c6137f129c"
+    },
+    {
+      "from": "holy-shrine-of-imam-khomeini",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "8773a88090210aea4f2120156240b356fa8389b2729422e0dfbf2df326e521b7"
+    },
+    {
+      "from": "kahrizak",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "19347744cdb04c613a3b1244ffc462f72daefb73974aa15dbeb3847b7b198f27"
+    },
+    {
+      "from": "farhangsara",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "3c456595ee1485c35e2588a852f6c3055f16ab97823f38dc84eeddbf5a939e09"
+    },
+    {
+      "from": "tehranpars",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "2dac890b553c528bb34bee884f107b06812d94a0d2ac4457905ddcb3c6c307b3"
+    },
+    {
+      "from": "shahid-bagheri",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "9f872ce0cc802065f0c818e327c3f1d1be0f89f474faded9ef9f106f7e24c89c"
+    },
+    {
+      "from": "daneshgah-e-elm-o-sanat",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "643daf24ab498cddd9637173b733c0c0e8c6c9ebcc27c54e4449c8e30f7bcbbf"
+    },
+    {
+      "from": "sarsabz",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "8431237d429af81370ceb39a6d7423ae47403232d544fe9f7cdc3b5dc1616c70"
+    },
+    {
+      "from": "janbazan",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "e2969b0bb6ce93ae3003dc203292273c802b571ac8e0aad006caa956ca4e9856"
+    },
+    {
+      "from": "fadak",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "913233174a6af4f2a452b8e6d13dc02e7c232451b3e60a5f19de34bcc1c0957f"
+    },
+    {
+      "from": "sabalan",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "ecda847c4a323e86577d71d85d35f0abe158a217bcc7467f506f3c7c21e650e2"
+    },
+    {
+      "from": "shahid-madani",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "1f0b1f7d2ebe0f3becd2f71537679eb730bb03b92ad14bf8e42481af18aed038"
+    },
+    {
+      "from": "imam-hossein",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "c7941347c6c43dd2e7c26a4314bd4b23f5ed3cb8a774d5440d6bd110263c6f2a"
+    },
+    {
+      "from": "darvazeh-shemiran",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "b1f0d96f9059ccc4980c5c4beeecd1440b08e0be1f50a63f9c3e4f751227f997"
+    },
+    {
+      "from": "baharistan",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "0687c8468088da5be4b1f664baf19c2d5c77e8993efe14ef009a7545e195178d"
+    },
+    {
+      "from": "mellat",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "cb94259d39ae79284df5e8905f5e207fd9e48476409e4e8b47906139c306bfc0"
+    },
+    {
+      "from": "hasan-abad",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "a4b9ca8fd9730b89d00f72c63d9b8e7826ed774bd30856fad7d7c9d07d679277"
+    },
+    {
+      "from": "daneshgah-e-imam-ali",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "b15d7204c088ff16c9fa717d98d407bf8cbea5514f05506e832b9ceff5b63986"
+    },
+    {
+      "from": "meydan-e-horr",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "9141712e7bac853be510a63b2495b38d88b03a1f3b71231e6c117583dc274779"
+    },
+    {
+      "from": "shahid-navab-e-safavi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "72eac4513b366747e71642eacd7a8524c3cbd509d79dfd67252f31514e728607"
+    },
+    {
+      "from": "shademan",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "288d0ed0c7690a01055e8630c364b01fca7e00751dcc449560261263cb1fd1a8"
+    },
+    {
+      "from": "daneshgah-e-sharif",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "03582f6d880a475540b18e0e71cc3bbafab66e9059e42fe08073ee58b994c0c3"
+    },
+    {
+      "from": "tarasht",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "81b97761d2fd3b190201ddeada17d67e37eade4c0582c30927bf66e102925372"
+    },
+    {
+      "from": "tehran-sadeghiyeh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "b4f9e5f3ff86f668e9b88a4d098c138869d85b15b50db1502c9bbef337a5f1c9"
+    },
+    {
+      "from": "qaem",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "c4de3581769cea8a4b618d4c696c0df8e19b6231b6e3d9a655ddead7d7d5d057"
+    },
+    {
+      "from": "shahid-mahallati",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "bc51a4b3af3de7c47b6694dd4343b62ce804dfaf01507142c5e960bdee65d7a6"
+    },
+    {
+      "from": "aghdasiyeh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "0947655fdd10a3c9171c015c05ea4a88d62f9810e02439afd043daddd1e1bb6f"
+    },
+    {
+      "from": "nobonyad",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "ca263f705e4ff8776f88652442bab7e86b129a8f57145cb6edd691ef505b8f5b"
+    },
+    {
+      "from": "hossein-abad",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "b45098f2a07cc477adb21991713dae6d0fb00abe1ace0b505b5065da9565bbd6"
+    },
+    {
+      "from": "meydan-e-heravi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "504be434571c6e12591f0d67065b268554d8f3cc736481d1d3d3993d979e3ff6"
+    },
+    {
+      "from": "shahid-zeynoddin",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "1be1d0132514ddbc69ba7231e875cee4055504deac4b7f92c9bd9216bfed86e6"
+    },
+    {
+      "from": "khajeh-abdollah-e-ansari",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "552310bcd9c847c2e3467b255e4196124658f82970c18b5b4c58b42931ed111c"
+    },
+    {
+      "from": "shahid-sayyad-shirazi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "56ad8e077c31f078a230c089bff4451e24650c5cce3fb3366360f1c9f37559b2"
+    },
+    {
+      "from": "shahid-ghodousi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "7dcc7212dad6aecb852fa3c11626bf702662c573216cca4f17b0b3cdb7891159"
+    },
+    {
+      "from": "sohrevardi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "34806696ff1c82c20cafd27d974ae77b282fa34512af6179387cd0dd113d43d8"
+    },
+    {
+      "from": "mirza-ye-shirazi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "ba3d40da2cd67db5b5e8b4cd5b888d2e024bbf665cbd5d3a4f5eca261b33d387"
+    },
+    {
+      "from": "meydan-e-jahad",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "a32767e1fcde0f86524ebe0c2852592c24080ecb6b7720d844ad17b08d8ddf8e"
+    },
+    {
+      "from": "teatr-e-shahr",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "06cb1f89ac102f3afead3dbfc164512cfa966f103e533e8c4e172999c0b011cd"
+    },
+    {
+      "from": "moniriyeh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "ffc97cd0752704f0158ad046bf6437167d91bfea3166ff6deb4451f2f68f38bd"
+    },
+    {
+      "from": "mahdiyeh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "13d9e9e53c5955e843cb358aff561941a69a5b9c62581b49463a154e2dd354ca"
+    },
+    {
+      "from": "rahahan",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "60f4e5e70494356d5583098d3b74e5d98a746a8d766db4cb00a99483ea008bad"
+    },
+    {
+      "from": "javadiyeh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "6b4e74fbaeaadd59bb1dcf06acaa08db081152545fcfa7871e8ffcf1384a18a2"
+    },
+    {
+      "from": "zamzam",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "8d8efaf8b8b11be300b917d7408b00c84ba9ed010e1b1b4e5f632689ad2a7db7"
+    },
+    {
+      "from": "shahrak-e-shariaty",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "465ad753553a16a071ebef7c7f602624bbe6efc7a44e793b6ba69d2c289e8908"
+    },
+    {
+      "from": "abdol-abad",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "586891fc651c89e0ff4a1d86ac5879229c06105674a5b3b679061197971ee665"
+    },
+    {
+      "from": "nemat-abad",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "91053b0a157005fb67822ff892422d2bfffbae66944db2c3af23b762189727e6"
+    },
+    {
+      "from": "azadegan",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "424a199d36d20a5e4d423b34dce346bd2435b32f44d04515ff5ecbbf5f121ec7"
+    },
+    {
+      "from": "shahid-kolahdooz",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "26f3e3f23bac2fe819c597aa612c1bc3721d666dd96034e32987e02d27af5c0b"
+    },
+    {
+      "from": "nirou-havaei",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "02bbc14b893f498b3ac73c5315ac49b219114c2171533a84d6c4b656ea99f4be"
+    },
+    {
+      "from": "nabard",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "9f62a467f3f13d9f30910d82a478e8d843704c9eacada87040a595da5d05dd8c"
+    },
+    {
+      "from": "piroozi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "4dfaf4c691707e0eab33ed48747f9e5b86c6ff1d6af16407daf810f00f941a48"
+    },
+    {
+      "from": "ebn-e-sina",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "8c3726ec39ac8f66f15d7c66063c1a828cb798f14cb0401010e54a0352ac4d04"
+    },
+    {
+      "from": "ferdowsi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "703e16eb9b51dbf865d1920f9adcfda90a5264b10dbc732c752cf0606cb2987b"
+    },
+    {
+      "from": "meydan-e-enghelab-e-eslami",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "e5702e6a84d38f5cc62f776eff06de7da85403882119b77a7a7da14c82ed2171"
+    },
+    {
+      "from": "towhid",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "79144530c147bc5d9c0d41558a7e7e4dbd95a09ef4cdf88713bb21e4b1f3e0ae"
+    },
+    {
+      "from": "doctor-habibollah",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "a47ac01da8570e94286bb8b21b20452d5e7102c4350e3b27500151e496c1901b"
+    },
+    {
+      "from": "ostad-moin",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "6a9952b29119fa9f750bb4c28074c1be8bf39120361173ca5c11c83b569975f5"
+    },
+    {
+      "from": "meydan-e-azadi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "7f362dd188e6464b7924e7d74726b3770d78a2e9ed4d19453196fe910202b551"
+    },
+    {
+      "from": "bimeh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "13d85e2ce1c68e9f0c892687aae8d868ef03d12ca9bf3c104413a62b38bc2ec6"
+    },
+    {
+      "from": "mehrabad-airport-terminal-1-2",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "8bf8120b6b555b8aefdce71604c64a06da1bbc030596d8ffa440eb3371dfde38"
+    },
+    {
+      "from": "mehrabad-airport-terminal-4-6",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "590d7dac8f0a11360c187ef54425b521502d435f4c0b63e7e207a5de16337290"
+    },
+    {
+      "from": "shahrak-e-ekbatan",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "16f39cb59c790a261ca91754d121da7b079dcc839a440e7b9700c8e981d2b274"
+    },
+    {
+      "from": "allameh-jafari",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "7f8eb40ba3817660cf22412d3a7dbb04232fdafc7bba3be5e10a3501ac923f37"
+    },
+    {
+      "from": "chaharbagh",
+      "pairs": 150,
+      "reachable": 0,
+      "sha256": "49493a2d8f6ab98d041d3704ae9be69f71049a7892fc3aa4d38f405e4e2c258d"
+    },
+    {
+      "from": "eram-e-sabz",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "56a5e7aae223be75657f7dfe62134f0c43b8643ad5a78d64bbfffab4ee45b43c"
+    },
+    {
+      "from": "varzeshgah-e-azadi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "89efc0b02dc0a326454cd98bcdeb89dfe7dc8aa3fae89a56c9ea812467ac675b"
+    },
+    {
+      "from": "chitgar",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "7ddd3d01b31f2912bf9dabf19efd47f1682bf5a6ee1cdd7aa03769104a3ceb24"
+    },
+    {
+      "from": "iran-khodro",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "e1b4b660c8ac9947353f5e0a21e868121cb306451c597d28aed9512697c3b542"
+    },
+    {
+      "from": "vardavard",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "aba9b175dc00d47ff2a124a917d7790e2b84c2247d8689f2ac42063d9f58f588"
+    },
+    {
+      "from": "garmdareh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "b86a9b5560cab50879ca113f2875aae6ba3230dc90d7815e646ffc32fda4bc1c"
+    },
+    {
+      "from": "atmosphere",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "eb6edfb4a625451baa00998b5eb054d821b37fa488263470e00cf8a4c8a87ccc"
+    },
+    {
+      "from": "karaj",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "a4457a14c5949a892305f4099acec77c512b762d14983ff666df58f536987ce9"
+    },
+    {
+      "from": "mohammadshahr",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "891ded8f7f47552f5196a319730451e85c341748d109886303074e46eef6f30a"
+    },
+    {
+      "from": "golshahr",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "423cdb38d03a02a206631d84b1486ec29b9a2bccfa8a13e32305bc6e3207dc81"
+    },
+    {
+      "from": "shahid-fakhrizadeh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "fbd59ad8446333e596cf3575ed024fd436f61ac32e7e8c965c3e6e94a54ccbdd"
+    },
+    {
+      "from": "shahid-sepahbod-qasem-soleimani",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "b5f183fbe0f9ef0a26dfdd25a8269e7ad5c864c3eb2de1def40e1750b2d32b93"
+    },
+    {
+      "from": "haram-e-hazrat-e-abdol-azim",
+      "pairs": 150,
+      "reachable": 0,
+      "sha256": "ad6c9452b4c043036f9e293bfaddfd00eec82ad394632bdf467a6d8806f52767"
+    },
+    {
+      "from": "meydan-e-hazrat-e-abdol-azim",
+      "pairs": 150,
+      "reachable": 0,
+      "sha256": "23a95a29d464151b9b57550a74408b57f7b08f84a5637f6197ab0fec2e5c193b"
+    },
+    {
+      "from": "ebn-e-babviyeh",
+      "pairs": 150,
+      "reachable": 0,
+      "sha256": "e5deaad70d1860b159d9459ff926bb21687cca1589dd04aab28ddb5211c30261"
+    },
+    {
+      "from": "cheshmeh-ali",
+      "pairs": 150,
+      "reachable": 0,
+      "sha256": "adb0ced0c5273e53c9637485601207bce9d04eca8cd9150cf93c53a914bc5db4"
+    },
+    {
+      "from": "shohada-ye-dowlat-abad",
+      "pairs": 150,
+      "reachable": 143,
+      "sha256": "6bcca4ccbf521bc4eed92d881749042d8517ded7c2e77b816c82bd5200e46b27"
+    },
+    {
+      "from": "kiyan-shahr",
+      "pairs": 150,
+      "reachable": 143,
+      "sha256": "4f66e72af323cb7440804ba71c3f52ea80e3952ac002002eb36290facf2a286e"
+    },
+    {
+      "from": "besat",
+      "pairs": 150,
+      "reachable": 143,
+      "sha256": "2f035127f72268d46789e7ae4132251f981e837ad66b448f664b38f8ecab611f"
+    },
+    {
+      "from": "shahid-rezaei",
+      "pairs": 150,
+      "reachable": 143,
+      "sha256": "4c4ac3396b0150c45fcbb72ca8cb97161ee95d4b4c1e3a858d43f250f5ab6e04"
+    },
+    {
+      "from": "meydan-e-khorasan",
+      "pairs": 150,
+      "reachable": 143,
+      "sha256": "8065581d14b49dfaa1e8d3520521cb92be138427ab659b4793d66d7daf6652fa"
+    },
+    {
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "3ba5736f7632f6784a27aef89f18debacf7ee0f5e4c2977add35ac88c72014eb"
+    },
+    {
+      "from": "amirkabir",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "8036c6f6fcc47ccf7748f31ea68a67ae9254c23b6a79fc8379e2752143742af3"
+    },
+    {
+      "from": "meydan-e-shohada",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "d2b873dc06c18cd28a0bf3e2cebc12d39b176e9ee7adefa671fddaefb228aca6"
+    },
+    {
+      "from": "sarbaz",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "e03f37352d8888df6b28f5f64613b87f3ecfb6a568512d88fc62a8e84f0eec4a"
+    },
+    {
+      "from": "bahar-shiraz-khanevadeh-hospital",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "72e503b2a0973fda5c9bd2efe76dcd4149447da8c71d134ee816ab1e05ebec80"
+    },
+    {
+      "from": "shohada-ye-haftom-e-tir",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "8b06a1fc40e2136204a1bdc20f40664b617b77486bebefd9b72bd6f430af2102"
+    },
+    {
+      "from": "maryam-e-moghaddas",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "ac1a329796abfee01cbd53210c68482e1253bbf7327f0876ee83d48fef024d7f"
+    },
+    {
+      "from": "meydan-e-hazrat-vali-asr",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "fdf16aae86d4e256289f5b7bd7d74e2119c10e045eeced0f098d9034f3896dc7"
+    },
+    {
+      "from": "bustan-e-laleh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "a8f13db434b64b046d3bbe97b8a0f70f7f409f1a017ef0977535d70feee4786e"
+    },
+    {
+      "from": "karagar",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "6f1d835f924b0ce7abdec0671ec3f00a88ba0eb42a312cf02ce57108796cb99f"
+    },
+    {
+      "from": "daneshgah-e-tarbiat-modarres",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "d33ade73f7fc7b226897c914e9dcece915ee5d6a16227c469a43d2f02ebbebde"
+    },
+    {
+      "from": "shahrak-e-azmayesh",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "ca615da7296535c1a434787b20e58d7b05b9d13a5d09d365f12da83c8af6231d"
+    },
+    {
+      "from": "marzdaran",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "d46c30e1741317bd67cc0db1a1db9b0041814dcf5cf9554e7260730791d87d6b"
+    },
+    {
+      "from": "yadegar-e-imam",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "877818b4117eca3456bb297a36f2cbd70c8388b85624fdbb4b9c4b5db963f810"
+    },
+    {
+      "from": "shahid-ashrafi-esfahani",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "52f9f88f2b7d3cdb21a379b3d62a1ca88def88720dab9da418d7916246a6a391"
+    },
+    {
+      "from": "shahid-sattari",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "9d5d2df13e8d6989bb6e0b8ee69fe4c4c8dbc8accecfdb1a358f02ef036e8673"
+    },
+    {
+      "from": "ayatollah-kashani",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "7cc4384a193308837be31cf3d9eacae7e4f413f6ff9ac273f96e36d98e98ff45"
+    },
+    {
+      "from": "shahr-e-ziba",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "6e3753d4bca28e3d438b3700021e4f7bb7cb335fc40328176934a5f6974d0616"
+    },
+    {
+      "from": "shahran",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "b1e6513a9ffa6541b1d400f001ee8d14849e328988feb11e6edd815a621c183c"
+    },
+    {
+      "from": "shohada-ye-kan",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "32fd07b30401891fd0ca38cf27df505ea326723c8760edc4dddaaafac2863abf"
+    },
+    {
+      "from": "kouhsar",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "19358fcb466c02cd6027c5b5ce0d8d5dcc20b5dfc2d303276776cd69c53dadbd"
+    },
+    {
+      "from": "varzeshgah-e-takhti",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "6a867db5e425a0cb1045483eafbf7625dc6aacffb2549146dcd32b59d8c5aa76"
+    },
+    {
+      "from": "basij",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "d77404fdb4d864b5085efb530c3866415abbfdc62b8aa96ffc783ea48ab1f1ff"
+    },
+    {
+      "from": "ahang",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "1d7c81b5b3c440ccb06ba220e32cef36d956ae3d410b6965002aec83792eb1c8"
+    },
+    {
+      "from": "chehel-tan-e-doulab",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "a87e90ebf96657997ae16882e199c1b36eade67dcc06da02170ea4a6361705c7"
+    },
+    {
+      "from": "meydan-e-giyam",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "9dc9303c651719d6b1c00fc8f9a34b1049bcba56488ca8439583b107dfff1430"
+    },
+    {
+      "from": "mowlavi",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "8a3c013677a6e215ba2659bbb05c7f38b44c1551604ee9af241fab9d14c49f7b"
+    },
+    {
+      "from": "helal-ahmar",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "e34a49c1ea7cd41aaacb372111b67bc97bd4590bed570b52b8f827abe34bb49d"
+    },
+    {
+      "from": "beryanak",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "c36d90702650b916325c1a48162dc80148dddf9132eef361783fc93419fc3249"
+    },
+    {
+      "from": "komeyl",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "6078d818c82de310d7d757c7743b580e9f473a2c0986b57864541fcbb419f51b"
+    },
+    {
+      "from": "roudaki",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "f74c7fc7d1f11d4818f6505106dc232474209d51731f8c65a264d07c7a715cf7"
+    },
+    {
+      "from": "modafean-e-salamat",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "be79b2e90ff2d31401df84a30fea73bad3e135e0244512303820b816114b6a39"
+    },
+    {
+      "from": "boostan-e-goftegou",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "e4c46739c409f6308d0d6d8fc826126713886a25c98c132d4e4b7f4f20b457dc"
+    },
+    {
+      "from": "milad-tower",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "3a6de6d6bd0b93b0d8b6dcdf01ffcba74b8070921dde3f981ef2e7ce36c83b6b"
+    },
+    {
+      "from": "meydan-e-sanat",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "c2ee3ba8cc14b3010872decba2648b2d745d18f91a14e02f310ee4f99d814103"
+    },
+    {
+      "from": "shahid-dadman",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "7b5b14c6f27e64f4d8c88b0cd25cfc5bca6dc540f9051c421f6b5363c14de186"
+    },
+    {
+      "from": "meydan-e-ketab",
+      "pairs": 150,
+      "reachable": 144,
+      "sha256": "96e88249597a5751e69ff3d3d8eaa2e474059ac6edb6ffdc92049d2643f1f6f5"
+    }
+  ],
+  "scheduledCases": [
+    {
+      "scenario": "weekday-morning",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "d409f0e934ce9ae2aa63ee1a3fdf572a5b47654edb05132238fd95651b9a7b28"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "78dfdb1b57666e2732d1a896a935e28d1fe3b98f6455a86f004c2fc2f3065b99"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "bccca220a95ea086b9fc177650afb9a2963d78fb5fe35c40c3c76f96639efbfd"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "f053999c54610be74f19ddf1e79e036e63dc0576318ee13d8d32a0f86ea13e44"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "8d92d23dafc74b817fa6cc33b7a3254c751166921b5e8207e2b2e4cd267bff97"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "8fd4b43838aa7034597ff85b49c0f8f909dce57ff90d784adc892eaebd0a5d82"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "c382700517d251a197ce49355c8938dd16768cac5cf8d87154c46a16b5fb7a9f"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "09ec3528f46ce7a164907d52042c83aea696d11f4d87eda177b8dbebb4c00509"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "weekday-morning",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "6fd33f96d76371be8337f50a9c31eb8aaca6a433bd85f276dad5631b7b5fdbe2"
+    },
+    {
+      "scenario": "thursday",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "fa85745dadd01d2018cb839309caae23f3393398397fa67d737efed02f7dbd5a"
+    },
+    {
+      "scenario": "thursday",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "426cd29b59de8ce1f552c4733276c6b6018c302239cbb9a95ef3334bbbd64737"
+    },
+    {
+      "scenario": "thursday",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "b1a5ec729e7c92108b9f80156cd7f2a245628698012acb1889fbaede20b62bb5"
+    },
+    {
+      "scenario": "thursday",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "ba9eaf3d423ce61704e8b4b0e3358445b38d94e8938dc986c344988cb0c2c381"
+    },
+    {
+      "scenario": "thursday",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "3d3752054f292f06e08e13b48c4e4f4bae24fec35b2bf1e35f986a0b1ff4e946"
+    },
+    {
+      "scenario": "thursday",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "4803e39f3226e008a19961f5c9d9712209dddbc87d2790213cbed05124aea20f"
+    },
+    {
+      "scenario": "thursday",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "92b17f449fe1a944abd6887c449e1de019e53198f22758a548a1a5696ea20881"
+    },
+    {
+      "scenario": "thursday",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "thursday",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "1f7c404179047d7cb6965de5f5f5e16a8d473df9d4203216d9d88b95e8a272af"
+    },
+    {
+      "scenario": "friday",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "b5a2827837346b03c0336c0f21dfebffaac8dc22edad23eb126bb3fdf4b679bc"
+    },
+    {
+      "scenario": "friday",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "2e673ee97ab3660b5ba2443eb00380621928f5c134a1ed7d4a8e7c6c4274372b"
+    },
+    {
+      "scenario": "friday",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "b60f2cf3370beb19a574a697ddc0e1525be5d77914d2da35d347a5ec18f2c272"
+    },
+    {
+      "scenario": "friday",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "563a739d43748875bbfccca0d6dbf86d426f6c44117faaf5045909c23d26bf30"
+    },
+    {
+      "scenario": "friday",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "39bba98d92c065ec26e2da14130676313cb843293295ddd14e2e8052fbab5c60"
+    },
+    {
+      "scenario": "friday",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "9afcae64a2c221f3643c907fa6b0a428ee7b9c34e2e16cc59cb2c3a10d029212"
+    },
+    {
+      "scenario": "friday",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "8bc31656df84e5fea7a4d9879d322a6ad34064f3e9924977fc698700e6e00c26"
+    },
+    {
+      "scenario": "friday",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "friday",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "a4dc64e65743af82644cdb4a188ca2d93af03e339709b7c29258c03c59be71b0"
+    },
+    {
+      "scenario": "holiday",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "b10caa48f24470e0d428a02c9eff2cc9179422534b9992921633db62b6a2a250"
+    },
+    {
+      "scenario": "holiday",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "bccca220a95ea086b9fc177650afb9a2963d78fb5fe35c40c3c76f96639efbfd"
+    },
+    {
+      "scenario": "holiday",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "e23b7e3b8f0c9d9bbd8c27cca127705577b47b32ddd34ebd0aefa1787eeec198"
+    },
+    {
+      "scenario": "holiday",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "4eb014b5243b2c10742403c30ed47d7a3afa673d3deb927479f439fd2adb1ab8"
+    },
+    {
+      "scenario": "holiday",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "8fd4b43838aa7034597ff85b49c0f8f909dce57ff90d784adc892eaebd0a5d82"
+    },
+    {
+      "scenario": "holiday",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "540e44818e79579158bd5b8134290274b3186929768c0368ce85204be1fe5b69"
+    },
+    {
+      "scenario": "holiday",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "5beb64ecc5a0f55784c5233a745c34bfe8dffa01b7bf5854d1e20dcb2269d388"
+    },
+    {
+      "scenario": "holiday",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "holiday",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "bda7b47327c89ff99801edc9b8a1df24c3a1de4333c3371e50b66efabd246315"
+    },
+    {
+      "scenario": "last-service",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "d0dc96df67aac70301566892389ec94908c5733f4bbe4effd26c4d3e57a1d369"
+    },
+    {
+      "scenario": "last-service",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "b86fd1d809e43aa969685c23a44cf571e82a9a77d9c54e6a833b186375011478"
+    },
+    {
+      "scenario": "last-service",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "198a79c5258a8e861e48316f5402ec471fe1f411d1b634a1f70da0ac0db3ab62"
+    },
+    {
+      "scenario": "last-service",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "a0b20d454355293a7f49a044bf94c645b1c50dba4e1c8a917374175bc7f933cd"
+    },
+    {
+      "scenario": "last-service",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "ca38e26d384f88cfec65be5f56684c4e55ec37d073aeb262750113a7b79199a4"
+    },
+    {
+      "scenario": "last-service",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "complete",
+      "sha256": "5f47196333daacf0154f8a0f5a51506318303374e1c7c9a7da832cf1c1a1665a"
+    },
+    {
+      "scenario": "last-service",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "6c25f2fa07c46aa1954236ebb8b0a91150eba0bdd1a7736ffcbe5d83d99b8b6f"
+    },
+    {
+      "scenario": "last-service",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "last-service",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "a68a16e07956f7bd378694e83f55205965a4fef8b4f196dea538107e8c6564cf"
+    },
+    {
+      "scenario": "midnight",
+      "from": "tajrish",
+      "to": "tehran-sadeghiyeh",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "6c863aafb42c15bbb29ae18394909367cd1be5e7790f95f73e2fe283c1443d69"
+    },
+    {
+      "scenario": "midnight",
+      "from": "tehran-sadeghiyeh",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "34df6af84159bb8228daa8d624172726c116bb68fc2e6138b2860ff14cb196f4"
+    },
+    {
+      "scenario": "midnight",
+      "from": "tehran-sadeghiyeh",
+      "to": "shahid-sepahbod-qasem-soleimani",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "f913f4a08fbe1b363f6b2d730c4c51e4ce36d2ed666ea4d77b86d4341494bafc"
+    },
+    {
+      "scenario": "midnight",
+      "from": "bimeh",
+      "to": "mehrabad-airport-terminal-4-6",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "efd6525b0d86e6e790b0787e9247e4bc9ee2a83a069a706d80ee021d62040747"
+    },
+    {
+      "scenario": "midnight",
+      "from": "shahed-baghershahr",
+      "to": "shahr-e-parand",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "0d38abded6ca14893b9cdc520209566aa61e50148949895099425a24638e5af7"
+    },
+    {
+      "scenario": "midnight",
+      "from": "shahid-fakhrizadeh",
+      "to": "allameh-jafari",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "3f63dc9bfad5d9b4d076aaf056d820fb9a6c16e322143862ef0cd5d9c738bc43"
+    },
+    {
+      "scenario": "midnight",
+      "from": "amirkabir",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "depart-at",
+      "status": "no_service",
+      "sha256": "8b5e589f7ccc869413f3baf9371d15d1fb90952db51464a43304428ba5050a3c"
+    },
+    {
+      "scenario": "midnight",
+      "from": "shohada-ye-hefdah-e-shahrivar",
+      "to": "meydan-e-khorasan",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "depart-at",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "scenario": "midnight",
+      "from": "vavan",
+      "to": "tajrish",
+      "mode": "arrive-by",
+      "status": "unreachable",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    }
+  ]
+}

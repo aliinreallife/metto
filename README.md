@@ -118,8 +118,13 @@ lib/
 public/
   schedule-data.json  # timetables
   openapi.json / llms.txt
-scripts/generate-stations.ts
+data/metto-data/ # pinned, offline-bundled Tehran network + provenance manifest
 ```
+
+Network facts come from a reviewed `metto-data` commit through the compatibility
+adapter. See [pinned imports and runtime migration checks](docs/metto-data-integration.md).
+The legacy station generator is retired; update the data repository and use
+`pnpm metro-data:import` for a deliberate source refresh.
 
 ## Contributing
 
