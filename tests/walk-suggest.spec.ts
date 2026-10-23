@@ -20,6 +20,10 @@ function tehranDatePlusDays(days: number): string {
 
 test.describe("walk suggestion", () => {
   test.beforeEach(async ({ page }) => {
+    // Default comparisons need an operating journey, including nighttime CI.
+    // A future morning keeps real-time walking fixtures inside their TTL.
+    // Tests for closed service override this clock explicitly below.
+    await page.clock.setFixedTime(new Date(tehranDatePlusDays(1)));
     await mockWalkingApi(page, (url) => {
       const params = new URL(url).searchParams;
       const from = { lat: Number(params.get("fromLat")), lng: Number(params.get("fromLng")) };
@@ -56,10 +60,6 @@ test.describe("walk suggestion", () => {
   });
 
   test("verified short walking routes are also suggested on the map", async ({ page }) => {
-    // Exercise an operating metro journey even when CI runs after closing.
-    // Tomorrow morning also keeps the fixture's real-time savedAt within
-    // the seven-day freshness window, rather than dating it in the future.
-    await page.clock.setFixedTime(new Date(tehranDatePlusDays(1)));
     await page.goto("/map?from=saadi&to=mellat", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("walk-suggest")).toContainText("احتمالاً پیاده‌روی سریع‌تر است", { timeout: 15_000 });
     await expect(page.locator("path.metto-walking-path")).toHaveCount(1);
@@ -161,6 +161,7 @@ test.describe("walk suggestion", () => {
 });
 
 test("a failed street request never claims walking beats the metro", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(tehranDatePlusDays(1)));
   await unavailableWalkingApi(page);
   await page.goto("/route?from=saadi&to=mellat");
   await expect(page.getByTestId("route-summary-stats")).toBeVisible();
