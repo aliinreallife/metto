@@ -1,24 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMetro } from "@/app/providers";
 import { mashhadPreview } from "@/lib/mashhad-preview";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { AppSkipLink } from "../(app)/skip-link";
+import { useSearchParams } from "next/navigation";
 
 const byId = new Map(mashhadPreview.stations.map(s => [s.id, s]));
 const normalize = (text: string) => text.toLowerCase().replace(/ك/g, "ک").replace(/ي/g, "ی").replace(/\u200c/g, " ").trim();
 const control = "min-h-[44px] rounded-lg border bg-background px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
-export function MashhadPreview({ initialFrom, initialTo, initialLang }: {
-  initialFrom?: string; initialTo?: string; initialLang?: Lang;
+export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initialLang: langProp, embedded = false }: {
+  initialFrom?: string; initialTo?: string; initialLang?: Lang; embedded?: boolean;
 }) {
+  const params = useSearchParams();
+  const initialFrom = fromProp ?? params.get("from") ?? undefined;
+  const initialTo = toProp ?? params.get("to") ?? undefined;
+  const requestedLang = params.get("lang");
+  const initialLang = langProp ?? (requestedLang === "fa" || requestedLang === "en" ? requestedLang : undefined);
   const { lang: preferredLang, setLang } = useMetro();
   // A shared URL's language must also win on the server/first render, before
   // the provider hydrates the saved preference. This avoids rewriting it.
   const [selectedLang, setSelectedLang] = useState<Lang | undefined>(initialLang);
-  const lang = selectedLang ?? preferredLang;
+  const languageReady = useRef(!initialLang);
+  const lang = embedded ? preferredLang : selectedLang ?? preferredLang;
   const t = STRINGS[lang];
   const [from, setFrom] = useState(byId.has(initialFrom ?? "") ? initialFrom! : "");
   const [to, setTo] = useState(byId.has(initialTo ?? "") ? initialTo! : "");
@@ -28,23 +35,47 @@ export function MashhadPreview({ initialFrom, initialTo, initialLang }: {
   const [query, setQuery] = useState("");
   useEffect(() => { if (initialLang) setLang(initialLang); }, [initialLang, setLang]);
   useEffect(() => {
+    let active = true;
+    try {
+      const savedFrom = localStorage.getItem("mashhad.route.from");
+      const savedTo = localStorage.getItem("mashhad.route.to");
+      queueMicrotask(() => {
+        if (!active) return;
+        if (!initialFrom && savedFrom && byId.has(savedFrom)) setFrom(savedFrom);
+        if (!initialTo && savedTo && byId.has(savedTo)) setTo(savedTo);
+      });
+    } catch { /* storage optional */ }
+    return () => { active = false; };
+    // Restore only on mount; explicit city-scoped URLs win.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!languageReady.current) {
+      if (preferredLang !== initialLang) return;
+      languageReady.current = true;
+    }
     const url = new URL(window.location.href);
     for (const [key, value] of Object.entries({ from, to, lang })) {
       if (value) url.searchParams.set(key, value); else url.searchParams.delete(key);
     }
     if (url.href !== window.location.href) window.history.replaceState(null, "", url);
-  }, [from, to, lang]);
+    try {
+      if (from) localStorage.setItem("mashhad.route.from", from);
+      if (to) localStorage.setItem("mashhad.route.to", to);
+    } catch { /* storage optional */ }
+  }, [from, to, lang, initialLang, preferredLang]);
   const stations = useMemo(() => [...mashhadPreview.stations].sort((a, b) => a.names[lang].localeCompare(b.names[lang], lang)), [lang]);
   const found = useMemo(() => stations.filter(s => normalize(s.names.fa).includes(normalize(query)) || normalize(s.names.en).includes(normalize(query))), [stations, query]);
   const result = useMemo(() => mashhadPreview.findPath(from, to), [from, to]);
   const number = (value: string | number) => persianDigits(value, lang);
   const lineName = (id: string) => `${t.line} ${number(id.split(":").at(-1)!)}`;
   const name = (id: string) => byId.get(id)?.names[lang] ?? id;
-  const routeHref = `/mashhad?${new URLSearchParams({ from, to, lang })}`;
+  const routeHref = `/mashhad/route?${new URLSearchParams({ from, to, lang })}`;
+  const Container = embedded ? "div" : "main";
 
   return <>
-    <AppSkipLink />
-    <main id="main-content" tabIndex={-1} data-testid="city-path-preview" className="flex-1 overflow-y-auto" lang={lang} dir={lang === "fa" ? "rtl" : "ltr"}>
+    {!embedded && <AppSkipLink />}
+    <Container id={embedded ? undefined : "main-content"} tabIndex={-1} data-testid="city-path-preview" className="min-h-0 flex-1 overflow-y-auto" lang={lang} dir={lang === "fa" ? "rtl" : "ltr"}>
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 pb-12">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div><h1 className="text-xl font-bold">{t.cityPreviewTitle}</h1><p className="mt-2 text-sm">{t.cityPreviewScope}</p></div>
@@ -90,6 +121,7 @@ export function MashhadPreview({ initialFrom, initialTo, initialLang }: {
             </li>)}
           </ol>
           <a href={routeHref} className={`${control} mt-5 inline-flex items-center underline`}>{t.cityPreviewShare}</a>
+          <Link href={`/mashhad/map?${new URLSearchParams({ from, to, lang })}`} className={`${control} ms-2 mt-5 inline-flex items-center underline`}>{t.tabMap}</Link>
         </section>}
         <section aria-labelledby="city-stations-title">
           <h2 id="city-stations-title" className="font-bold">{t.cityPreviewStationList} ({number(mashhadPreview.stations.length)})</h2>
@@ -111,7 +143,7 @@ export function MashhadPreview({ initialFrom, initialTo, initialLang }: {
           </p>
         </footer>
       </div>
-    </main>
+    </Container>
   </>;
 }
 

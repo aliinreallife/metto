@@ -4,6 +4,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://metto.ir";
 
   return [
+    ...["/tehran", "/tehran/route", "/tehran/map", "/tehran/stations", "/tehran/nearby", "/cities", "/cities/map", "/cities/route", "/cities/nearby"].map(path => ({ url: `${baseUrl}${path}`, changeFrequency: "weekly" as const, priority: 0.8 })),
     {
       url: baseUrl,
       changeFrequency: "weekly",

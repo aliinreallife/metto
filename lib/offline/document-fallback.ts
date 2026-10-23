@@ -14,7 +14,7 @@
  * - full document navigations only (`request.mode === "navigate"`,
  *   defensively also `destination === "document"`) — RSC/Flight, API,
  *   assets and tiles can never match;
- * - exact pathname must be one of the five canonical static documents;
+ * - exact pathname must be one of the canonical static documents below;
  * - unknown paths match nothing and fail normally offline.
  */
 
@@ -24,6 +24,15 @@ export const CANONICAL_STATIC_DOCS: ReadonlyArray<string> = [
   "/map",
   "/stations",
   "/nearby",
+  "/tehran",
+  "/tehran/route",
+  "/tehran/map",
+  "/tehran/stations",
+  "/tehran/nearby",
+  "/cities",
+  "/cities/map",
+  "/cities/route",
+  "/cities/nearby",
 ];
 
 /** Exact-match check against the canonical static documents. */

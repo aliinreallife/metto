@@ -7,6 +7,9 @@ import { Hero } from "./components/Hero";
 import { Donate } from "./components/Donate";
 import { PwaStrip } from "./components/PwaStrip";
 import { WelcomeFooter } from "./components/WelcomeFooter";
+import { CITIES, type CityId } from "@/lib/cities";
+import { cityCounts } from "@/lib/city-catalog";
+import { persianDigits } from "@/lib/i18n";
 
 const FAQ_JSON_LD = {
   "@context": "https://schema.org",
@@ -41,14 +44,14 @@ const FAQ_JSON_LD = {
       name: "داده‌ها از کجاست؟",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "داده ایستگاه‌ها و خط‌ها از مجموعه داده باز mostafa-kheibary گرفته شده و زمان‌بندی‌ها بر اساس اطلاعات اعلام‌شده شرکت مترو است.",
+        text: "دادهٔ ایستگاه‌ها از مجموعه‌داده‌های باز هر شهر و OpenStreetMap تهیه شده است. زمان‌بندی قطارها برای تهران در دسترس است.",
       },
     },
   ],
 };
 
-export function WelcomePage() {
-  const { lang } = useMetro();
+export function WelcomePage({ cityId }: { cityId?: CityId }) {
+  const { lang, cityIds } = useMetro();
   const t = WELCOME_CONTENT[lang];
   const dir = lang === "fa" ? "rtl" : "ltr";
   const scrollContainer = useRef<HTMLDivElement>(null);
@@ -74,6 +77,7 @@ export function WelcomePage() {
   //    and private mode (storage throws: fall through to the landing)
   //    are unaffected.
   useEffect(() => {
+    if (cityId) return;
     const search = window.location.search;
     if (/[?&](from|to)=/.test(search)) {
       window.location.replace(`/route${search}`);
@@ -83,12 +87,13 @@ export function WelcomePage() {
     if (window.location.hash && window.location.hash.length > 1) return;
     try {
       if (localStorage.getItem("route.seen") === "1") {
-        window.location.replace(`/route${search}`);
+        const saved = localStorage.getItem("city.last");
+        window.location.replace(`${saved === "mashhad" && cityIds.includes("mashhad") ? "/mashhad/route" : "/route"}${search}`);
       }
     } catch {
       // Private mode etc. — show the landing.
     }
-  }, []);
+  }, [cityId, cityIds]);
 
   // Cold full-document loads (direct link, share, mobile footer
   // window.location.assign) land at the top: neither the browser nor Next
@@ -138,12 +143,12 @@ export function WelcomePage() {
           (e.g. /#donate from the app footer) is intentional navigation
           and never redirects. The React effect below
           is the fallback (e.g. if inline scripts are stripped). */}
-      <script
+      {!cityId && <script
         dangerouslySetInnerHTML={{
-          __html: `try{var s=location.search,h=location.hash;if(!h||h.length<=1){if(/[?&](from|to)=/.test(s)||localStorage.getItem("route.seen")==="1"){location.replace("/route"+s)}}}catch(e){}`,
+          __html: `try{var s=location.search,h=location.hash;if(!h||h.length<=1){if(/[?&](from|to)=/.test(s)){location.replace("/route"+s)}else if(localStorage.getItem("route.seen")==="1"){location.replace(${cityIds.includes("mashhad") ? '(localStorage.getItem("city.last")==="mashhad"?"/mashhad/route":"/route")' : '"/route"'}+s)}}}catch(e){}`,
         }}
-      />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }} />
+      />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ ...FAQ_JSON_LD, mainEntity: FAQ_JSON_LD.mainEntity.map((q, i) => i === 1 ? { ...q, acceptedAnswer: { ...q.acceptedAnswer, text: `${CITIES.filter(c => cityIds.includes(c.slug) && (!cityId || c.slug === cityId)).map(c => c.name.fa).join("، ")} · ${persianDigits(cityCounts(cityIds, cityId).stations, "fa")} ایستگاه` } } : q) }) }} />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-primary-foreground"
@@ -151,11 +156,11 @@ export function WelcomePage() {
         {t.misc.skip}
       </a>
       <main id="main" className="flex min-h-0 flex-1 flex-col">
-        <Hero />
+        <Hero cityId={cityId} />
         <Donate />
         <PwaStrip />
       </main>
-      <WelcomeFooter />
+      <WelcomeFooter cityId={cityId} />
     </div>
   );
 }

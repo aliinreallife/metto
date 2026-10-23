@@ -5,7 +5,10 @@ import Link from "next/link";
 import { Globe } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT } from "../content";
-import { persianDigits, type Lang } from "@/lib/i18n";
+import { persianDigits, STRINGS, type Lang } from "@/lib/i18n";
+import { CITIES, type CityId } from "@/lib/cities";
+import { catalogStations, cityCounts } from "@/lib/city-catalog";
+import { mashhadPreview } from "@/lib/mashhad-preview";
 import { findRoute } from "@/lib/route";
 import {
   getAllStations,
@@ -13,7 +16,6 @@ import {
   getStationLines,
   isInterchange,
 } from "@/lib/metro/selectors";
-import { LINES } from "@/lib/metro/lines";
 import { cn } from "@/lib/utils";
 import { Reveal } from "./Reveal";
 import { ArrowIcon, MapIcon, TrainIcon } from "./Icons";
@@ -288,16 +290,21 @@ const TICKER_STATIONS: { fa: string; en: string; line: number }[] = [
   { fa: "ورزشگاه تختی", en: "Takhti", line: 7 },
 ];
 
-function Ticker() {
-  const { lang } = useMetro();
+function Ticker({ cityId }: { cityId?: CityId }) {
+  const { lang, cityIds } = useMetro();
   const isFa = lang === "fa";
+  const rows = cityId === "tehran" ? TICKER_STATIONS.map(s => ({ ...s, id: s.en, city: "" })) :
+    CITIES.filter(c => cityIds.includes(c.slug) && (!cityId || cityId === c.slug)).flatMap(c =>
+      catalogStations(cityIds, c.slug).slice(0, 10).map(s => ({ id: s.id, fa: s.names.fa, en: s.names.en,
+        line: Number(s.lineIds[0]?.split(":").at(-1)), city: cityId ? "" : c.name[lang] })));
   const copy = (
     <div className="flex shrink-0 items-center gap-6 pe-6 sm:gap-8 sm:pe-8">
-      {TICKER_STATIONS.map((s) => (
-        <span key={s.en} className="flex items-center gap-6 whitespace-nowrap sm:gap-8">
+      {rows.map((s) => (
+        <span key={s.id} className="flex items-center gap-6 whitespace-nowrap sm:gap-8">
           <span className="h-1.5 w-1.5 rounded-full bg-primary/70" aria-hidden />
           <span className="flex items-center gap-1.5 text-xs font-medium">
             <span>{isFa ? s.fa : s.en}</span>
+            {s.city && <span className="text-muted-foreground">· {s.city}</span>}
             <span className="tnum rounded bg-muted px-1 text-[10px] font-bold text-foreground">
               {isFa ? `خط ${persianDigits(s.line, lang)}` : `L${s.line}`}
             </span>
@@ -319,13 +326,20 @@ function Ticker() {
   );
 }
 
-export function Hero() {
-  const { lang, setLang } = useMetro();
-  const t = WELCOME_CONTENT[lang].hero;
+export function Hero({ cityId }: { cityId?: CityId }) {
+  const { lang, setLang, cityIds } = useMetro();
+  const strings = STRINGS[lang];
+  const cities = CITIES.filter(c => cityIds.includes(c.slug) && (!cityId || c.slug === cityId));
+  const t = { ...WELCOME_CONTENT[lang].hero,
+    city: cities.map(c => c.name[lang]).join(" · "),
+    sub: cityId === "tehran" ? strings.cityLandingTehran : cityId === "mashhad" ? strings.cityLandingMashhad : strings.multiCityDescription,
+    ctaPrimary: cityId ? WELCOME_CONTENT[lang].hero.ctaPrimary : strings.chooseCity,
+  };
   const isFa = lang === "fa";
-  const stationCount = getAllStations().length;
-  const lineCount = LINES.length;
-  const interchangeCount = getAllStations().filter((s) => isInterchange(s.id)).length;
+  const counts = cityCounts(cityIds, cityId);
+  const stationCount = counts.stations;
+  const lineCount = counts.lines;
+  const interchangeCount = cityId === "mashhad" ? 1 : getAllStations().filter((s) => isInterchange(s.id)).length;
 
   return (
     <section className="relative flex min-h-svh flex-col overflow-hidden" id="hero">
@@ -376,14 +390,14 @@ export function Hero() {
             <Reveal delay={210}>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
-                  href="/route"
+                  href={cityId ? `/${cityId}/route?lang=${lang}` : `/cities?lang=${lang}`}
                   className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-bold text-primary-foreground shadow-[0_10px_28px_-14px_var(--primary)] transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
                 >
                   {t.ctaPrimary}
                   <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
                 </Link>
                 <Link
-                  href="/map"
+                  href={cityId ? `/${cityId}/map?lang=${lang}` : `/cities/map?lang=${lang}`}
                   className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold transition-all duration-200 hover:border-foreground hover:bg-muted active:scale-[0.98]"
                 >
                   <MapIcon className="h-4 w-4 text-primary transition-transform duration-300 group-hover:scale-110" />
@@ -421,7 +435,8 @@ export function Hero() {
                 {[
                   { v: persianDigits(stationCount, lang), l: isFa ? "ایستگاه" : "stations" },
                   { v: persianDigits(lineCount, lang), l: isFa ? "خط" : "lines" },
-                  { v: persianDigits(interchangeCount, lang), l: isFa ? "تقاطع" : "interchanges" },
+                  cityId ? { v: persianDigits(interchangeCount, lang), l: isFa ? "تقاطع" : "interchanges" }
+                    : { v: persianDigits(counts.cities, lang), l: strings.cityCities },
                 ].map((s) => (
                   <div
                     key={s.l}
@@ -439,20 +454,35 @@ export function Hero() {
 
           <div className="lg:col-span-5">
             <Reveal delay={180} className="lg:ms-auto lg:max-w-sm">
-              <div className="drift-y">
-                <RoutePanel />
+              <div className={cityId === "tehran" ? "drift-y" : undefined}>
+                {cityId === "tehran" ? <RoutePanel /> : <div className="rounded-xl border bg-card p-5" data-testid="landing-city-cards">
+                  <h2 className="text-lg font-bold">{cityId === "mashhad" ? strings.findRoute : strings.chooseCity}</h2>
+                  {cityId === "mashhad" ? <div className="mt-4">
+                    <p className="font-medium">{mashhadPreview.stations.find(s => s.id.endsWith(":vakilabad"))!.names[lang]} ← {mashhadPreview.stations.find(s => s.id.endsWith(":airport"))!.names[lang]}</p>
+                    <p className="mt-2 text-sm">{strings.cityPathOnly}</p>
+                    <Link href={`/mashhad/route?${new URLSearchParams({ from: "mashhad:station:vakilabad", to: "mashhad:station:airport", lang })}`} className="mt-4 inline-flex min-h-[44px] items-center rounded-lg bg-primary px-4 py-2 text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary">{t.ctaPrimary}</Link>
+                  </div> : <div className="mt-4 grid gap-3">{cities.map(c => {
+                    const count = cityCounts(cityIds, c.slug);
+                    return <Link key={c.slug} href={`/${c.slug}?lang=${lang}`} className="block rounded-xl border p-4 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary">
+                      <span className="font-bold">{c.name[lang]}</span>
+                      {c.slug === "mashhad" && <span className="ms-2 rounded border px-2 py-0.5 text-xs">{strings.cityPreviewBadge}</span>}
+                      <p className="mt-2 text-sm">{persianDigits(count.stations, lang)} {strings.stops} · {persianDigits(count.lines, lang)} {strings.cityLines}</p>
+                      {!c.timing && <p className="mt-2 text-sm">{strings.cityPathOnly}</p>}
+                    </Link>;
+                  })}</div>}
+                </div>}
               </div>
               <p className="mt-3 text-center text-[11px] text-muted-foreground">
-                {isFa
+                {cityId === "tehran" ? isFa
                   ? "نمایش واقعی زمان‌بندی — همین حالا در تهران"
-                  : "Real timetable, right now in Tehran"}
+                  : "Real timetable, right now in Tehran" : cityId === "mashhad" ? strings.cityPreviewBadge : t.city}
               </p>
             </Reveal>
           </div>
         </div>
       </div>
 
-      <Ticker />
+      <Ticker cityId={cityId} />
     </section>
   );
 }

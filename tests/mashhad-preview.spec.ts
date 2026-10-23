@@ -2,11 +2,12 @@ import { expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { networkSafeTest as test } from "./helpers/walking";
 
-// Run explicitly against a locally enabled review server. The production gate
-// is independently tested by the API unit suite and the disabled-server smoke.
-test.skip(process.env.METTO_MASHHAD_PREVIEW !== "1", "Private candidate preview is disabled");
-
-test.beforeEach(async ({ context }) => {
+// Runs automatically on enabled local/Vercel previews. The production gate
+// is independently tested by the API unit suite and the production-build smoke.
+test.beforeEach(async ({ context, request }) => {
+  const response = await request.get("/api/cities/mashhad/route?from=mashhad:station:airport&to=mashhad:station:tabarsi");
+  test.skip(response.status() === 404, "Mashhad is unavailable in this deployment");
+  expect(response.status()).toBe(200);
   await context.addInitScript(() => {
     localStorage.setItem("route.from", "tajrish");
     localStorage.setItem("route.to", "tehran-sadeghiyeh");
@@ -20,8 +21,8 @@ test.beforeEach(async ({ context }) => {
 });
 
 test("routes the two-line scope without timing, Tehran tools or selection leakage", async ({ page }) => {
-  await page.goto("/mashhad?lang=en");
-  const planner = page.getByRole("main");
+  await page.goto("/mashhad/route?lang=en");
+  const planner = page.getByTestId("city-path-preview");
   await expect(planner).toHaveAttribute("dir", "ltr");
   await expect(planner.getByText("Browse stations (36)")).toBeVisible();
   await planner.getByLabel("From", { exact: true }).selectOption("mashhad:station:airport");
@@ -39,8 +40,8 @@ test("routes the two-line scope without timing, Tehran tools or selection leakag
 });
 
 test("supports Persian, keyboard controls and accessible results", async ({ page }) => {
-  await page.goto("/mashhad?lang=fa");
-  const planner = page.getByRole("main");
+  await page.goto("/mashhad/route?lang=fa");
+  const planner = page.getByTestId("city-path-preview");
   await expect(planner).toHaveAttribute("dir", "rtl");
   await planner.getByLabel("مبدأ", { exact: true }).selectOption("mashhad:station:vakilabad");
   await planner.getByLabel("مقصد", { exact: true }).selectOption("mashhad:station:airport");
@@ -53,7 +54,7 @@ test("supports Persian, keyboard controls and accessible results", async ({ page
 });
 
 test("rejects cross-city links and leaves disputed Line 3 stops unselectable", async ({ page, request }) => {
-  await page.goto("/mashhad?from=tajrish&to=mashhad:station:airport&lang=en");
+  await page.goto("/mashhad/route?from=tajrish&to=mashhad:station:airport&lang=en");
   await expect(page.getByRole("main").getByRole("alert")).toContainText("outside these two lines");
   await expect(page.locator('option[value="mashhad:station:bab-al-javad"]')).toHaveCount(0);
   await expect(page.getByTestId("city-route-result")).toHaveCount(0);

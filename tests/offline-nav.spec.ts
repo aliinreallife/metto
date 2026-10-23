@@ -243,14 +243,14 @@ test.describe("Offline bottom navigation", () => {
       .getByRole("button", { name: "مبدأ", exact: true })
       .first()
       .click();
-    await page.getByRole("combobox").first().fill("تجریش");
+    await page.getByRole("combobox", { name: "ایستگاه یا نام مکان…", exact: true }).first().fill("تجریش");
     await page.getByRole("option", { name: /تجریش/ }).first().click();
     await expect(page).toHaveURL(/from=tajrish/, { timeout: 15_000 });
     await page
       .getByRole("button", { name: "مقصد", exact: true })
       .first()
       .click();
-    await page.getByRole("combobox").first().fill("تهران (صادقیه)");
+    await page.getByRole("combobox", { name: "ایستگاه یا نام مکان…", exact: true }).first().fill("تهران (صادقیه)");
     await page.getByRole("option", { name: /تهران/ }).first().click();
     const mapHref =
       (await tabLink(page, "نقشه").getAttribute("href")) ?? "";
@@ -326,6 +326,14 @@ test.describe("Offline bottom navigation", () => {
       page.getByText("موقعیت شما", { exact: true }),
     ).toBeVisible({ timeout: 30_000 });
     expect(page.url()).toContain("x=1");
+
+    // City aliases and the combined view also use cold canonical documents.
+    await page.getByRole("combobox", { name: "انتخاب شهر", exact: true }).selectOption("all");
+    await expect(page).toHaveURL(/\/cities\/nearby\?lang=fa/);
+    await expect(page.getByTestId("city-explorer")).toBeVisible();
+    await page.getByRole("combobox", { name: "انتخاب شهر", exact: true }).selectOption("tehran");
+    await expect(page).toHaveURL(/\/tehran\/nearby\?lang=fa/);
+    await expect(page.getByText("موقعیت شما", { exact: true })).toBeVisible();
 
     await page.waitForTimeout(1000);
     expect(failedDocs).toEqual([]);

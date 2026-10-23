@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { CANONICAL_STATIC_DOCS } from "./document-fallback";
 import {
   getConnectivitySnapshot,
   getServerConnectivitySnapshot,
@@ -48,13 +49,7 @@ export function useConnectivity(): ConnectivityValue {
 }
 
 /** Top-level static routes known to be in the Serwist precache. */
-const PRECACHED_TABS: ReadonlySet<string> = new Set([
-  "/",
-  "/route",
-  "/stations",
-  "/nearby",
-  "/map",
-]);
+const PRECACHED_TABS: ReadonlySet<string> = new Set(CANONICAL_STATIC_DOCS);
 
 /**
  * True for the top-level static tab URLs that are guaranteed precached,

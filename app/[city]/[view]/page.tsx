@@ -1,0 +1,29 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { notFound } from "next/navigation";
+import AppLayout from "../../(app)/layout";
+import { HomePage } from "../../(app)/route/home-page";
+import { MapPage } from "../../(app)/map/client";
+import { StationsPage } from "../../(app)/stations/client";
+import { NearbyPage } from "../../(app)/nearby/client";
+import { MashhadPreview } from "../../mashhad/preview";
+import { CityExplorer } from "@/components/city-explorer";
+import { availableCities } from "@/lib/city-availability";
+const views = ["route", "map", "stations", "nearby"] as const;
+export const dynamicParams = false;
+export function generateStaticParams() { return availableCities().flatMap(c => views.map(view => ({ city: c.slug, view }))); }
+export async function generateMetadata({ params }: { params: Promise<{ city: string; view: string }> }): Promise<Metadata> {
+  const { city, view } = await params; const meta = availableCities().find(c => c.slug === city);
+  if (!meta || !views.some(v => v === view)) notFound();
+  const labels = { route: "مسیریابی", map: "نقشه", stations: "ایستگاه‌ها", nearby: "نزدیک‌ترین ایستگاه" };
+  return { title: `${labels[view as keyof typeof labels]} · مترو ${meta.name.fa}`, alternates: { canonical: `/${city}/${view}` },
+    ...(city === "mashhad" ? { robots: { index: false, follow: false } } : {}) };
+}
+export default async function CityApp({ params }: { params: Promise<{ city: string; view: string }> }) {
+  const { city, view } = await params;
+  if (!availableCities().some(c => c.slug === city) || !views.some(v => v === view)) notFound();
+  let content;
+  if (city === "tehran") content = view === "route" ? <HomePage /> : view === "map" ? <MapPage /> : view === "stations" ? <StationsPage /> : <NearbyPage />;
+  else content = view === "route" ? <MashhadPreview embedded /> : <CityExplorer city="mashhad" view={view as "map" | "stations" | "nearby"} />;
+  return <Suspense><AppLayout>{content}</AppLayout></Suspense>;
+}

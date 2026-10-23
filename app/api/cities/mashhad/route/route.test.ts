@@ -18,6 +18,12 @@ describe("private Mashhad path review boundary", () => {
     vi.stubEnv("METTO_MASHHAD_PREVIEW", "0");
     expect((await GET(request())).status).toBe(404);
   });
+  it("is visible automatically on Vercel previews, with an explicit opt-out", () => {
+    expect(mashhadPreviewEnabled({ VERCEL_ENV: "preview" })).toBe(true);
+    expect(mashhadPreviewEnabled({ NODE_ENV: "development" })).toBe(true);
+    expect(mashhadPreviewEnabled({ VERCEL_ENV: "preview", METTO_MASHHAD_PREVIEW: "0" })).toBe(false);
+    expect(mashhadPreviewEnabled({ VERCEL_ENV: "production", METTO_MASHHAD_PREVIEW: "1" })).toBe(false);
+  });
   it("returns paths without times and prevents caching/indexing the private response", async () => {
     vi.stubEnv("METTO_MASHHAD_PREVIEW", "1"); vi.stubEnv("VERCEL_ENV", "preview");
     const response = await GET(request());

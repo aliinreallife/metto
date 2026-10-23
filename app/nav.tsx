@@ -26,6 +26,8 @@ import {
   type ConnectivityState,
 } from "@/lib/offline/use-connectivity";
 import { cn } from "@/lib/utils";
+import { CitySwitcher } from "@/components/city-switcher";
+import { cityFromPath, cityHref, viewFromPath } from "@/lib/cities";
 
 const NAV_ITEMS = [
   { href: "/route", labelKey: "tabRoute" as const, icon: RouteIcon },
@@ -57,12 +59,14 @@ export function TabLink({
   connectivity,
   className,
   ariaCurrent,
+  ariaLabel,
   children,
 }: {
   href: string;
   connectivity: ConnectivityState;
   className?: string;
   ariaCurrent?: "page";
+  ariaLabel?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -70,6 +74,7 @@ export function TabLink({
       href={href}
       className={className}
       aria-current={ariaCurrent}
+      aria-label={ariaLabel}
       onClick={(e) => {
         if (e.defaultPrevented) return;
         if (
@@ -150,7 +155,9 @@ export function AppNav() {
   const { state: connectivity } = useConnectivity();
 
   const currentPath = pathname === "/" ? "/" : pathname;
-  const isMainTab = currentPath === "/route";
+  const city = cityFromPath(currentPath);
+  const currentView = viewFromPath(currentPath);
+  const isMainTab = currentView === "route" && city !== "all";
 
   // Hidden QA sequence for the installed app. Session-only and harmless if
   // storage is unavailable; no UI or persistent rating state is touched here.
@@ -159,11 +166,21 @@ export function AppNav() {
   }, [currentPath]);
 
   function getHref(base: string) {
+    const view = viewFromPath(base);
+    const destination = cityHref(city, view, !/^\/(tehran|mashhad|cities)(\/|$)/.test(currentPath));
+    if (city !== "tehran") {
+      const params = new URLSearchParams({ lang });
+      if (city === "mashhad") for (const key of ["from", "to"]) {
+        const id = searchParams.get(key);
+        if (id?.startsWith("mashhad:station:")) params.set(key, id);
+      }
+      return `${destination}?${params}`;
+    }
     // Preserve route selections, place pins, and the validated advanced-time
     // plan on every tab. This also keeps state through the offline fallback,
     // which performs a full-document navigation using this exact href.
     return buildStatefulTabHref(
-      base,
+      destination,
       {
         from: originId,
         to: destId,
@@ -181,22 +198,25 @@ export function AppNav() {
 
   return (
     <>
-      <header className="z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-6 md:py-4">
-        <TabLink href={getHref("/route")} connectivity={connectivity} className="flex items-center gap-2.5 md:gap-3">
+      <header className="z-20 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-6 md:py-4">
+        <div className="flex min-w-0 items-center gap-2">
+        <TabLink href={getHref("/route")} connectivity={connectivity} ariaLabel={t.appTitle} className="flex items-center gap-2.5 md:gap-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground md:size-10">
             <TrainFront className="size-5 md:size-6" />
           </span>
-          <div className="leading-tight">
+          <div className="hidden leading-tight sm:block">
             <h1 className="text-base font-bold md:text-lg">{t.appTitle}</h1>
             <p className="text-xs text-muted-foreground md:text-sm">{t.appSubtitle}</p>
           </div>
         </TabLink>
+        <CitySwitcher />
+        </div>
 
         {/* desktop tabs */}
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
           {NAV_ITEMS.map((item) => {
             const href = getHref(item.href);
-            const active = currentPath === item.href;
+            const active = currentView === viewFromPath(item.href);
             return (
               <TabLink
                 key={item.href}
@@ -259,7 +279,7 @@ export function AppNav() {
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
           <a
-            href="https://github.com/mostafa-kheibary/tehran-metro-data"
+            href={city === "mashhad" ? "https://github.com/shahriaarrr/mashhad-metro-data" : "https://github.com/mostafa-kheibary/tehran-metro-data"}
             target="_blank"
             rel="noopener noreferrer"
             className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
@@ -267,7 +287,7 @@ export function AppNav() {
             <Database className="size-3 shrink-0 text-primary" />
             <span className="shrink-0 text-muted-foreground">{t.dataBy}</span>
             <span className="truncate font-semibold text-foreground">
-              mostafa-kheibary
+              {city === "mashhad" ? "shahriaarrr" : "mostafa-kheibary"}
             </span>
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
@@ -282,7 +302,7 @@ export function AppNav() {
         <nav className={cn("grid grid-cols-4 pb-[env(safe-area-inset-bottom)]", isMainTab && "border-t border-border")}>
           {NAV_ITEMS.map((item) => {
             const href = getHref(item.href);
-            const active = currentPath === item.href;
+            const active = currentView === viewFromPath(item.href);
             return (
               <TabLink
                 key={item.href}

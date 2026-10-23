@@ -4,6 +4,7 @@ import { Vazirmatn } from "next/font/google";
 import { MetroProvider } from "./providers";
 import { SerwistProvider } from "./serwist";
 import "./globals.css";
+import { mashhadPreviewEnabled } from "@/lib/mashhad-preview-access";
 
 const vazirmatn = Vazirmatn({
   variable: "--font-vazirmatn",
@@ -73,11 +74,11 @@ export const metadata: Metadata = {
     creator: "@aliinreallife",
   },
   robots: {
-    index: true,
-    follow: true,
+    index: process.env.VERCEL_ENV !== "preview",
+    follow: process.env.VERCEL_ENV !== "preview",
     googleBot: {
-      index: true,
-      follow: true,
+      index: process.env.VERCEL_ENV !== "preview",
+      follow: process.env.VERCEL_ENV !== "preview",
       "max-video-preview": -1,
       "max-image-preview": "large",
       "max-snippet": -1,
@@ -193,7 +194,7 @@ export default function RootLayout({
           cacheOnNavigation={false}
           disable={process.env.NODE_ENV === "development"}
         >
-        <MetroProvider>
+        <MetroProvider cityIds={mashhadPreviewEnabled() ? ["tehran", "mashhad"] : ["tehran"]}>
           {children}
         </MetroProvider>
         </SerwistProvider>

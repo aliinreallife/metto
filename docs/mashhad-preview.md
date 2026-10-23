@@ -1,33 +1,46 @@
-# Mashhad stations and route-path review
+# Multi-city app and Mashhad preview
 
-This is a default-off candidate preview for **Lines 1 and 2, 36 unique stations**.
-It is not a public city launch. Line 3 is withheld pending a separate complete
-service-pattern review. New dated reports support Basij's opening, while the
-older OSM snapshot remains stale on that point. The public city registry, navigation,
-sitemap, Tehran router and timetable API still serve Tehran.
+Vercel previews and local development expose Tehran and **Mashhad Lines 1/2**.
+The landing counts 187 unique stations, 9 lines and 2 cities: Tehran 151/7,
+Mashhad 36/2. Production still exposes Tehran only; the data release review
+has not been approved. Line 3 remains outside this first scope.
 
-The agreed first-release scope is stations and route paths without arrival or
-travel-time estimates. A verified timetable is not a prerequisite for that
-scope. Dated boarding and interchange evidence still needs review before launch.
+## Pages and station identity
 
-## Run the review locally
+- `/` introduces the available cities and uses their actual station/line counts.
+- `/tehran` and `/mashhad` have separate landings. Each city has `/route`,
+  `/map`, `/stations` and `/nearby` pages beneath its slug.
+- `/cities` combines the station directory; `/cities/map`, `/cities/route`
+  and `/cities/nearby` provide the corresponding all-city views.
+- The main app's city picker preserves the current tab and language, clearing
+  endpoints and time options from the previous city. Old `/route`, `/map`,
+  `/stations`, `/nearby` and Tehran share links continue to work.
+- Global station identities include the city, such as `tehran:station:basij`
+  and `mashhad:station:basij`. Combined results and choices label both name
+  and city. Tehran route/map links retain their existing local station slugs.
+  Cross-city metro routes are rejected; maps never join different cities.
+- Mashhad's map contains all 36 scoped stations and route highlights. Its
+  planner gives stations, line changes and route links without time estimates.
+  Nearby uses opt-in GPS and explicitly labels straight-line distance.
 
-With the repository's Node 22 and pinned pnpm installed:
+## Run locally
+
+With Node 22 and the repository's pinned pnpm:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm build
-METTO_MASHHAD_PREVIEW=1 pnpm start --hostname 127.0.0.1 --port 3002
+VERCEL_ENV=preview pnpm build
+VERCEL_ENV=preview pnpm start --hostname 127.0.0.1 --port 3003
 ```
 
-Open `/mashhad?lang=en` or `/mashhad?lang=fa` on that server. The flag is
-server-only, checked per request, and disabled when `VERCEL_ENV=production`
-even if set to `1`. Without it, the page renders Next's not-found screen
-and the API returns HTTP 404. A streamed Next not-found screen can have
-HTTP 200; no planner markup is rendered. The page is noindex/nofollow and
-the API is no-store/noindex. The flag is not authentication: a hosted review
-deployment also needs the platform's deployment protection. Do not enable it
-on an unprotected public server.
+Open `/mashhad/map?lang=en` or `/cities?lang=fa`. Development and Vercel
+preview environments enable Mashhad automatically. Alternatively, set
+`METTO_MASHHAD_PREVIEW=1` for **both build and start** of a local production
+build. Set it to `0` to opt out. `VERCEL_ENV=production` always disables
+Mashhad, including its pages, API, city picker option and landing counts.
+The API gate is also checked per request. Mashhad pages are noindex/nofollow;
+Vercel preview metadata disables indexing for all pages. This feature flag is
+not authentication; platform deployment protection still applies.
 
 ## Data and behavior
 
@@ -86,8 +99,7 @@ the records, source limitations and remaining blockers.
 The data release gate still rejects Mashhad. This preview does not bypass or
 approve that gate. A public Lines 1/2 release needs an explicit reviewed scope,
 dated stop/interchange evidence and a dataset-bound review. Only then should
-the city registry and public app capability/navigation be wired in a separate
-reviewed change. Timetables, Line 3, entrances and amenities require their own
+production city availability be enabled in a reviewed change. Timetables, Line 3, entrances and amenities require their own
 evidence before being added.
 
 ## Validation
@@ -96,31 +108,25 @@ evidence before being added.
 pnpm lint
 pnpm typecheck
 pnpm test
-pnpm build
-METTO_MASHHAD_PREVIEW=1 BASE_URL=http://127.0.0.1:3002 \
-  PLAYWRIGHT_CHROMIUM_PATH=/usr/bin/chromium \
-  pnpm exec playwright test tests/mashhad-preview.spec.ts tests/a11y.spec.ts
-BASE_URL=http://127.0.0.1:3002 PLAYWRIGHT_CHROMIUM_PATH=/usr/bin/chromium \
+VERCEL_ENV=preview pnpm build
+# Start the preview build as above, then:
+BASE_URL=http://127.0.0.1:3003 PLAYWRIGHT_CHROMIUM_PATH=/usr/bin/chromium \
+  pnpm exec playwright test tests/multi-city.spec.ts tests/mashhad-preview.spec.ts tests/a11y.spec.ts
+BASE_URL=http://127.0.0.1:3003 PLAYWRIGHT_CHROMIUM_PATH=/usr/bin/chromium \
   pnpm test:e2e:offline
 ```
 
-The preview browser suite intentionally skips unless explicitly enabled against
-an enabled server. Unit checks cover all 1,260 directed Mashhad station pairs,
-cross-city rejection, boarding/track separation, missing interchanges and the
-default-off/production gates. Existing independent Tehran tests cover all
-22,650 directed pairs and 108 timetable planning cases.
+City browser checks probe the deployment's API and run when Mashhad is
+available. They cover landing totals, switching the main map, map-to-route
+links, city-qualified duplicate station names, cross-city rejection and a
+narrow Persian layout. Unit checks cover all 1,260 directed Mashhad station
+pairs and production gating. Independent Tehran regression checks preserve
+all 22,650 directed station pairs and 108 timetable planning cases.
 
-Local validation on October 23, 2026 passed: 836 app unit tests in 50 files,
-typecheck, lint (one pre-existing `no-img-element` warning), production build,
-all 3 Mashhad browser checks, all 21 existing Tehran accessibility checks, and
-all 18 offline regression checks. A second production server without the flag
-rendered the not-found screen without planner markup, returned HTTP 404 from
-the Mashhad API, and continued serving Tehran routes. The companion data
-commit passed all 64 tests, typecheck, validators, provenance and workflow
-checks; the Mashhad release check failed as expected while Tehran passed.
+Existing offline behavior remains covered. Explicit Tehran and all-city static
+pages share the canonical document fallback. No new cold-offline guarantee is
+made for Mashhad pages, and no entrances or amenities are inferred.
 
-These are local validation results. Review branches `feat/mashhad-route-preview`
-(app) and `feat/mashhad-service-evidence` (data) have been pushed. They build on
-the existing draft PRs #223 and #9 respectively. Nothing was merged or released
-to production. Public Mashhad approval and the remaining station-level review
-are outstanding.
+Review branches are `feat/mashhad-route-preview` (app PR #224, based on #223)
+and `feat/mashhad-service-evidence` (data PR #10, based on #9). Nothing in
+this work approves the data review or enables Mashhad in production.
