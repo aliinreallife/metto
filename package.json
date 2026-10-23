@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/check-metto-data.mjs && node scripts/check-city-preview.mjs && node scripts/generate-metro-data.mjs && next build && serwist build",
+    "estimates:evaluate": "node scripts/evaluate-route-estimates.mjs",
     "metro-data:generate": "node scripts/generate-metro-data.mjs",
     "metro-data:validate": "node scripts/generate-metro-data.mjs --check",
     "build:next": "next build",

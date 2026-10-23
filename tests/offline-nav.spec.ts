@@ -328,10 +328,12 @@ test.describe("Offline bottom navigation", () => {
     expect(page.url()).toContain("x=1");
 
     // City aliases and the combined view also use cold canonical documents.
-    await page.getByRole("combobox", { name: "انتخاب شهر", exact: true }).selectOption("all");
+    await page.getByRole("combobox", { name: "انتخاب شهر", exact: true }).click();
+    await page.getByRole("option", { name: "همهٔ شهرها", exact: true }).click();
     await expect(page).toHaveURL(/\/cities\/nearby\?lang=fa/);
     await expect(page.getByTestId("city-explorer")).toBeVisible();
-    await page.getByRole("combobox", { name: "انتخاب شهر", exact: true }).selectOption("tehran");
+    await page.getByRole("combobox", { name: "انتخاب شهر", exact: true }).click();
+    await page.getByRole("option", { name: "تهران", exact: true }).click();
     await expect(page).toHaveURL(/\/tehran\/nearby\?lang=fa/);
     await expect(page.getByText("موقعیت شما", { exact: true })).toBeVisible();
 

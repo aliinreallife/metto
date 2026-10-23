@@ -53,6 +53,14 @@ describe("unscheduled city path routing", () => {
     expect(mashhadPreview.findPath("mashhad:station:airport", "mashhad:station:airport")).toBeNull();
   });
 
+  it("shows the service terminal in the actual direction, rather than the alighting stop", () => {
+    const planner = createCityPathPlanner(fixture());
+    expect(planner.getTerminal("example:line:1", "example:station:a", "example:station:b")).toBe("example:station:c");
+    expect(planner.getTerminal("example:line:1", "example:station:c", "example:station:b")).toBe("example:station:a");
+    expect(planner.getTerminal("example:line:1", "example:station:a", "tehran:station:basij")).toBeUndefined();
+    expect(planner.getTerminal("example:line:1", "example:station:a", "example:station:a")).toBeUndefined();
+  });
+
   it("allows operational tracks through a non-boardable stop, but blocks boarding there", () => {
     const network = fixture(); network.routes[0].stops[1].status = "under_construction";
     const planner = createCityPathPlanner(network);

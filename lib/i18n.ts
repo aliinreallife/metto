@@ -10,6 +10,7 @@ export const STRINGS = {
     cityCities: "cities",
     cityLines: "lines",
     cityPreviewBadge: "Preview",
+    cityNearbyHint: "Use your location or choose a station to find nearby stations.",
     cityPathOnly: "Stations and routes. Train times aren't available yet.",
     multiCityDescription: "Choose your city, explore its stations, and find your route. Train times are available in Tehran.",
     cityLandingTehran: "Find your route, explore stations, and see train times for Tehran.",
@@ -160,6 +161,7 @@ export const STRINGS = {
     holidayCoverageNote:
       "Coverage is incomplete — unverified dates use the normal weekday schedule.",
 
+    fallbackTimeNote: "Some timetables are missing. Waiting for those trains is not included, so arrival may be later than shown.",
     timeNote: "⚠ Travel time is a work in progress and may not be accurate.",
 
     towards: "Towards",
@@ -253,6 +255,7 @@ export const STRINGS = {
     cityCities: "شهر",
     cityLines: "خط",
     cityPreviewBadge: "پیش‌نمایش",
+    cityNearbyHint: "موقعیتت را بده یا یک ایستگاه انتخاب کن تا نزدیک‌ترین ایستگاه‌ها را ببینی.",
     cityPathOnly: "ایستگاه‌ها و مسیرها؛ زمان حرکت قطارها هنوز در دسترس نیست.",
     multiCityDescription: "شهرت را انتخاب کن، ایستگاه‌ها را ببین و مسیرت را پیدا کن. زمان حرکت قطارها برای تهران در دسترس است.",
     cityLandingTehran: "مسیرت را پیدا کن، ایستگاه‌ها را ببین و زمان حرکت قطارهای تهران را بررسی کن.",
@@ -403,6 +406,7 @@ export const STRINGS = {
     holidayCoverageNote:
       "پوشش اطلاعات ناقص است — تاریخ‌های تأییدنشده از برنامه عادی هفته استفاده می‌کنند.",
 
+    fallbackTimeNote: "بخشی از برنامهٔ زمانی موجود نیست. زمان انتظار برای این قطارها حساب نشده و ممکن است دیرتر از زمان نمایش‌داده‌شده برسید.",
     timeNote: "⚠ زمان سفر در حال توسعه است و ممکن است دقیق نباشد.",
 
     towards: "به سمت",

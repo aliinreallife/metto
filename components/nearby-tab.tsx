@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   LocateFixed,
   Loader2,
@@ -109,58 +109,20 @@ export function NearbyTab({ lang, onSetDest }: Props) {
     <div className="no-scrollbar flex size-full min-h-0 flex-col overflow-y-auto overflow-x-hidden overscroll-contain bg-background">
       <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
         {/* Location setter */}
-        <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2">
-            <LocateFixed className="size-4 text-primary" />
-            <h2 className="text-sm font-bold">{t.yourLocation}</h2>
-            {coords && (
-              <span className="ms-auto truncate text-xs text-muted-foreground">
-                {locationLabel}
-              </span>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={requestGps}
-            disabled={loc.kind === "locating"}
-            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
-            {loc.kind === "locating" ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                {t.locating}
-              </>
-            ) : (
-              <>
-                <LocateFixed className="size-4" />
-                {t.useMyLocation}
-              </>
-            )}
-          </button>
-
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            {t.orPickStation}
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <StationCombobox
+        <NearbyLocation lang={lang} locating={loc.kind === "locating"} locationLabel={locationLabel} onLocate={requestGps}
+          picker={<StationCombobox
             value={loc.kind === "station" ? loc.stationId : null}
             onChange={pickStation}
             placeholder={t.searchStations}
             lang={lang}
             accentClass="bg-primary"
-          />
-
-          {loc.kind === "error" && (
+          />} error={loc.kind === "error" && (
             <LocationErrorActions
               lang={lang}
               kind={loc.errorKind}
               onRetry={requestGps}
             />
-          )}
-        </section>
+          )} />
 
         {!coords ? (
           <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-12 text-center text-sm text-muted-foreground">
@@ -233,6 +195,28 @@ export function NearbyTab({ lang, onSetDest }: Props) {
       </div>
     </div>
   );
+}
+
+/** Shared location card used by every city's Nearby screen. */
+export function NearbyLocation({ lang, locating, locationLabel, onLocate, picker, error }: {
+  lang: Lang; locating: boolean; locationLabel: string; onLocate: () => void;
+  picker: ReactNode; error?: ReactNode;
+}) {
+  const t = STRINGS[lang];
+  return <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+    <div className="flex items-center gap-2">
+      <LocateFixed aria-hidden="true" className="size-4 text-primary" />
+      <h2 className="text-sm font-bold">{t.yourLocation}</h2>
+      {locationLabel && <span className="ms-auto truncate text-xs text-muted-foreground">{locationLabel}</span>}
+    </div>
+    <button type="button" onClick={onLocate} disabled={locating}
+      className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60">
+      {locating ? <><Loader2 aria-hidden="true" className="size-4 animate-spin" />{t.locating}</>
+        : <><LocateFixed aria-hidden="true" className="size-4" />{t.useMyLocation}</>}
+    </button>
+    <div className="flex items-center gap-2 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />{t.orPickStation}<span className="h-px flex-1 bg-border" /></div>
+    {picker}{error}
+  </section>;
 }
 
 function FilterChip({

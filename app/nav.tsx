@@ -258,7 +258,8 @@ export function AppNav() {
         </div>
       </header>
 
-      <OfflineStatus lang={lang} />
+      {/* Readiness currently certifies Tehran timetable/holiday data only. */}
+      {city === "tehran" && <OfflineStatus lang={lang} />}
 
       {/* mobile bottom tab bar - fixed to viewport bottom; credits sit
           directly on top with zero gap, main tab only. Single line, no

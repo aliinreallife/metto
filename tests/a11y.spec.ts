@@ -313,7 +313,7 @@ test.describe("a11y quick wins", () => {
     await page.waitForTimeout(1500);
 
     // Pick a station as the location so the amenity filter renders.
-    const trigger = page.locator('button[aria-haspopup="listbox"]').first();
+    const trigger = page.getByRole("main").locator('button[aria-haspopup="listbox"]').first();
     await trigger.click();
     const searchInput = page.locator('input[role="combobox"]');
     await expect(searchInput).toBeFocused();

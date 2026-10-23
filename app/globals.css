@@ -438,3 +438,9 @@
     }
   }
 }
+
+.city-station-hit:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -8px;
+  border-radius: 50%;
+}

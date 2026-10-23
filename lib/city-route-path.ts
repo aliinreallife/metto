@@ -122,6 +122,12 @@ export function createCityPathPlanner(network: PathNetwork) {
     return result;
   }
   return { cityId, stations: catalog, lines: network.lines, findPath,
+    getLineStationIds: (lineId: string) => routeByLine.get(lineId)?.stops.map(s => s.stationId) ?? [],
+    getTerminal: (lineId: string, fromId: string, toId: string): string | undefined => {
+      const stops = routeByLine.get(lineId)?.stops.map(s => s.stationId);
+      if (!stops || !stops.includes(fromId) || !stops.includes(toId) || fromId === toId) return undefined;
+      return stops.indexOf(fromId) < stops.indexOf(toId) ? stops.at(-1) : stops[0];
+    },
     getStationLineIds: (id: string) => [...states.values()]
       .filter(state => state.stationId === id && state.boardable)
       .map(state => state.lineId).sort(compare),

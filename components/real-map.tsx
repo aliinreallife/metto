@@ -19,18 +19,31 @@ import {
   type DotObstacle,
   type LabelCandidate,
 } from "@/lib/map/label-placement";
-import type { MetroStation } from "@/lib/metro/types";
-import { STATION_MAP, type RouteResult } from "@/lib/route"
+
+import { STATION_MAP } from "@/lib/route"
 import { STRINGS, type Lang } from "@/lib/i18n"
 import { classifyGeoError, getCurrentPositionTolerant, type GeoErrorKind } from "@/lib/geolocation"
 import { LocationErrorActions } from "@/components/location-error"
 import { useConnectivity, type ConnectivityState } from "@/lib/offline/use-connectivity"
 import { cn } from "@/lib/utils"
 
+export type MapStation = { id: string; name: { fa: string; en: string }; location: { lat: number; lng: number }; status: string };
+export type MapNetwork = {
+  stations: MapStation[];
+  stationMap: Map<string, MapStation>;
+  edges: { a: string; b: string; line: string | number; status: string }[];
+  colors: Record<string, string>;
+  stationLines: (id: string) => (string | number)[];
+  isInterchange: (id: string) => boolean;
+  isTerminal: (id: string) => boolean;
+};
+export type MapRoute = { path: string[]; hops: { from: string; to: string; line: string | number }[] };
+
 type Props = {
+  network?: MapNetwork
   lang: Lang
   mapMode: "satellite" | "minimalist"
-  route: RouteResult | null
+  route: MapRoute | null
   originId: string | null
   destId: string | null
   selectedId: string | null
@@ -148,7 +161,7 @@ function buildLabelIcon(
   })
 }
 
-export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick, directWalk, walkingPaths, deemphasizeMetro = false }: Props) {
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick, directWalk, walkingPaths, deemphasizeMetro = false, network }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
@@ -163,7 +176,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   const prevAnchorRef = useRef<Map<string, Anchor>>(new Map())
   const hoveredRef = useRef<string | null>(null)
   const scheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: MetroStation; radius: number }>>(new Map())
+  const markersRef = useRef<Map<string, { marker: L.CircleMarker; station: MapStation; radius: number }>>(new Map())
   const initialMapModeRef = useRef(mapMode)
   // Render-write is load-bearing: the mount effect below reads this before
   // any effect could run, so an effect assignment could arrive too late.
@@ -203,7 +216,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     connectivity === "checking" ? null : connectivity,
   )
 
-  const edges = useMemo(() => buildMapEdges(), [])
+  const edges = useMemo(() => network?.edges ?? buildMapEdges(), [network])
+  const stationMap = network?.stationMap ?? STATION_MAP
+  const stationLines = network?.stationLines ?? getStationLines
+  const interchangeAt = network?.isInterchange ?? isInterchange
+  const terminalAt = network?.isTerminal ?? ((id: string) => getStationTerminalRoutes(id).length > 0)
+  const colors: Record<string, string> = network?.colors ?? LINE_COLORS
   const routeStations = useMemo(() => new Set(route?.path ?? []), [route])
   const routeEdgeKeys = useMemo(() => {
     const set = new Set<string>()
@@ -289,7 +307,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const isHovered = id === currentHovered
       const isEndpoint = hasEndpoints && (id === currentOrigin || id === currentDest)
       const isOnRoute = currentRoute.has(id)
-      const interchange = isInterchange(id)
+      const interchange = interchangeAt(id)
 
       // Zoom pre-filter: becoming a candidate does NOT guarantee rendering;
       // the collision engine may still hide lower-priority labels.
@@ -315,7 +333,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         priority = LABEL_PRIORITY.route
       } else if (interchange) {
         priority = LABEL_PRIORITY.interchange
-      } else if (getStationTerminalRoutes(id).length > 0) {
+      } else if (terminalAt(id)) {
         priority = LABEL_PRIORITY.terminal
       }
       candidates.push({
@@ -423,6 +441,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       zoomControl: false,
       attributionControl: true,
     })
+
+    if (network?.stations.length) map.fitBounds(L.latLngBounds(network.stations.map(s => [s.location.lat, s.location.lng] as [number, number])), { padding: [28, 28], maxZoom: 13 })
 
     // Start in the current map mode (no full remount needed when toggling later)
     const tileLayer = L.tileLayer(SATELLITE_URL, {
@@ -613,8 +633,8 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     // Lines. Under-construction segments render dotted so track construction
     // is visually distinct from station construction.
     for (const e of edges) {
-      const a = STATION_MAP.get(e.a)
-      const b = STATION_MAP.get(e.b)
+      const a = stationMap.get(e.a)
+      const b = stationMap.get(e.b)
       if (!a || !b) continue
       const inRoute = routeEdgeKeys.has([e.a, e.b].sort().join("|") + "|" + e.line)
       const underConstruction = e.status !== "operational"
@@ -624,7 +644,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           [b.location.lat, b.location.lng],
         ],
         {
-          color: LINE_COLORS[e.line],
+          color: colors[e.line],
           weight: inRoute ? 6 : 4,
           opacity: hasRoute ? (inRoute ? 1 : 0.25) : deemphasizeMetro ? 0.2 : underConstruction ? 0.55 : 0.85,
           dashArray: underConstruction ? "2 6" : undefined,
@@ -638,16 +658,17 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     // click/hover, and names render in the dedicated label layer via the
     // screen-space placement engine (updateStationLabels).
     markersRef.current.clear()
-    const dotRadius = (s: MetroStation) => {
+    const dotRadius = (s: MapStation) => {
       const endpoint = originId && destId && originId !== destId && (s.id === originId || s.id === destId)
       if (endpoint) return 8
-      if (isInterchange(s.id)) return 6
+      if (interchangeAt(s.id)) return 6
       return 4
     }
-    for (const s of getAllStations()) {
-      const lines = getStationLines(s.id)
+    const focusedId = document.activeElement?.getAttribute("data-station-id")
+    for (const s of network?.stations ?? getAllStations()) {
+      const lines = stationLines(s.id)
       const firstLine = lines[0]
-      const interchange = isInterchange(s.id)
+      const interchange = interchangeAt(s.id)
       const onRoute = routeStations.has(s.id)
       const isEndpoint = originId && destId && originId !== destId && (s.id === originId || s.id === destId)
       const dim = hasRoute && !onRoute
@@ -655,10 +676,10 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const radius = dotRadius(s)
       const marker = L.circleMarker([s.location.lat, s.location.lng], {
         radius,
-        color: isEndpoint ? "#cc0e2d" : interchange ? "#111" : LINE_COLORS[firstLine],
+        color: isEndpoint ? "#cc0e2d" : interchange ? "#111" : colors[firstLine],
         weight: underConstruction ? 1.5 : isEndpoint ? 3 : interchange ? 2 : 1.5,
         dashArray: underConstruction ? "3 3" : undefined,
-        fillColor: underConstruction ? "transparent" : interchange ? "#fff" : LINE_COLORS[firstLine],
+        fillColor: underConstruction ? "transparent" : interchange ? "#fff" : colors[firstLine],
         fillOpacity: underConstruction ? 0 : dim ? 0.3 : 1,
         opacity: dim ? 0.4 : 1,
         interactive: true,
@@ -683,6 +704,27 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       })
       markersRef.current.set(s.id, { marker, station: s, radius })
       marker.addTo(layer)
+      // The same visible dot/label engine serves every city. New catalog maps
+      // also expose a 44px keyboard and touch target without changing the dot.
+      if (network) {
+        const hit = L.marker([s.location.lat, s.location.lng], {
+          icon: L.divIcon({ className: "city-station-hit", html: "", iconSize: [44, 44], iconAnchor: [22, 22] }),
+          keyboard: true,
+        }).addTo(layer).on("click", () => onSelect(s.id));
+        hit.on("mouseover", () => marker.fire("mouseover"));
+        hit.on("mouseout", () => marker.fire("mouseout"));
+        const element = hit.getElement();
+        if (element) {
+          element.setAttribute("aria-label", `${s.name[lang]}${underConstruction ? ` · ${t.underConstruction}` : ""}`);
+          element.setAttribute("data-station-id", s.id);
+          element.addEventListener("keydown", event => {
+            if (event.key === " " || event.key === "Enter") { event.preventDefault(); event.stopPropagation(); onSelect(s.id); }
+          });
+          element.addEventListener("focus", () => marker.fire("mouseover"));
+          element.addEventListener("blur", () => marker.fire("mouseout"));
+          if (focusedId === s.id) element.focus({ preventScroll: true });
+        }
+      }
     }
 
     // (Re)run placement for the current zoom/route/selection/language.
@@ -691,7 +733,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     // Re-add GPS marker on top if it exists
     if (gpsMarkerRef.current) gpsMarkerRef.current.addTo(layer)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleLabels is an imperative Leaflet helper (new identity every render); the listed inputs are the real triggers.
-  }, [edges, route, routeStations, routeEdgeKeys, originId, destId, selectedId, isFa, onSelect, deemphasizeMetro])
+  }, [edges, route, routeStations, routeEdgeKeys, originId, destId, selectedId, isFa, onSelect, deemphasizeMetro, network, stationMap, stationLines, interchangeAt, colors, lang, t.underConstruction])
 
   // Recomputed live timetables must never recenter a map the user has panned.
   const lastRouteFitRef = useRef<string | null>(null)
@@ -705,11 +747,11 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (lastRouteFitRef.current === fitKey) return
     lastRouteFitRef.current = fitKey
     const pts = route.path
-      .map((id) => STATION_MAP.get(id))
+      .map((id) => stationMap.get(id))
       .filter(Boolean)
       .map((s) => [s!.location.lat, s!.location.lng] as [number, number])
     if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 14 })
-  }, [route, placeMarkers])
+  }, [route, placeMarkers, stationMap])
 
   // Render place markers when placeMarkers prop changes.
   useEffect(() => {
@@ -750,7 +792,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       drawWalk(directWalk.from, directWalk.to, directWalk.coordinates, "#a3a3a3")
     } else {
       for (const pm of placeMarkers ?? []) {
-        const st = pm.stationId ? STATION_MAP.get(pm.stationId) : null
+        const st = pm.stationId ? stationMap.get(pm.stationId) : null
         pts.push([pm.lat, pm.lng])
         if (!st) continue
         const coordinates = pm.role === "origin" ? walkingPaths?.origin : walkingPaths?.dest
@@ -764,7 +806,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     // far from its station still shows the line).
     if (route && route.path.length > 0) {
       for (const id of route.path) {
-        const st = STATION_MAP.get(id)
+        const st = stationMap.get(id)
         if (st) pts.push([st.location.lat, st.location.lng])
       }
     }
@@ -778,7 +820,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 14 })
       }
     }
-  }, [placeMarkers, route, directWalk, walkingPaths])
+  }, [placeMarkers, route, directWalk, walkingPaths, stationMap])
 
   // Pending arbitrary pick: exact-coordinate marker in its own layer. The
   // label goes through the shared engine (pendingPick extra above), so it

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { X, Clock, Zap, Ban } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
@@ -26,21 +26,33 @@ export function StationDetail({
 }) {
   const loaded = useScheduleData();
   const { isHolidayDate } = useHolidayData();
-  const t = STRINGS[lang];
-  const isFa = lang === "fa";
-  const lines = getStationLines(station.id);
-  const boardableLines = getOperationalStationLines(station.id);
-  const unavailableLines = lines.filter((l) => !boardableLines.includes(l));
-  const activeAmenities = Object.entries(station.amenities).filter(
-    ([, v]) => v === true,
-  );
-
   const departures = useMemo(() => {
     const grouped = getStationDepartures(station.id, getCurrentDayType(undefined, isHolidayDate), 3);
     return grouped.flatMap((g) => g.departures);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `loaded` retriggers this memo after the async timetable finishes loading; it is intentionally not read inside.
   }, [station.id, loaded, isHolidayDate]);
 
+  const boardableLines = getOperationalStationLines(station.id);
+  return <StationDetailView station={station} lang={lang} onClose={onClose}
+    lines={getStationLines(station.id).map(line => ({ id: String(line), label: line, color: LINE_COLORS[line], onColor: lineOnColor(line), boardable: boardableLines.includes(line) }))}
+    scheduleLoading={!loaded}
+    departures={loaded && departures.length > 0 ? <div className="flex flex-col gap-1.5">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lang === "fa" ? "حرکت‌های بعدی" : "Next departures"}</h4>
+      <ul className="flex flex-col gap-1">{departures.map((dep, i) => <DepartureRow key={i} dep={dep} lang={lang} />)}</ul>
+    </div> : undefined} />;
+}
+
+/** Shared map station sheet; city wrappers supply available facts and timing. */
+export function StationDetailView({ station, lang, onClose, lines, scheduleLoading = false, departures }: {
+  station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]> };
+  lang: Lang; onClose: () => void;
+  lines: { id: string; label: number | string; color: string; onColor: string; boardable: boolean }[];
+  scheduleLoading?: boolean; departures?: ReactNode;
+}) {
+  const t = STRINGS[lang]; const isFa = lang === "fa";
+  const boardableLines = lines.filter(l => l.boardable);
+  const unavailableLines = lines.filter(l => !l.boardable);
+  const activeAmenities = Object.entries(station.amenities).filter(([, value]) => value === true);
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -56,12 +68,12 @@ export function StationDetail({
           <div className="flex gap-1.5">
             {lines.map((l) => (
               <span
-                key={l}
+                key={l.id}
                 className="flex size-7 items-center justify-center rounded-full text-xs font-bold"
-                style={{ backgroundColor: LINE_COLORS[l], color: lineOnColor(l), opacity: boardableLines.includes(l) ? 1 : 0.45 }}
-                aria-label={isFa ? `خط ${persianDigits(l, lang)}${boardableLines.includes(l) ? "" : "، غیرفعال"}` : `Line ${l}${boardableLines.includes(l) ? "" : ", not open"}`}
+                style={{ backgroundColor: l.color, color: l.onColor, opacity: l.boardable ? 1 : 0.45 }}
+                aria-label={isFa ? `خط ${persianDigits(l.label, lang)}${l.boardable ? "" : "، غیرفعال"}` : `Line ${l.label}${l.boardable ? "" : ", not open"}`}
               >
-                {persianDigits(l, lang)}
+                {persianDigits(l.label, lang)}
               </span>
             ))}
           </div>
@@ -69,7 +81,7 @@ export function StationDetail({
             type="button"
             aria-label={t.close}
             onClick={onClose}
-            className="flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <X aria-hidden="true" className="size-4" />
           </button>
@@ -77,7 +89,7 @@ export function StationDetail({
       </div>
 
       {boardableLines.length > 1 && (
-        <span className="inline-flex items-center gap-1 self-start rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+        <span className="inline-flex items-center gap-1 self-start rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground/80">
           {t.interchange}
         </span>
       )}
@@ -85,8 +97,8 @@ export function StationDetail({
       {unavailableLines.length > 0 && station.status === "operational" && (
         <p className="text-xs text-muted-foreground" role="status">
           {isFa
-            ? `خط ${unavailableLines.map((l) => persianDigits(l, lang)).join("، ")} هنوز در این ایستگاه مسافرگیری ندارد.`
-            : `Boarding on line ${unavailableLines.join(", ")} is not yet available at this station.`}
+            ? `خط ${unavailableLines.map((l) => persianDigits(l.label, lang)).join("، ")} هنوز در این ایستگاه مسافرگیری ندارد.`
+            : `Boarding on line ${unavailableLines.map(l => l.label).join(", ")} is not yet available at this station.`}
         </p>
       )}
 
@@ -114,23 +126,8 @@ export function StationDetail({
         </div>
       )}
 
-      {!loaded && (
-        <div role="status" className="text-xs text-muted-foreground">
-          {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
-        </div>
-      )}
-      {loaded && departures.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {isFa ? "حرکت‌های بعدی" : "Next departures"}
-          </h4>
-          <ul className="flex flex-col gap-1">
-            {departures.map((dep, i) => (
-              <DepartureRow key={i} dep={dep} lang={lang} />
-            ))}
-          </ul>
-        </div>
-      )}
+      {scheduleLoading && <div role="status" className="text-xs text-muted-foreground">{isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}</div>}
+      {departures}
     </div>
   );
 }

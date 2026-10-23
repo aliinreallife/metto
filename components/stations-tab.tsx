@@ -259,7 +259,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
   );
 }
 
-function FilterChip({
+export function FilterChip({
   active,
   onClick,
   dot,

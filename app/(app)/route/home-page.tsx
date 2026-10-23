@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowUpDown,
   Building2,
   History,
   Loader2,
@@ -14,6 +13,7 @@ import {
   Map as MapIcon,
   X,
 } from "lucide-react";
+import { RouteFields } from "@/components/route-fields";
 import { StationCombobox } from "@/components/station-combobox";
 import { MissedDeadlineCard, NoServiceCard, RoutePanel, WalkSuggestCard } from "@/components/route-panel";
 import { RatePromptHost } from "@/components/rate-prompt";
@@ -572,12 +572,8 @@ function RouteView({
     <div className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10">
       <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
         <div className="flex flex-col gap-2.5">
-          <label htmlFor="origin-combobox" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
-            {t.from}
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <StationCombobox
+          <RouteFields lang={lang} originId="origin-combobox" destinationId="dest-combobox"
+            origin={<StationCombobox
                 id="origin-combobox"
                 value={originId}
                 onChange={(id) => {
@@ -588,9 +584,20 @@ function RouteView({
                 placeholder={t.origin}
                 lang={lang}
                 accentClass="bg-primary"
-              />
-            </div>
-            <button
+              />}
+            destination={<StationCombobox
+                id="dest-combobox"
+                value={destId}
+                onChange={(id) => {
+                  setDestId(id);
+                  clearDestPlace();
+                }}
+                onPlaceSelect={(p) => onPlaceSelect(p, false)}
+                placeholder={t.destination}
+                lang={lang}
+                accentClass="bg-foreground"
+              />}
+            originAction={<button
               type="button"
               onClick={locateOrigin}
               disabled={locating}
@@ -602,9 +609,8 @@ function RouteView({
               ) : (
                 <LocateFixed aria-hidden="true" className="size-4" />
               )}
-            </button>
-          </div>
-          {originPlaceInfo && (
+            </button>}
+            afterOrigin={<>{originPlaceInfo && (
             <PlaceCard
               lang={lang}
               info={originPlaceInfo}
@@ -618,35 +624,8 @@ function RouteView({
               kind={gpsError}
               onRetry={locateOrigin}
             />
-          )}
-          <label htmlFor="dest-combobox" className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
-            {t.to}
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <StationCombobox
-                id="dest-combobox"
-                value={destId}
-                onChange={(id) => {
-                  setDestId(id);
-                  clearDestPlace();
-                }}
-                onPlaceSelect={(p) => onPlaceSelect(p, false)}
-                placeholder={t.destination}
-                lang={lang}
-                accentClass="bg-foreground"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => swap()}
-              aria-label={t.swap}
-              className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              <ArrowUpDown aria-hidden="true" className="size-4" />
-            </button>
-          </div>
-          {destPlaceInfo && (
+          )}</>}
+            afterDestination={destPlaceInfo && (
             <PlaceCard
               lang={lang}
               info={destPlaceInfo}
@@ -654,6 +633,7 @@ function RouteView({
               onClear={clearDestPlace}
             />
           )}
+            onSwap={swap} />
           <div ref={timeCardRef} className="scroll-mt-4">
             <TravelTimeCard
               lang={lang}

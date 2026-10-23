@@ -24,18 +24,22 @@ test("landing counts match both cities and each city has its own landing", async
 
 test("switching the normal map shows Mashhad stations and links map selections into routing", async ({ page }) => {
   await page.goto("/map?lang=en");
-  await page.getByRole("combobox", { name: "Choose city" }).selectOption("mashhad");
+  await page.getByRole("combobox", { name: "Choose city" }).click();
+  await page.getByRole("option", { name: "Mashhad", exact: true }).click();
   await expect(page).toHaveURL(/\/mashhad\/map\?lang=en/);
   await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-station-count", "36");
   await expect(page.locator('.leaflet-marker-icon[data-station-id]')).toHaveCount(36);
   const station = page.locator('.leaflet-marker-icon[data-station-id="mashhad:station:shariati"]');
   await station.focus(); await page.keyboard.press("Enter");
+  const selectedAudit = await new AxeBuilder({ page }).analyze();
+  expect(selectedAudit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
   await page.getByRole("main").getByRole("link", { name: "From", exact: true }).click();
   await expect(page).toHaveURL(/\/mashhad\/route/);
   await pickCityStation(page, "To", "Airport");
   const result = page.getByTestId("city-route-result");
   await expect(result).toBeVisible();
-  await expect(result).not.toContainText(/arrival|minutes|estimated/i);
+  await expect(result.getByTestId("route-summary-stats")).toContainText("—");
+  await expect(result).not.toContainText(/\d{1,2}:\d{2}|\d+ minutes|estimated/i);
   await result.getByRole("link", { name: "Map", exact: true }).click();
   await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-route-station-count", "8");
 });
@@ -47,7 +51,7 @@ test("all-city search keeps stations with the same name separate and routes to t
   await expect(rows).toHaveCount(2);
   await expect(rows.filter({ hasText: "Tehran" })).toHaveCount(1);
   await expect(rows.filter({ hasText: "Mashhad" })).toHaveCount(1);
-  await rows.filter({ hasText: "Mashhad" }).getByRole("link", { name: "Route here" }).click();
+  await rows.filter({ hasText: "Mashhad" }).getByRole("button", { name: "Set as Destination" }).click();
   await expect(page).toHaveURL(/\/mashhad\/route\?/);
   await expect(page.getByLabel("To", { exact: true })).toContainText("Basij");
   await expect(page).toHaveURL(/to=mashhad%3Astation%3Abasij/);
@@ -98,7 +102,8 @@ test("the all-city map contains distinct markers and no missing stations", async
 
 test("city switching drops foreign endpoints and Tehran timing options", async ({ page }) => {
   await page.goto("/map?from=tajrish&to=tehran-sadeghiyeh&timeMode=arrive&lang=en");
-  await page.getByRole("combobox", { name: "Choose city" }).selectOption("mashhad");
+  await page.getByRole("combobox", { name: "Choose city" }).click();
+  await page.getByRole("option", { name: "Mashhad", exact: true }).click();
   await expect(page).toHaveURL(/\/mashhad\/map\?lang=en/);
   const url = new URL(page.url());
   expect(url.searchParams.has("from")).toBe(false);
@@ -110,10 +115,44 @@ test("city switching drops foreign endpoints and Tehran timing options", async (
 test("Persian city pages stay usable on a narrow screen", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/mashhad/stations?lang=fa");
-  await expect(page.getByRole("combobox", { name: "انتخاب شهر" })).toHaveValue("mashhad");
+  await expect(page.getByRole("combobox", { name: "انتخاب شهر" })).toContainText("مشهد");
+  const fullAudit = await new AxeBuilder({ page }).analyze();
+  expect(fullAudit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
   await page.getByLabel("جستجوی ایستگاه…", { exact: true }).fill("بسیج");
   await expect(page.locator('li[data-station-id]')).toHaveCount(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   const audit = await new AxeBuilder({ page }).analyze();
   expect(audit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
+});
+
+
+test("city selector supports keyboard selection, Escape and outside dismissal", async ({ page }) => {
+  await page.goto("/map?lang=en");
+  const picker = page.getByRole("combobox", { name: "Choose city" });
+  await picker.focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("option", { name: "Tehran", exact: true })).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Escape");
+  await expect(picker).toBeFocused();
+  await expect(picker).toHaveAttribute("aria-expanded", "false");
+  await picker.click();
+  await page.getByRole("main").click({ position: { x: 5, y: 5 } });
+  await expect(picker).toHaveAttribute("aria-expanded", "false");
+  await picker.focus(); await page.keyboard.press("ArrowDown"); await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/mashhad\/map\?lang=en/);
+  await expect(page.getByRole("combobox", { name: "Choose city" })).toContainText("Mashhad");
+});
+
+
+test("Mashhad Nearby shares the location picker and keeps results in its city", async ({ page }) => {
+  await page.goto("/mashhad/nearby?lang=en");
+  await expect(page.getByRole("heading", { name: "Your location", exact: true })).toBeVisible();
+  await expect(page.locator("li[data-station-id]")).toHaveCount(0);
+  await page.getByRole("main").locator('button[aria-haspopup="listbox"]').click();
+  await page.locator('input[role="combobox"]').fill("Airport");
+  await page.getByRole("listbox").getByRole("option").first().click();
+  await expect(page.locator("li[data-station-id]")).toHaveCount(15);
+  await expect(page.locator("li[data-station-id]").first()).toHaveAttribute("data-station-id", "mashhad:station:airport");
+  await expect(page.locator('li[data-city="tehran"]')).toHaveCount(0);
+  await expect(page.getByRole("main").getByRole("button", { name: "Timetable" })).toHaveCount(0);
 });

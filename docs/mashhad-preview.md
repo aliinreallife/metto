@@ -24,7 +24,14 @@ has not been approved. Line 3 remains outside this first scope.
   Cross-city metro routes are rejected; maps never join different cities.
 - Mashhad's map contains all 36 scoped stations and route highlights. Its
   planner gives stations, line changes and route links without time estimates.
-  Nearby uses opt-in GPS and explicitly labels straight-line distance.
+  Nearby uses opt-in GPS or a chosen station, and explicitly labels straight-line distance.
+- Both cities use the same `RouteFields`, `StationCombobox`, itinerary
+  `SegmentView`, `StationCardView`, `StationDetailView`, `NearbyLocation` and
+  `RealMap` components. Mashhad supplies namespaced data and no timetable.
+  Its travel/arrival summary values are blank, while map labels, controls,
+  GPS and offline tile recovery follow the existing map implementation.
+  The styled city list supports arrows, Enter/Space, Escape, outside dismissal
+  and selected-state announcements in FA/EN.
 
 ## Run locally
 
@@ -71,6 +78,17 @@ not authentication; platform deployment protection still applies.
   There is no new offline guarantee, entrance routing or amenities claim.
 - Attribution and machine-readable ODbL database details are in
   [DATA_LICENSE.md](../DATA_LICENSE.md) and the preview footer.
+
+## Missing-timetable estimates
+
+Run `pnpm estimates:evaluate` for the reproducible Tehran comparison, described
+in [the estimate audit](route-estimates.md). Regular ride-only error averages
+2.03 minutes; the small complete-journey matrix averages 8.10 minutes with one
+leg masked and 11.59 minutes with all timetables masked. Missing waits make
+arrival estimates optimistic. The app explains this when a leg is estimated.
+No speed, timing, timetable identity or routing behavior was changed. The audit
+also records legacy ambiguous timetable names for separate source review.
+These results do not enable Mashhad timing.
 
 ## Evidence and release boundary
 

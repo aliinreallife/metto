@@ -7,7 +7,12 @@ import { mashhadPreview } from "@/lib/mashhad-preview";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { AppSkipLink } from "../(app)/skip-link";
 import { useSearchParams } from "next/navigation";
-import { ArrowUpDown, Map as MapIcon, Link2 } from "lucide-react";
+import { Map as MapIcon, Link2, LocateFixed, Loader2 } from "lucide-react";
+import { RouteFields } from "@/components/route-fields";
+import { PathRoutePanel } from "@/components/route-panel";
+import { getCurrentPositionTolerant, classifyGeoError, type GeoErrorKind } from "@/lib/geolocation";
+import { haversineKm } from "@/lib/geo";
+import { LocationErrorActions } from "@/components/location-error";
 import { CityStationPicker } from "@/components/city-station-picker";
 import { catalogStations } from "@/lib/city-catalog";
 
@@ -30,6 +35,8 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
   const languageReady = useRef(!initialLang);
   const lang = embedded ? preferredLang : selectedLang ?? preferredLang;
   const t = STRINGS[lang];
+  const [locating, setLocating] = useState(false);
+  const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null);
   const [from, setFrom] = useState(byId.has(initialFrom ?? "") ? initialFrom! : "");
   const [to, setTo] = useState(byId.has(initialTo ?? "") ? initialTo! : "");
   const [invalidLink, setInvalidLink] = useState(Boolean(
@@ -66,9 +73,17 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
       if (to) localStorage.setItem("mashhad.route.to", to);
     } catch { /* storage optional */ }
   }, [from, to, lang, initialLang, preferredLang]);
+  const locateOrigin = async () => {
+    setLocating(true); setGpsError(null);
+    try {
+      const point = await getCurrentPositionTolerant();
+      const nearest = [...stations].sort((a, b) => haversineKm(point.lat, point.lng, a.location.lat, a.location.lng) - haversineKm(point.lat, point.lng, b.location.lat, b.location.lng))[0];
+      if (nearest) { setFrom(nearest.id); setInvalidLink(false); }
+    } catch (error) { setGpsError(classifyGeoError(error)); }
+    finally { setLocating(false); }
+  };
   const result = useMemo(() => mashhadPreview.findPath(from, to), [from, to]);
   const number = (value: string | number) => persianDigits(value, lang);
-  const lineName = (id: string) => `${t.line} ${number(id.split(":").at(-1)!)}`;
   const name = (id: string) => byId.get(id)?.names[lang] ?? id;
   const routeHref = `/mashhad/route?${new URLSearchParams({ from, to, lang })}`;
   const Container = embedded ? "div" : "main";
@@ -80,48 +95,35 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
       lang={lang} dir={lang === "fa" ? "rtl" : "ltr"}>
       <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
         <h1 className="sr-only">{t.cityPreviewTitle}</h1>
-        <p className="text-xs leading-relaxed text-muted-foreground" data-testid="city-no-times">
-          <span className="me-2 rounded bg-muted px-1.5 py-0.5 font-medium text-foreground/80">{t.cityPreviewBadge}</span>
-          {t.cityPathOnly}
-        </p>
         {!embedded && <button type="button" className={control} onClick={() => {
           const next = lang === "fa" ? "en" : "fa"; setSelectedLang(next); setLang(next);
         }}>{lang === "fa" ? "English" : "فارسی"}</button>}
         <section aria-label={t.findRoute} className="flex flex-col gap-2.5">
-          <label htmlFor="city-from" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">{t.from}</label>
-          <CityStationPicker id="city-from" stations={stations} value={from} lang={lang} placeholder={t.searchStations} accentClass="bg-primary"
-            onChange={id => { setFrom(id); setInvalidLink(false); }} />
-          <label htmlFor="city-to" className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">{t.to}</label>
-          <div className="flex gap-2">
-            <CityStationPicker id="city-to" stations={stations} value={to} lang={lang} placeholder={t.searchStations} accentClass="bg-foreground"
-              onChange={id => { setTo(id); setInvalidLink(false); }} />
-            <button type="button" aria-label={t.swap} className="flex min-h-[44px] w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary"
-              onClick={() => { setFrom(to); setTo(from); setInvalidLink(false); }}><ArrowUpDown aria-hidden="true" className="size-4" /></button>
-          </div>
+          <RouteFields lang={lang} originId="city-from" destinationId="city-to"
+            origin={<CityStationPicker id="city-from" stations={stations} value={from} lang={lang} placeholder={t.searchStations} accentClass="bg-primary" onChange={id => { setFrom(id); setInvalidLink(false); }} />}
+            destination={<CityStationPicker id="city-to" stations={stations} value={to} lang={lang} placeholder={t.searchStations} accentClass="bg-foreground" onChange={id => { setTo(id); setInvalidLink(false); }} />}
+            originAction={<button type="button" aria-label={t.useMyLocation} disabled={locating} onClick={locateOrigin}
+              className="flex w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-primary">
+              {locating ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <LocateFixed aria-hidden="true" className="size-4" />}
+            </button>}
+            afterOrigin={gpsError && <LocationErrorActions lang={lang} kind={gpsError} onRetry={locateOrigin} />}
+            onSwap={() => { setFrom(to); setTo(from); setInvalidLink(false); }} />
           {invalidLink ? <p role="alert" className="mt-3 text-sm">{t.cityPreviewInvalidLink}</p>
             : from && to && from === to ? <p role="alert" className="mt-3 text-sm">{t.sameStation}</p>
               : from && to && !result ? <p role="alert" className="mt-3 text-sm">{t.noRoute}</p>
                 : !result ? <p className="mt-4 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">{t.pickBoth}</p> : null}
         </section>
-        {result && <section aria-labelledby="city-route-title" data-testid="city-route-result" className="overflow-hidden rounded-xl border border-border bg-card">
-          <div className="border-b border-border px-4 py-3">
-            <h2 id="city-route-title" className="text-sm font-bold">{t.routeOverview}</h2>
-            <p role="status" aria-live="polite" className="mt-1 text-xs text-muted-foreground">{number(result.stops)} {t.stops} · {number(result.transfers.length)} {t.transfers}</p>
-          </div>
-          <ol className="grid gap-5 p-4">
-            {result.legs.map((leg, i) => <li key={`${leg.lineId}:${i}`}>
-              {i > 0 && <p className="mb-3 text-sm font-medium">{t.cityPreviewTransfer} {name(leg.stationIds[0])}</p>}
-              <h3 className="text-xs font-semibold text-muted-foreground">{lineName(leg.lineId)}</h3>
-              <ol className="ms-1 mt-3 grid gap-2 border-s-2 border-primary/50 ps-4 text-sm">
-                {leg.stationIds.map(id => <li key={id}>{name(id)}</li>)}
-              </ol>
-            </li>)}
-          </ol>
-          <div className="flex border-t border-border">
+        {result && <section aria-label={t.routeOverview} data-testid="city-route-result">
+          <PathRoutePanel lang={lang} stationCount={result.stationIds.length} name={name}
+            legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
+              terminal: mashhadPreview.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
+              color: mashhadPreview.lines.find(l => l.id === leg.lineId)!.color, onColor: "#18181b" }))} />
+          <div className="mt-3 flex overflow-hidden rounded-xl border border-border bg-card">
             <a href={routeHref} className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 text-xs text-muted-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary"><Link2 aria-hidden="true" className="size-3.5" />{t.cityPreviewShare}</a>
             <Link href={`/mashhad/map?${new URLSearchParams({ from, to, lang })}`} className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 border-s border-border text-xs font-semibold text-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary"><MapIcon aria-hidden="true" className="size-3.5" />{t.tabMap}</Link>
           </div>
         </section>}
+        {!result && <p className="text-xs text-muted-foreground" data-testid="city-no-times">{t.cityPathOnly}</p>}
         <Link href={`/mashhad/stations?lang=${lang}`} className="inline-flex min-h-[44px] items-center self-start text-xs font-medium text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">
           {t.cityPreviewStationList} ({number(stations.length)})
         </Link>

@@ -29,15 +29,16 @@ test("routes the two-line scope without timing, Tehran tools or selection leakag
   await pickCityStation(page, "From", "Airport");
   await pickCityStation(page, "To", "Tabarsi");
   const result = planner.getByTestId("city-route-result");
-  await expect(result.getByText("Change lines at Shariati")).toBeVisible();
-  await expect(result).not.toContainText(/minutes|arrival|estimated/i);
+  await expect(result.getByText("Transfer to Line 2 via Shariati")).toBeVisible();
+  await expect(result.getByTestId("route-summary-stats")).toContainText("—");
+  await expect(result).not.toContainText(/\d{1,2}:\d{2}|\d+ minutes|estimated/i);
   await expect(planner.getByTestId("city-no-times")).toContainText("aren't available yet");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   const selections = await page.evaluate(() => [localStorage.getItem("route.from"), localStorage.getItem("route.to")]);
   expect(selections).toEqual(["tajrish", "tehran-sadeghiyeh"]);
   expect(await page.evaluate(() => (window as typeof window & { registeredMetroTools: string[] }).registeredMetroTools)).toEqual([]);
   await page.reload();
-  await expect(page.getByRole("main").getByTestId("city-route-result")).toContainText("Change lines at Shariati");
+  await expect(page.getByRole("main").getByTestId("city-route-result")).toContainText("Transfer to Line 2 via Shariati");
 });
 
 test("supports Persian, keyboard controls and accessible results", async ({ page }) => {
@@ -46,7 +47,7 @@ test("supports Persian, keyboard controls and accessible results", async ({ page
   await expect(planner).toHaveAttribute("dir", "rtl");
   await pickCityStation(page, "مبدأ", "VakilAbad");
   await pickCityStation(page, "مقصد", "Airport");
-  await expect(planner.getByTestId("city-route-result")).toContainText("۲۳ ایستگاه");
+  await expect(planner.getByTestId("route-summary-stats").getByText("۲۴", { exact: true })).toBeVisible();
   const swap = planner.getByRole("button", { name: "جابجایی" });
   await swap.focus(); await page.keyboard.press("Enter");
   await expect(planner.getByLabel("مبدأ", { exact: true })).toContainText("فرودگاه");
@@ -64,4 +65,21 @@ test("rejects cross-city links and leaves disputed Line 3 stops unselectable", a
   await expect(page.getByTestId("city-route-result")).toHaveCount(0);
   const denied = await request.get("/api/cities/mashhad/route?from=tajrish&to=mashhad:station:airport");
   expect(denied.status()).toBe(400);
+});
+
+
+test("uses the shared itinerary disclosure and chooses GPS origin within Mashhad", async ({ page, context }) => {
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: 36.231, longitude: 59.643 });
+  const timetableRequests: string[] = [];
+  page.on("request", request => { if (/schedule-data|\/data\/schedule-/.test(request.url())) timetableRequests.push(request.url()); });
+  await page.goto("/mashhad/route?from=mashhad:station:vakilabad&to=mashhad:station:airport&lang=en");
+  const disclosure = page.getByRole("button", { name: "Intermediate stops" });
+  await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+  await disclosure.click();
+  await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByTestId("city-route-result").getByRole("list").last()).toContainText("Shariati");
+  await page.getByRole("button", { name: "Use my location", exact: true }).click();
+  await expect(page.getByLabel("From", { exact: true })).toContainText("Airport");
+  expect(timetableRequests).toEqual([]);
 });

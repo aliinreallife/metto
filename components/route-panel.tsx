@@ -327,7 +327,7 @@ export function RoutePanel({
           <span className="min-w-0">{topWarning.message}</span>
         </div>
       )}
-      <p className="text-xs text-muted-foreground">{t.timeNote}</p>
+      <p className="text-xs text-muted-foreground">{route.legTiming.includes("estimated") ? t.fallbackTimeNote : t.timeNote}</p>
 
       <ol className="flex flex-col gap-3">
         {route.segments.map((seg, i) => (
@@ -384,6 +384,30 @@ export function RoutePanel({
   );
 }
 
+/** Same summary and itinerary as the timed planner, without invented times. */
+export function PathRoutePanel({ lang, stationCount, legs, name }: {
+  lang: Lang; stationCount: number;
+  legs: { line: number; stations: string[]; terminal: string; color: string; onColor: string }[];
+  name: (id: string) => string;
+}) {
+  const t = STRINGS[lang]; const isFa = lang === "fa";
+  return <div className="flex flex-col gap-3 md:gap-4">
+    <div role="group" aria-label={t.routeSummary} className="grid grid-cols-3 gap-3 rounded-xl md:gap-4" data-testid="route-summary-stats">
+      <Stat icon={<TrainFront className="size-5 md:size-6" />} value={persianDigits(stationCount, lang)} label={isFa ? "ایستگاه" : "stops"} />
+      <Stat icon={<Clock className="size-5" />} value="—" label={isFa ? "دقیقه سفر" : "travel time"} />
+      <Stat icon={<Flag className="size-5" />} value="—" label={isFa ? "رسیدن" : "arrival"} />
+    </div>
+    <p className="text-xs text-muted-foreground" data-testid="city-no-times">{t.cityPathOnly}</p>
+    <ol className="flex flex-col gap-3">{legs.map((leg, index) => <li key={index} className="flex flex-col gap-2">
+      {index > 0 && <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
+        <Footprints aria-hidden="true" className="size-4 shrink-0" />
+        <span>{t.transferTo} {persianDigits(leg.line, lang)} {t.via} {name(leg.stations[0])}</span>
+      </div>}
+      <SegmentView {...leg} name={name} lang={lang} boardable={() => true} />
+    </li>)}</ol>
+  </div>;
+}
+
 function Stat({
   icon,
   value,
@@ -432,42 +456,33 @@ function CountdownLine({
   return <span className="tnum">{text}</span>;
 }
 
-function SegmentCard({
-  line,
-  stations,
-  terminal,
-  name,
-  lang,
-  showNextTrain = false,
-  trip,
-  isPlanned = false,
-}: {
-  line: number;
-  stations: string[];
-  terminal: string;
-  name: (id: string) => string;
-  lang: Lang;
-  showNextTrain?: boolean;
-  trip?: TripResult;
-  /** Planned (non-now) journey: "Then:" reflects live now, not the plan. */
-  isPlanned?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
+function SegmentCard(props: SegmentViewProps) {
+  const { stations, line } = props;
   const loaded = useScheduleData();
   const { isHolidayDate } = useHolidayData();
-  const t = STRINGS[lang];
-  const isFa = lang === "fa";
-  const color = LINE_COLORS[line];
-  const intermediates = stations.slice(1, -1);
   const board = stations[0];
-  const alight = stations[stations.length - 1];
+  const nextDep = useMemo(() => getNextDepartures(board, line, getCurrentDayType(undefined, isHolidayDate), 10),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loaded triggers recomputation after the timetable activates.
+    [board, line, loaded, isHolidayDate]);
+  return <SegmentView {...props} nextDep={nextDep} />;
+}
 
-  const nextDep = useMemo(() => {
-    const deps = getNextDepartures(board, line, getCurrentDayType(undefined, isHolidayDate), 10);
-    return deps;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `loaded` retriggers this memo after the async timetable finishes loading; it is intentionally not read inside.
-  }, [board, line, loaded, isHolidayDate]);
+type SegmentViewProps = {
+  line: number; stations: string[]; terminal: string;
+  name: (id: string) => string; lang: Lang; showNextTrain?: boolean;
+  trip?: TripResult; isPlanned?: boolean;
+};
 
+/** Shared itinerary card, with optional timing supplied by its city adapter. */
+export function SegmentView({ line, stations, terminal, name, lang, showNextTrain = false, trip,
+  isPlanned = false, color = LINE_COLORS[line], onColor = lineOnColor(line),
+  boardable = (id: string) => canBoardAtStation(id, line), nextDep = [],
+}: SegmentViewProps & { color?: string; onColor?: string; boardable?: (id: string) => boolean;
+  nextDep?: ReturnType<typeof getNextDepartures> }) {
+  const [open, setOpen] = useState(false);
+  const t = STRINGS[lang]; const isFa = lang === "fa";
+  const intermediates = stations.slice(1, -1);
+  const board = stations[0], alight = stations[stations.length - 1];
   const next = nextDep[0] ?? null;
   const stopsId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
 
@@ -479,7 +494,7 @@ function SegmentCard({
           className="flex items-center gap-3 px-4 py-3 md:gap-4 md:px-5 md:py-4"
           style={{ backgroundColor: `${color}11` }}
         >
-          <div aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold md:size-12 md:text-base" style={{ backgroundColor: color, color: lineOnColor(line) }}>
+          <div aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold md:size-12 md:text-base" style={{ backgroundColor: color, color: onColor }}>
             {persianDigits(line, lang)}
           </div>
           <div className="min-w-0 flex-1">
@@ -551,7 +566,7 @@ function SegmentCard({
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold md:px-3 md:py-1.5 md:text-sm"
-              style={{ backgroundColor: color, color: lineOnColor(line) }}
+              style={{ backgroundColor: color, color: onColor }}
             >
               {t.line} {persianDigits(line, lang)}
             </span>
@@ -588,7 +603,7 @@ function SegmentCard({
               ) : (
                 <span
                   className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-bold md:px-3 md:py-1.5 md:text-xs"
-                  style={{ backgroundColor: color, color: lineOnColor(line) }}
+                  style={{ backgroundColor: color, color: onColor }}
                 >
                   {persianDigits(stations.length - 2, lang)}
                 </span>
@@ -632,7 +647,7 @@ function SegmentCard({
                   {intermediates.map((id) => (
                     <li key={id} className="truncate py-0.5">
                       {name(id)}
-                      {!canBoardAtStation(id, line) && (
+                      {!boardable(id) && (
                         <span className="ms-1.5 text-[10px]">
                           {isFa ? "(عبور بدون توقف)" : "(passes through)"}
                         </span>

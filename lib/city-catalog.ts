@@ -1,7 +1,7 @@
 // Display catalog only. Tehran's existing route/timetable identity stays intact.
 import { STATIONS } from "./metro/stations";
 import { LINES } from "./metro/lines";
-import { buildMapEdges, getStationLines } from "./metro/selectors";
+import { buildMapEdges, getStationLines, getOperationalStationLines } from "./metro/selectors";
 import { mashhadPreview } from "./mashhad-preview";
 import rawGraph from "../data/previews/mashhad/graph.json";
 import type { CityId } from "./cities";
@@ -9,15 +9,15 @@ import type { CityId } from "./cities";
 export type CityStation = {
   id: string; localId: string; cityId: CityId;
   names: { fa: string; en: string }; location: { lat: number; lng: number };
-  lineIds: string[]; status: string;
+  lineIds: string[]; operationalLineIds: string[]; status: string;
 };
 export type CityEdge = { from: string; to: string; lineId: string; status: string };
 export const CITY_STATIONS: CityStation[] = [
   ...STATIONS.map(s => ({ id: `tehran:station:${s.id}`, localId: s.id, cityId: "tehran" as const,
     names: s.name, location: s.location, status: s.status,
-    lineIds: getStationLines(s.id).map(id => `tehran:line:${id}`) })),
+    lineIds: getStationLines(s.id).map(id => `tehran:line:${id}`), operationalLineIds: getOperationalStationLines(s.id).map(id => `tehran:line:${id}`) })),
   ...mashhadPreview.stations.map(s => ({ ...s, localId: s.id, cityId: "mashhad" as const,
-    lineIds: mashhadPreview.getStationLineIds(s.id) })),
+    lineIds: mashhadPreview.getStationLineIds(s.id), operationalLineIds: mashhadPreview.getStationLineIds(s.id) })),
 ];
 export const CITY_LINES = [
   ...LINES.map(l => ({ id: `tehran:line:${l.id}`, cityId: "tehran" as const, color: l.color })),
