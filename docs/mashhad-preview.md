@@ -119,6 +119,8 @@ the Mashhad API, and continued serving Tehran routes. The companion data
 commit passed all 64 tests, typecheck, validators, provenance and workflow
 checks; the Mashhad release check failed as expected while Tehran passed.
 
-These are local results. Nothing was pushed, merged or deployed. Public
-Mashhad release approval and physical station/interchange verification remain
-outstanding.
+These are local validation results. Review branches `feat/mashhad-route-preview`
+(app) and `feat/mashhad-service-evidence` (data) have been pushed. They build on
+the existing draft PRs #223 and #9 respectively. Nothing was merged or released
+to production. Public Mashhad approval and the remaining station-level review
+are outstanding.
