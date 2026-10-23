@@ -1,8 +1,9 @@
 # Mashhad stations and route-path review
 
 This is a default-off candidate preview for **Lines 1 and 2, 36 unique stations**.
-It is not a public city launch. Line 3 is withheld because the available sources
-disagree about Basij's boarding status. The public city registry, navigation,
+It is not a public city launch. Line 3 is withheld pending a separate complete
+service-pattern review. New dated reports support Basij's opening, while the
+older OSM snapshot remains stale on that point. The public city registry, navigation,
 sitemap, Tehran router and timetable API still serve Tehran.
 
 The agreed first-release scope is stations and route paths without arrival or
@@ -56,14 +57,31 @@ on an unprotected public server.
 
 ## Evidence and release boundary
 
-The companion data branch `feat/mashhad-service-evidence`, evidence commit
-`85be8c6`, records versioned
-OpenStreetMap evidence: 24 ordered Line 1 stops, 13 Line 2 stops, and Fajr's
-representative point independently corroborated. The guide, OSM and Wikipedia
-were retrieved on October 23, 2026; the operator timed out. The Line 3 guide
-text, its embedded map, and OSM disagree. No canonical dataset was silently
-changed to resolve that conflict. See `metto-data/docs/mashhad-source-review.md`
-and `sources/mashhad/review.json` for evidence and remaining blockers.
+The companion data branch `feat/mashhad-service-evidence` records versioned
+OpenStreetMap evidence at `85be8c6`: 24 ordered Line 1 stops, 13 Line 2 stops,
+and Fajr's representative point independently corroborated.
+
+Its continuation `eaf6f674291a0f0e1559d1388896695b342f13df` records ten dated
+Shahrara reports, including operator/council statements and passenger field
+reporting. These support current Line 1/2 service, the Airport/Reyhaneh and
+Fakouri endpoint reopenings, and passenger changes in both directions at
+Shariati. Reports on August 9, August 26 and October 22, 2026 corroborate
+Basij's opening and the Line 1/3 connection, giving stronger evidence than the
+older OSM proposed-stop tag. Line 3 stays outside the first scope. The operator
+site still timed out; ISNA returned a browser-check page without article content.
+
+The data command `pnpm quality:report` now emits
+`.quality-report/mashhad-path-review.json`: 36 stations, 37 boarding assertions,
+35 edges and two directed **untimed** Shariati links. It binds the projection
+and evidence to a fingerprint, distinguishes line-level reports from
+station-specific support, and always retains `releaseReady: false`. Its
+integrity checks and all 70 data tests pass. Station-level operator review and
+approval of the exact scoped artifact remain outstanding.
+
+No canonical dataset, app source pin or runtime route changed during this
+evidence continuation. See `metto-data/docs/mashhad-source-review.md`,
+`sources/mashhad/service-evidence.json` and `sources/mashhad/review.json` for
+the records, source limitations and remaining blockers.
 
 The data release gate still rejects Mashhad. This preview does not bypass or
 approve that gate. A public Lines 1/2 release needs an explicit reviewed scope,
