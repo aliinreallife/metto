@@ -1,3 +1,4 @@
+import type { CityId } from "./cities"
 import { STRINGS, type Lang } from "./i18n"
 
 export type PlaceResult = {
@@ -15,11 +16,12 @@ export async function searchPlaces(
   query: string,
   lang: Lang,
   limit = 5,
+  city: CityId = "tehran",
 ): Promise<PlaceResult[]> {
   const q = query.trim()
   if (q.length < 2) return []
 
-  const cacheKey = `${lang}:${q}:${limit}`
+  const cacheKey = `${city}:${lang}:${q}:${limit}`
   const cached = cache.get(cacheKey)
   if (cached) return cached
 
@@ -37,8 +39,8 @@ export async function searchPlaces(
     countrycodes: "ir",
     "accept-language": lang === "fa" ? "fa,en" : "en,fa",
     addressdetails: "1",
-    // Restrict to Tehran bounding box (SW corner, NE corner)
-    viewbox: "51.15,35.55,51.65,35.85",
+    // Keep place results inside the selected city.
+    viewbox: city === "mashhad" ? "59.35,36.10,59.85,36.50" : "51.15,35.55,51.65,35.85",
     bounded: "1",
   })
 
@@ -64,7 +66,8 @@ export async function searchPlaces(
       lat: parseFloat(item.lat),
       lng: parseFloat(item.lon),
       type: item.type,
-    }))
+    })).filter(place => Number.isFinite(place.lat) && Number.isFinite(place.lng) &&
+      (city !== "mashhad" || (place.lat >= 36.10 && place.lat <= 36.50 && place.lng >= 59.35 && place.lng <= 59.85)))
 
     cache.set(cacheKey, results)
     return results

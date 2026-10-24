@@ -4,9 +4,11 @@ import { useMemo } from "react";
 import { StationCombobox } from "./station-combobox";
 import { CITY_LINES, type CityStation } from "@/lib/city-catalog";
 import { CITIES } from "@/lib/cities";
+import type { CityId } from "@/lib/cities";
 import type { Lang } from "@/lib/i18n";
 
-export function CityStationPicker({ id, stations, value, onChange, placeholder, lang, accentClass, showCity = false }: {
+export function CityStationPicker({ id, stations, value, onChange, placeholder, lang, accentClass, showCity = false, placeSearchCity, onPlaceSelect }: {
+  placeSearchCity?: CityId; onPlaceSelect?: (place: { lat: number; lng: number; name: string }) => void;
   id: string; stations: CityStation[]; value: string; onChange: (id: string) => void;
   placeholder: string; lang: Lang; accentClass: string; showCity?: boolean;
 }) {
@@ -16,5 +18,5 @@ export function CityStationPicker({ id, stations, value, onChange, placeholder, 
     cityName: showCity ? CITIES.find(c => c.slug === s.cityId)!.name : undefined,
   })), [stations, showCity]);
   return <StationCombobox id={id} value={value || null} onChange={id => onChange(id ?? "")}
-    catalog={catalog} placeholder={placeholder} lang={lang} accentClass={accentClass} />;
+    catalog={catalog} placeSearchCity={placeSearchCity} onPlaceSelect={onPlaceSelect} placeholder={placeholder} lang={lang} accentClass={accentClass} />;
 }
