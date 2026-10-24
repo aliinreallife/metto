@@ -27,6 +27,8 @@ test("selects Mashhad landmarks as exact endpoints and preserves them after relo
   });
   await page.goto("/mashhad/route?to=mashhad:station:airport&lang=en");
   await page.getByLabel("From",{exact:true}).click();
+  await expect(page.getByRole("button",{name:"Mellat Park",exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Iran Mall",exact:true})).toHaveCount(0);
   await page.locator('input[role="combobox"]').fill("Imam Reza Shrine");
   await page.getByRole("option").filter({hasText:"Imam Reza Shrine"}).click();
   await expect(page.getByTestId("city-route-result")).toBeVisible();
