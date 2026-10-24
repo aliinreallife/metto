@@ -47,7 +47,10 @@ test("routes the two-line scope without timing, Tehran tools or selection leakag
   await pickCityStation(page, "To", "Tabarsi");
   const result = planner.getByTestId("city-route-result");
   await expect(result.getByText("Transfer to Line 2 via Shariati")).toBeVisible();
-  await expect(result.getByTestId("route-summary-stats")).toContainText("—");
+  const summary = result.getByTestId("route-summary-stats");
+  await expect(summary).toContainText("16 stops");
+  await expect(summary).toContainText("1 transfer");
+  await expect(summary).not.toContainText(/—|travel time|arrival/i);
   await expect(result.getByRole("button", { name: "Copy route link", exact: true })).toBeVisible();
   await expect(result.getByRole("link", { name: /Directions to start/ })).toBeVisible();
   await expect(result).not.toContainText(/\d{1,2}:\d{2}|\d+ minutes|estimated/i);
@@ -68,7 +71,10 @@ test("supports Persian, keyboard controls and accessible results", async ({ page
   await expectTimetableLink(planner.getByTestId("city-no-times").getByRole("link"), "fa");
   await pickCityStation(page, "مبدأ", "VakilAbad");
   await pickCityStation(page, "مقصد", "Airport");
-  await expect(planner.getByTestId("route-summary-stats").getByText("۲۴", { exact: true })).toBeVisible();
+  const summary = planner.getByTestId("route-summary-stats");
+  await expect(summary).toContainText("۲۴ ایستگاه");
+  await expect(summary).toContainText("بدون تعویض خط");
+  await expect(summary).not.toContainText(/—|دقیقه سفر|رسیدن/);
   const swap = planner.getByRole("button", { name: "جابجایی" });
   await swap.focus(); await page.keyboard.press("Enter");
   await expect(planner.getByLabel("مبدأ", { exact: true })).toContainText("فرودگاه");

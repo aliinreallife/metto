@@ -35,7 +35,9 @@ full three-line canonical dataset retains its candidate status.
 - Both cities use the same `RouteFields`, `StationCombobox`, itinerary
   `SegmentView`, `StationCardView`, `StationDetailView`, `NearbyLocation` and
   `RealMap` components. Mashhad supplies namespaced data and no timetable.
-  Its travel/arrival summary values are blank, while map labels, controls,
+  Its compact route summary shows station and line-change counts; timing fields
+  are omitted. The timetable contribution link follows the route details.
+  Map labels, controls,
   GPS and offline tile recovery follow the existing map implementation.
   The styled city list supports arrows, Enter/Space, Escape, outside dismissal
   and selected-state announcements in FA/EN.
