@@ -18,6 +18,7 @@ export function StationsPage() {
 
   return (
     <div className="flex size-full flex-col bg-background text-foreground">
+      {/* Keep a semantic page heading without consuming screen space. */}
       <h1 className="sr-only">
         {isFa ? "ایستگاه‌های مترو تهران" : "Tehran metro stations"}
       </h1>
