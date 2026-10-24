@@ -43,5 +43,43 @@
     "path": "data/stations.json",
     "gitBlobSha1": "3b127905e73d3d6b28d0a94ac190d8395b85e6a6",
     "verification": "unverified"
+  },
+  "publicRelease": {
+    "productionAuthorized": true,
+    "authorizedOn": "2026-10-24",
+    "authorization": "Project owner requested the public Mashhad launch after reviewing the preview; stations and route paths without train times.",
+    "scope": "lines-1-2-stations-and-paths",
+    "artifactSha256": "d31937e589b02ade8c36bc6ecc57a17c677562191560c8222c530b7b30fe51c5",
+    "counts": {
+      "stations": 36,
+      "lines": 2,
+      "boardingClaims": 37,
+      "segments": 35,
+      "directedInterchanges": 2
+    },
+    "evidence": {
+      "repository": "https://github.com/aliinreallife/metto-data",
+      "commit": "39a325c7fd8fc42ed7ffd20188bd83fe2db569ea",
+      "pathReviewSha256": "90dd4ddb9552193f3cfbd5927ba115b5e90f44ea216912d0929c89b116a4761d",
+      "datasetSha256": "32f3e376810dfb9879784f2baed0a1562fe9f3cc954e4a17905e1aa64efc41f3",
+      "files": [
+        "sources/mashhad/osm-review-snapshot.json",
+        "sources/mashhad/service-evidence.json",
+        "sources/mashhad/review.json"
+      ]
+    },
+    "excluded": [
+      "line-3",
+      "train-times",
+      "travel-time-estimates",
+      "verified-amenities",
+      "entrances",
+      "measured-transfer-duration"
+    ],
+    "limitations": [
+      "Public activation does not certify the full upstream candidate dataset or clear its release-review blockers.",
+      "Ordered stops and representative locations are corroborated by OSM; dated reports support Lines 1/2 service and the untimed Shariati connection. This is not a live station-by-station operator audit.",
+      "Amenities are source-reported and unverified; station points are not entrances."
+    ]
   }
 }

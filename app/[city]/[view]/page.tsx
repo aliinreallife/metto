@@ -16,8 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const { city, view } = await params; const meta = availableCities().find(c => c.slug === city);
   if (!meta || !views.some(v => v === view)) notFound();
   const labels = { route: "مسیریابی", map: "نقشه", stations: "ایستگاه‌ها", nearby: "نزدیک‌ترین ایستگاه" };
-  return { title: `${labels[view as keyof typeof labels]} · مترو ${meta.name.fa}`, alternates: { canonical: `/${city}/${view}` },
-    ...(city === "mashhad" ? { robots: { index: false, follow: false } } : {}) };
+  return { title: `${labels[view as keyof typeof labels]} · مترو ${meta.name.fa}`, alternates: { canonical: `/${city}/${view}` } };
 }
 export default async function CityApp({ params }: { params: Promise<{ city: string; view: string }> }) {
   const { city, view } = await params;

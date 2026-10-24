@@ -10,7 +10,6 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   return { title: `مترو ${meta.name.fa} | نقشه، ایستگاه‌ها و مسیریابی`,
     description: `نقشه و ایستگاه‌های مترو ${meta.name.fa} را ببین و مسیرت را پیدا کن.`,
     keywords: meta.keywords, alternates: { canonical: `/${city}` },
-    ...(city === "mashhad" ? { robots: { index: false, follow: false } } : {}),
   };
 }
 export default async function CityLanding({ params }: { params: Promise<{ city: string }> }) {

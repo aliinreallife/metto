@@ -1,9 +1,10 @@
-# Multi-city app and Mashhad preview
+# Multi-city app and Mashhad launch
 
-Vercel previews and local development expose Tehran and **Mashhad Lines 1/2**.
+Production, Vercel previews and local development expose Tehran and **Mashhad Lines 1/2**.
 The landing counts 187 unique stations, 9 lines and 2 cities: Tehran 151/7,
-Mashhad 36/2. Production still exposes Tehran only; the data release review
-has not been approved. Line 3 remains outside this first scope.
+Mashhad 36/2. The project owner authorized this bounded station/path launch on
+2026-10-24 after reviewing the preview. Line 3 remains outside this scope; the
+full three-line canonical dataset retains its candidate status.
 
 ## Pages and station identity
 
@@ -55,18 +56,16 @@ With Node 22 and the repository's pinned pnpm:
 
 ```sh
 pnpm install --frozen-lockfile
-VERCEL_ENV=preview pnpm build
-VERCEL_ENV=preview pnpm start --hostname 127.0.0.1 --port 3003
+pnpm build
+pnpm start --hostname 127.0.0.1 --port 3003
 ```
 
-Open `/mashhad/map?lang=en` or `/cities?lang=fa`. Development and Vercel
-preview environments enable Mashhad automatically. Alternatively, set
-`METTO_MASHHAD_PREVIEW=1` for **both build and start** of a local production
-build. Set it to `0` to opt out. `VERCEL_ENV=production` always disables
-Mashhad, including its pages, API, city picker option and landing counts.
-The API gate is also checked per request. Mashhad pages are noindex/nofollow;
-Vercel preview metadata disables indexing for all pages. This feature flag is
-not authentication; platform deployment protection still applies.
+Open `/mashhad/map?lang=en` or `/cities?lang=fa`. Mashhad is enabled in all
+environments by its pinned `manifest.publicRelease` authorization. Set
+`METTO_MASHHAD_ENABLED=0` and rebuild/redeploy to hide it. The legacy
+`METTO_MASHHAD_PREVIEW=0` setting also disables it. The API checks availability
+per request. Public city pages are indexed and listed in the sitemap; Vercel
+preview metadata still disables indexing. These flags are not authentication.
 
 ## Data and behavior
 
@@ -84,7 +83,8 @@ not authentication; platform deployment protection still applies.
   interchanges automatically. Branching service patterns are rejected until
   explicitly supported.
 - `GET /api/cities/mashhad/route?from=mashhad:station:airport&to=mashhad:station:tabarsi`
-  returns a city-scoped path with `reviewOnly: true` and `timing: "unavailable"`.
+  returns a city-scoped path with `reviewOnly: false`, `dataStatus: "source-reported"`
+  and `timing: "unavailable"`.
   Unknown/Tehran endpoints, Line 3-only stations, identical endpoints and all
   query parameters besides `from`/`to` return HTTP 400.
 - The FA/EN planner reuses the existing labelled station-search picker,
@@ -135,19 +135,29 @@ The data command `pnpm quality:report` now emits
 35 edges and two directed **untimed** Shariati links. It binds the projection
 and evidence to a fingerprint, distinguishes line-level reports from
 station-specific support, and always retains `releaseReady: false`. Its
-integrity checks and all 70 data tests pass. Station-level operator review and
-approval of the exact scoped artifact remain outstanding.
+integrity checks and all 70 data tests pass. The packet is evidence rather than a production authorization. The bounded app
+launch authorization is recorded separately below; station-level operator
+verification remains a dataset limitation.
 
 No canonical dataset, app source pin or runtime route changed during this
 evidence continuation. See `metto-data/docs/mashhad-source-review.md`,
 `sources/mashhad/service-evidence.json` and `sources/mashhad/review.json` for
 the records, source limitations and remaining blockers.
 
-The data release gate still rejects Mashhad. This preview does not bypass or
-approve that gate. A public Lines 1/2 release needs an explicit reviewed scope,
-dated stop/interchange evidence and a dataset-bound review. Only then should
-production city availability be enabled in a reviewed change. Timetables, Line 3, entrances and verified amenity claims require their own
-evidence before being added. Displaying a source report does not approve it.
+The full canonical data release gate still rejects Mashhad's three-line
+candidate; this launch does not certify or tag that dataset. The app's
+`data/previews/mashhad/manifest.json` separately records the owner's production
+authorization for the exact Lines 1/2 station/path artifact. Its SHA-256 binds
+the source blobs, visible lines, directed Shariati links and unverified amenity
+source. The build rejects changed scope or stale authorization.
+
+The scoped review found 24 Line 1 and 13 Line 2 ordered stops matching the
+pinned OSM evidence; representative points are at most 125 metres from the
+corresponding OSM stop positions. Dated service and interchange reports were
+reviewed as described above. This supports the limited public map/path product,
+without claiming a live station-by-station operator audit. The dataset's
+remaining station-level review items remain recorded. Timetables, Line 3,
+entrances and verified amenities need separate evidence before publication.
 
 ## Validation
 

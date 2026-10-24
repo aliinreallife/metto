@@ -1,4 +1,4 @@
-// Review-only candidate. No imports from the Tehran router or timetable.
+// Public Lines 1/2 station/path projection. No Tehran router or timetable.
 import rawStations from "../data/previews/mashhad/stations.json";
 import rawLines from "../data/previews/mashhad/lines.json";
 import rawGraph from "../data/previews/mashhad/graph.json";
