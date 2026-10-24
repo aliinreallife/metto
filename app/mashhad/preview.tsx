@@ -12,6 +12,7 @@ import { RoutePlaceCard } from "@/components/route-place-card";
 import { useTripWalking } from "@/lib/walking/use-walking-route";
 import { WalkingRouteInfo } from "@/components/walking-route-info";
 import { RouteFields } from "@/components/route-fields";
+import { TimetableHelpNotice } from "@/components/timetable-help-notice";
 import { RouteActions } from "@/components/route-actions";
 import { PathRoutePanel } from "@/components/route-panel";
 import { getCurrentPositionTolerant, classifyGeoError, type GeoErrorKind } from "@/lib/geolocation";
@@ -157,7 +158,7 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
               color: mashhadPreview.lines.find(l => l.id === leg.lineId)!.color, onColor: "#18181b" }))} />
           <div className="mt-3"><RouteActions origin={{ name: byId.get(from)!.names, location: byId.get(from)!.location }} lang={lang} /></div>
         </section>}
-        {!result && <p className="text-xs text-muted-foreground" data-testid="city-no-times">{t.cityPathOnly}</p>}
+        {!result && <TimetableHelpNotice lang={lang} />}
         <div className="h-16 shrink-0 md:hidden" aria-hidden="true" />
       </div>
     </Container>

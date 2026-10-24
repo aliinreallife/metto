@@ -27,6 +27,7 @@ test("routes the two-line scope without timing, Tehran tools or selection leakag
   await expect(planner).toHaveAttribute("dir", "ltr");
   await expect(planner.getByText("Browse stations (36)")).toHaveCount(0);
   await expect(planner.locator("details")).toHaveCount(0);
+  await expect(planner.getByTestId("city-no-times").getByRole("link")).toHaveAttribute("href", /github\.com\/aliinreallife\/metto\/issues\/new\?/);
   await pickCityStation(page, "From", "Airport");
   await pickCityStation(page, "To", "Tabarsi");
   const result = planner.getByTestId("city-route-result");
@@ -35,7 +36,12 @@ test("routes the two-line scope without timing, Tehran tools or selection leakag
   await expect(result.getByRole("button", { name: "Copy route link", exact: true })).toBeVisible();
   await expect(result.getByRole("link", { name: /Directions to start/ })).toBeVisible();
   await expect(result).not.toContainText(/\d{1,2}:\d{2}|\d+ minutes|estimated/i);
-  await expect(planner.getByTestId("city-no-times")).toContainText("aren't available yet");
+  const contribution = planner.getByTestId("city-no-times").getByRole("link");
+  const issue = new URL((await contribution.getAttribute("href"))!);
+  expect(issue.pathname).toBe("/aliinreallife/metto/issues/new");
+  expect(issue.searchParams.get("title")).toContain("Mashhad");
+  expect(issue.searchParams.get("body")).toContain("Source and date");
+  await expect(contribution).toHaveAttribute("target", "_blank");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   const selections = await page.evaluate(() => [localStorage.getItem("route.from"), localStorage.getItem("route.to")]);
   expect(selections).toEqual(["tajrish", "tehran-sadeghiyeh"]);
@@ -48,6 +54,9 @@ test("supports Persian, keyboard controls and accessible results", async ({ page
   await page.goto("/mashhad/route?lang=fa");
   const planner = page.getByTestId("city-path-preview");
   await expect(planner).toHaveAttribute("dir", "rtl");
+  const issue = new URL((await planner.getByTestId("city-no-times").getByRole("link").getAttribute("href"))!);
+  expect(issue.searchParams.get("title")).toContain("مشهد");
+  expect(issue.searchParams.get("body")).toContain("منبع و تاریخ");
   await pickCityStation(page, "مبدأ", "VakilAbad");
   await pickCityStation(page, "مقصد", "Airport");
   await expect(planner.getByTestId("route-summary-stats").getByText("۲۴", { exact: true })).toBeVisible();

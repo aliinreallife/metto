@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
+import { TimetableHelpNotice } from "./timetable-help-notice";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import { canBoardAtStation } from "@/lib/metro/selectors";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
@@ -397,7 +398,7 @@ export function PathRoutePanel({ lang, stationCount, legs, name }: {
       <Stat icon={<Clock className="size-5" />} value="—" label={isFa ? "دقیقه سفر" : "travel time"} />
       <Stat icon={<Flag className="size-5" />} value="—" label={isFa ? "رسیدن" : "arrival"} />
     </div>
-    <p className="text-xs text-muted-foreground" data-testid="city-no-times">{t.cityPathOnly}</p>
+    <TimetableHelpNotice lang={lang} />
     <ol className="flex flex-col gap-3">{legs.map((leg, index) => <li key={index} className="flex flex-col gap-2">
       {index > 0 && <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
         <Footprints aria-hidden="true" className="size-4 shrink-0" />
