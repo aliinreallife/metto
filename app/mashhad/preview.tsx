@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMetro } from "@/app/providers";
 import { mashhadPreview } from "@/lib/mashhad-preview";
+import { shortPlaceLabel } from "@/lib/geocoding";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { AppSkipLink } from "../(app)/skip-link";
 import { useSearchParams } from "next/navigation";
@@ -88,6 +89,16 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
     for (const key of role === "origin" ? ["op", "oPlat", "oPlng", "oPlabel"] : ["dp", "dPlat", "dPlng", "dPlabel"]) url.searchParams.delete(key);
     window.history.replaceState(null, "", url);
   }
+  function selectPlace(place: { lat: number; lng: number; name: string }, role: "origin" | "dest") {
+    const nearest = [...stations].sort((a, b) => haversineKm(place.lat, place.lng, a.location.lat, a.location.lng) - haversineKm(place.lat, place.lng, b.location.lat, b.location.lng))[0];
+    if (!nearest) return;
+    clearPin(role);
+    const url = new URL(window.location.href);
+    url.searchParams.set(role === "origin" ? "op" : "dp", encodePlacePin({ lat: place.lat, lng: place.lng, label: shortPlaceLabel(place.name) }));
+    window.history.replaceState(null, "", url);
+    if (role === "origin") setFrom(nearest.id); else setTo(nearest.id);
+    setInvalidLink(false);
+  }
   function swap() {
     const url = new URL(window.location.href);
     for (const key of ["op", "dp", "oPlat", "oPlng", "oPlabel", "dPlat", "dPlng", "dPlabel"]) url.searchParams.delete(key);
@@ -128,8 +139,8 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
         }}>{lang === "fa" ? "English" : "فارسی"}</button>}
         <section aria-label={t.findRoute} className="flex flex-col gap-2.5">
           <RouteFields lang={lang} originId="city-from" destinationId="city-to"
-            origin={<CityStationPicker id="city-from" stations={stations} value={from} lang={lang} placeholder={t.searchStations} accentClass="bg-primary" onChange={id => { setFrom(id); clearPin("origin"); setInvalidLink(false); }} />}
-            destination={<CityStationPicker id="city-to" stations={stations} value={to} lang={lang} placeholder={t.searchStations} accentClass="bg-foreground" onChange={id => { setTo(id); clearPin("dest"); setInvalidLink(false); }} />}
+            origin={<CityStationPicker id="city-from" placeSearchCity="mashhad" onPlaceSelect={place => selectPlace(place, "origin")} stations={stations} value={from} lang={lang} placeholder={t.searchStations} accentClass="bg-primary" onChange={id => { setFrom(id); clearPin("origin"); setInvalidLink(false); }} />}
+            destination={<CityStationPicker id="city-to" placeSearchCity="mashhad" onPlaceSelect={place => selectPlace(place, "dest")} stations={stations} value={to} lang={lang} placeholder={t.searchStations} accentClass="bg-foreground" onChange={id => { setTo(id); clearPin("dest"); setInvalidLink(false); }} />}
             originAction={<button type="button" aria-label={t.useMyLocation} disabled={locating} onClick={locateOrigin}
               className="flex w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-primary">
               {locating ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <LocateFixed aria-hidden="true" className="size-4" />}

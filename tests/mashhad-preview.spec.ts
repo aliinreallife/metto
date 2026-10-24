@@ -19,6 +19,29 @@ async function expectTimetableLink(link: Locator, lang: "fa" | "en") {
   await expect(link).toHaveAttribute("target", "_blank");
 }
 
+test("selects Mashhad landmarks as exact endpoints and preserves them after reload", async ({page})=>{
+  const queries:string[]=[];
+  await page.route("https://nominatim.openstreetmap.org/search?*",async route=>{
+    queries.push(new URL(route.request().url()).searchParams.get("viewbox")!);
+    await route.fulfill({json:[{display_name:"Imam Reza Shrine, Mashhad",lat:"36.2879",lon:"59.6157",type:"place_of_worship"}]});
+  });
+  await page.goto("/mashhad/route?to=mashhad:station:airport&lang=en");
+  await page.getByLabel("From",{exact:true}).click();
+  await expect(page.getByRole("button",{name:"Mellat Park",exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Iran Mall",exact:true})).toHaveCount(0);
+  await page.locator('input[role="combobox"]').fill("Imam Reza Shrine");
+  await page.getByRole("option").filter({hasText:"Imam Reza Shrine"}).click();
+  await expect(page.getByTestId("city-route-result")).toBeVisible();
+  expect(queries).toContain("59.35,36.10,59.85,36.50");
+  const url=new URL(page.url());
+  expect(url.searchParams.get("from")).toMatch(/^mashhad:station:/);
+  expect(url.searchParams.get("op")).toBeTruthy();
+  await expect(page.getByRole("main")).toContainText("Imam Reza Shrine");
+  await page.reload();
+  await expect(page.getByTestId("city-route-result")).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("op")).toBe(url.searchParams.get("op"));
+});
+
 // The same station/path scope is available in production and previews.
 test.beforeEach(async ({ context, request }) => {
   const response = await request.get("/api/cities/mashhad/route?from=mashhad:station:airport&to=mashhad:station:tabarsi");
@@ -85,10 +108,14 @@ test("supports Persian, keyboard controls and accessible results", async ({ page
 test("rejects cross-city links and leaves disputed Line 3 stops unselectable", async ({ page, request }) => {
   await page.goto("/mashhad/route?from=tajrish&to=mashhad:station:airport&lang=en");
   await expect(page.getByRole("main").getByRole("alert")).toContainText("outside these two lines");
+  // Check the local station inventory; a Line 3 station name may also be a
+  // valid online landmark, routed through a nearby Line 1/2 station.
+  await page.context().setOffline(true);
   await page.getByLabel("From", { exact: true }).click();
   await page.locator('input[role="combobox"]').fill("باب الجواد");
   await expect(page.getByRole("listbox").getByRole("option")).toHaveCount(0);
   await page.keyboard.press("Escape");
+  await page.context().setOffline(false);
   await expect(page.getByTestId("city-route-result")).toHaveCount(0);
   const denied = await request.get("/api/cities/mashhad/route?from=tajrish&to=mashhad:station:airport");
   expect(denied.status()).toBe(400);

@@ -9,7 +9,10 @@ import { searchPlaces, type PlaceResult } from "@/lib/geocoding"
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
+import type { CityId } from "@/lib/cities"
+
 type Props = {
+  placeSearchCity?: CityId
   value: string | null
   onChange: (id: string | null) => void
   onPlaceSelect?: (place: { lat: number; lng: number; name: string }) => void
@@ -21,7 +24,9 @@ type Props = {
   catalog?: Array<{ id: string; name: { fa: string; en: string }; lineColors: string[]; cityName?: { fa: string; en: string } }>
 }
 
-export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, lang, accentClass, id, catalog }: Props) {
+export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, lang, accentClass, id, catalog, placeSearchCity }: Props) {
+  const canSearchPlaces = !catalog || Boolean(placeSearchCity && onPlaceSelect)
+  const searchExample = placeSearchCity === "mashhad" ? STRINGS[lang].searchHintMashhadExample : STRINGS[lang].searchHintExample
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [places, setPlaces] = useState<PlaceResult[]>([])
@@ -75,7 +80,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
 
   // Debounced place search (online-only; station search stays local/offline).
   useEffect(() => {
-    if (catalog || query.length < 3 || isOffline) {
+    if (!canSearchPlaces || query.length < 3 || isOffline) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced async search orchestration with synchronous reset branches; equivalent render-derived state would desync the abort/timeout lifecycle.
       setPlaces([])
       setPlacesLoading(false)
@@ -88,7 +93,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
       const controller = new AbortController()
       abortRef.current = controller
 
-      searchPlaces(query, lang, 5).then((res) => {
+      searchPlaces(query, lang, 5, placeSearchCity).then((res) => {
         if (!controller.signal.aborted) {
           setPlaces(res)
           setPlacesLoading(false)
@@ -100,7 +105,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
       clearTimeout(timer)
       abortRef.current?.abort()
     }
-  }, [catalog, query, lang, isOffline])
+  }, [canSearchPlaces, placeSearchCity, query, lang, isOffline])
 
   // Clear places when dropdown closes (transient search state must not
   // survive into the next opening).
@@ -312,10 +317,10 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                 <button
                   type="button"
                   onClick={() => {
-                    const example = STRINGS[lang].searchHintExample
+                    const example = searchExample
                     setQuery(example)
                     if (isOffline) return
-                    searchPlaces(example, lang, 1).then((res) => {
+                    searchPlaces(example, lang, 1, placeSearchCity).then((res) => {
                       if (res.length > 0) {
                         onPlaceSelect({ lat: res[0].lat, lng: res[0].lng, name: res[0].displayName })
                         setOpen(false)
@@ -324,7 +329,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                   }}
                   className="cursor-pointer font-bold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 >
-                  {STRINGS[lang].searchHintExample}
+                  {searchExample}
                 </button>
                 {STRINGS[lang].searchHintAfter ? ` ${STRINGS[lang].searchHintAfter}` : ""}
               </li>
@@ -371,7 +376,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
             })}
 
             {/* Divider + place results (online-only enhancement) */}
-            {!catalog && query.length >= 3 && (hasPlaceResults || placesLoading || isOffline) && (
+            {canSearchPlaces && query.length >= 3 && (hasPlaceResults || placesLoading || isOffline) && (
               <>
                 {hasStationResults && (
                   <li role="presentation" aria-hidden="true" className="mx-3 my-1 border-t border-border" />

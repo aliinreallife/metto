@@ -91,7 +91,8 @@ preview metadata still disables indexing. These flags are not authentication.
   query parameters besides `from`/`to` return HTTP 400.
 - The FA/EN planner reuses the existing labelled station-search picker,
   transfer steps and URL links, with a separate station directory. It
-  preserves Tehran's stored origin/destination and
+  supports online Mashhad landmark search, preserving the exact selected point
+  and choosing a nearby scoped station. It preserves Tehran's stored origin/destination and
   does not register Tehran WebMCP tools or prime Tehran's timetable here.
   The extra station-directory/source sections have been removed from the
   route page. Its actions reuse Tehran's directions and copy-link controls.
