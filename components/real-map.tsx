@@ -901,6 +901,12 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         ref={containerRef}
         className="h-full w-full"
         aria-label="Metro on real map"
+        aria-description={onPickPoint ? t.mapPickKeyboardHint : undefined}
+        onKeyDown={event => {
+          if (event.target !== event.currentTarget || !onPickPointRef.current || (event.key !== "Enter" && event.key !== " ")) return;
+          const center = mapRef.current?.getCenter();
+          if (center) { event.preventDefault(); onPickPointRef.current(center.lat, center.lng); }
+        }}
         style={mapMode === "minimalist" ? { backgroundColor: MINIMALIST_BG } : undefined}
       />
       {gpsError && (
@@ -908,7 +914,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           <LocationErrorActions lang={lang} kind={gpsError} onRetry={locateMe} />
         </div>
       )}
-      <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-1.5">
+      <div className={cn("absolute end-3 z-[1000] flex flex-col gap-1.5", selectedId || pendingPick ? "top-3" : "bottom-3")}>
         {showClearRoute && onClearRoute && (
           <MapBtn label={t.clearRoute} onClick={onClearRoute} testId="map-clear-route">
             <X aria-hidden="true" className="size-4" />

@@ -35,5 +35,13 @@
     "meta.json": {
       "gitBlobSha1": "fed1e3a128326fff294ac858b8489531f7eb4a42"
     }
+  },
+  "reportedAmenitiesSource": {
+    "file": "upstream-stations.json",
+    "repository": "https://github.com/shahriaarrr/mashhad-metro-data",
+    "commit": "f5d5c78816a8cc360bb9ae00db8fb8bad23a29e0",
+    "path": "data/stations.json",
+    "gitBlobSha1": "3b127905e73d3d6b28d0a94ac190d8395b85e6a6",
+    "verification": "unverified"
   }
 }

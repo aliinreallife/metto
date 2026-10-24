@@ -25,12 +25,15 @@ test("routes the two-line scope without timing, Tehran tools or selection leakag
   await page.goto("/mashhad/route?lang=en");
   const planner = page.getByTestId("city-path-preview");
   await expect(planner).toHaveAttribute("dir", "ltr");
-  await expect(planner.getByText("Browse stations (36)")).toBeVisible();
+  await expect(planner.getByText("Browse stations (36)")).toHaveCount(0);
+  await expect(planner.locator("details")).toHaveCount(0);
   await pickCityStation(page, "From", "Airport");
   await pickCityStation(page, "To", "Tabarsi");
   const result = planner.getByTestId("city-route-result");
   await expect(result.getByText("Transfer to Line 2 via Shariati")).toBeVisible();
   await expect(result.getByTestId("route-summary-stats")).toContainText("—");
+  await expect(result.getByRole("button", { name: "Copy route link", exact: true })).toBeVisible();
+  await expect(result.getByRole("link", { name: /Directions to start/ })).toBeVisible();
   await expect(result).not.toContainText(/\d{1,2}:\d{2}|\d+ minutes|estimated/i);
   await expect(planner.getByTestId("city-no-times")).toContainText("aren't available yet");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);

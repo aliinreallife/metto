@@ -25,6 +25,12 @@ has not been approved. Line 3 remains outside this first scope.
 - Mashhad's map contains all 36 scoped stations and route highlights. Its
   planner gives stations, line changes and route links without time estimates.
   Nearby uses opt-in GPS or a chosen station, and explicitly labels straight-line distance.
+  Both point taps and keyboard center selection offer origin/destination actions
+  on the map, without navigating away. Exact place pins survive map/planner tabs
+  and reloads. Clearing the map preserves Tehran's planner storage.
+- In the all-city Stations tab, city filter chips work alongside search, lines
+  and amenities. Choosing a city clears a line filter belonging to another city;
+  the main city dropdown stays on All cities.
 - Both cities use the same `RouteFields`, `StationCombobox`, itinerary
   `SegmentView`, `StationCardView`, `StationDetailView`, `NearbyLocation` and
   `RealMap` components. Mashhad supplies namespaced data and no timetable.
@@ -75,9 +81,18 @@ not authentication; platform deployment protection still applies.
   transfer steps and URL links, with a separate station directory. It
   preserves Tehran's stored origin/destination and
   does not register Tehran WebMCP tools or prime Tehran's timetable here.
-  There is no new offline guarantee, entrance routing or amenities claim.
+  The extra station-directory/source sections have been removed from the
+  route page. Its actions reuse Tehran's directions and copy-link controls.
+  There is no new cold-offline guarantee or entrance routing.
+- The original upstream amenities are available as **source reports**, explicitly
+  labelled unverified in cards, map details and filters. The added untouched
+  `upstream-stations.json` is pinned to upstream commit `f5d5c78816a8cc360bb9ae00db8fb8bad23a29e0`,
+  blob `3b127905e73d3d6b28d0a94ac190d8395b85e6a6`. The display adapter maps only
+  matching facilities (`metroPolice` to police and `bicycleParking` to the
+  existing Bike parking category). Missing facilities remain unknown. Canonical null amenities and
+  `amenitiesVerified: false` stay unchanged, and no facility is certified.
 - Attribution and machine-readable ODbL database details are in
-  [DATA_LICENSE.md](../DATA_LICENSE.md) and the preview footer.
+  [DATA_LICENSE.md](../DATA_LICENSE.md) and the app credits.
 
 ## Missing-timetable estimates
 
@@ -121,8 +136,8 @@ the records, source limitations and remaining blockers.
 The data release gate still rejects Mashhad. This preview does not bypass or
 approve that gate. A public Lines 1/2 release needs an explicit reviewed scope,
 dated stop/interchange evidence and a dataset-bound review. Only then should
-production city availability be enabled in a reviewed change. Timetables, Line 3, entrances and amenities require their own
-evidence before being added.
+production city availability be enabled in a reviewed change. Timetables, Line 3, entrances and verified amenity claims require their own
+evidence before being added. Displaying a source report does not approve it.
 
 ## Validation
 
@@ -147,7 +162,7 @@ all 22,650 directed station pairs and 108 timetable planning cases.
 
 Existing offline behavior remains covered. Explicit Tehran and all-city static
 pages share the canonical document fallback. No new cold-offline guarantee is
-made for Mashhad pages, and no entrances or amenities are inferred.
+made for Mashhad pages. Entrances are not inferred, and source amenities are not verified facts.
 
 Review branches are `feat/mashhad-route-preview` (app PR #224, based on #223)
 and `feat/mashhad-service-evidence` (data PR #10, based on #9). Nothing in

@@ -58,17 +58,18 @@ function StationDepartures({ departures, lang }: { departures: { line: number; d
 }
 
 /** Shared station presentation. Source-specific wrappers own timetable hooks. */
-export function StationCardView({ station, lang, distance, onSetDest, onShowTimetable, lines, boardableCount, scheduleLoading = false, departures, secondaryName }: Omit<Props, "station"> & {
+export function StationCardView({ station, lang, distance, onSetDest, onShowTimetable, lines, boardableCount, scheduleLoading = false, departures, secondaryName, reportedAmenities }: Omit<Props, "station"> & {
   station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]> };
   lines: { id: string; label: number | string; color: string; onColor: string }[];
   boardableCount: number;
   scheduleLoading?: boolean;
   departures?: React.ReactNode;
   secondaryName?: string;
+  reportedAmenities?: Partial<MetroStation["amenities"]>;
 }) {
   const t = STRINGS[lang]; const isFa = lang === "fa";
   const underConstruction = station.status !== "operational";
-  const activeAmenities = Object.entries(station.amenities).filter(([, value]) => value === true);
+  const activeAmenities = Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const constructionId = `station-card-${station.id}-${uid}-construction`;
 
@@ -120,6 +121,7 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
         </div>
       </div>
 
+      {reportedAmenities && <p className="px-4 pb-2 text-[10px] text-muted-foreground">{t.amenitiesReported}</p>}
       {/* Amenities as icon pills */}
       {activeAmenities.length > 0 && (
         <div className="flex flex-wrap gap-1 px-4 pb-2">
@@ -129,7 +131,7 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
             return (
               <span
                 key={key}
-                className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground"
+                className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-foreground/80"
                 title={label}
               >
                 {Icon && <Icon aria-hidden="true" className="size-3 shrink-0 text-primary" />}

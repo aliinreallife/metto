@@ -170,9 +170,13 @@ export function AppNav() {
     const destination = cityHref(city, view, !/^\/(tehran|mashhad|cities)(\/|$)/.test(currentPath));
     if (city !== "tehran") {
       const params = new URLSearchParams({ lang });
-      if (city === "mashhad") for (const key of ["from", "to"]) {
+      for (const key of ["from", "to"]) {
         const id = searchParams.get(key);
-        if (id?.startsWith("mashhad:station:")) params.set(key, id);
+        if (id && (city === "mashhad" ? id.startsWith("mashhad:station:") : /^(tehran|mashhad):station:/.test(id))) params.set(key, id);
+      }
+      for (const key of ["op", "dp"]) {
+        const pin = searchParams.get(key);
+        if (pin) params.set(key, pin);
       }
       return `${destination}?${params}`;
     }

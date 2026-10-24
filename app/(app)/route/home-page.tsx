@@ -4,15 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  Building2,
   History,
   Loader2,
   ExternalLink,
   Database,
   LocateFixed,
   Map as MapIcon,
-  X,
 } from "lucide-react";
+import { RoutePlaceCard } from "@/components/route-place-card";
 import { RouteFields } from "@/components/route-fields";
 import { StationCombobox } from "@/components/station-combobox";
 import { MissedDeadlineCard, NoServiceCard, RoutePanel, WalkSuggestCard } from "@/components/route-panel";
@@ -36,14 +35,10 @@ import {
 import { tehranMinuteToInstant } from "@/lib/tehran-time";
 import { useScheduleData } from "@/lib/use-schedule-data";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
-import { displayPlaceLabel, reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
+import { reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
 import {
   nearestStations,
-  formatDistance,
   haversineKm,
-  estimateWalkMinutes,
-  formatWalkTime,
-  isLongWalk,
   buildMapHref,
   encodePlacePin,
   parsePlaceParam,
@@ -810,52 +805,11 @@ function RouteView({
 }
 
 
-function PlaceCard({
-  lang,
-  info,
-  onClear,
-  walkingRoute,
-}: {
-  lang: Lang;
-  info: PlaceInfo;
-  onClear: () => void;
-  walkingRoute?: WalkingRoute | null;
+function PlaceCard({ lang, info, onClear, walkingRoute }: {
+  lang: Lang; info: PlaceInfo; onClear: () => void; walkingRoute?: WalkingRoute | null;
 }) {
-  const t = STRINGS[lang];
-  const isFa = lang === "fa";
   const station = STATION_MAP.get(info.stationId);
-  const stationName = station ? (isFa ? station.name.fa : station.name.en) : info.stationId;
-  const walkMin = walkingRoute ? walkingRoute.durationSeconds / 60 : estimateWalkMinutes(info.distanceKm);
-  const distanceKm = walkingRoute ? walkingRoute.distanceMeters / 1000 : info.distanceKm;
-
-  return (
-    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
-      <Building2 aria-hidden="true" className="size-4 shrink-0 text-primary md:size-5" />
-      <div className="min-w-0 flex-1">
-        <div className="truncate">
-          <span className="font-medium">{displayPlaceLabel(info.placeName, lang)}</span>
-          <span aria-hidden="true" className="mx-1.5 text-muted-foreground">→</span>
-          <span>
-            {t.nearestStation}: <span className="font-medium">{stationName}</span>
-          </span>
-          <span className="ms-1.5 text-muted-foreground">
-            {" "}({formatDistance(distanceKm, lang)} · {walkingRoute ? "" : "~"}{formatWalkTime(walkMin, lang)} {t.walkTime})
-          </span>
-        </div>
-        {isLongWalk(distanceKm, walkMin) && (
-          <p className="mt-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-            {t.longWalkConsiderTransport}
-          </p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={onClear}
-        aria-label={t.clear}
-        className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        <X aria-hidden="true" className="size-3.5" />
-      </button>
-    </div>
-  );
+  return <RoutePlaceCard lang={lang} placeName={info.placeName}
+    stationName={station?.name[lang] ?? info.stationId} distanceKm={info.distanceKm}
+    onClear={onClear} walkingRoute={walkingRoute} />;
 }

@@ -10,8 +10,12 @@ at `f5d5c78816a8cc360bb9ae00db8fb8bad23a29e0` and
 [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright).
 These database artifacts and the transfer-link facts in their manifest are
 licensed under ODbL 1.0. The adapted machine-readable database is included in
-this repository and at the pinned metto-data revision. The preview footer
-provides source, license and adapted-database links. The original application
+this repository and at the pinned metto-data revision. `data/previews/mashhad/upstream-stations.json` is an untouched copy of the
+same pinned upstream's `data/stations.json`, under ODbL 1.0. Its facilities are
+displayed only as source-reported and unverified; canonical facilities remain
+unknown. `reportedAmenitiesSource` in the manifest pins its exact Git blob.
+The app credits link the source, and this document links the license and
+machine-readable adapted database. The original application
 and path-planning code remain covered by the root AGPL-3.0-only license.
 
 ## Tehran Metro data

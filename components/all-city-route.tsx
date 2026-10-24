@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useMetro } from "@/app/providers";
 import { ArrowUpDown } from "lucide-react";
@@ -8,12 +9,14 @@ import { catalogStations } from "@/lib/city-catalog";
 import { STRINGS } from "@/lib/i18n";
 
 export function AllCityRoute() {
-  const { lang, cityIds } = useMetro(); const t = STRINGS[lang];
+  const { lang, cityIds } = useMetro(); const params = useSearchParams(); const t = STRINGS[lang];
   const stations = useMemo(() => catalogStations(cityIds).sort((a, b) => a.names[lang].localeCompare(b.names[lang], lang)), [cityIds, lang]);
-  const [from, setFrom] = useState(""); const [to, setTo] = useState("");
+  const [from, setFrom] = useState(params.get("from") ?? ""); const [to, setTo] = useState(params.get("to") ?? "");
   const origin = stations.find(s => s.id === from), destination = stations.find(s => s.id === to);
   const sameCity = origin && destination && origin.cityId === destination.cityId;
-  const href = sameCity && origin.id !== destination.id ? `/${origin.cityId}/route?${new URLSearchParams({ from: origin.localId, to: destination.localId, lang })}` : null;
+  const routeParams = new URLSearchParams({ from: origin?.localId ?? "", to: destination?.localId ?? "", lang });
+  for (const [key, endpoint, selected] of [["op", "from", from], ["dp", "to", to]]) { const pin = params.get(key); if (pin && params.get(endpoint) === selected) routeParams.set(key, pin); }
+  const href = sameCity && origin.id !== destination.id ? `/${origin.cityId}/route?${routeParams}` : null;
   return <div className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden p-4 md:items-center md:p-8 lg:p-10" dir={lang === "fa" ? "rtl" : "ltr"}>
     <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
       <h1 className="sr-only">{t.findRoute} · {t.allCities}</h1>

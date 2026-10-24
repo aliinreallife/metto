@@ -3,20 +3,26 @@ import { STATIONS } from "./metro/stations";
 import { LINES } from "./metro/lines";
 import { buildMapEdges, getStationLines, getOperationalStationLines } from "./metro/selectors";
 import { mashhadPreview } from "./mashhad-preview";
+import rawStations from "../data/previews/mashhad/stations.json";
+import { reportedMashhadAmenities } from "./mashhad-reported-amenities";
+import type { StationAmenities } from "./metro/types";
 import rawGraph from "../data/previews/mashhad/graph.json";
 import type { CityId } from "./cities";
 
 export type CityStation = {
   id: string; localId: string; cityId: CityId;
   names: { fa: string; en: string }; location: { lat: number; lng: number };
+  amenities: Partial<StationAmenities>; reportedAmenities?: Partial<StationAmenities>;
   lineIds: string[]; operationalLineIds: string[]; status: string;
 };
 export type CityEdge = { from: string; to: string; lineId: string; status: string };
 export const CITY_STATIONS: CityStation[] = [
   ...STATIONS.map(s => ({ id: `tehran:station:${s.id}`, localId: s.id, cityId: "tehran" as const,
-    names: s.name, location: s.location, status: s.status,
+    names: s.name, location: s.location, status: s.status, amenities: s.amenities,
     lineIds: getStationLines(s.id).map(id => `tehran:line:${id}`), operationalLineIds: getOperationalStationLines(s.id).map(id => `tehran:line:${id}`) })),
   ...mashhadPreview.stations.map(s => ({ ...s, localId: s.id, cityId: "mashhad" as const,
+    amenities: rawStations.find(raw => raw.id === s.id)!.amenities,
+    reportedAmenities: reportedMashhadAmenities(rawStations.find(raw => raw.id === s.id)!.sourceKeys.upstreamKey),
     lineIds: mashhadPreview.getStationLineIds(s.id), operationalLineIds: mashhadPreview.getStationLineIds(s.id) })),
 ];
 export const CITY_LINES = [

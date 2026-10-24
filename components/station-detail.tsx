@@ -43,16 +43,17 @@ export function StationDetail({
 }
 
 /** Shared map station sheet; city wrappers supply available facts and timing. */
-export function StationDetailView({ station, lang, onClose, lines, scheduleLoading = false, departures }: {
+export function StationDetailView({ station, lang, onClose, lines, scheduleLoading = false, departures, reportedAmenities }: {
   station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]> };
   lang: Lang; onClose: () => void;
   lines: { id: string; label: number | string; color: string; onColor: string; boardable: boolean }[];
   scheduleLoading?: boolean; departures?: ReactNode;
+  reportedAmenities?: Partial<MetroStation["amenities"]>;
 }) {
   const t = STRINGS[lang]; const isFa = lang === "fa";
   const boardableLines = lines.filter(l => l.boardable);
   const unavailableLines = lines.filter(l => !l.boardable);
-  const activeAmenities = Object.entries(station.amenities).filter(([, value]) => value === true);
+  const activeAmenities = Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -109,6 +110,7 @@ export function StationDetailView({ station, lang, onClose, lines, scheduleLoadi
         </span>
       )}
 
+      {reportedAmenities && <p className="text-xs text-muted-foreground">{t.amenitiesReported}</p>}
       {activeAmenities.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {activeAmenities.map(([key]) => {

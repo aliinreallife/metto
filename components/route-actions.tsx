@@ -71,7 +71,7 @@ export function RouteActions({
   origin,
   lang,
 }: {
-  origin: MetroStation;
+  origin: Pick<MetroStation, "name" | "location">;
   lang: Lang;
 }) {
   const t = STRINGS[lang];

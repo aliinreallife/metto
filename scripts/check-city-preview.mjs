@@ -22,6 +22,20 @@ for (const name of files) {
 }
 const meta = JSON.parse(read("meta.json"));
 if (meta.cityId !== "mashhad" || meta.releaseStatus !== "candidate") throw new Error("Candidate preview status changed");
+// Separate source reports are pinned to upstream, not certified facilities.
+const reports = manifest.reportedAmenitiesSource;
+if (reports?.file !== "upstream-stations.json" || reports.verification !== "unverified" ||
+    reports.repository !== meta.upstream.repository || reports.commit !== meta.upstream.commit || reports.path !== "data/stations.json") {
+  throw new Error("Unexpected reported amenities source");
+}
+const reportBytes = read(reports.file);
+const reportHash = createHash("sha1").update(Buffer.concat([Buffer.from(`blob ${reportBytes.length}\0`), reportBytes])).digest("hex");
+if (reportHash !== reports.gitBlobSha1) throw new Error("Reported amenities source hash mismatch");
+const reportData = JSON.parse(reportBytes);
+for (const station of JSON.parse(read("stations.json"))) {
+  if (!reportData[station.sourceKeys.upstreamKey] || station.amenitiesVerified !== false ||
+      Object.values(station.amenities).some(value => value !== null)) throw new Error("Source reports must remain separate from canonical unknown amenities");
+}
 const link = (from, to) => ({ stationId: "mashhad:station:shariati", fromLineId: `mashhad:line:${from}`, toLineId: `mashhad:line:${to}` });
 if (JSON.stringify(manifest.transferLinks) !== JSON.stringify([link(1, 2), link(2, 1)])) throw new Error("Preview interchange scope changed");
 console.log("city preview: pinned candidate verified; Lines 1/2 only; no timing capability or production approval");

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CITY_EDGES, CITY_STATIONS, catalogStations, cityCounts, normalizeCitySearch, stationByCityId, stationRouteHref } from "./city-catalog";
+import { reportedMashhadAmenities } from "./mashhad-reported-amenities";
 import { cityFromPath, cityHref, viewFromPath } from "./cities";
 
 describe("city-scoped station catalog", () => {
@@ -27,6 +28,13 @@ describe("city-scoped station catalog", () => {
       expect(a!.cityId).toBe(b!.cityId);
       expect(edge.lineId.startsWith(`${a!.cityId}:line:`)).toBe(true);
     }
+  });
+  it("keeps upstream amenity reports separate from unknown canonical facts", () => {
+    const station = stationByCityId.get("mashhad:station:vakilabad")!;
+    expect(Object.values(station.amenities).every(value => value === null)).toBe(true);
+    expect(station.reportedAmenities).toMatchObject({ wc: true, elevator: true, freeWifi: false, police: true, parking: true });
+    expect(reportedMashhadAmenities("not-a-source-station")).toEqual({});
+    expect(stationByCityId.get("tehran:station:basij")!.reportedAmenities).toBeUndefined();
   });
   it("keeps explicit city URLs and the old Tehran tabs identifiable", () => {
     expect(cityFromPath("/map")).toBe("tehran");

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, type ComponentProps } from "react";
 import { CITY_LINES, type CityEdge, type CityStation } from "@/lib/city-catalog";
 import { CITIES } from "@/lib/cities";
 import type { Lang } from "@/lib/i18n";
@@ -9,11 +9,11 @@ const EMPTY_PATH: string[] = [];
 
 // Only adapts city identity and source data. Rendering, labels, basemaps,
 // zoom, GPS, attribution and offline recovery are Tehran's RealMap.
-export function CityNetworkMap({ stations, edges, lang, selectedId, pathIds = EMPTY_PATH, onSelect, showCity, mapMode, onClearRoute }: {
+export function CityNetworkMap({ stations, edges, lang, selectedId, pathIds = EMPTY_PATH, onSelect, showCity, mapMode, onClearRoute, originId, destId, showClearRoute, ...mapFeatures }: {
   stations: CityStation[]; edges: CityEdge[]; lang: Lang; selectedId?: string;
   pathIds?: string[]; onSelect: (id: string | null) => void; showCity: boolean;
   mapMode: "satellite" | "minimalist"; onClearRoute?: () => void;
-}) {
+} & Partial<Pick<ComponentProps<typeof RealMap>, "originId" | "destId" | "onPickPoint" | "pendingPick" | "placeMarkers" | "walkingPaths" | "directWalk" | "showClearRoute">>) {
   const network = useMemo<MapNetwork>(() => {
     const display = stations.map(s => ({ id: s.id, location: s.location, status: s.status,
       name: showCity ? { fa: `${s.names.fa} · ${CITIES.find(c => c.slug === s.cityId)!.name.fa}`,
@@ -33,7 +33,7 @@ export function CityNetworkMap({ stations, edges, lang, selectedId, pathIds = EM
       return edge ? [{ from, to, line: edge.lineId }] : [];
     }) } : null, [pathIds, edges]);
   return <div className="size-full" data-testid="city-network-map" data-station-count={stations.length} data-route-station-count={pathIds.length}>
-    <RealMap network={network} route={route} originId={pathIds[0] ?? null} destId={pathIds.at(-1) ?? null}
-      lang={lang} mapMode={mapMode} selectedId={selectedId ?? null} onSelect={onSelect} onClearRoute={onClearRoute} showClearRoute={pathIds.length > 0} />
+    <RealMap {...mapFeatures} network={network} route={route} originId={originId ?? pathIds[0] ?? null} destId={destId ?? pathIds.at(-1) ?? null}
+      lang={lang} mapMode={mapMode} selectedId={selectedId ?? null} onSelect={onSelect} onClearRoute={onClearRoute} showClearRoute={showClearRoute ?? pathIds.length > 0} />
   </div>;
 }

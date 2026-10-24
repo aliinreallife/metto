@@ -4,14 +4,18 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMetro } from "@/app/providers";
 import { mashhadPreview } from "@/lib/mashhad-preview";
-import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
+import { STRINGS, type Lang } from "@/lib/i18n";
 import { AppSkipLink } from "../(app)/skip-link";
 import { useSearchParams } from "next/navigation";
-import { Map as MapIcon, Link2, LocateFixed, Loader2 } from "lucide-react";
+import { LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
+import { RoutePlaceCard } from "@/components/route-place-card";
+import { useTripWalking } from "@/lib/walking/use-walking-route";
+import { WalkingRouteInfo } from "@/components/walking-route-info";
 import { RouteFields } from "@/components/route-fields";
+import { RouteActions } from "@/components/route-actions";
 import { PathRoutePanel } from "@/components/route-panel";
 import { getCurrentPositionTolerant, classifyGeoError, type GeoErrorKind } from "@/lib/geolocation";
-import { haversineKm } from "@/lib/geo";
+import { haversineKm, parsePlaceParam, encodePlacePin } from "@/lib/geo";
 import { LocationErrorActions } from "@/components/location-error";
 import { CityStationPicker } from "@/components/city-station-picker";
 import { catalogStations } from "@/lib/city-catalog";
@@ -73,19 +77,42 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
       if (to) localStorage.setItem("mashhad.route.to", to);
     } catch { /* storage optional */ }
   }, [from, to, lang, initialLang, preferredLang]);
+  const originPin = useMemo(() => from ? parsePlaceParam(params, "oP") : null, [from, params]);
+  const destPin = useMemo(() => to ? parsePlaceParam(params, "dP") : null, [to, params]);
+  const originStation = byId.get(from), destStation = byId.get(to);
+  const walking = useTripWalking(originPin ?? originStation?.location, destPin ?? destStation?.location,
+    originStation?.location, destStation?.location, null);
+  function clearPin(role: "origin" | "dest") {
+    const url = new URL(window.location.href);
+    for (const key of role === "origin" ? ["op", "oPlat", "oPlng", "oPlabel"] : ["dp", "dPlat", "dPlng", "dPlabel"]) url.searchParams.delete(key);
+    window.history.replaceState(null, "", url);
+  }
+  function swap() {
+    const url = new URL(window.location.href);
+    for (const key of ["op", "dp", "oPlat", "oPlng", "oPlabel", "dPlat", "dPlng", "dPlabel"]) url.searchParams.delete(key);
+    if (destPin) url.searchParams.set("op", encodePlacePin(destPin));
+    if (originPin) url.searchParams.set("dp", encodePlacePin(originPin));
+    window.history.replaceState(null, "", url);
+    setFrom(to); setTo(from); setInvalidLink(false);
+  }
+  const mapParams = new URLSearchParams({ from, to, lang });
+  if (originPin) mapParams.set("op", encodePlacePin(originPin));
+  if (destPin) mapParams.set("dp", encodePlacePin(destPin));
   const locateOrigin = async () => {
     setLocating(true); setGpsError(null);
     try {
       const point = await getCurrentPositionTolerant();
       const nearest = [...stations].sort((a, b) => haversineKm(point.lat, point.lng, a.location.lat, a.location.lng) - haversineKm(point.lat, point.lng, b.location.lat, b.location.lng))[0];
-      if (nearest) { setFrom(nearest.id); setInvalidLink(false); }
+      if (nearest) {
+        setFrom(nearest.id); setInvalidLink(false);
+        const url = new URL(window.location.href); url.searchParams.set("op", encodePlacePin({ ...point, label: t.useMyLocation }));
+        window.history.replaceState(null, "", url);
+      }
     } catch (error) { setGpsError(classifyGeoError(error)); }
     finally { setLocating(false); }
   };
   const result = useMemo(() => mashhadPreview.findPath(from, to), [from, to]);
-  const number = (value: string | number) => persianDigits(value, lang);
   const name = (id: string) => byId.get(id)?.names[lang] ?? id;
-  const routeHref = `/mashhad/route?${new URLSearchParams({ from, to, lang })}`;
   const Container = embedded ? "div" : "main";
 
   return <>
@@ -100,14 +127,24 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
         }}>{lang === "fa" ? "English" : "فارسی"}</button>}
         <section aria-label={t.findRoute} className="flex flex-col gap-2.5">
           <RouteFields lang={lang} originId="city-from" destinationId="city-to"
-            origin={<CityStationPicker id="city-from" stations={stations} value={from} lang={lang} placeholder={t.searchStations} accentClass="bg-primary" onChange={id => { setFrom(id); setInvalidLink(false); }} />}
-            destination={<CityStationPicker id="city-to" stations={stations} value={to} lang={lang} placeholder={t.searchStations} accentClass="bg-foreground" onChange={id => { setTo(id); setInvalidLink(false); }} />}
+            origin={<CityStationPicker id="city-from" stations={stations} value={from} lang={lang} placeholder={t.searchStations} accentClass="bg-primary" onChange={id => { setFrom(id); clearPin("origin"); setInvalidLink(false); }} />}
+            destination={<CityStationPicker id="city-to" stations={stations} value={to} lang={lang} placeholder={t.searchStations} accentClass="bg-foreground" onChange={id => { setTo(id); clearPin("dest"); setInvalidLink(false); }} />}
             originAction={<button type="button" aria-label={t.useMyLocation} disabled={locating} onClick={locateOrigin}
               className="flex w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-primary">
               {locating ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <LocateFixed aria-hidden="true" className="size-4" />}
             </button>}
-            afterOrigin={gpsError && <LocationErrorActions lang={lang} kind={gpsError} onRetry={locateOrigin} />}
-            onSwap={() => { setFrom(to); setTo(from); setInvalidLink(false); }} />
+            afterOrigin={<>
+              {originPin && originStation && <RoutePlaceCard lang={lang} placeName={originPin.label} stationName={originStation.names[lang]}
+                distanceKm={haversineKm(originPin.lat, originPin.lng, originStation.location.lat, originStation.location.lng)} walkingRoute={walking.access.route} onClear={() => clearPin("origin")} />}
+              {gpsError && <LocationErrorActions lang={lang} kind={gpsError} onRetry={locateOrigin} />}
+            </>}
+            afterDestination={destPin && destStation && <RoutePlaceCard lang={lang} placeName={destPin.label} stationName={destStation.names[lang]}
+              distanceKm={haversineKm(destPin.lat, destPin.lng, destStation.location.lat, destStation.location.lng)} walkingRoute={walking.egress.route} onClear={() => clearPin("dest")} />}
+            onSwap={swap} />
+          {(originPin || destPin) && <>
+            <WalkingRouteInfo lang={lang} loading={walking.access.loading || walking.egress.loading || walking.direct.loading} hasPath={!!(walking.access.route || walking.egress.route || walking.direct.route)} saved={walking.access.saved || walking.egress.saved || walking.direct.saved} />
+            <Link href={`/mashhad/map?${mapParams}`} className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary md:py-2.5 md:text-base"><MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{t.viewOnMap}</Link>
+          </>}
           {invalidLink ? <p role="alert" className="mt-3 text-sm">{t.cityPreviewInvalidLink}</p>
             : from && to && from === to ? <p role="alert" className="mt-3 text-sm">{t.sameStation}</p>
               : from && to && !result ? <p role="alert" className="mt-3 text-sm">{t.noRoute}</p>
@@ -118,25 +155,10 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
               terminal: mashhadPreview.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
               color: mashhadPreview.lines.find(l => l.id === leg.lineId)!.color, onColor: "#18181b" }))} />
-          <div className="mt-3 flex overflow-hidden rounded-xl border border-border bg-card">
-            <a href={routeHref} className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 text-xs text-muted-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary"><Link2 aria-hidden="true" className="size-3.5" />{t.cityPreviewShare}</a>
-            <Link href={`/mashhad/map?${new URLSearchParams({ from, to, lang })}`} className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 border-s border-border text-xs font-semibold text-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary"><MapIcon aria-hidden="true" className="size-3.5" />{t.tabMap}</Link>
-          </div>
+          <div className="mt-3"><RouteActions origin={{ name: byId.get(from)!.names, location: byId.get(from)!.location }} lang={lang} /></div>
         </section>}
         {!result && <p className="text-xs text-muted-foreground" data-testid="city-no-times">{t.cityPathOnly}</p>}
-        <Link href={`/mashhad/stations?lang=${lang}`} className="inline-flex min-h-[44px] items-center self-start text-xs font-medium text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">
-          {t.cityPreviewStationList} ({number(stations.length)})
-        </Link>
-        <details className="text-xs leading-relaxed text-muted-foreground">
-          <summary className="cursor-pointer py-2 focus-visible:outline-2 focus-visible:outline-primary">{t.cityPreviewDataSource}</summary>
-          <p className="mt-2">{t.cityPreviewNotice} {t.cityPreviewNoTimes}</p>
-          <p className="mt-2">
-            <a className="inline-flex min-h-[44px] items-center underline" href="https://github.com/shahriaarrr/mashhad-metro-data">shahriaarrr/mashhad-metro-data</a>
-            {" · "}<a className="inline-flex min-h-[44px] items-center underline" href="https://www.openstreetmap.org/copyright">{t.cityPreviewOsmCredit}</a>
-            {" · "}<a className="inline-flex min-h-[44px] items-center underline" href="https://opendatacommons.org/licenses/odbl/1-0/">ODbL 1.0</a>
-            {" · "}<a className="inline-flex min-h-[44px] items-center underline" href="https://github.com/aliinreallife/metto-data/tree/af057821dee7cbd5fcd2bf9ebde079070d8ac20c/data/cities/mashhad">{t.cityPreviewDataDownload}</a>
-          </p>
-        </details>
+        <div className="h-16 shrink-0 md:hidden" aria-hidden="true" />
       </div>
     </Container>
   </>;

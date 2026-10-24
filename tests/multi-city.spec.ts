@@ -33,14 +33,16 @@ test("switching the normal map shows Mashhad stations and links map selections i
   await station.focus(); await page.keyboard.press("Enter");
   const selectedAudit = await new AxeBuilder({ page }).analyze();
   expect(selectedAudit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
-  await page.getByRole("main").getByRole("link", { name: "From", exact: true }).click();
+  await page.getByRole("main").getByRole("button", { name: "Set as origin", exact: true }).click();
+  await expect(page).toHaveURL(/\/mashhad\/map/);
+  await page.locator("header").getByRole("link", { name: "Route", exact: true }).click();
   await expect(page).toHaveURL(/\/mashhad\/route/);
   await pickCityStation(page, "To", "Airport");
   const result = page.getByTestId("city-route-result");
   await expect(result).toBeVisible();
   await expect(result.getByTestId("route-summary-stats")).toContainText("—");
   await expect(result).not.toContainText(/\d{1,2}:\d{2}|\d+ minutes|estimated/i);
-  await result.getByRole("link", { name: "Map", exact: true }).click();
+  await page.locator("header").getByRole("link", { name: "Map", exact: true }).click();
   await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-route-station-count", "8");
 });
 
@@ -98,6 +100,9 @@ test("the all-city map contains distinct markers and no missing stations", async
   await expect(page.locator('.leaflet-marker-icon[data-station-id]')).toHaveCount(187);
   await expect(page.locator('.leaflet-marker-icon[data-station-id="tehran:station:basij"]')).toHaveAttribute("aria-label", "Basij · Tehran");
   await expect(page.locator('.leaflet-marker-icon[data-station-id="mashhad:station:basij"]')).toHaveAttribute("aria-label", "Basij · Mashhad");
+  await page.locator('.leaflet-marker-icon[data-station-id="mashhad:station:basij"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("map-station-card")).toContainText("Basij · Mashhad");
 });
 
 test("city switching drops foreign endpoints and Tehran timing options", async ({ page }) => {
@@ -155,4 +160,38 @@ test("Mashhad Nearby shares the location picker and keeps results in its city", 
   await expect(page.locator("li[data-station-id]").first()).toHaveAttribute("data-station-id", "mashhad:station:airport");
   await expect(page.locator('li[data-city="tehran"]')).toHaveCount(0);
   await expect(page.getByRole("main").getByRole("button", { name: "Timetable" })).toHaveCount(0);
+});
+
+
+test("All-cities Stations filters cities alongside search and line filters", async ({ page }) => {
+  await page.goto("/cities?lang=en");
+  const cities = page.getByRole("group", { name: "Choose city", exact: true });
+  const rows = page.locator("li[data-station-id]");
+  await expect(rows).toHaveCount(187);
+  await cities.getByRole("button", { name: "Mashhad", exact: true }).click();
+  await expect(rows).toHaveCount(36);
+  await expect(page.getByRole("combobox", { name: "Choose city" })).toContainText("All cities");
+  await expect(page.locator('li[data-city="tehran"]')).toHaveCount(0);
+  await page.getByRole("searchbox", { name: /Search stations/ }).fill("Basij");
+  await expect(rows).toHaveCount(1);
+  await expect(rows).toHaveAttribute("data-city", "mashhad");
+  await page.getByRole("searchbox", { name: /Search stations/ }).fill("");
+  await page.getByRole("button", { name: "Mashhad · Line 2", exact: true }).click();
+  await expect(rows).toHaveCount(13);
+  await cities.getByRole("button", { name: "Tehran", exact: true }).click();
+  await expect(rows).toHaveCount(151);
+  await expect(page.getByRole("button", { name: "Mashhad · Line 2", exact: true })).toHaveCount(0);
+  await cities.getByRole("button", { name: "All cities", exact: true }).click();
+  await expect(rows).toHaveCount(187);
+});
+
+test("Mashhad source amenities are visible and remain explicitly unverified", async ({ page }) => {
+  await page.goto("/mashhad/stations?lang=en");
+  await page.getByRole("searchbox", { name: /Search stations/ }).fill("VakilAbad");
+  const station = page.locator('li[data-station-id="mashhad:station:vakilabad"]');
+  await expect(station).toContainText("Amenities reported by the source · unverified");
+  await expect(station.getByText("Elevator", { exact: true })).toBeVisible();
+  await expect(station.getByText("Restroom", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Free Wi-Fi", exact: true }).click();
+  await expect(page.locator("li[data-station-id]")).toHaveCount(0);
 });
