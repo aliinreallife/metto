@@ -5,21 +5,22 @@ import { ArrowLeft, ArrowRight, Heart, Star, TrainFront } from "lucide-react";
 import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT, WELCOME_NAV } from "../content";
 import { persianDigits } from "@/lib/i18n";
-import { getAllStations } from "@/lib/metro/selectors";
-import { LINES } from "@/lib/metro/lines";
+import { CITIES, type CityId } from "@/lib/cities";
+import { cityCounts } from "@/lib/city-catalog";
 
 const AUTHOR_URL = "https://github.com/aliinreallife";
 const DATA_URL = "https://github.com/mostafa-kheibary/tehran-metro-data";
 const REPO_URL = "https://github.com/aliinreallife/metto";
 
-export function WelcomeFooter() {
-  const { lang } = useMetro();
+export function WelcomeFooter({ cityId }: { cityId?: CityId }) {
+  const { lang, cityIds } = useMetro();
   const t = WELCOME_CONTENT[lang].footer;
   const heroCta = WELCOME_CONTENT[lang].hero.ctaPrimary;
   const donateCta = WELCOME_CONTENT[lang].donate.eyebrow;
   const isFa = lang === "fa";
-  const stations = getAllStations().length;
-  const lines = LINES.length;
+  const counts = cityCounts(cityIds, cityId);
+  const stations = counts.stations;
+  const lines = counts.lines;
 
   return (
     <footer className="border-t border-border bg-muted/25">
@@ -42,7 +43,7 @@ export function WelcomeFooter() {
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <Link
-                href="/route"
+                href={cityId ? `/${cityId}/route?lang=${lang}` : `/cities?lang=${lang}`}
                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98] sm:w-auto"
               >
                 {heroCta}
@@ -72,7 +73,7 @@ export function WelcomeFooter() {
             <ul className="mt-4 space-y-2.5">
               {WELCOME_NAV.map((item) => (
                 <li key={item.key}>
-                  <Link href={item.href} className="text-sm font-medium transition-colors hover:text-primary">
+                  <Link href={cityId ? `/${cityId}${item.href}?lang=${lang}` : item.key === "map" ? `/cities/map?lang=${lang}` : `/cities?lang=${lang}`} className="text-sm font-medium transition-colors hover:text-primary">
                     {item.key === "route" && (isFa ? "مسیر" : "Route")}
                     {item.key === "stations" && (isFa ? "ایستگاه‌ها" : "Stations")}
                     {item.key === "nearby" && (isFa ? "نزدیک من" : "Nearby")}
@@ -108,7 +109,7 @@ export function WelcomeFooter() {
               <li className="tabular-nums">
                 {persianDigits(`${stations} ایستگاه · ${lines} خط`, lang)}
               </li>
-              <li>{t.cityNote}</li>
+              <li>{CITIES.filter(c => cityIds.includes(c.slug) && (!cityId || c.slug === cityId)).map(c => c.name[lang]).join(" · ")}</li>
               <li>{t.rights}</li>
             </ul>
           </div>

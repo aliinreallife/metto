@@ -1,10 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import type { Lang } from "@/lib/i18n";
 import { loadScheduleData, refreshScheduleData } from "@/lib/schedule-utils";
 import { isAndroidTwa } from "@/lib/twa";
 import { WebMcpRegistrar } from "@/components/web-mcp";
+import { usePathname } from "next/navigation";
+import { CITIES, cityFromPath, type CityId } from "@/lib/cities";
 
 type PlacePin = {
   lat: number;
@@ -13,6 +15,7 @@ type PlacePin = {
 };
 
 type MetroContextValue = {
+  cityIds: CityId[];
   lang: Lang;
   setLang: (l: Lang) => void;
   mapMode: "satellite" | "minimalist";
@@ -57,7 +60,12 @@ export function useMetro() {
   return ctx;
 }
 
-export function MetroProvider({ children }: { children: ReactNode }) {
+export function MetroProvider({ children, cityIds = ["tehran"] }: { children: ReactNode; cityIds?: CityId[] }) {
+  const enabledCityIds = useMemo(() => CITIES.filter(c => cityIds.includes(c.slug)).map(c => c.slug), [cityIds]);
+  const pathname = usePathname();
+  // The new city preview has its own data and no timetable/MCP integration.
+  // Never advertise Tehran tools or prime its timetable as Mashhad routing.
+  const tehranScope = cityFromPath(pathname ?? "/") === "tehran";
   const [lang, setLangState] = useState<Lang>("fa");
   const [mapMode, setMapModeState] = useState<"satellite" | "minimalist">("minimalist");
   const [originId, setOriginId] = useState<string | null>(null);
@@ -93,7 +101,9 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     // "Turn on location" action without waiting on first failure.
     void isAndroidTwa();
     const saved = localStorage.getItem("lang");
-    if (saved === "en" || saved === "fa") setLangState(saved);
+    const requested = new URLSearchParams(window.location.search).get("lang");
+    if (requested === "en" || requested === "fa") setLangState(requested);
+    else if (saved === "en" || saved === "fa") setLangState(saved);
     const savedMode = localStorage.getItem("mapMode");
     if (savedMode === "satellite" || savedMode === "minimalist") setMapModeState(savedMode);
     else if (savedMode === "schematic") setMapModeState("minimalist");
@@ -105,6 +115,7 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     if (savedOriginPlace) setOriginPlace((prev) => prev ?? savedOriginPlace);
     const savedDestPlace = readPlacePin("route.destPlace");
     if (savedDestPlace) setDestPlace((prev) => prev ?? savedDestPlace);
+    if (!tehranScope) return;
     loadScheduleData()
       // Start from last-known-good/bundled immediately; adopt a newer
       // validated timetable in the background without blocking first paint.
@@ -137,7 +148,7 @@ export function MetroProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("online", onOnline);
     };
-  }, [primeScheduleWithRetry]);
+  }, [primeScheduleWithRetry, tehranScope]);
 
   // Keep <html lang/dir> in sync with app language on every app route.
   // This is the shared boundary, so /stations, /nearby, and /map get it
@@ -175,8 +186,8 @@ export function MetroProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <MetroContext.Provider value={{ lang, setLang, mapMode, setMapMode, originId, setOriginId, destId, setDestId, originPlace, setOriginPlace, destPlace, setDestPlace }}>
-      <WebMcpRegistrar />
+    <MetroContext.Provider value={{ cityIds: enabledCityIds, lang, setLang, mapMode, setMapMode, originId, setOriginId, destId, setDestId, originPlace, setOriginPlace, destPlace, setDestPlace }}>
+      {tehranScope && <WebMcpRegistrar />}
       {children}
     </MetroContext.Provider>
   );

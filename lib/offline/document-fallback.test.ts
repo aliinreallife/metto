@@ -13,9 +13,13 @@ function nav(url: string, mode = "navigate", destination = "document") {
 
 describe("isCanonicalStaticDoc", () => {
   it("matches exactly the six static documents", () => {
-    expect(CANONICAL_STATIC_DOCS).toEqual(["/", "/route", "/map", "/stations", "/nearby"]);
+    expect(CANONICAL_STATIC_DOCS.slice(0, 5)).toEqual(["/", "/route", "/map", "/stations", "/nearby"]);
     for (const p of ["/", "/route", "/map", "/stations", "/nearby"]) {
       expect(isCanonicalStaticDoc(p)).toBe(true);
+    }
+    for (const p of ["/tehran", "/tehran/map", "/tehran/route", "/tehran/stations", "/tehran/nearby", "/cities", "/cities/map"]) {
+      expect(isCanonicalStaticDoc(p)).toBe(true);
+      expect(canonicalDocFallbackFor(p as `/${string}`, nav(`${ORIGIN}${p}?lang=en`))).toBe(p);
     }
   });
 

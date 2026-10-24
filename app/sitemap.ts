@@ -1,9 +1,11 @@
 import type { MetadataRoute } from "next";
+import { availableCities } from "@/lib/city-availability";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://metto.ir";
 
   return [
+    ...[...availableCities().flatMap(city => ["", "/route", "/map", "/stations", "/nearby"].map(view => `/${city.slug}${view}`)), "/cities", "/cities/map", "/cities/route", "/cities/nearby"].map(path => ({ url: `${baseUrl}${path}`, changeFrequency: "weekly" as const, priority: 0.8 })),
     {
       url: baseUrl,
       changeFrequency: "weekly",

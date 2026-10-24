@@ -556,7 +556,7 @@ export function MapPage() {
       </div>
 
       {/* Map mode toggle */}
-      <div className="absolute top-3 left-3 z-[500] flex overflow-hidden rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur" role="group" aria-label={t.mapMode}>
+      <div className="absolute top-3 start-3 z-[500] flex overflow-hidden rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur" role="group" aria-label={t.mapMode}>
         <button
           type="button"
           onClick={() => setMapMode("satellite")}

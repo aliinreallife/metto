@@ -250,6 +250,8 @@ test.describe("route search keyboard flow", () => {
   });
 
   test("route warnings and departures use live regions", async ({ page }) => {
+    // This check needs an operating journey, including when CI runs at night.
+    await page.clock.setFixedTime(new Date("2026-09-07T10:00:00+03:30"));
     await page.goto("/route?from=tajrish&to=tehran-sadeghiyeh", {
       waitUntil: "domcontentloaded",
     });
@@ -311,7 +313,7 @@ test.describe("a11y quick wins", () => {
     await page.waitForTimeout(1500);
 
     // Pick a station as the location so the amenity filter renders.
-    const trigger = page.locator('button[aria-haspopup="listbox"]').first();
+    const trigger = page.getByRole("main").locator('button[aria-haspopup="listbox"]').first();
     await trigger.click();
     const searchInput = page.locator('input[role="combobox"]');
     await expect(searchInput).toBeFocused();

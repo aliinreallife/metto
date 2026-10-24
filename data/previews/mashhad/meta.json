@@ -1,0 +1,23 @@
+{
+  "cityId": "mashhad",
+  "datasetVersion": "2026.10.1",
+  "generatedAt": "2026-10-21T00:00:00.000Z",
+  "importer": "importers/mashhad.ts",
+  "upstream": {
+    "repository": "https://github.com/shahriaarrr/mashhad-metro-data",
+    "commit": "f5d5c78816a8cc360bb9ae00db8fb8bad23a29e0",
+    "file": "upstream-mashhad-metro/data/stations.json"
+  },
+  "counts": {
+    "stations": 38,
+    "lines": 3,
+    "routes": 3,
+    "segments": 38,
+    "transfers": 0,
+    "cities": 1,
+    "agencies": 1,
+    "networks": 1
+  },
+  "contributorIds": [],
+  "releaseStatus": "candidate"
+}

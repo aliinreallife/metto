@@ -17,9 +17,11 @@ type Props = {
   lang: Lang
   accentClass: string
   id?: string
+  /** Optional city-scoped stations; default Tehran behavior stays unchanged. */
+  catalog?: Array<{ id: string; name: { fa: string; en: string }; lineColors: string[]; cityName?: { fa: string; en: string } }>
 }
 
-export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, lang, accentClass, id }: Props) {
+export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, lang, accentClass, id, catalog }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [places, setPlaces] = useState<PlaceResult[]>([])
@@ -49,8 +51,12 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
   const listboxId = `${triggerId}-listbox`
   const statusId = `${triggerId}-status`
 
-  const selected = value ? STATION_MAP.get(value) : null
-  const results = useMemo(() => searchStations(query, 40), [query])
+  const selected = value ? catalog ? catalog.find(s => s.id === value) : STATION_MAP.get(value) : null
+  const results = useMemo(() => {
+    if (!catalog) return searchStations(query, 40)
+    const normalize = (s: string) => s.toLowerCase().replace(/ك/g, "ک").replace(/ي/g, "ی").replace(/\u200c/g, " ").trim()
+    return catalog.filter(s => normalize(`${s.name.fa} ${s.name.en} ${s.cityName?.fa ?? ""} ${s.cityName?.en ?? ""}`).includes(normalize(query))).slice(0, 40)
+  }, [catalog, query])
 
   useEffect(() => {
     const onOnline = () => setIsOffline(false)
@@ -69,7 +75,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
 
   // Debounced place search (online-only; station search stays local/offline).
   useEffect(() => {
-    if (query.length < 3 || isOffline) {
+    if (catalog || query.length < 3 || isOffline) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced async search orchestration with synchronous reset branches; equivalent render-derived state would desync the abort/timeout lifecycle.
       setPlaces([])
       setPlacesLoading(false)
@@ -94,7 +100,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
       clearTimeout(timer)
       abortRef.current?.abort()
     }
-  }, [query, lang, isOffline])
+  }, [catalog, query, lang, isOffline])
 
   // Clear places when dropdown closes (transient search state must not
   // survive into the next opening).
@@ -255,7 +261,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                   className="min-w-0 max-w-[42%] shrink truncate text-xs text-muted-foreground"
                   title={isFa ? selected.name.en : selected.name.fa}
                 >
-                  {isFa ? selected.name.en : selected.name.fa}
+                  {catalog?.find(s => s.id === selected.id)?.cityName?.[lang] ?? (isFa ? selected.name.en : selected.name.fa)}
                 </span>
               </span>
             ) : (
@@ -346,18 +352,18 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
                 )}
               >
                   <span className="flex shrink-0 gap-1" aria-hidden="true">
-                    {getStationLines(s.id).map((l) => (
+                    {(catalog?.find(option => option.id === s.id)?.lineColors ?? getStationLines(s.id).map(l => LINE_COLORS[l])).map((color, index) => (
                       <span
-                        key={l}
+                        key={index}
                         className="size-2.5 rounded-full"
-                        style={{ backgroundColor: LINE_COLORS[l] }}
+                        style={{ backgroundColor: color }}
                         aria-hidden="true"
                       />
                     ))}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{isFa ? s.name.fa : s.name.en}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{isFa ? s.name.en : s.name.fa}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{catalog?.find(option => option.id === s.id)?.cityName?.[lang] ?? (isFa ? s.name.en : s.name.fa)}</span>
                   </span>
                   <MapPin aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
               </li>
@@ -365,7 +371,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
             })}
 
             {/* Divider + place results (online-only enhancement) */}
-            {query.length >= 3 && (hasPlaceResults || placesLoading || isOffline) && (
+            {!catalog && query.length >= 3 && (hasPlaceResults || placesLoading || isOffline) && (
               <>
                 {hasStationResults && (
                   <li role="presentation" aria-hidden="true" className="mx-3 my-1 border-t border-border" />

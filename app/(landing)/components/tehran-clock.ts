@@ -20,14 +20,17 @@ function pad(v: number) {
 
 export function useTehranClock(): TehranClock {
   const { lang } = useMetro();
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) setNow(Date.now()); });
     const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
+    return () => { active = false; window.clearInterval(id); };
   }, []);
 
   return useMemo(() => {
+    if (now === null) return { seconds: 0, time: "", date: "", weekday: "" };
     let h = 0;
     let m = 0;
     let s = 0;

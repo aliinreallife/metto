@@ -25,9 +25,13 @@ async function assertReadablePalette(page: Page) {
     // rather than keeping an index that changes when old tiles are pruned.
     for (const node of nodes) node.removeAttribute("data-contrast-probe");
     const candidate = nodes.find((node) => {
+      // Leaflet may prune a tile after Playwright captures the node list.
+      // Poll for an attached visible tile instead of dereferencing its old map.
+      const container = node.closest(".leaflet-container");
+      if (!node.isConnected || !container) return false;
       const tile = node.getBoundingClientRect();
-      const map = node.closest(".leaflet-container")!.getBoundingClientRect();
-      return zoom(node) === newest && tile.x >= map.x && tile.right <= map.right &&
+      const map = container.getBoundingClientRect();
+      return tile.width > 0 && tile.height > 0 && zoom(node) === newest && tile.x >= map.x && tile.right <= map.right &&
         tile.y >= map.y && tile.bottom <= map.bottom;
     });
     candidate?.setAttribute("data-contrast-probe", "true");

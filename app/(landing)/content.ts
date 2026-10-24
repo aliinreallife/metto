@@ -125,7 +125,7 @@ const fa = {
     storyTitle: "چطور بدون اینترنت کار می‌کند؟",
     story: [
       { title: "یک بار باز کن", desc: "روی وای‌فای یا دیتا، فقط یک بار متو را باز کن." },
-      { title: "خودش ذخیره می‌شود", desc: "نقشه، ۱۵۱ ایستگاه و زمان‌بندی‌ها روی گوشی‌ات می‌مانند." },
+      { title: "خودش ذخیره می‌شود", desc: "نقشه، ایستگاه‌ها و زمان‌بندی‌های تهران روی گوشی‌ات می‌مانند." },
       { title: "زیر زمین باز می‌شود", desc: "دفعه بعد، حتی بدون یک خط آنتن، همه چیز آماده است." },
     ],
     storyNote: "فقط زمان لحظه‌ای قطار بعدی به اینترنت نیاز دارد؛ مسیر و نقشه همیشه هستند.",
@@ -340,7 +340,7 @@ const en: typeof fa = {
     storyTitle: "How does it work with no internet?",
     story: [
       { title: "Open it once", desc: "On Wi-Fi or data, just open metto one time." },
-      { title: "It saves itself", desc: "The map, all 151 stations and the timetables stay on your phone." },
+      { title: "It saves itself", desc: "Tehran's map, station data and timetables stay on your phone." },
       { title: "It opens underground", desc: "Next time, even with zero bars, everything is ready." },
     ],
     storyNote: "Only the live next-train time needs a connection; routes and the map are always there.",

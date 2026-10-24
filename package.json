@@ -9,7 +9,8 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/generate-metro-data.mjs && next build && serwist build",
+    "build": "node scripts/check-metto-data.mjs && node scripts/check-city-preview.mjs && node scripts/generate-metro-data.mjs && next build && serwist build",
+    "estimates:evaluate": "node scripts/evaluate-route-estimates.mjs",
     "metro-data:generate": "node scripts/generate-metro-data.mjs",
     "metro-data:validate": "node scripts/generate-metro-data.mjs --check",
     "build:next": "next build",
@@ -25,7 +26,9 @@
     "changelog:check": "node scripts/check-release-notes.mjs",
     "changelog:prepare": "node scripts/prepare-changelog.mjs",
     "changelog:extract": "node scripts/extract-changelog-section.mjs",
-    "changelog:release-pr": "node scripts/release-pr.mjs"
+    "changelog:release-pr": "node scripts/release-pr.mjs",
+    "metro-data:source-check": "node scripts/check-metto-data.mjs",
+    "metro-data:import": "node scripts/import-metto-data.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

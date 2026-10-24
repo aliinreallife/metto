@@ -1,4 +1,24 @@
-# Tehran Metro data license
+# Metro data licenses
+
+## Mashhad candidate preview
+
+`data/previews/mashhad/{stations,lines,graph,meta}.json` is a review-only
+adapted database from [metto-data](https://github.com/aliinreallife/metto-data)
+at `af057821dee7cbd5fcd2bf9ebde079070d8ac20c`, derived from
+[shahriaarrr/mashhad-metro-data](https://github.com/shahriaarrr/mashhad-metro-data)
+at `f5d5c78816a8cc360bb9ae00db8fb8bad23a29e0` and
+[© OpenStreetMap contributors](https://www.openstreetmap.org/copyright).
+These database artifacts and the transfer-link facts in their manifest are
+licensed under ODbL 1.0. The adapted machine-readable database is included in
+this repository and at the pinned metto-data revision. `data/previews/mashhad/upstream-stations.json` is an untouched copy of the
+same pinned upstream's `data/stations.json`, under ODbL 1.0. Its facilities are
+displayed only as source-reported and unverified; canonical facilities remain
+unknown. `reportedAmenitiesSource` in the manifest pins its exact Git blob.
+The app credits link the source, and this document links the license and
+machine-readable adapted database. The original application
+and path-planning code remain covered by the root AGPL-3.0-only license.
+
+## Tehran Metro data
 
 Tehran Metro station/network data used by metto is based on the
 Tehran Metro Data project by mostafa-kheibary and is made available

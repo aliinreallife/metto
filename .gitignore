@@ -55,3 +55,6 @@ dist/
 *.apk
 *.zip
 *.Zone.Identifier
+
+# Reproducible timetable estimation benchmark outputs
+.quality-report/

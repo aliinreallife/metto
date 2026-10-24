@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "cityId": "mashhad",
+  "repository": "https://github.com/aliinreallife/metto-data",
+  "commit": "af057821dee7cbd5fcd2bf9ebde079070d8ac20c",
+  "reviewOnly": true,
+  "releaseStatus": "candidate",
+  "timing": "none",
+  "visibleLineIds": [
+    "mashhad:line:1",
+    "mashhad:line:2"
+  ],
+  "transferLinks": [
+    {
+      "stationId": "mashhad:station:shariati",
+      "fromLineId": "mashhad:line:1",
+      "toLineId": "mashhad:line:2"
+    },
+    {
+      "stationId": "mashhad:station:shariati",
+      "fromLineId": "mashhad:line:2",
+      "toLineId": "mashhad:line:1"
+    }
+  ],
+  "files": {
+    "stations.json": {
+      "gitBlobSha1": "041f4fbdb5dbdff7fcbbf1c7e65c6d5221ec7b51"
+    },
+    "lines.json": {
+      "gitBlobSha1": "21539163b2688446cb8622e38ec3d3ff70e3343e"
+    },
+    "graph.json": {
+      "gitBlobSha1": "d5e0a972a07d81f8d53476a16a9cbfbb74618752"
+    },
+    "meta.json": {
+      "gitBlobSha1": "fed1e3a128326fff294ac858b8489531f7eb4a42"
+    }
+  },
+  "reportedAmenitiesSource": {
+    "file": "upstream-stations.json",
+    "repository": "https://github.com/shahriaarrr/mashhad-metro-data",
+    "commit": "f5d5c78816a8cc360bb9ae00db8fb8bad23a29e0",
+    "path": "data/stations.json",
+    "gitBlobSha1": "3b127905e73d3d6b28d0a94ac190d8395b85e6a6",
+    "verification": "unverified"
+  },
+  "publicRelease": {
+    "productionAuthorized": true,
+    "authorizedOn": "2026-10-24",
+    "authorization": "Project owner requested the public Mashhad launch after reviewing the preview; stations and route paths without train times.",
+    "scope": "lines-1-2-stations-and-paths",
+    "artifactSha256": "d31937e589b02ade8c36bc6ecc57a17c677562191560c8222c530b7b30fe51c5",
+    "counts": {
+      "stations": 36,
+      "lines": 2,
+      "boardingClaims": 37,
+      "segments": 35,
+      "directedInterchanges": 2
+    },
+    "evidence": {
+      "repository": "https://github.com/aliinreallife/metto-data",
+      "commit": "39a325c7fd8fc42ed7ffd20188bd83fe2db569ea",
+      "pathReviewSha256": "90dd4ddb9552193f3cfbd5927ba115b5e90f44ea216912d0929c89b116a4761d",
+      "datasetSha256": "32f3e376810dfb9879784f2baed0a1562fe9f3cc954e4a17905e1aa64efc41f3",
+      "files": [
+        "sources/mashhad/osm-review-snapshot.json",
+        "sources/mashhad/service-evidence.json",
+        "sources/mashhad/review.json"
+      ]
+    },
+    "excluded": [
+      "line-3",
+      "train-times",
+      "travel-time-estimates",
+      "verified-amenities",
+      "entrances",
+      "measured-transfer-duration"
+    ],
+    "limitations": [
+      "Public activation does not certify the full upstream candidate dataset or clear its release-review blockers.",
+      "Ordered stops and representative locations are corroborated by OSM; dated reports support Lines 1/2 service and the untimed Shariati connection. This is not a live station-by-station operator audit.",
+      "Amenities are source-reported and unverified; station points are not entrances."
+    ]
+  }
+}

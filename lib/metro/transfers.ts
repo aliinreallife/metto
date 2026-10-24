@@ -1,3 +1,4 @@
+import { importedTransferRules as TRANSFER_RULES } from "./from-metto-data";
 import { STATIONS } from "./stations";
 import { ROUTES } from "./routes";
 import {
@@ -31,22 +32,7 @@ export interface TransferRule {
   toRouteId?: RouteId;
 }
 
-export const TRANSFER_RULES: TransferRule[] = [
-  {
-    stationId: "eram-e-sabz",
-    fromLineId: 4,
-    toLineId: 5,
-    walkSeconds: 480,
-    confidence: "estimated",
-  },
-  {
-    stationId: "eram-e-sabz",
-    fromLineId: 5,
-    toLineId: 4,
-    walkSeconds: 480,
-    confidence: "estimated",
-  },
-];
+export { importedTransferRules as TRANSFER_RULES } from "./from-metto-data";
 
 function normStation(id: string): string {
   return resolveStationId(id) ?? id;

@@ -4,16 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowUpDown,
-  Building2,
   History,
   Loader2,
   ExternalLink,
   Database,
   LocateFixed,
   Map as MapIcon,
-  X,
 } from "lucide-react";
+import { RoutePlaceCard } from "@/components/route-place-card";
+import { RouteFields } from "@/components/route-fields";
 import { StationCombobox } from "@/components/station-combobox";
 import { MissedDeadlineCard, NoServiceCard, RoutePanel, WalkSuggestCard } from "@/components/route-panel";
 import { RatePromptHost } from "@/components/rate-prompt";
@@ -36,14 +35,10 @@ import {
 import { tehranMinuteToInstant } from "@/lib/tehran-time";
 import { useScheduleData } from "@/lib/use-schedule-data";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
-import { displayPlaceLabel, reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
+import { reverseGeocode, shortPlaceLabel } from "@/lib/geocoding";
 import {
   nearestStations,
-  formatDistance,
   haversineKm,
-  estimateWalkMinutes,
-  formatWalkTime,
-  isLongWalk,
   buildMapHref,
   encodePlacePin,
   parsePlaceParam,
@@ -572,12 +567,8 @@ function RouteView({
     <div className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10">
       <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
         <div className="flex flex-col gap-2.5">
-          <label htmlFor="origin-combobox" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
-            {t.from}
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <StationCombobox
+          <RouteFields lang={lang} originId="origin-combobox" destinationId="dest-combobox"
+            origin={<StationCombobox
                 id="origin-combobox"
                 value={originId}
                 onChange={(id) => {
@@ -588,9 +579,20 @@ function RouteView({
                 placeholder={t.origin}
                 lang={lang}
                 accentClass="bg-primary"
-              />
-            </div>
-            <button
+              />}
+            destination={<StationCombobox
+                id="dest-combobox"
+                value={destId}
+                onChange={(id) => {
+                  setDestId(id);
+                  clearDestPlace();
+                }}
+                onPlaceSelect={(p) => onPlaceSelect(p, false)}
+                placeholder={t.destination}
+                lang={lang}
+                accentClass="bg-foreground"
+              />}
+            originAction={<button
               type="button"
               onClick={locateOrigin}
               disabled={locating}
@@ -602,9 +604,8 @@ function RouteView({
               ) : (
                 <LocateFixed aria-hidden="true" className="size-4" />
               )}
-            </button>
-          </div>
-          {originPlaceInfo && (
+            </button>}
+            afterOrigin={<>{originPlaceInfo && (
             <PlaceCard
               lang={lang}
               info={originPlaceInfo}
@@ -618,35 +619,8 @@ function RouteView({
               kind={gpsError}
               onRetry={locateOrigin}
             />
-          )}
-          <label htmlFor="dest-combobox" className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">
-            {t.to}
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <StationCombobox
-                id="dest-combobox"
-                value={destId}
-                onChange={(id) => {
-                  setDestId(id);
-                  clearDestPlace();
-                }}
-                onPlaceSelect={(p) => onPlaceSelect(p, false)}
-                placeholder={t.destination}
-                lang={lang}
-                accentClass="bg-foreground"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => swap()}
-              aria-label={t.swap}
-              className="flex w-9 shrink-0 self-stretch items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              <ArrowUpDown aria-hidden="true" className="size-4" />
-            </button>
-          </div>
-          {destPlaceInfo && (
+          )}</>}
+            afterDestination={destPlaceInfo && (
             <PlaceCard
               lang={lang}
               info={destPlaceInfo}
@@ -654,6 +628,7 @@ function RouteView({
               onClear={clearDestPlace}
             />
           )}
+            onSwap={swap} />
           <div ref={timeCardRef} className="scroll-mt-4">
             <TravelTimeCard
               lang={lang}
@@ -830,52 +805,11 @@ function RouteView({
 }
 
 
-function PlaceCard({
-  lang,
-  info,
-  onClear,
-  walkingRoute,
-}: {
-  lang: Lang;
-  info: PlaceInfo;
-  onClear: () => void;
-  walkingRoute?: WalkingRoute | null;
+function PlaceCard({ lang, info, onClear, walkingRoute }: {
+  lang: Lang; info: PlaceInfo; onClear: () => void; walkingRoute?: WalkingRoute | null;
 }) {
-  const t = STRINGS[lang];
-  const isFa = lang === "fa";
   const station = STATION_MAP.get(info.stationId);
-  const stationName = station ? (isFa ? station.name.fa : station.name.en) : info.stationId;
-  const walkMin = walkingRoute ? walkingRoute.durationSeconds / 60 : estimateWalkMinutes(info.distanceKm);
-  const distanceKm = walkingRoute ? walkingRoute.distanceMeters / 1000 : info.distanceKm;
-
-  return (
-    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm md:gap-3 md:px-4 md:py-2.5 md:text-base">
-      <Building2 aria-hidden="true" className="size-4 shrink-0 text-primary md:size-5" />
-      <div className="min-w-0 flex-1">
-        <div className="truncate">
-          <span className="font-medium">{displayPlaceLabel(info.placeName, lang)}</span>
-          <span aria-hidden="true" className="mx-1.5 text-muted-foreground">→</span>
-          <span>
-            {t.nearestStation}: <span className="font-medium">{stationName}</span>
-          </span>
-          <span className="ms-1.5 text-muted-foreground">
-            {" "}({formatDistance(distanceKm, lang)} · {walkingRoute ? "" : "~"}{formatWalkTime(walkMin, lang)} {t.walkTime})
-          </span>
-        </div>
-        {isLongWalk(distanceKm, walkMin) && (
-          <p className="mt-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-            {t.longWalkConsiderTransport}
-          </p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={onClear}
-        aria-label={t.clear}
-        className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        <X aria-hidden="true" className="size-3.5" />
-      </button>
-    </div>
-  );
+  return <RoutePlaceCard lang={lang} placeName={info.placeName}
+    stationName={station?.name[lang] ?? info.stationId} distanceKm={info.distanceKm}
+    onClear={onClear} walkingRoute={walkingRoute} />;
 }

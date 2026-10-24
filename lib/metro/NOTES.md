@@ -1,5 +1,11 @@
 # Metro data migration notes
 
+The runtime tables now re-export the pinned `metto-data` compatibility adapter.
+The policy below describes the preserved Tehran baseline, not a second editable
+topology source. Apply network corrections in `metto-data`, then import an exact
+reviewed revision; see `docs/metto-data-integration.md`. Amenity parity preserves
+the previous values and does not establish that the facilities are verified.
+
 ## Topology (authoritative)
 
 - Line 4 west is ONE continuous route:

@@ -1,0 +1,1104 @@
+[
+  {
+    "id": "mashhad:station:vakilabad",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "وکیل آباد",
+      "en": "VakilAbad"
+    },
+    "location": {
+      "lat": 36.345084785978656,
+      "lng": 59.44224260525624
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "VakilAbad"
+    }
+  },
+  {
+    "id": "mashhad:station:koohestan-park",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "کوهستان پارک",
+      "en": "Koohestan Park"
+    },
+    "location": {
+      "lat": 36.34296998192113,
+      "lng": 59.451731881605184
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Koohestan Park"
+    }
+  },
+  {
+    "id": "mashhad:station:namayeshgah",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "نمایشگاه",
+      "en": "Namayeshgah"
+    },
+    "location": {
+      "lat": 36.339582052149495,
+      "lng": 59.46251981981925
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Namayeshgah"
+    }
+  },
+  {
+    "id": "mashhad:station:eghbal-e-lahouri",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "اقبال لاهوری",
+      "en": "Eghbal-e-Lahouri"
+    },
+    "location": {
+      "lat": 36.33600433122949,
+      "lng": 59.47399721884244
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Eghbal-e-Lahouri"
+    }
+  },
+  {
+    "id": "mashhad:station:sayyad-e-shirazi",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "شهید صیاد شیرازی",
+      "en": "Sayyad-e-Shirazi"
+    },
+    "location": {
+      "lat": 36.33258465266732,
+      "lng": 59.48476588154176
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Sayyad-e-Shirazi"
+    }
+  },
+  {
+    "id": "mashhad:station:sadaf",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "صدف",
+      "en": "Sadaf"
+    },
+    "location": {
+      "lat": 36.330165732115546,
+      "lng": 59.4925961144572
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Sadaf"
+    }
+  },
+  {
+    "id": "mashhad:station:haft-e-tir",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "هفت تیر",
+      "en": "Haft-e-Tir"
+    },
+    "location": {
+      "lat": 36.32763063701434,
+      "lng": 59.500725009764125
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Haft-e-Tir"
+    }
+  },
+  {
+    "id": "mashhad:station:danesh-amooz",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "دانش آموز",
+      "en": "Danesh Amooz"
+    },
+    "location": {
+      "lat": 36.32515113600685,
+      "lng": 59.508521251768855
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Danesh Amooz"
+    }
+  },
+  {
+    "id": "mashhad:station:seyyed-razi",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "سیدرضی",
+      "en": "Seyyed Razi"
+    },
+    "location": {
+      "lat": 36.32272830373989,
+      "lng": 59.51641161878166
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Seyyed Razi"
+    }
+  },
+  {
+    "id": "mashhad:station:kowsar",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "کوثر",
+      "en": "Kowsar"
+    },
+    "location": {
+      "lat": 36.3200544142351,
+      "lng": 59.525309697727494
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Kowsar"
+    }
+  },
+  {
+    "id": "mashhad:station:park-e-mellat",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "پارک ملت",
+      "en": "Park-e-Mellat"
+    },
+    "location": {
+      "lat": 36.31726615488931,
+      "lng": 59.53403020026661
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Park-e-Mellat"
+    }
+  },
+  {
+    "id": "mashhad:station:azadi",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "آزادی",
+      "en": "Azadi"
+    },
+    "location": {
+      "lat": 36.31289694782615,
+      "lng": 59.54404701765853
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Azadi"
+    }
+  },
+  {
+    "id": "mashhad:station:khayyam",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "خیام",
+      "en": "Khayyam"
+    },
+    "location": {
+      "lat": 36.30715961638708,
+      "lng": 59.55265836527661
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Khayyam"
+    }
+  },
+  {
+    "id": "mashhad:station:palestine",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "فلسطین",
+      "en": "Palestine"
+    },
+    "location": {
+      "lat": 36.300101542022745,
+      "lng": 59.5636389472497
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Palestine"
+    }
+  },
+  {
+    "id": "mashhad:station:taleghani",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "طالقانی",
+      "en": "Taleghani"
+    },
+    "location": {
+      "lat": 36.29724700829637,
+      "lng": 59.572883505668415
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Taleghani"
+    }
+  },
+  {
+    "id": "mashhad:station:ghaem",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "قائم(عج)",
+      "en": "Ghaem"
+    },
+    "location": {
+      "lat": 36.294414019575456,
+      "lng": 59.57844043237702
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Ghaem"
+    }
+  },
+  {
+    "id": "mashhad:station:shariati",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "شریعتی",
+      "en": "Shariati"
+    },
+    "location": {
+      "lat": 36.291132577808526,
+      "lng": 59.586038903800215
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shariati"
+    }
+  },
+  {
+    "id": "mashhad:station:imam-khomeini",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "امام خمینی",
+      "en": "Imam Khomeini"
+    },
+    "location": {
+      "lat": 36.28138459547152,
+      "lng": 59.595682739002314
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Imam Khomeini"
+    }
+  },
+  {
+    "id": "mashhad:station:basij",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "بسیج",
+      "en": "Basij"
+    },
+    "location": {
+      "lat": 36.27380398360998,
+      "lng": 59.60328273666735
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Basij"
+    }
+  },
+  {
+    "id": "mashhad:station:hefdah-e-shahrivar",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "هفده شهریور",
+      "en": "Hefdah-e-Shahrivar"
+    },
+    "location": {
+      "lat": 36.26773730427618,
+      "lng": 59.609261158626055
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Hefdah-e-Shahrivar"
+    }
+  },
+  {
+    "id": "mashhad:station:parvin-etesami",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "پروین اعتصامی",
+      "en": "Parvin Etesami"
+    },
+    "location": {
+      "lat": 36.26189220950452,
+      "lng": 59.615030854956444
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Parvin Etesami"
+    }
+  },
+  {
+    "id": "mashhad:station:ghadir",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "غدیر",
+      "en": "Ghadir"
+    },
+    "location": {
+      "lat": 36.256219305163015,
+      "lng": 59.619474138757255
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Ghadir"
+    }
+  },
+  {
+    "id": "mashhad:station:bustan-e-reyhaneh",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "بوستان ریحانه",
+      "en": "Bustan-e Reyhaneh"
+    },
+    "location": {
+      "lat": 36.24342367517019,
+      "lng": 59.62340739920768
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Bustan-e Reyhaneh"
+    }
+  },
+  {
+    "id": "mashhad:station:airport",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "فرودگاه",
+      "en": "Airport"
+    },
+    "location": {
+      "lat": 36.228254434162096,
+      "lng": 59.64056571374525
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Airport"
+    }
+  },
+  {
+    "id": "mashhad:station:tabarsi",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "طبرسی",
+      "en": "Tabarsi"
+    },
+    "location": {
+      "lat": 36.32510668315487,
+      "lng": 59.67524789469056
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Tabarsi"
+    }
+  },
+  {
+    "id": "mashhad:station:velayat",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "ولایت",
+      "en": "Velayat"
+    },
+    "location": {
+      "lat": 36.31704797082743,
+      "lng": 59.66217756632278
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Velayat"
+    }
+  },
+  {
+    "id": "mashhad:station:fajr",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "فجر",
+      "en": "Fajr"
+    },
+    "location": {
+      "lat": 36.31281,
+      "lng": 59.65543
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Fajr"
+    }
+  },
+  {
+    "id": "mashhad:station:nabovvat",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "نبوت",
+      "en": "Nabovvat"
+    },
+    "location": {
+      "lat": 36.30601881551148,
+      "lng": 59.644648452081015
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Nabovvat"
+    }
+  },
+  {
+    "id": "mashhad:station:shahid-mofatteh",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "شهید مفتح",
+      "en": "Shahid Mofatteh"
+    },
+    "location": {
+      "lat": 36.30181930556064,
+      "lng": 59.63784362168994
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "shahid mofatteh"
+    }
+  },
+  {
+    "id": "mashhad:station:railway",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "راه آهن",
+      "en": "Railway"
+    },
+    "location": {
+      "lat": 36.30342478379487,
+      "lng": 59.62290815767341
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Railway"
+    }
+  },
+  {
+    "id": "mashhad:station:shohada",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "شهدا",
+      "en": "Shohada"
+    },
+    "location": {
+      "lat": 36.29798570941698,
+      "lng": 59.605932679190346
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Shohada"
+    }
+  },
+  {
+    "id": "mashhad:station:saadi",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "سعدی",
+      "en": "Sa'adi"
+    },
+    "location": {
+      "lat": 36.295333692846484,
+      "lng": 59.59821974532332
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Sa'adi"
+    }
+  },
+  {
+    "id": "mashhad:station:alandasht",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "الندشت",
+      "en": "Alandasht"
+    },
+    "location": {
+      "lat": 36.287538860270345,
+      "lng": 59.57574256413562
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Alandasht"
+    }
+  },
+  {
+    "id": "mashhad:station:kouhsangi",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "کوهسنگی",
+      "en": "Kouhsangi"
+    },
+    "location": {
+      "lat": 36.28369570493916,
+      "lng": 59.56398854242315
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Kouhsangi"
+    }
+  },
+  {
+    "id": "mashhad:station:shahid-kaveh",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "شهید کاوه",
+      "en": "shahid kaveh"
+    },
+    "location": {
+      "lat": 36.284496311084766,
+      "lng": 59.5501205765147
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "shahid kaveh"
+    }
+  },
+  {
+    "id": "mashhad:station:shahid-fakouri",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "شهید فکوری",
+      "en": "shahid fakouri"
+    },
+    "location": {
+      "lat": 36.28376863340769,
+      "lng": 59.542427481436704
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "shahid fakouri"
+    }
+  },
+  {
+    "id": "mashhad:station:imam-reza-terminal",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "پایانه امام رضا(ع)",
+      "en": "Imam Reza Terminal"
+    },
+    "location": {
+      "lat": 36.26014664721764,
+      "lng": 59.59336363714155
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Imam Reza Terminal"
+    }
+  },
+  {
+    "id": "mashhad:station:bab-al-javad",
+    "cityId": "mashhad",
+    "names": {
+      "fa": "باب الجواد(ع)",
+      "en": "Bab Al-javad"
+    },
+    "location": {
+      "lat": 36.285214955489636,
+      "lng": 59.611194298074224
+    },
+    "amenities": {
+      "wc": null,
+      "elevator": null,
+      "atm": null,
+      "coffeeShop": null,
+      "fastFood": null,
+      "groceryStore": null,
+      "freeWifi": null,
+      "prayerRoom": null,
+      "parking": null,
+      "police": null
+    },
+    "amenitiesVerified": false,
+    "status": "operational",
+    "sourceKeys": {
+      "upstreamKey": "Bab Al-javad"
+    }
+  }
+]

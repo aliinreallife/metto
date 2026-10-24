@@ -1,0 +1,2414 @@
+{
+  "routes": [
+    {
+      "id": "tehran:route:line-1-main",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "stops": [
+        {
+          "stationId": "tehran:station:tajrish",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:gheytariyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-sadr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:qolhak",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:doctor-shariati",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mirdamad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-haghani",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-hemmat",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mosalla-ye-imam-khomeini",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-beheshti",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-mofattah",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shohada-ye-haftom-e-tir",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:ayatollah-taleghani",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:darvazeh-dolat",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:saadi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:imam-khomeini",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:panzdah-e-khordad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:khayyam",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-mohammadiyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shoush",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:payaneh-jonoub-jonoub-terminal",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-bokharaei",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:aliabad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:javanmard-e-ghassab",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahr-e-rey",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:palayeshgah",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahed-baghershahr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:holy-shrine-of-imam-khomeini",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:kahrizak",
+          "status": "operational"
+        }
+      ]
+    },
+    {
+      "id": "tehran:route:line-1-parand",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "branchId": "parand",
+      "stops": [
+        {
+          "stationId": "tehran:station:shahed-baghershahr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:namayeshgah-e-shahr-e-aftab",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:vavan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:emam-khomeini-airport",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahr-e-parand",
+          "status": "operational"
+        }
+      ]
+    },
+    {
+      "id": "tehran:route:line-2-main",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "stops": [
+        {
+          "stationId": "tehran:station:farhangsara",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:tehranpars",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-bagheri",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:daneshgah-e-elm-o-sanat",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:sarsabz",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:janbazan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:fadak",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:sabalan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-madani",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:imam-hossein",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:darvazeh-shemiran",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:baharistan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mellat",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:imam-khomeini",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:hasan-abad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:daneshgah-e-imam-ali",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-horr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-navab-e-safavi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shademan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:daneshgah-e-sharif",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:tarasht",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:tehran-sadeghiyeh",
+          "status": "operational"
+        }
+      ]
+    },
+    {
+      "id": "tehran:route:line-3-main",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "stops": [
+        {
+          "stationId": "tehran:station:qaem",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-mahallati",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:aghdasiyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:nobonyad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:hossein-abad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-heravi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-zeynoddin",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:khajeh-abdollah-e-ansari",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-sayyad-shirazi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-ghodousi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:sohrevardi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-beheshti",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mirza-ye-shirazi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-jahad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-hazrat-vali-asr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:teatr-e-shahr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:moniriyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mahdiyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:rahahan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:javadiyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:zamzam",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahrak-e-shariaty",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:abdol-abad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:nemat-abad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:azadegan",
+          "status": "operational"
+        }
+      ]
+    },
+    {
+      "id": "tehran:route:line-4-main",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "stops": [
+        {
+          "stationId": "tehran:station:shahid-kolahdooz",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:nirou-havaei",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:nabard",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:piroozi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:ebn-e-sina",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-shohada",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:darvazeh-shemiran",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:darvazeh-dolat",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:ferdowsi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:teatr-e-shahr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-enghelab-e-eslami",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:towhid",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shademan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:doctor-habibollah",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:ostad-moin",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-azadi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:bimeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahrak-e-ekbatan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:eram-e-sabz",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:allameh-jafari",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:ayatollah-kashani",
+          "status": "under_construction"
+        },
+        {
+          "stationId": "tehran:station:chaharbagh",
+          "status": "under_construction"
+        }
+      ]
+    },
+    {
+      "id": "tehran:route:line-4-mehrabad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "branchId": "mehrabad",
+      "stops": [
+        {
+          "stationId": "tehran:station:bimeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mehrabad-airport-terminal-1-2",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mehrabad-airport-terminal-4-6",
+          "status": "operational"
+        }
+      ]
+    },
+    {
+      "id": "tehran:route:line-5-main",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "stops": [
+        {
+          "stationId": "tehran:station:tehran-sadeghiyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:eram-e-sabz",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:varzeshgah-e-azadi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:chitgar",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:iran-khodro",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:vardavard",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:garmdareh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:atmosphere",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:karaj",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mohammadshahr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:golshahr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-fakhrizadeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-sepahbod-qasem-soleimani",
+          "status": "operational"
+        }
+      ]
+    },
+    {
+      "id": "tehran:route:line-6-main",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "stops": [
+        {
+          "stationId": "tehran:station:kouhsar",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shohada-ye-kan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahran",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahr-e-ziba",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:ayatollah-kashani",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-sattari",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-ashrafi-esfahani",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:yadegar-e-imam",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:marzdaran",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahrak-e-azmayesh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:daneshgah-e-tarbiat-modarres",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:karagar",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:bustan-e-laleh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-hazrat-vali-asr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:maryam-e-moghaddas",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shohada-ye-haftom-e-tir",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:bahar-shiraz-khanevadeh-hospital",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:sarbaz",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:imam-hossein",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-shohada",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:amirkabir",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shohada-ye-hefdah-e-shahrivar",
+          "status": "under_construction"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-khorasan",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-rezaei",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:besat",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:kiyan-shahr",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shohada-ye-dowlat-abad",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:cheshmeh-ali",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:ebn-e-babviyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-hazrat-e-abdol-azim",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:haram-e-hazrat-e-abdol-azim",
+          "status": "operational"
+        }
+      ]
+    },
+    {
+      "id": "tehran:route:line-7-main",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "stops": [
+        {
+          "stationId": "tehran:station:varzeshgah-e-takhti",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:basij",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:ahang",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:chehel-tan-e-doulab",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shohada-ye-hefdah-e-shahrivar",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-giyam",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mowlavi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-mohammadiyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:mahdiyeh",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:helal-ahmar",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:beryanak",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:komeyl",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:roudaki",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-navab-e-safavi",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:towhid",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:modafean-e-salamat",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:daneshgah-e-tarbiat-modarres",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:boostan-e-goftegou",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:milad-tower",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-sanat",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:shahid-dadman",
+          "status": "operational"
+        },
+        {
+          "stationId": "tehran:station:meydan-e-ketab",
+          "status": "operational"
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "id": "tehran:segment:line-1-tajrish-gheytariyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:tajrish",
+      "to": "tehran:station:gheytariyeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-gheytariyeh-shahid-sadr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:gheytariyeh",
+      "to": "tehran:station:shahid-sadr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shahid-sadr-qolhak",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shahid-sadr",
+      "to": "tehran:station:qolhak",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-qolhak-doctor-shariati",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:qolhak",
+      "to": "tehran:station:doctor-shariati",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-doctor-shariati-mirdamad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:doctor-shariati",
+      "to": "tehran:station:mirdamad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-mirdamad-shahid-haghani",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:mirdamad",
+      "to": "tehran:station:shahid-haghani",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shahid-haghani-shahid-hemmat",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shahid-haghani",
+      "to": "tehran:station:shahid-hemmat",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shahid-hemmat-mosalla-ye-imam-khomeini",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shahid-hemmat",
+      "to": "tehran:station:mosalla-ye-imam-khomeini",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-mosalla-ye-imam-khomeini-shahid-beheshti",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:mosalla-ye-imam-khomeini",
+      "to": "tehran:station:shahid-beheshti",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shahid-beheshti-shahid-mofattah",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shahid-beheshti",
+      "to": "tehran:station:shahid-mofattah",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shahid-mofattah-shohada-ye-haftom-e-tir",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shahid-mofattah",
+      "to": "tehran:station:shohada-ye-haftom-e-tir",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shohada-ye-haftom-e-tir-ayatollah-taleghani",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shohada-ye-haftom-e-tir",
+      "to": "tehran:station:ayatollah-taleghani",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-ayatollah-taleghani-darvazeh-dolat",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:ayatollah-taleghani",
+      "to": "tehran:station:darvazeh-dolat",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-darvazeh-dolat-saadi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:darvazeh-dolat",
+      "to": "tehran:station:saadi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-saadi-imam-khomeini",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:saadi",
+      "to": "tehran:station:imam-khomeini",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-imam-khomeini-panzdah-e-khordad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:imam-khomeini",
+      "to": "tehran:station:panzdah-e-khordad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-panzdah-e-khordad-khayyam",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:panzdah-e-khordad",
+      "to": "tehran:station:khayyam",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-khayyam-meydan-e-mohammadiyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:khayyam",
+      "to": "tehran:station:meydan-e-mohammadiyeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-meydan-e-mohammadiyeh-shoush",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:meydan-e-mohammadiyeh",
+      "to": "tehran:station:shoush",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shoush-payaneh-jonoub-jonoub-terminal",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shoush",
+      "to": "tehran:station:payaneh-jonoub-jonoub-terminal",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-payaneh-jonoub-jonoub-terminal-shahid-bokharaei",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:payaneh-jonoub-jonoub-terminal",
+      "to": "tehran:station:shahid-bokharaei",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shahid-bokharaei-aliabad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shahid-bokharaei",
+      "to": "tehran:station:aliabad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-aliabad-javanmard-e-ghassab",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:aliabad",
+      "to": "tehran:station:javanmard-e-ghassab",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-javanmard-e-ghassab-shahr-e-rey",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:javanmard-e-ghassab",
+      "to": "tehran:station:shahr-e-rey",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shahr-e-rey-palayeshgah",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shahr-e-rey",
+      "to": "tehran:station:palayeshgah",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-palayeshgah-shahed-baghershahr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:palayeshgah",
+      "to": "tehran:station:shahed-baghershahr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shahed-baghershahr-holy-shrine-of-imam-khomeini",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:shahed-baghershahr",
+      "to": "tehran:station:holy-shrine-of-imam-khomeini",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-holy-shrine-of-imam-khomeini-kahrizak",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-main",
+      "from": "tehran:station:holy-shrine-of-imam-khomeini",
+      "to": "tehran:station:kahrizak",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-shahed-baghershahr-namayeshgah-e-shahr-e-aftab",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-parand",
+      "branchId": "parand",
+      "from": "tehran:station:shahed-baghershahr",
+      "to": "tehran:station:namayeshgah-e-shahr-e-aftab",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-namayeshgah-e-shahr-e-aftab-vavan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-parand",
+      "branchId": "parand",
+      "from": "tehran:station:namayeshgah-e-shahr-e-aftab",
+      "to": "tehran:station:vavan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-vavan-emam-khomeini-airport",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-parand",
+      "branchId": "parand",
+      "from": "tehran:station:vavan",
+      "to": "tehran:station:emam-khomeini-airport",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-1-emam-khomeini-airport-shahr-e-parand",
+      "cityId": "tehran",
+      "lineId": "tehran:line:1",
+      "routeId": "tehran:route:line-1-parand",
+      "branchId": "parand",
+      "from": "tehran:station:emam-khomeini-airport",
+      "to": "tehran:station:shahr-e-parand",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-farhangsara-tehranpars",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:farhangsara",
+      "to": "tehran:station:tehranpars",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-tehranpars-shahid-bagheri",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:tehranpars",
+      "to": "tehran:station:shahid-bagheri",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-shahid-bagheri-daneshgah-e-elm-o-sanat",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:shahid-bagheri",
+      "to": "tehran:station:daneshgah-e-elm-o-sanat",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-daneshgah-e-elm-o-sanat-sarsabz",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:daneshgah-e-elm-o-sanat",
+      "to": "tehran:station:sarsabz",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-sarsabz-janbazan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:sarsabz",
+      "to": "tehran:station:janbazan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-janbazan-fadak",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:janbazan",
+      "to": "tehran:station:fadak",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-fadak-sabalan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:fadak",
+      "to": "tehran:station:sabalan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-sabalan-shahid-madani",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:sabalan",
+      "to": "tehran:station:shahid-madani",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-shahid-madani-imam-hossein",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:shahid-madani",
+      "to": "tehran:station:imam-hossein",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-imam-hossein-darvazeh-shemiran",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:imam-hossein",
+      "to": "tehran:station:darvazeh-shemiran",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-darvazeh-shemiran-baharistan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:darvazeh-shemiran",
+      "to": "tehran:station:baharistan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-baharistan-mellat",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:baharistan",
+      "to": "tehran:station:mellat",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-mellat-imam-khomeini",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:mellat",
+      "to": "tehran:station:imam-khomeini",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-imam-khomeini-hasan-abad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:imam-khomeini",
+      "to": "tehran:station:hasan-abad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-hasan-abad-daneshgah-e-imam-ali",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:hasan-abad",
+      "to": "tehran:station:daneshgah-e-imam-ali",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-daneshgah-e-imam-ali-meydan-e-horr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:daneshgah-e-imam-ali",
+      "to": "tehran:station:meydan-e-horr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-meydan-e-horr-shahid-navab-e-safavi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:meydan-e-horr",
+      "to": "tehran:station:shahid-navab-e-safavi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-shahid-navab-e-safavi-shademan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:shahid-navab-e-safavi",
+      "to": "tehran:station:shademan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-shademan-daneshgah-e-sharif",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:shademan",
+      "to": "tehran:station:daneshgah-e-sharif",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-daneshgah-e-sharif-tarasht",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:daneshgah-e-sharif",
+      "to": "tehran:station:tarasht",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-2-tarasht-tehran-sadeghiyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:2",
+      "routeId": "tehran:route:line-2-main",
+      "from": "tehran:station:tarasht",
+      "to": "tehran:station:tehran-sadeghiyeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-qaem-shahid-mahallati",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:qaem",
+      "to": "tehran:station:shahid-mahallati",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-shahid-mahallati-aghdasiyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:shahid-mahallati",
+      "to": "tehran:station:aghdasiyeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-aghdasiyeh-nobonyad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:aghdasiyeh",
+      "to": "tehran:station:nobonyad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-nobonyad-hossein-abad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:nobonyad",
+      "to": "tehran:station:hossein-abad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-hossein-abad-meydan-e-heravi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:hossein-abad",
+      "to": "tehran:station:meydan-e-heravi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-meydan-e-heravi-shahid-zeynoddin",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:meydan-e-heravi",
+      "to": "tehran:station:shahid-zeynoddin",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-shahid-zeynoddin-khajeh-abdollah-e-ansari",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:shahid-zeynoddin",
+      "to": "tehran:station:khajeh-abdollah-e-ansari",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-khajeh-abdollah-e-ansari-shahid-sayyad-shirazi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:khajeh-abdollah-e-ansari",
+      "to": "tehran:station:shahid-sayyad-shirazi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-shahid-sayyad-shirazi-shahid-ghodousi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:shahid-sayyad-shirazi",
+      "to": "tehran:station:shahid-ghodousi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-shahid-ghodousi-sohrevardi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:shahid-ghodousi",
+      "to": "tehran:station:sohrevardi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-sohrevardi-shahid-beheshti",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:sohrevardi",
+      "to": "tehran:station:shahid-beheshti",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-shahid-beheshti-mirza-ye-shirazi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:shahid-beheshti",
+      "to": "tehran:station:mirza-ye-shirazi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-mirza-ye-shirazi-meydan-e-jahad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:mirza-ye-shirazi",
+      "to": "tehran:station:meydan-e-jahad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-meydan-e-jahad-meydan-e-hazrat-vali-asr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:meydan-e-jahad",
+      "to": "tehran:station:meydan-e-hazrat-vali-asr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-meydan-e-hazrat-vali-asr-teatr-e-shahr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:meydan-e-hazrat-vali-asr",
+      "to": "tehran:station:teatr-e-shahr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-teatr-e-shahr-moniriyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:teatr-e-shahr",
+      "to": "tehran:station:moniriyeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-moniriyeh-mahdiyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:moniriyeh",
+      "to": "tehran:station:mahdiyeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-mahdiyeh-rahahan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:mahdiyeh",
+      "to": "tehran:station:rahahan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-rahahan-javadiyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:rahahan",
+      "to": "tehran:station:javadiyeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-javadiyeh-zamzam",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:javadiyeh",
+      "to": "tehran:station:zamzam",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-zamzam-shahrak-e-shariaty",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:zamzam",
+      "to": "tehran:station:shahrak-e-shariaty",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-shahrak-e-shariaty-abdol-abad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:shahrak-e-shariaty",
+      "to": "tehran:station:abdol-abad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-abdol-abad-nemat-abad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:abdol-abad",
+      "to": "tehran:station:nemat-abad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-3-nemat-abad-azadegan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:3",
+      "routeId": "tehran:route:line-3-main",
+      "from": "tehran:station:nemat-abad",
+      "to": "tehran:station:azadegan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-shahid-kolahdooz-nirou-havaei",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:shahid-kolahdooz",
+      "to": "tehran:station:nirou-havaei",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-nirou-havaei-nabard",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:nirou-havaei",
+      "to": "tehran:station:nabard",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-nabard-piroozi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:nabard",
+      "to": "tehran:station:piroozi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-piroozi-ebn-e-sina",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:piroozi",
+      "to": "tehran:station:ebn-e-sina",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-ebn-e-sina-meydan-e-shohada",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:ebn-e-sina",
+      "to": "tehran:station:meydan-e-shohada",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-meydan-e-shohada-darvazeh-shemiran",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:meydan-e-shohada",
+      "to": "tehran:station:darvazeh-shemiran",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-darvazeh-shemiran-darvazeh-dolat",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:darvazeh-shemiran",
+      "to": "tehran:station:darvazeh-dolat",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-darvazeh-dolat-ferdowsi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:darvazeh-dolat",
+      "to": "tehran:station:ferdowsi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-ferdowsi-teatr-e-shahr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:ferdowsi",
+      "to": "tehran:station:teatr-e-shahr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-teatr-e-shahr-meydan-e-enghelab-e-eslami",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:teatr-e-shahr",
+      "to": "tehran:station:meydan-e-enghelab-e-eslami",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-meydan-e-enghelab-e-eslami-towhid",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:meydan-e-enghelab-e-eslami",
+      "to": "tehran:station:towhid",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-towhid-shademan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:towhid",
+      "to": "tehran:station:shademan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-shademan-doctor-habibollah",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:shademan",
+      "to": "tehran:station:doctor-habibollah",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-doctor-habibollah-ostad-moin",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:doctor-habibollah",
+      "to": "tehran:station:ostad-moin",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-ostad-moin-meydan-e-azadi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:ostad-moin",
+      "to": "tehran:station:meydan-e-azadi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-meydan-e-azadi-bimeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:meydan-e-azadi",
+      "to": "tehran:station:bimeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-bimeh-shahrak-e-ekbatan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:bimeh",
+      "to": "tehran:station:shahrak-e-ekbatan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-shahrak-e-ekbatan-eram-e-sabz",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:shahrak-e-ekbatan",
+      "to": "tehran:station:eram-e-sabz",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-eram-e-sabz-allameh-jafari",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:eram-e-sabz",
+      "to": "tehran:station:allameh-jafari",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-allameh-jafari-ayatollah-kashani",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:allameh-jafari",
+      "to": "tehran:station:ayatollah-kashani",
+      "status": "under_construction"
+    },
+    {
+      "id": "tehran:segment:line-4-ayatollah-kashani-chaharbagh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-main",
+      "from": "tehran:station:ayatollah-kashani",
+      "to": "tehran:station:chaharbagh",
+      "status": "under_construction"
+    },
+    {
+      "id": "tehran:segment:line-4-bimeh-mehrabad-airport-terminal-1-2",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-mehrabad",
+      "branchId": "mehrabad",
+      "from": "tehran:station:bimeh",
+      "to": "tehran:station:mehrabad-airport-terminal-1-2",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-4-mehrabad-airport-terminal-1-2-mehrabad-airport-terminal-4-6",
+      "cityId": "tehran",
+      "lineId": "tehran:line:4",
+      "routeId": "tehran:route:line-4-mehrabad",
+      "branchId": "mehrabad",
+      "from": "tehran:station:mehrabad-airport-terminal-1-2",
+      "to": "tehran:station:mehrabad-airport-terminal-4-6",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-tehran-sadeghiyeh-eram-e-sabz",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:tehran-sadeghiyeh",
+      "to": "tehran:station:eram-e-sabz",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-eram-e-sabz-varzeshgah-e-azadi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:eram-e-sabz",
+      "to": "tehran:station:varzeshgah-e-azadi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-varzeshgah-e-azadi-chitgar",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:varzeshgah-e-azadi",
+      "to": "tehran:station:chitgar",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-chitgar-iran-khodro",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:chitgar",
+      "to": "tehran:station:iran-khodro",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-iran-khodro-vardavard",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:iran-khodro",
+      "to": "tehran:station:vardavard",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-vardavard-garmdareh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:vardavard",
+      "to": "tehran:station:garmdareh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-garmdareh-atmosphere",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:garmdareh",
+      "to": "tehran:station:atmosphere",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-atmosphere-karaj",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:atmosphere",
+      "to": "tehran:station:karaj",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-karaj-mohammadshahr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:karaj",
+      "to": "tehran:station:mohammadshahr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-mohammadshahr-golshahr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:mohammadshahr",
+      "to": "tehran:station:golshahr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-golshahr-shahid-fakhrizadeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:golshahr",
+      "to": "tehran:station:shahid-fakhrizadeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-5-shahid-fakhrizadeh-shahid-sepahbod-qasem-soleimani",
+      "cityId": "tehran",
+      "lineId": "tehran:line:5",
+      "routeId": "tehran:route:line-5-main",
+      "from": "tehran:station:shahid-fakhrizadeh",
+      "to": "tehran:station:shahid-sepahbod-qasem-soleimani",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-kouhsar-shohada-ye-kan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:kouhsar",
+      "to": "tehran:station:shohada-ye-kan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shohada-ye-kan-shahran",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shohada-ye-kan",
+      "to": "tehran:station:shahran",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shahran-shahr-e-ziba",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shahran",
+      "to": "tehran:station:shahr-e-ziba",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shahr-e-ziba-ayatollah-kashani",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shahr-e-ziba",
+      "to": "tehran:station:ayatollah-kashani",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-ayatollah-kashani-shahid-sattari",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:ayatollah-kashani",
+      "to": "tehran:station:shahid-sattari",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shahid-sattari-shahid-ashrafi-esfahani",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shahid-sattari",
+      "to": "tehran:station:shahid-ashrafi-esfahani",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shahid-ashrafi-esfahani-yadegar-e-imam",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shahid-ashrafi-esfahani",
+      "to": "tehran:station:yadegar-e-imam",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-yadegar-e-imam-marzdaran",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:yadegar-e-imam",
+      "to": "tehran:station:marzdaran",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-marzdaran-shahrak-e-azmayesh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:marzdaran",
+      "to": "tehran:station:shahrak-e-azmayesh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shahrak-e-azmayesh-daneshgah-e-tarbiat-modarres",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shahrak-e-azmayesh",
+      "to": "tehran:station:daneshgah-e-tarbiat-modarres",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-daneshgah-e-tarbiat-modarres-karagar",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:daneshgah-e-tarbiat-modarres",
+      "to": "tehran:station:karagar",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-karagar-bustan-e-laleh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:karagar",
+      "to": "tehran:station:bustan-e-laleh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-bustan-e-laleh-meydan-e-hazrat-vali-asr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:bustan-e-laleh",
+      "to": "tehran:station:meydan-e-hazrat-vali-asr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-meydan-e-hazrat-vali-asr-maryam-e-moghaddas",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:meydan-e-hazrat-vali-asr",
+      "to": "tehran:station:maryam-e-moghaddas",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-maryam-e-moghaddas-shohada-ye-haftom-e-tir",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:maryam-e-moghaddas",
+      "to": "tehran:station:shohada-ye-haftom-e-tir",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shohada-ye-haftom-e-tir-bahar-shiraz-khanevadeh-hospital",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shohada-ye-haftom-e-tir",
+      "to": "tehran:station:bahar-shiraz-khanevadeh-hospital",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-bahar-shiraz-khanevadeh-hospital-sarbaz",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:bahar-shiraz-khanevadeh-hospital",
+      "to": "tehran:station:sarbaz",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-sarbaz-imam-hossein",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:sarbaz",
+      "to": "tehran:station:imam-hossein",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-imam-hossein-meydan-e-shohada",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:imam-hossein",
+      "to": "tehran:station:meydan-e-shohada",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-meydan-e-shohada-amirkabir",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:meydan-e-shohada",
+      "to": "tehran:station:amirkabir",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-amirkabir-shohada-ye-hefdah-e-shahrivar",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:amirkabir",
+      "to": "tehran:station:shohada-ye-hefdah-e-shahrivar",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shohada-ye-hefdah-e-shahrivar-meydan-e-khorasan",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shohada-ye-hefdah-e-shahrivar",
+      "to": "tehran:station:meydan-e-khorasan",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-meydan-e-khorasan-shahid-rezaei",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:meydan-e-khorasan",
+      "to": "tehran:station:shahid-rezaei",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shahid-rezaei-besat",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shahid-rezaei",
+      "to": "tehran:station:besat",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-besat-kiyan-shahr",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:besat",
+      "to": "tehran:station:kiyan-shahr",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-kiyan-shahr-shohada-ye-dowlat-abad",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:kiyan-shahr",
+      "to": "tehran:station:shohada-ye-dowlat-abad",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-6-shohada-ye-dowlat-abad-cheshmeh-ali",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:shohada-ye-dowlat-abad",
+      "to": "tehran:station:cheshmeh-ali",
+      "status": "under_construction"
+    },
+    {
+      "id": "tehran:segment:line-6-cheshmeh-ali-ebn-e-babviyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:cheshmeh-ali",
+      "to": "tehran:station:ebn-e-babviyeh",
+      "status": "under_construction"
+    },
+    {
+      "id": "tehran:segment:line-6-ebn-e-babviyeh-meydan-e-hazrat-e-abdol-azim",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:ebn-e-babviyeh",
+      "to": "tehran:station:meydan-e-hazrat-e-abdol-azim",
+      "status": "under_construction"
+    },
+    {
+      "id": "tehran:segment:line-6-meydan-e-hazrat-e-abdol-azim-haram-e-hazrat-e-abdol-azim",
+      "cityId": "tehran",
+      "lineId": "tehran:line:6",
+      "routeId": "tehran:route:line-6-main",
+      "from": "tehran:station:meydan-e-hazrat-e-abdol-azim",
+      "to": "tehran:station:haram-e-hazrat-e-abdol-azim",
+      "status": "under_construction"
+    },
+    {
+      "id": "tehran:segment:line-7-varzeshgah-e-takhti-basij",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:varzeshgah-e-takhti",
+      "to": "tehran:station:basij",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-basij-ahang",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:basij",
+      "to": "tehran:station:ahang",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-ahang-chehel-tan-e-doulab",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:ahang",
+      "to": "tehran:station:chehel-tan-e-doulab",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-chehel-tan-e-doulab-shohada-ye-hefdah-e-shahrivar",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:chehel-tan-e-doulab",
+      "to": "tehran:station:shohada-ye-hefdah-e-shahrivar",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-shohada-ye-hefdah-e-shahrivar-meydan-e-giyam",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:shohada-ye-hefdah-e-shahrivar",
+      "to": "tehran:station:meydan-e-giyam",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-meydan-e-giyam-mowlavi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:meydan-e-giyam",
+      "to": "tehran:station:mowlavi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-mowlavi-meydan-e-mohammadiyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:mowlavi",
+      "to": "tehran:station:meydan-e-mohammadiyeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-meydan-e-mohammadiyeh-mahdiyeh",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:meydan-e-mohammadiyeh",
+      "to": "tehran:station:mahdiyeh",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-mahdiyeh-helal-ahmar",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:mahdiyeh",
+      "to": "tehran:station:helal-ahmar",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-helal-ahmar-beryanak",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:helal-ahmar",
+      "to": "tehran:station:beryanak",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-beryanak-komeyl",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:beryanak",
+      "to": "tehran:station:komeyl",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-komeyl-roudaki",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:komeyl",
+      "to": "tehran:station:roudaki",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-roudaki-shahid-navab-e-safavi",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:roudaki",
+      "to": "tehran:station:shahid-navab-e-safavi",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-shahid-navab-e-safavi-towhid",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:shahid-navab-e-safavi",
+      "to": "tehran:station:towhid",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-towhid-modafean-e-salamat",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:towhid",
+      "to": "tehran:station:modafean-e-salamat",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-modafean-e-salamat-daneshgah-e-tarbiat-modarres",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:modafean-e-salamat",
+      "to": "tehran:station:daneshgah-e-tarbiat-modarres",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-daneshgah-e-tarbiat-modarres-boostan-e-goftegou",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:daneshgah-e-tarbiat-modarres",
+      "to": "tehran:station:boostan-e-goftegou",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-boostan-e-goftegou-milad-tower",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:boostan-e-goftegou",
+      "to": "tehran:station:milad-tower",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-milad-tower-meydan-e-sanat",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:milad-tower",
+      "to": "tehran:station:meydan-e-sanat",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-meydan-e-sanat-shahid-dadman",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:meydan-e-sanat",
+      "to": "tehran:station:shahid-dadman",
+      "status": "operational"
+    },
+    {
+      "id": "tehran:segment:line-7-shahid-dadman-meydan-e-ketab",
+      "cityId": "tehran",
+      "lineId": "tehran:line:7",
+      "routeId": "tehran:route:line-7-main",
+      "from": "tehran:station:shahid-dadman",
+      "to": "tehran:station:meydan-e-ketab",
+      "status": "operational"
+    }
+  ],
+  "transfers": [
+    {
+      "id": "tehran:transfer:eram-e-sabz:4:5",
+      "stationId": "tehran:station:eram-e-sabz",
+      "fromLineId": "tehran:line:4",
+      "toLineId": "tehran:line:5",
+      "walkSeconds": 480,
+      "confidence": "estimated"
+    },
+    {
+      "id": "tehran:transfer:eram-e-sabz:5:4",
+      "stationId": "tehran:station:eram-e-sabz",
+      "fromLineId": "tehran:line:5",
+      "toLineId": "tehran:line:4",
+      "walkSeconds": 480,
+      "confidence": "estimated"
+    }
+  ],
+  "aliases": {
+    "Tajrish": "tehran:station:tajrish",
+    "Gheytariyeh": "tehran:station:gheytariyeh",
+    "Shahid Sadr": "tehran:station:shahid-sadr",
+    "Qolhak": "tehran:station:qolhak",
+    "Doctor Shariati": "tehran:station:doctor-shariati",
+    "Mirdamad": "tehran:station:mirdamad",
+    "Shahid Haghani": "tehran:station:shahid-haghani",
+    "Shahid Hemmat": "tehran:station:shahid-hemmat",
+    "Mosalla-ye Imam Khomeini": "tehran:station:mosalla-ye-imam-khomeini",
+    "Shahid Beheshti": "tehran:station:shahid-beheshti",
+    "Shahid Mofattah": "tehran:station:shahid-mofattah",
+    "Ayatollah Taleghani": "tehran:station:ayatollah-taleghani",
+    "Darvazeh Dolat": "tehran:station:darvazeh-dolat",
+    "Sa'adi": "tehran:station:saadi",
+    "Imam Khomeini": "tehran:station:imam-khomeini",
+    "Panzdah-e Khordad": "tehran:station:panzdah-e-khordad",
+    "Khayyam": "tehran:station:khayyam",
+    "Meydan-e Mohammadiyeh": "tehran:station:meydan-e-mohammadiyeh",
+    "Shoush": "tehran:station:shoush",
+    "Payaneh Jonoub(Jonoub Terminal)": "tehran:station:payaneh-jonoub-jonoub-terminal",
+    "Shahid Bokharaei": "tehran:station:shahid-bokharaei",
+    "Aliabad": "tehran:station:aliabad",
+    "Javanmard-e Ghassab": "tehran:station:javanmard-e-ghassab",
+    "Shahr-e Rey": "tehran:station:shahr-e-rey",
+    "Palayeshgah": "tehran:station:palayeshgah",
+    "Shahed - BagherShahr": "tehran:station:shahed-baghershahr",
+    "Namayeshgah-e Shahr-e Aftab": "tehran:station:namayeshgah-e-shahr-e-aftab",
+    "Vavan": "tehran:station:vavan",
+    "Emam Khomeini Airport": "tehran:station:emam-khomeini-airport",
+    "Shahr-e Parand": "tehran:station:shahr-e-parand",
+    "Holy Shrine of Imam Khomeini": "tehran:station:holy-shrine-of-imam-khomeini",
+    "Kahrizak": "tehran:station:kahrizak",
+    "Farhangsara": "tehran:station:farhangsara",
+    "Tehranpars": "tehran:station:tehranpars",
+    "Shahid Bagheri": "tehran:station:shahid-bagheri",
+    "Daneshgah-e Elm-o San'at": "tehran:station:daneshgah-e-elm-o-sanat",
+    "Sarsabz": "tehran:station:sarsabz",
+    "Janbazan": "tehran:station:janbazan",
+    "Fadak": "tehran:station:fadak",
+    "Sabalan": "tehran:station:sabalan",
+    "Shahid Madani": "tehran:station:shahid-madani",
+    "Imam Hossein": "tehran:station:imam-hossein",
+    "Darvazeh Shemiran": "tehran:station:darvazeh-shemiran",
+    "Baharistan": "tehran:station:baharistan",
+    "Mellat": "tehran:station:mellat",
+    "Hasan Abad": "tehran:station:hasan-abad",
+    "Daneshgah-e Imam Ali": "tehran:station:daneshgah-e-imam-ali",
+    "Meydan-e Horr": "tehran:station:meydan-e-horr",
+    "Shahid Navab-e Safavi": "tehran:station:shahid-navab-e-safavi",
+    "Shademan": "tehran:station:shademan",
+    "Daneshgah-e Sharif": "tehran:station:daneshgah-e-sharif",
+    "Tarasht": "tehran:station:tarasht",
+    "Tehran (Sadeghiyeh)": "tehran:station:tehran-sadeghiyeh",
+    "Qa'em": "tehran:station:qaem",
+    "Shahid Mahallati": "tehran:station:shahid-mahallati",
+    "Aghdasiyeh": "tehran:station:aghdasiyeh",
+    "Nobonyad": "tehran:station:nobonyad",
+    "Hossein Abad": "tehran:station:hossein-abad",
+    "Meydan-e Heravi": "tehran:station:meydan-e-heravi",
+    "Shahid Zeynoddin": "tehran:station:shahid-zeynoddin",
+    "Khajeh Abdollah-e Ansari": "tehran:station:khajeh-abdollah-e-ansari",
+    "Shahid Sayyad Shirazi": "tehran:station:shahid-sayyad-shirazi",
+    "Shahid Ghodousi": "tehran:station:shahid-ghodousi",
+    "Sohrevardi": "tehran:station:sohrevardi",
+    "Mirza-ye Shirazi": "tehran:station:mirza-ye-shirazi",
+    "Meydan-e Jahad": "tehran:station:meydan-e-jahad",
+    "Teatr-e Shahr": "tehran:station:teatr-e-shahr",
+    "Moniriyeh": "tehran:station:moniriyeh",
+    "Mahdiyeh": "tehran:station:mahdiyeh",
+    "Rahahan": "tehran:station:rahahan",
+    "Javadiyeh": "tehran:station:javadiyeh",
+    "Zamzam": "tehran:station:zamzam",
+    "Shahrak-e Shariaty": "tehran:station:shahrak-e-shariaty",
+    "Abdol Abad": "tehran:station:abdol-abad",
+    "Nemat Abad": "tehran:station:nemat-abad",
+    "Azadegan": "tehran:station:azadegan",
+    "Shahid Kolahdooz": "tehran:station:shahid-kolahdooz",
+    "Nirou Havaei": "tehran:station:nirou-havaei",
+    "Nabard": "tehran:station:nabard",
+    "Piroozi": "tehran:station:piroozi",
+    "Ebn-e Sina": "tehran:station:ebn-e-sina",
+    "Ferdowsi": "tehran:station:ferdowsi",
+    "Meydan-e Enghelab-e Eslami": "tehran:station:meydan-e-enghelab-e-eslami",
+    "Towhid": "tehran:station:towhid",
+    "Doctor Habibollah": "tehran:station:doctor-habibollah",
+    "Ostad Mo'in": "tehran:station:ostad-moin",
+    "Meydan-e Azadi": "tehran:station:meydan-e-azadi",
+    "Bimeh": "tehran:station:bimeh",
+    "Mehrabad Airport Terminal 1&2": "tehran:station:mehrabad-airport-terminal-1-2",
+    "Mehrabad Airport Terminal 4&6": "tehran:station:mehrabad-airport-terminal-4-6",
+    "Shahrak-e Ekbatan": "tehran:station:shahrak-e-ekbatan",
+    "Allameh Jafari": "tehran:station:allameh-jafari",
+    "Chaharbagh": "tehran:station:chaharbagh",
+    "Eram-e Sabz": "tehran:station:eram-e-sabz",
+    "Varzeshgah-e Azadi": "tehran:station:varzeshgah-e-azadi",
+    "Chitgar": "tehran:station:chitgar",
+    "Iran Khodro": "tehran:station:iran-khodro",
+    "Vardavard": "tehran:station:vardavard",
+    "Garmdareh": "tehran:station:garmdareh",
+    "Atmosphere": "tehran:station:atmosphere",
+    "Karaj": "tehran:station:karaj",
+    "Mohammadshahr": "tehran:station:mohammadshahr",
+    "Golshahr": "tehran:station:golshahr",
+    "Shahid Sepahbod Qasem Soleimani": "tehran:station:shahid-sepahbod-qasem-soleimani",
+    "Haram-e Hazrat-e Abdol Azim": "tehran:station:haram-e-hazrat-e-abdol-azim",
+    "Meydan-e Hazrat-e Abdol Azim": "tehran:station:meydan-e-hazrat-e-abdol-azim",
+    "Ebn-e Babviyeh": "tehran:station:ebn-e-babviyeh",
+    "Cheshmeh Ali": "tehran:station:cheshmeh-ali",
+    "Shohada-ye Dowlat Abad": "tehran:station:shohada-ye-dowlat-abad",
+    "Kiyan Shahr": "tehran:station:kiyan-shahr",
+    "Be'sat": "tehran:station:besat",
+    "Shahid Rezaei": "tehran:station:shahid-rezaei",
+    "Meydan-e Khorasan": "tehran:station:meydan-e-khorasan",
+    "Shohada-ye Hefdah-e Shahrivar": "tehran:station:shohada-ye-hefdah-e-shahrivar",
+    "Amirkabir": "tehran:station:amirkabir",
+    "Meydan-e Shohada": "tehran:station:meydan-e-shohada",
+    "Sarbaz": "tehran:station:sarbaz",
+    "Bahar Shiraz (Khanevadeh Hospital)": "tehran:station:bahar-shiraz-khanevadeh-hospital",
+    "Shohada-ye Haftom-e Tir": "tehran:station:shohada-ye-haftom-e-tir",
+    "Maryam-e Moghaddas": "tehran:station:maryam-e-moghaddas",
+    "Meydan-e Hazrat Vali Asr": "tehran:station:meydan-e-hazrat-vali-asr",
+    "Bustan-e Laleh": "tehran:station:bustan-e-laleh",
+    "Karagar": "tehran:station:karagar",
+    "Daneshgah-e Tarbiat Modarres": "tehran:station:daneshgah-e-tarbiat-modarres",
+    "Shahrak-e Azmayesh": "tehran:station:shahrak-e-azmayesh",
+    "Marzdaran": "tehran:station:marzdaran",
+    "Yadegar-e Imam": "tehran:station:yadegar-e-imam",
+    "Shahid Ashrafi Esfahani": "tehran:station:shahid-ashrafi-esfahani",
+    "Shahid Sattari": "tehran:station:shahid-sattari",
+    "Ayatollah Kashani": "tehran:station:ayatollah-kashani",
+    "Shahr-e Ziba": "tehran:station:shahr-e-ziba",
+    "Shahran": "tehran:station:shahran",
+    "Shohada-ye Kan": "tehran:station:shohada-ye-kan",
+    "Kouhsar": "tehran:station:kouhsar",
+    "Varzeshgah-e Takhti": "tehran:station:varzeshgah-e-takhti",
+    "Basij": "tehran:station:basij",
+    "Ahang": "tehran:station:ahang",
+    "Chehel Tan-e Doulab": "tehran:station:chehel-tan-e-doulab",
+    "Meydan-e Giyam": "tehran:station:meydan-e-giyam",
+    "Mowlavi": "tehran:station:mowlavi",
+    "Helal Ahmar": "tehran:station:helal-ahmar",
+    "Beryanak": "tehran:station:beryanak",
+    "Komeyl": "tehran:station:komeyl",
+    "Roudaki": "tehran:station:roudaki",
+    "Modafean-e Salamat": "tehran:station:modafean-e-salamat",
+    "Boostan-e Goftegou": "tehran:station:boostan-e-goftegou",
+    "Milad Tower": "tehran:station:milad-tower",
+    "Meydan-e San'at": "tehran:station:meydan-e-sanat",
+    "Shahid Dadman": "tehran:station:shahid-dadman",
+    "Meydan-e Ketab": "tehran:station:meydan-e-ketab",
+    "Shahid Fakhrizade": "tehran:station:shahid-fakhrizadeh",
+    "Shahid Fakhrizadeh Metro Station": "tehran:station:shahid-fakhrizadeh",
+    "Mammut": "tehran:station:shahid-fakhrizadeh",
+    "Mammut Metro Station": "tehran:station:shahid-fakhrizadeh",
+    "ماموت": "tehran:station:shahid-fakhrizadeh",
+    "ایستگاه مترو شهید فخری زاده": "tehran:station:shahid-fakhrizadeh",
+    "Shahid Nejatollahi": "tehran:station:maryam-e-moghaddas",
+    "Gholhak": "tehran:station:qolhak",
+    "Darvazeh Dowlat": "tehran:station:darvazeh-dolat",
+    "Pirouzi": "tehran:station:piroozi",
+    "Garmdarreh": "tehran:station:garmdareh",
+    "Atmosfer": "tehran:station:atmosphere"
+  }
+}

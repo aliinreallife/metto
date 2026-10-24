@@ -26,17 +26,8 @@ type Props = {
 export function StationCard({ station, lang, distance, onSetDest, onShowTimetable }: Props) {
   const loaded = useScheduleData();
   const { isHolidayDate } = useHolidayData();
-  const t = STRINGS[lang];
-  const isFa = lang === "fa";
-  const lines = getStationLines(station.id);
   const boardableLines = getOperationalStationLines(station.id);
   const linesKey = boardableLines.join(",");
-  const underConstruction = station.status !== "operational";
-
-  const activeAmenities = Object.entries(station.amenities).filter(
-    ([, v]) => v === true,
-  );
-
   const departures = useMemo(() => {
     const grouped = boardableLines.map((line) => ({
       line,
@@ -45,6 +36,40 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
     return grouped.filter((g) => g.departures.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- linesKey stands in for the lines array and `loaded` retriggers after the async timetable finishes loading; neither is read inside.
   }, [station.id, linesKey, loaded, isHolidayDate]);
+  return <StationCardView {...{ station, lang, distance, onSetDest, onShowTimetable }}
+    lines={getStationLines(station.id).map(line => ({ id: String(line), label: line, color: LINE_COLORS[line], onColor: lineOnColor(line) }))}
+    boardableCount={boardableLines.length} scheduleLoading={!loaded}
+    departures={loaded && departures.length > 0 ? <StationDepartures departures={departures} lang={lang} /> : undefined} />;
+}
+
+function StationDepartures({ departures, lang }: { departures: { line: number; departures: ReturnType<typeof getNextDepartures> }[]; lang: Lang }) {
+  const isFa = lang === "fa";
+  return <div className="border-t border-border px-4 py-2.5">
+    <h4 className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <Clock aria-hidden="true" className="size-3" />{isFa ? "حرکت بعدی" : "Next"}
+    </h4>
+    <div className="flex flex-wrap gap-x-3 gap-y-1">{departures.map(g => <div key={g.line} className="flex items-center gap-1.5 text-xs">
+      <span aria-hidden="true" className="flex size-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold" style={{ backgroundColor: LINE_COLORS[g.line], color: lineOnColor(g.line) }}>{persianDigits(g.line, lang)}</span>
+      <span className="tnum font-semibold">{g.departures[0]?.time ? persianDigits(g.departures[0].time, lang) : null}</span>
+      {g.departures[0]?.isExpress && <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400"><Zap aria-hidden="true" className="size-3" /><span className="text-[9px] font-bold">{isFa ? "سریع السیر" : "express"}</span></span>}
+      {g.departures.length > 1 && <span className="tnum text-[10px] text-muted-foreground">{isFa ? "بعدی:" : "+"} {persianDigits(g.departures[1].time, lang)}</span>}
+    </div>)}</div>
+  </div>;
+}
+
+/** Shared station presentation. Source-specific wrappers own timetable hooks. */
+export function StationCardView({ station, lang, distance, onSetDest, onShowTimetable, lines, boardableCount, scheduleLoading = false, departures, secondaryName, reportedAmenities }: Omit<Props, "station"> & {
+  station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]> };
+  lines: { id: string; label: number | string; color: string; onColor: string }[];
+  boardableCount: number;
+  scheduleLoading?: boolean;
+  departures?: React.ReactNode;
+  secondaryName?: string;
+  reportedAmenities?: Partial<MetroStation["amenities"]>;
+}) {
+  const t = STRINGS[lang]; const isFa = lang === "fa";
+  const underConstruction = station.status !== "operational";
+  const activeAmenities = Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const constructionId = `station-card-${station.id}-${uid}-construction`;
 
@@ -55,11 +80,11 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
         <div className="flex shrink-0 gap-1">
           {lines.map((l) => (
               <span
-                key={l}
+                key={l.id}
                 className="flex size-8 items-center justify-center rounded-lg text-sm font-bold"
-                style={{ backgroundColor: LINE_COLORS[l], color: lineOnColor(l) }}
+                style={{ backgroundColor: l.color, color: l.onColor }}
               >
-              {persianDigits(l, lang)}
+              {persianDigits(l.label, lang)}
             </span>
           ))}
         </div>
@@ -68,7 +93,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
             {isFa ? station.name.fa : station.name.en}
           </h3>
           <p className="text-xs text-muted-foreground truncate">
-            {isFa ? station.name.en : station.name.fa}
+            {secondaryName ?? (isFa ? station.name.en : station.name.fa)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -78,13 +103,13 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
               {t.underConstruction}
             </span>
           )}
-          {boardableLines.length > 1 && (
-            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+          {boardableCount > 1 && (
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground/80">
               {t.interchange}
             </span>
           )}
-          {lines.length > boardableLines.length && station.status === "operational" && (
-            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+          {lines.length > boardableCount && station.status === "operational" && (
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground/80">
               {isFa ? "برخی خطوط هنوز فعال نیستند" : "Some lines not open"}
             </span>
           )}
@@ -96,6 +121,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
         </div>
       </div>
 
+      {reportedAmenities && <p className="px-4 pb-2 text-[10px] text-muted-foreground">{t.amenitiesReported}</p>}
       {/* Amenities as icon pills */}
       {activeAmenities.length > 0 && (
         <div className="flex flex-wrap gap-1 px-4 pb-2">
@@ -105,7 +131,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
             return (
               <span
                 key={key}
-                className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground"
+                className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-foreground/80"
                 title={label}
               >
                 {Icon && <Icon aria-hidden="true" className="size-3 shrink-0 text-primary" />}
@@ -116,47 +142,8 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
         </div>
       )}
 
-      {/* Next departures - compact */}
-      {!loaded && (
-        <div role="status" className="border-t border-border px-4 py-2 text-[10px] text-muted-foreground">
-          {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
-        </div>
-      )}
-      {loaded && departures.length > 0 && (
-        <div className="border-t border-border px-4 py-2.5">
-          <h4 className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-            <Clock aria-hidden="true" className="size-3" />
-            {isFa ? "حرکت بعدی" : "Next"}
-          </h4>
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {departures.map((g) => (
-              <div key={g.line} className="flex items-center gap-1.5 text-xs">
-                <span
-                  aria-hidden="true"
-                  className="flex size-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold"
-                  style={{ backgroundColor: LINE_COLORS[g.line], color: lineOnColor(g.line) }}
-                >
-                  {persianDigits(g.line, lang)}
-                </span>
-                <span className="tnum font-semibold">
-                  {g.departures[0]?.time ? persianDigits(g.departures[0].time, lang) : null}
-                </span>
-                {g.departures[0]?.isExpress && (
-                  <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
-                    <Zap aria-hidden="true" className="size-3" />
-                    <span className="text-[9px] font-bold">{isFa ? "سریع السیر" : "express"}</span>
-                  </span>
-                )}
-                {g.departures.length > 1 && (
-                  <span className="tnum text-muted-foreground text-[10px]">
-                    {isFa ? "بعدی:" : "+"} {g.departures[1]?.time ? persianDigits(g.departures[1].time, lang) : null}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {scheduleLoading && <div role="status" className="border-t border-border px-4 py-2 text-[10px] text-muted-foreground">{isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}</div>}
+      {departures}
 
       {/* Action buttons */}
       <div className="flex border-t border-border">

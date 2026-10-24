@@ -29,7 +29,9 @@ export default defineConfig({
   // cache contents; parallelism makes both flaky.
   workers: 1,
   retries: 0,
-  reporter: "list",
+  // Keep failures readable through GitHub's check annotations even when
+  // the separate Actions log/artifact download host is unavailable.
+  reporter: process.env.CI ? [["list"], ["github"]] : "list",
   // Bypass-cookie bootstrap (see tests/global-setup.ts): stamps Vercel's
   // protection-bypass cookie once per run when VERCEL_AUTOMATION_BYPASS_SECRET
   // is set, so browser-initiated requests (notably SW script fetches, which

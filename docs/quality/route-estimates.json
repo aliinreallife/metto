@@ -1,0 +1,1078 @@
+{
+  "scheduleSha256": "46fb0992aebd9fa266a44651fc60c93eb8d935d617144df1e1502ffb0f258f2c",
+  "formula": "Production estimateSegmentSeconds: sum of haversine hop distance / 35 km/h + 25 seconds per hop; rounded once per span",
+  "unit": "One line/branch/direction/day type/express flag/ordered span, median scheduled ride duration across repeated trains",
+  "trainCount": 5254,
+  "candidateSpanObservations": 1219308,
+  "spanObservations": 1183694,
+  "excluded": {
+    "unknownStationTrains": 0,
+    "nonIncreasingTimeTrains": 0,
+    "inconsistentTopologySpans": 35614
+  },
+  "topologyExamples": {
+    "1:kahrizak:shahed-baghershahr": "kahrizak → imam-khomeini → shahed-baghershahr",
+    "1:kahrizak:palayeshgah": "kahrizak → imam-khomeini → shahed-baghershahr → palayeshgah",
+    "1:kahrizak:shahr-e-rey": "kahrizak → imam-khomeini → shahed-baghershahr → palayeshgah → shahr-e-rey",
+    "1:kahrizak:javanmard-e-ghassab": "kahrizak → imam-khomeini → shahed-baghershahr → palayeshgah → shahr-e-rey → javanmard-e-ghassab",
+    "1:kahrizak:aliabad": "kahrizak → imam-khomeini → shahed-baghershahr → palayeshgah → shahr-e-rey → javanmard-e-ghassab → aliabad",
+    "1:kahrizak:shahid-bokharaei": "kahrizak → imam-khomeini → shahed-baghershahr → palayeshgah → shahr-e-rey → javanmard-e-ghassab → aliabad → shahid-bokharaei",
+    "1:kahrizak:payaneh-jonoub-jonoub-terminal": "kahrizak → imam-khomeini → shahed-baghershahr → palayeshgah → shahr-e-rey → javanmard-e-ghassab → aliabad → shahid-bokharaei → payaneh-jonoub-jonoub-terminal",
+    "1:kahrizak:shoush": "kahrizak → imam-khomeini → shahed-baghershahr → palayeshgah → shahr-e-rey → javanmard-e-ghassab → aliabad → shahid-bokharaei → payaneh-jonoub-jonoub-terminal → shoush"
+  },
+  "journeys": {
+    "coverage": {
+      "requested": 54,
+      "fullyTimedBaseline": 19,
+      "inconsistentBaseline": 6,
+      "noServiceBaseline": 23,
+      "otherBaseline": 6,
+      "maskedNoService": 0,
+      "pathChanged": 0,
+      "fullyMaskedClaimsJourneyWhenBaselineHasNoService": 23
+    },
+    "allTimetablesMasked": {
+      "samples": 19,
+      "meanAbsoluteErrorSeconds": 695.53,
+      "medianAbsoluteErrorSeconds": 579,
+      "p90AbsoluteErrorSeconds": 1735,
+      "meanBiasSeconds": -678.47,
+      "meanAbsolutePercentError": 40.9,
+      "withinOneMinutePercent": 0,
+      "withinFiveMinutesPercent": 15.79
+    },
+    "oneLegMasked": {
+      "samples": 33,
+      "meanAbsoluteErrorSeconds": 485.91,
+      "medianAbsoluteErrorSeconds": 449,
+      "p90AbsoluteErrorSeconds": 900,
+      "meanBiasSeconds": -476.09,
+      "meanAbsolutePercentError": 25.41,
+      "withinOneMinutePercent": 12.12,
+      "withinFiveMinutesPercent": 36.36
+    },
+    "cases": [
+      {
+        "scenario": "weekday-morning",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "all",
+        "actualSeconds": 3780,
+        "estimateSeconds": 3250,
+        "errorSeconds": -530
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "0",
+        "actualSeconds": 3780,
+        "estimateSeconds": 3480,
+        "errorSeconds": -300
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "1",
+        "actualSeconds": 3780,
+        "estimateSeconds": 3536,
+        "errorSeconds": -244
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "tehran-sadeghiyeh",
+        "to": "tajrish",
+        "masked": "all",
+        "actualSeconds": 3840,
+        "estimateSeconds": 3250,
+        "errorSeconds": -590
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "tehran-sadeghiyeh",
+        "to": "tajrish",
+        "masked": "0",
+        "actualSeconds": 3840,
+        "estimateSeconds": 3840,
+        "errorSeconds": 0
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "tehran-sadeghiyeh",
+        "to": "tajrish",
+        "masked": "1",
+        "actualSeconds": 3840,
+        "estimateSeconds": 3254,
+        "errorSeconds": -586
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "bimeh",
+        "to": "mehrabad-airport-terminal-4-6",
+        "masked": "all",
+        "actualSeconds": 660,
+        "estimateSeconds": 211,
+        "errorSeconds": -449
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "bimeh",
+        "to": "mehrabad-airport-terminal-4-6",
+        "masked": "0",
+        "actualSeconds": 660,
+        "estimateSeconds": 211,
+        "errorSeconds": -449
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "all",
+        "actualSeconds": 180,
+        "estimateSeconds": 261,
+        "errorSeconds": 81
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "0",
+        "actualSeconds": 180,
+        "estimateSeconds": 261,
+        "errorSeconds": 81
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "all",
+        "actualSeconds": 3300,
+        "estimateSeconds": 2705,
+        "errorSeconds": -595
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "0",
+        "actualSeconds": 3300,
+        "estimateSeconds": 3300,
+        "errorSeconds": 0
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "1",
+        "actualSeconds": 3300,
+        "estimateSeconds": 3300,
+        "errorSeconds": 0
+      },
+      {
+        "scenario": "weekday-morning",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "2",
+        "actualSeconds": 3300,
+        "estimateSeconds": 3077,
+        "errorSeconds": -223
+      },
+      {
+        "scenario": "thursday",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "all",
+        "actualSeconds": 3780,
+        "estimateSeconds": 3250,
+        "errorSeconds": -530
+      },
+      {
+        "scenario": "thursday",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "0",
+        "actualSeconds": 3780,
+        "estimateSeconds": 3480,
+        "errorSeconds": -300
+      },
+      {
+        "scenario": "thursday",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "1",
+        "actualSeconds": 3780,
+        "estimateSeconds": 3536,
+        "errorSeconds": -244
+      },
+      {
+        "scenario": "thursday",
+        "from": "tehran-sadeghiyeh",
+        "to": "tajrish",
+        "masked": "all",
+        "actualSeconds": 3840,
+        "estimateSeconds": 3250,
+        "errorSeconds": -590
+      },
+      {
+        "scenario": "thursday",
+        "from": "tehran-sadeghiyeh",
+        "to": "tajrish",
+        "masked": "0",
+        "actualSeconds": 3840,
+        "estimateSeconds": 3840,
+        "errorSeconds": 0
+      },
+      {
+        "scenario": "thursday",
+        "from": "tehran-sadeghiyeh",
+        "to": "tajrish",
+        "masked": "1",
+        "actualSeconds": 3840,
+        "estimateSeconds": 3254,
+        "errorSeconds": -586
+      },
+      {
+        "scenario": "thursday",
+        "from": "bimeh",
+        "to": "mehrabad-airport-terminal-4-6",
+        "masked": "all",
+        "actualSeconds": 660,
+        "estimateSeconds": 211,
+        "errorSeconds": -449
+      },
+      {
+        "scenario": "thursday",
+        "from": "bimeh",
+        "to": "mehrabad-airport-terminal-4-6",
+        "masked": "0",
+        "actualSeconds": 660,
+        "estimateSeconds": 211,
+        "errorSeconds": -449
+      },
+      {
+        "scenario": "thursday",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "all",
+        "actualSeconds": 420,
+        "estimateSeconds": 261,
+        "errorSeconds": -159
+      },
+      {
+        "scenario": "thursday",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "0",
+        "actualSeconds": 420,
+        "estimateSeconds": 261,
+        "errorSeconds": -159
+      },
+      {
+        "scenario": "thursday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "all",
+        "actualSeconds": 4440,
+        "estimateSeconds": 2705,
+        "errorSeconds": -1735
+      },
+      {
+        "scenario": "thursday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "0",
+        "actualSeconds": 4440,
+        "estimateSeconds": 3660,
+        "errorSeconds": -780
+      },
+      {
+        "scenario": "thursday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "1",
+        "actualSeconds": 4440,
+        "estimateSeconds": 3660,
+        "errorSeconds": -780
+      },
+      {
+        "scenario": "thursday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "2",
+        "actualSeconds": 4440,
+        "estimateSeconds": 3617,
+        "errorSeconds": -823
+      },
+      {
+        "scenario": "friday",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "all",
+        "actualSeconds": 4200,
+        "estimateSeconds": 3250,
+        "errorSeconds": -950
+      },
+      {
+        "scenario": "friday",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "0",
+        "actualSeconds": 4200,
+        "estimateSeconds": 3360,
+        "errorSeconds": -840
+      },
+      {
+        "scenario": "friday",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "1",
+        "actualSeconds": 4200,
+        "estimateSeconds": 3836,
+        "errorSeconds": -364
+      },
+      {
+        "scenario": "friday",
+        "from": "bimeh",
+        "to": "mehrabad-airport-terminal-4-6",
+        "masked": "all",
+        "actualSeconds": 660,
+        "estimateSeconds": 211,
+        "errorSeconds": -449
+      },
+      {
+        "scenario": "friday",
+        "from": "bimeh",
+        "to": "mehrabad-airport-terminal-4-6",
+        "masked": "0",
+        "actualSeconds": 660,
+        "estimateSeconds": 211,
+        "errorSeconds": -449
+      },
+      {
+        "scenario": "friday",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "all",
+        "actualSeconds": 840,
+        "estimateSeconds": 261,
+        "errorSeconds": -579
+      },
+      {
+        "scenario": "friday",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "0",
+        "actualSeconds": 840,
+        "estimateSeconds": 261,
+        "errorSeconds": -579
+      },
+      {
+        "scenario": "friday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "all",
+        "actualSeconds": 4440,
+        "estimateSeconds": 2705,
+        "errorSeconds": -1735
+      },
+      {
+        "scenario": "friday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "0",
+        "actualSeconds": 4440,
+        "estimateSeconds": 3540,
+        "errorSeconds": -900
+      },
+      {
+        "scenario": "friday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "1",
+        "actualSeconds": 4440,
+        "estimateSeconds": 3540,
+        "errorSeconds": -900
+      },
+      {
+        "scenario": "friday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "2",
+        "actualSeconds": 4440,
+        "estimateSeconds": 3497,
+        "errorSeconds": -943
+      },
+      {
+        "scenario": "holiday",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "all",
+        "actualSeconds": 4200,
+        "estimateSeconds": 3250,
+        "errorSeconds": -950
+      },
+      {
+        "scenario": "holiday",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "0",
+        "actualSeconds": 4200,
+        "estimateSeconds": 3360,
+        "errorSeconds": -840
+      },
+      {
+        "scenario": "holiday",
+        "from": "tajrish",
+        "to": "tehran-sadeghiyeh",
+        "masked": "1",
+        "actualSeconds": 4200,
+        "estimateSeconds": 3836,
+        "errorSeconds": -364
+      },
+      {
+        "scenario": "holiday",
+        "from": "bimeh",
+        "to": "mehrabad-airport-terminal-4-6",
+        "masked": "all",
+        "actualSeconds": 660,
+        "estimateSeconds": 211,
+        "errorSeconds": -449
+      },
+      {
+        "scenario": "holiday",
+        "from": "bimeh",
+        "to": "mehrabad-airport-terminal-4-6",
+        "masked": "0",
+        "actualSeconds": 660,
+        "estimateSeconds": 211,
+        "errorSeconds": -449
+      },
+      {
+        "scenario": "holiday",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "all",
+        "actualSeconds": 840,
+        "estimateSeconds": 261,
+        "errorSeconds": -579
+      },
+      {
+        "scenario": "holiday",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "0",
+        "actualSeconds": 840,
+        "estimateSeconds": 261,
+        "errorSeconds": -579
+      },
+      {
+        "scenario": "holiday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "all",
+        "actualSeconds": 4440,
+        "estimateSeconds": 2705,
+        "errorSeconds": -1735
+      },
+      {
+        "scenario": "holiday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "0",
+        "actualSeconds": 4440,
+        "estimateSeconds": 3540,
+        "errorSeconds": -900
+      },
+      {
+        "scenario": "holiday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "1",
+        "actualSeconds": 4440,
+        "estimateSeconds": 3540,
+        "errorSeconds": -900
+      },
+      {
+        "scenario": "holiday",
+        "from": "shohada-ye-hefdah-e-shahrivar",
+        "to": "meydan-e-khorasan",
+        "masked": "2",
+        "actualSeconds": 4440,
+        "estimateSeconds": 3497,
+        "errorSeconds": -943
+      },
+      {
+        "scenario": "last-service",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "all",
+        "actualSeconds": 180,
+        "estimateSeconds": 261,
+        "errorSeconds": 81
+      },
+      {
+        "scenario": "last-service",
+        "from": "amirkabir",
+        "to": "meydan-e-khorasan",
+        "masked": "0",
+        "actualSeconds": 180,
+        "estimateSeconds": 261,
+        "errorSeconds": 81
+      }
+    ]
+  },
+  "regular": {
+    "samples": 10752,
+    "meanAbsoluteErrorSeconds": 121.52,
+    "medianAbsoluteErrorSeconds": 91,
+    "p90AbsoluteErrorSeconds": 252,
+    "meanBiasSeconds": -63.34,
+    "meanAbsolutePercentError": 12.77,
+    "withinOneMinutePercent": 37.23,
+    "withinFiveMinutesPercent": 93.77
+  },
+  "express": {
+    "samples": 12,
+    "meanAbsoluteErrorSeconds": 1215.33,
+    "medianAbsoluteErrorSeconds": 1626,
+    "p90AbsoluteErrorSeconds": 1860,
+    "meanBiasSeconds": 1204,
+    "meanAbsolutePercentError": 70.3,
+    "withinOneMinutePercent": 8.33,
+    "withinFiveMinutesPercent": 33.33
+  },
+  "byBranch": {
+    "1": {
+      "samples": 2718,
+      "meanAbsoluteErrorSeconds": 188.31,
+      "medianAbsoluteErrorSeconds": 167,
+      "p90AbsoluteErrorSeconds": 371,
+      "meanBiasSeconds": -146.06,
+      "meanAbsolutePercentError": 18.88,
+      "withinOneMinutePercent": 18.84,
+      "withinFiveMinutesPercent": 83.3
+    },
+    "2": {
+      "samples": 1386,
+      "meanAbsoluteErrorSeconds": 88.03,
+      "medianAbsoluteErrorSeconds": 77,
+      "p90AbsoluteErrorSeconds": 177,
+      "meanBiasSeconds": -60.04,
+      "meanAbsolutePercentError": 11.35,
+      "withinOneMinutePercent": 41.13,
+      "withinFiveMinutesPercent": 100
+    },
+    "3": {
+      "samples": 1800,
+      "meanAbsoluteErrorSeconds": 71.51,
+      "medianAbsoluteErrorSeconds": 60,
+      "p90AbsoluteErrorSeconds": 153,
+      "meanBiasSeconds": -12.18,
+      "meanAbsolutePercentError": 9.63,
+      "withinOneMinutePercent": 51.33,
+      "withinFiveMinutesPercent": 99.83
+    },
+    "4": {
+      "samples": 1140,
+      "meanAbsoluteErrorSeconds": 70.03,
+      "medianAbsoluteErrorSeconds": 61,
+      "p90AbsoluteErrorSeconds": 140,
+      "meanBiasSeconds": -55.72,
+      "meanAbsolutePercentError": 8.72,
+      "withinOneMinutePercent": 48.42,
+      "withinFiveMinutesPercent": 100
+    },
+    "5": {
+      "samples": 339,
+      "meanAbsoluteErrorSeconds": 429.7,
+      "medianAbsoluteErrorSeconds": 406,
+      "p90AbsoluteErrorSeconds": 836,
+      "meanBiasSeconds": 419.17,
+      "meanAbsolutePercentError": 31.2,
+      "withinOneMinutePercent": 8.85,
+      "withinFiveMinutesPercent": 41.3
+    },
+    "6": {
+      "samples": 1950,
+      "meanAbsoluteErrorSeconds": 91.59,
+      "medianAbsoluteErrorSeconds": 81,
+      "p90AbsoluteErrorSeconds": 189,
+      "meanBiasSeconds": -80.36,
+      "meanAbsolutePercentError": 8.09,
+      "withinOneMinutePercent": 45.79,
+      "withinFiveMinutesPercent": 99.9
+    },
+    "7": {
+      "samples": 1386,
+      "meanAbsoluteErrorSeconds": 98.96,
+      "medianAbsoluteErrorSeconds": 90,
+      "p90AbsoluteErrorSeconds": 206,
+      "meanBiasSeconds": -74.15,
+      "meanAbsolutePercentError": 11.57,
+      "withinOneMinutePercent": 35.93,
+      "withinFiveMinutesPercent": 99.35
+    },
+    "1w": {
+      "samples": 6,
+      "meanAbsoluteErrorSeconds": 47,
+      "medianAbsoluteErrorSeconds": 47,
+      "p90AbsoluteErrorSeconds": 47,
+      "meanBiasSeconds": 47,
+      "meanAbsolutePercentError": 15.67,
+      "withinOneMinutePercent": 100,
+      "withinFiveMinutesPercent": 100
+    },
+    "4w": {
+      "samples": 18,
+      "meanAbsoluteErrorSeconds": 25.67,
+      "medianAbsoluteErrorSeconds": 29,
+      "p90AbsoluteErrorSeconds": 38,
+      "meanBiasSeconds": -19,
+      "meanAbsolutePercentError": 17.36,
+      "withinOneMinutePercent": 100,
+      "withinFiveMinutesPercent": 100
+    },
+    "5w": {
+      "samples": 9,
+      "meanAbsoluteErrorSeconds": 224,
+      "medianAbsoluteErrorSeconds": 215,
+      "p90AbsoluteErrorSeconds": 336,
+      "meanBiasSeconds": 224,
+      "meanAbsolutePercentError": 15.42,
+      "withinOneMinutePercent": 0,
+      "withinFiveMinutesPercent": 66.67
+    }
+  },
+  "byDirection": {
+    "1:tajrish": {
+      "samples": 1059,
+      "meanAbsoluteErrorSeconds": 190.92,
+      "medianAbsoluteErrorSeconds": 167,
+      "p90AbsoluteErrorSeconds": 367,
+      "meanBiasSeconds": -134.5,
+      "meanAbsolutePercentError": 20.05,
+      "withinOneMinutePercent": 17.85,
+      "withinFiveMinutesPercent": 82.72
+    },
+    "1:kahrizak": {
+      "samples": 1059,
+      "meanAbsoluteErrorSeconds": 187.69,
+      "medianAbsoluteErrorSeconds": 163,
+      "p90AbsoluteErrorSeconds": 371,
+      "meanBiasSeconds": -138.24,
+      "meanAbsolutePercentError": 19.61,
+      "withinOneMinutePercent": 19.55,
+      "withinFiveMinutesPercent": 84.42
+    },
+    "1:shahr-e-rey": {
+      "samples": 600,
+      "meanAbsoluteErrorSeconds": 184.83,
+      "medianAbsoluteErrorSeconds": 167,
+      "p90AbsoluteErrorSeconds": 385,
+      "meanBiasSeconds": -180.26,
+      "meanAbsolutePercentError": 15.54,
+      "withinOneMinutePercent": 19.33,
+      "withinFiveMinutesPercent": 82.33
+    },
+    "1w:shahed-baghershahr": {
+      "samples": 3,
+      "meanAbsoluteErrorSeconds": 47,
+      "medianAbsoluteErrorSeconds": 47,
+      "p90AbsoluteErrorSeconds": 47,
+      "meanBiasSeconds": 47,
+      "meanAbsolutePercentError": 15.67,
+      "withinOneMinutePercent": 100,
+      "withinFiveMinutesPercent": 100
+    },
+    "1w:shahr-e-parand": {
+      "samples": 3,
+      "meanAbsoluteErrorSeconds": 47,
+      "medianAbsoluteErrorSeconds": 47,
+      "p90AbsoluteErrorSeconds": 47,
+      "meanBiasSeconds": 47,
+      "meanAbsolutePercentError": 15.67,
+      "withinOneMinutePercent": 100,
+      "withinFiveMinutesPercent": 100
+    },
+    "2:farhangsara": {
+      "samples": 693,
+      "meanAbsoluteErrorSeconds": 94.45,
+      "medianAbsoluteErrorSeconds": 86,
+      "p90AbsoluteErrorSeconds": 194,
+      "meanBiasSeconds": -64.06,
+      "meanAbsolutePercentError": 11.93,
+      "withinOneMinutePercent": 39.39,
+      "withinFiveMinutesPercent": 100
+    },
+    "2:tehran-sadeghiyeh": {
+      "samples": 693,
+      "meanAbsoluteErrorSeconds": 81.61,
+      "medianAbsoluteErrorSeconds": 71,
+      "p90AbsoluteErrorSeconds": 163,
+      "meanBiasSeconds": -56.01,
+      "meanAbsolutePercentError": 10.77,
+      "withinOneMinutePercent": 42.86,
+      "withinFiveMinutesPercent": 100
+    },
+    "3:qaem": {
+      "samples": 900,
+      "meanAbsoluteErrorSeconds": 86.42,
+      "medianAbsoluteErrorSeconds": 77,
+      "p90AbsoluteErrorSeconds": 171,
+      "meanBiasSeconds": -13.58,
+      "meanAbsolutePercentError": 11.52,
+      "withinOneMinutePercent": 40,
+      "withinFiveMinutesPercent": 99.67
+    },
+    "3:azadegan": {
+      "samples": 900,
+      "meanAbsoluteErrorSeconds": 56.59,
+      "medianAbsoluteErrorSeconds": 45,
+      "p90AbsoluteErrorSeconds": 123,
+      "meanBiasSeconds": -10.78,
+      "meanAbsolutePercentError": 7.74,
+      "withinOneMinutePercent": 62.67,
+      "withinFiveMinutesPercent": 100
+    },
+    "4:shahid-kolahdooz": {
+      "samples": 570,
+      "meanAbsoluteErrorSeconds": 69.33,
+      "medianAbsoluteErrorSeconds": 61,
+      "p90AbsoluteErrorSeconds": 140,
+      "meanBiasSeconds": -52.72,
+      "meanAbsolutePercentError": 8.73,
+      "withinOneMinutePercent": 48.42,
+      "withinFiveMinutesPercent": 100
+    },
+    "4:allameh-jafari": {
+      "samples": 570,
+      "meanAbsoluteErrorSeconds": 70.73,
+      "medianAbsoluteErrorSeconds": 61,
+      "p90AbsoluteErrorSeconds": 141,
+      "meanBiasSeconds": -58.72,
+      "meanAbsolutePercentError": 8.71,
+      "withinOneMinutePercent": 48.42,
+      "withinFiveMinutesPercent": 100
+    },
+    "4w:bimeh": {
+      "samples": 9,
+      "meanAbsoluteErrorSeconds": 25.67,
+      "medianAbsoluteErrorSeconds": 29,
+      "p90AbsoluteErrorSeconds": 38,
+      "meanBiasSeconds": -19,
+      "meanAbsolutePercentError": 17.36,
+      "withinOneMinutePercent": 100,
+      "withinFiveMinutesPercent": 100
+    },
+    "4w:mehrabad-airport-terminal-4-6": {
+      "samples": 9,
+      "meanAbsoluteErrorSeconds": 25.67,
+      "medianAbsoluteErrorSeconds": 29,
+      "p90AbsoluteErrorSeconds": 38,
+      "meanBiasSeconds": -19,
+      "meanAbsolutePercentError": 17.36,
+      "withinOneMinutePercent": 100,
+      "withinFiveMinutesPercent": 100
+    },
+    "5:tehran-sadeghiyeh": {
+      "samples": 165,
+      "meanAbsoluteErrorSeconds": 434.09,
+      "medianAbsoluteErrorSeconds": 409,
+      "p90AbsoluteErrorSeconds": 835,
+      "meanBiasSeconds": 420.85,
+      "meanAbsolutePercentError": 31.89,
+      "withinOneMinutePercent": 7.27,
+      "withinFiveMinutesPercent": 41.82
+    },
+    "5:shahid-sepahbod-qasem-soleimani": {
+      "samples": 9,
+      "meanAbsoluteErrorSeconds": 303.33,
+      "medianAbsoluteErrorSeconds": 336,
+      "p90AbsoluteErrorSeconds": 455,
+      "meanBiasSeconds": 224,
+      "meanAbsolutePercentError": 21.21,
+      "withinOneMinutePercent": 0,
+      "withinFiveMinutesPercent": 33.33
+    },
+    "5:golshahr": {
+      "samples": 165,
+      "meanAbsoluteErrorSeconds": 432.2,
+      "medianAbsoluteErrorSeconds": 409,
+      "p90AbsoluteErrorSeconds": 836,
+      "meanBiasSeconds": 428.13,
+      "meanAbsolutePercentError": 31.05,
+      "withinOneMinutePercent": 10.91,
+      "withinFiveMinutesPercent": 41.21
+    },
+    "5w:golshahr": {
+      "samples": 9,
+      "meanAbsoluteErrorSeconds": 224,
+      "medianAbsoluteErrorSeconds": 215,
+      "p90AbsoluteErrorSeconds": 336,
+      "meanBiasSeconds": 224,
+      "meanAbsolutePercentError": 15.42,
+      "withinOneMinutePercent": 0,
+      "withinFiveMinutesPercent": 66.67
+    },
+    "6:shohada-ye-dowlat-abad": {
+      "samples": 975,
+      "meanAbsoluteErrorSeconds": 94.49,
+      "medianAbsoluteErrorSeconds": 86,
+      "p90AbsoluteErrorSeconds": 193,
+      "meanBiasSeconds": -82.36,
+      "meanAbsolutePercentError": 8.34,
+      "withinOneMinutePercent": 45.13,
+      "withinFiveMinutesPercent": 99.79
+    },
+    "6:kouhsar": {
+      "samples": 975,
+      "meanAbsoluteErrorSeconds": 88.69,
+      "medianAbsoluteErrorSeconds": 79,
+      "p90AbsoluteErrorSeconds": 185,
+      "meanBiasSeconds": -78.36,
+      "meanAbsolutePercentError": 7.83,
+      "withinOneMinutePercent": 46.46,
+      "withinFiveMinutesPercent": 100
+    },
+    "7:varzeshgah-e-takhti": {
+      "samples": 693,
+      "meanAbsoluteErrorSeconds": 94.32,
+      "medianAbsoluteErrorSeconds": 89,
+      "p90AbsoluteErrorSeconds": 187,
+      "meanBiasSeconds": -73.5,
+      "meanAbsolutePercentError": 11.07,
+      "withinOneMinutePercent": 36.8,
+      "withinFiveMinutesPercent": 100
+    },
+    "7:meydan-e-ketab": {
+      "samples": 693,
+      "meanAbsoluteErrorSeconds": 103.61,
+      "medianAbsoluteErrorSeconds": 94,
+      "p90AbsoluteErrorSeconds": 214,
+      "meanBiasSeconds": -74.8,
+      "meanAbsolutePercentError": 12.06,
+      "withinOneMinutePercent": 35.06,
+      "withinFiveMinutesPercent": 98.7
+    }
+  },
+  "byHopCount": {
+    "1-1": {
+      "samples": 948,
+      "meanAbsoluteErrorSeconds": 39.75,
+      "medianAbsoluteErrorSeconds": 25,
+      "p90AbsoluteErrorSeconds": 88,
+      "meanBiasSeconds": 3.52,
+      "meanAbsolutePercentError": 22.19,
+      "withinOneMinutePercent": 80.17,
+      "withinFiveMinutesPercent": 99.68
+    },
+    "2-5": {
+      "samples": 3244,
+      "meanAbsoluteErrorSeconds": 83.22,
+      "medianAbsoluteErrorSeconds": 60,
+      "p90AbsoluteErrorSeconds": 159,
+      "meanBiasSeconds": -2.04,
+      "meanAbsolutePercentError": 14.49,
+      "withinOneMinutePercent": 50,
+      "withinFiveMinutesPercent": 96.45
+    },
+    "6-10": {
+      "samples": 3080,
+      "meanAbsoluteErrorSeconds": 131.37,
+      "medianAbsoluteErrorSeconds": 110,
+      "p90AbsoluteErrorSeconds": 227,
+      "meanBiasSeconds": -53.18,
+      "meanAbsolutePercentError": 10.51,
+      "withinOneMinutePercent": 30.52,
+      "withinFiveMinutesPercent": 96.4
+    },
+    "11-Infinity": {
+      "samples": 3480,
+      "meanAbsoluteErrorSeconds": 170.78,
+      "medianAbsoluteErrorSeconds": 144,
+      "p90AbsoluteErrorSeconds": 343,
+      "meanBiasSeconds": -147.7,
+      "meanAbsolutePercentError": 10.58,
+      "withinOneMinutePercent": 19.57,
+      "withinFiveMinutesPercent": 87.33
+    }
+  },
+  "largestErrors": [
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "tajrish",
+      "dayType": "saturday_wednesday",
+      "express": false,
+      "from": "kahrizak",
+      "to": "imam-khomeini",
+      "hops": 13,
+      "estimateSeconds": 2408,
+      "observations": 91,
+      "actualSeconds": 300,
+      "errorSeconds": 2108
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "tajrish",
+      "dayType": "thursday",
+      "express": false,
+      "from": "kahrizak",
+      "to": "imam-khomeini",
+      "hops": 13,
+      "estimateSeconds": 2408,
+      "observations": 119,
+      "actualSeconds": 300,
+      "errorSeconds": 2108
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "tajrish",
+      "dayType": "friday",
+      "express": false,
+      "from": "kahrizak",
+      "to": "imam-khomeini",
+      "hops": 13,
+      "estimateSeconds": 2408,
+      "observations": 115,
+      "actualSeconds": 300,
+      "errorSeconds": 2108
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "kahrizak",
+      "dayType": "saturday_wednesday",
+      "express": false,
+      "from": "imam-khomeini",
+      "to": "kahrizak",
+      "hops": 13,
+      "estimateSeconds": 2408,
+      "observations": 91,
+      "actualSeconds": 300,
+      "errorSeconds": 2108
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "kahrizak",
+      "dayType": "thursday",
+      "express": false,
+      "from": "imam-khomeini",
+      "to": "kahrizak",
+      "hops": 13,
+      "estimateSeconds": 2408,
+      "observations": 123,
+      "actualSeconds": 300,
+      "errorSeconds": 2108
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "kahrizak",
+      "dayType": "friday",
+      "express": false,
+      "from": "imam-khomeini",
+      "to": "kahrizak",
+      "hops": 13,
+      "estimateSeconds": 2408,
+      "observations": 129,
+      "actualSeconds": 300,
+      "errorSeconds": 2108
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "tajrish",
+      "dayType": "saturday_wednesday",
+      "express": false,
+      "from": "imam-khomeini",
+      "to": "shahed-baghershahr",
+      "hops": 11,
+      "estimateSeconds": 1995,
+      "observations": 91,
+      "actualSeconds": 180,
+      "errorSeconds": 1815
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "tajrish",
+      "dayType": "thursday",
+      "express": false,
+      "from": "imam-khomeini",
+      "to": "shahed-baghershahr",
+      "hops": 11,
+      "estimateSeconds": 1995,
+      "observations": 119,
+      "actualSeconds": 180,
+      "errorSeconds": 1815
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "tajrish",
+      "dayType": "friday",
+      "express": false,
+      "from": "imam-khomeini",
+      "to": "shahed-baghershahr",
+      "hops": 11,
+      "estimateSeconds": 1995,
+      "observations": 115,
+      "actualSeconds": 180,
+      "errorSeconds": 1815
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "kahrizak",
+      "dayType": "saturday_wednesday",
+      "express": false,
+      "from": "shahed-baghershahr",
+      "to": "imam-khomeini",
+      "hops": 11,
+      "estimateSeconds": 1995,
+      "observations": 91,
+      "actualSeconds": 180,
+      "errorSeconds": 1815
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "kahrizak",
+      "dayType": "thursday",
+      "express": false,
+      "from": "shahed-baghershahr",
+      "to": "imam-khomeini",
+      "hops": 11,
+      "estimateSeconds": 1995,
+      "observations": 123,
+      "actualSeconds": 180,
+      "errorSeconds": 1815
+    },
+    {
+      "line": 1,
+      "branch": "1",
+      "direction": "kahrizak",
+      "dayType": "friday",
+      "express": false,
+      "from": "shahed-baghershahr",
+      "to": "imam-khomeini",
+      "hops": 11,
+      "estimateSeconds": 1995,
+      "observations": 129,
+      "actualSeconds": 180,
+      "errorSeconds": 1815
+    }
+  ],
+  "limits": [
+    "Scheduled ride times, not observed train performance; input times have one-minute resolution.",
+    "No initial platform wait, transfer walk, connection wait or missed-connection error is included.",
+    "Overlapping spans are correlated; there is no statistical confidence interval or independent sample claim.",
+    "No model fitting or holdout claim: the production formula is unchanged.",
+    "Tehran results do not establish accuracy or service availability in Mashhad."
+  ]
+}
