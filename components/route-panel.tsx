@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
   AlarmClock,
   ArrowRight,
+  ArrowRightLeft,
   ChevronDown,
   Clock,
   Compass,
@@ -15,7 +16,6 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { TimetableHelpNotice } from "./timetable-help-notice";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import { canBoardAtStation } from "@/lib/metro/selectors";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
@@ -385,20 +385,25 @@ export function RoutePanel({
   );
 }
 
-/** Same summary and itinerary as the timed planner, without invented times. */
+/** Station/path summary and shared itinerary, without timetable fields. */
 export function PathRoutePanel({ lang, stationCount, legs, name }: {
   lang: Lang; stationCount: number;
   legs: { line: number; stations: string[]; terminal: string; color: string; onColor: string }[];
   name: (id: string) => string;
 }) {
   const t = STRINGS[lang]; const isFa = lang === "fa";
+  const transferCount = Math.max(0, legs.length - 1);
   return <div className="flex flex-col gap-3 md:gap-4">
-    <div role="group" aria-label={t.routeSummary} className="grid grid-cols-3 gap-3 rounded-xl md:gap-4" data-testid="route-summary-stats">
-      <Stat icon={<TrainFront className="size-5 md:size-6" />} value={persianDigits(stationCount, lang)} label={isFa ? "ایستگاه" : "stops"} />
-      <Stat icon={<Clock className="size-5" />} value="—" label={isFa ? "دقیقه سفر" : "travel time"} />
-      <Stat icon={<Flag className="size-5" />} value="—" label={isFa ? "رسیدن" : "arrival"} />
+    <div role="group" aria-label={t.routeSummary} className="flex flex-wrap items-center gap-x-5 gap-y-2 px-1 py-1 text-sm font-medium md:text-base" data-testid="route-summary-stats">
+      <span className="inline-flex items-center gap-1.5">
+        <TrainFront aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+        <span><span className="tnum font-bold">{persianDigits(stationCount, lang)}</span> {t.stops}</span>
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <ArrowRightLeft aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+        <span>{transferCount === 0 ? t.routeDirect : <><span className="tnum font-bold">{persianDigits(transferCount, lang)}</span> {isFa || transferCount !== 1 ? t.transfers : t.transfer}</>}</span>
+      </span>
     </div>
-    <TimetableHelpNotice lang={lang} />
     <ol className="flex flex-col gap-3">{legs.map((leg, index) => <li key={index} className="flex flex-col gap-2">
       {index > 0 && <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
         <Footprints aria-hidden="true" className="size-4 shrink-0" />

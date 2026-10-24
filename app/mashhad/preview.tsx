@@ -158,7 +158,7 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
               color: mashhadPreview.lines.find(l => l.id === leg.lineId)!.color, onColor: "#18181b" }))} />
           <div className="mt-3"><RouteActions origin={{ name: byId.get(from)!.names, location: byId.get(from)!.location }} lang={lang} /></div>
         </section>}
-        {!result && <TimetableHelpNotice lang={lang} />}
+        <TimetableHelpNotice lang={lang} />
         <div className="h-16 shrink-0 md:hidden" aria-hidden="true" />
       </div>
     </Container>
