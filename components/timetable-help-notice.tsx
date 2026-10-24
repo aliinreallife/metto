@@ -4,7 +4,7 @@ export function TimetableHelpNotice({ lang }: { lang: Lang }) {
   const t = STRINGS[lang];
   const params = new URLSearchParams({ title: t.cityTimetableIssueTitle, body: t.cityTimetableIssueBody });
   let href = `https://github.com/aliinreallife/metto/issues/new?${params}`;
-  // Enable only after the anonymous form's receiver has been deployed and checked.
+  // Enable only after the anonymous contribution backend has been deployed and checked.
   if (process.env.NEXT_PUBLIC_DATA_CONTRIBUTIONS_URL) {
     try {
       const portal = new URL(process.env.NEXT_PUBLIC_DATA_CONTRIBUTIONS_URL);

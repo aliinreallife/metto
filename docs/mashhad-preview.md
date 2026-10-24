@@ -44,10 +44,11 @@ has not been approved. Line 3 remains outside this first scope.
 The missing-timetable sentence includes the contribution link in both the
 landing illustration and planner. It opens the existing prefilled GitHub issue
 by default. Once the anonymous form in
-[metto-data](https://github.com/aliinreallife/metto-data/tree/feat/anonymous-data-portal/apps/data-portal)
+[metto-data](https://github.com/aliinreallife/metto-data/tree/feat/unified-data-platform/apps/data-portal)
 is deployed and verified, set `NEXT_PUBLIC_DATA_CONTRIBUTIONS_URL` to its public
-Pages URL and redeploy. The link then passes Mashhad, timetable and language to
-the form. The anonymous intake needs Supabase; no credentials belong in this app.
+Vercel URL ending in `/contribute` and redeploy. The link then passes Mashhad,
+timetable and language to the form. The combined portal uses Vercel Functions
+and a private Blob store; no credentials belong in this app.
 
 With Node 22 and the repository's pinned pnpm:
 
