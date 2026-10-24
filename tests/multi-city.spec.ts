@@ -40,7 +40,9 @@ test("switching the normal map shows Mashhad stations and links map selections i
   await pickCityStation(page, "To", "Airport");
   const result = page.getByTestId("city-route-result");
   await expect(result).toBeVisible();
-  await expect(result.getByTestId("route-summary-stats")).toContainText("—");
+  await expect(result.getByTestId("route-summary-stats")).toContainText("8 stops");
+  await expect(result.getByTestId("route-summary-stats")).toContainText("No line changes");
+  await expect(result.getByTestId("route-summary-stats")).not.toContainText(/—|travel time|arrival/i);
   await expect(result).not.toContainText(/\d{1,2}:\d{2}|\d+ minutes|estimated/i);
   await page.locator("header").getByRole("link", { name: "Map", exact: true }).click();
   await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-route-station-count", "8");
