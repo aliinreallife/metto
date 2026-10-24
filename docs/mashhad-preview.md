@@ -41,6 +41,14 @@ has not been approved. Line 3 remains outside this first scope.
 
 ## Run locally
 
+The missing-timetable sentence includes the contribution link in both the
+landing illustration and planner. It opens the existing prefilled GitHub issue
+by default. Once the anonymous form in
+[metto-data](https://github.com/aliinreallife/metto-data/tree/feat/anonymous-data-portal/apps/data-portal)
+is deployed and verified, set `NEXT_PUBLIC_DATA_CONTRIBUTIONS_URL` to its public
+Pages URL and redeploy. The link then passes Mashhad, timetable and language to
+the form. The anonymous intake needs Supabase; no credentials belong in this app.
+
 With Node 22 and the repository's pinned pnpm:
 
 ```sh

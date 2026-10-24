@@ -9,6 +9,7 @@ import { persianDigits, STRINGS, type Lang } from "@/lib/i18n";
 import { CITIES, type CityId } from "@/lib/cities";
 import { catalogStations, cityCounts } from "@/lib/city-catalog";
 import { mashhadPreview } from "@/lib/mashhad-preview";
+import { TimetableHelpNotice } from "@/components/timetable-help-notice";
 import { findRoute } from "@/lib/route";
 import {
   getAllStations,
@@ -262,7 +263,7 @@ function MashhadRoutePanel() {
       <StationRow variant="start" label={t.from} name={from.names[lang]} lines={[1]} />
       <div className="ms-3.5 my-2 h-24 border-s-[3px] border-primary/60" aria-hidden />
       <StationRow variant="end" label={t.to} name={to.names[lang]} lines={[1]} />
-      <p className="mt-5 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">{t.cityPathOnly}</p>
+      <div className="mt-5 border-t border-border pt-3"><TimetableHelpNotice lang={lang} /></div>
     </div>
   </div>;
 }
