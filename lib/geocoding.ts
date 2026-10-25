@@ -32,8 +32,12 @@ export async function searchPlaces(
   controller?.abort()
   controller = new AbortController()
 
+  // The provider indexes this landmark under its Persian name only.
+  const searchQuery = city === "mashhad" && q.toLowerCase() === "nader shah tomb"
+    ? "آرامگاه نادرشاه"
+    : q
   const params = new URLSearchParams({
-    q,
+    q: searchQuery,
     format: "json",
     limit: String(limit),
     countrycodes: "ir",
