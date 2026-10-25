@@ -3,6 +3,8 @@ import reference from "@/data/reference/mashhad-construction.json";
 import {mashhadPreview} from "./mashhad-preview";
 import {CITY_EDGES,cityCounts} from "./city-catalog";
 it("keeps construction geometry outside the passenger station and route catalog",()=>{
+ expect(reference.futureStops).toHaveLength(30);
+ expect(reference.rendering).toBe("straight-between-mapped-stops");
  expect(reference.purpose).toBe("map-reference-only");
  expect(reference.license).toBe("ODbL-1.0");
  expect(reference.segments).toHaveLength(5);

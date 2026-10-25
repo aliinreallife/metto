@@ -25,6 +25,7 @@ export function CityNetworkMap({ stations, edges, lang, selectedId, pathIds = EM
       construction: stations.some(station => station.cityId === "mashhad") ? construction.segments.map(section => ({
         id: section.id, color: section.displayColor, coordinates: section.coordinates.map(([lat, lng]) => [lat, lng] as [number, number]),
       })) : [],
+      futureStops: stations.some(station=>station.cityId === "mashhad") ? construction.futureStops.map(stop=>({...stop,lineLabel:construction.segments.find(section=>section.lineId===stop.lineIds[0])?.names??{fa:"",en:""},color:construction.segments.find(section=>section.lineId===stop.lineIds[0])?.displayColor??"#888"})) : [],
       edges: tracks.map(e => ({ a: e.from, b: e.to, line: e.lineId, status: e.status })),
       colors: Object.fromEntries(CITY_LINES.map(l => [l.id, l.color])),
       stationLines: id => byId.get(id)?.lineIds ?? [],

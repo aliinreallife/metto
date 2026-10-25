@@ -97,6 +97,7 @@ test("shows source-reported construction sections without adding boarding statio
   await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-construction-section-count","5");
   await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-route-station-count","24");
   await expect(page.locator(".metto-construction-section")).toHaveCount(5);
+  await expect(page.locator(".metto-future-stop")).toHaveCount(30);
   await expect(page.locator(".metto-construction-section").first()).toHaveAttribute("stroke-dasharray","3 7");
   await expect(page.locator(".metto-construction-section").first()).toHaveAttribute("stroke-opacity","0.3");
   await expect(page.getByTestId("construction-legend")).toContainText("Lines 3 & 4");

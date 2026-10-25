@@ -9,7 +9,7 @@ import { persianDigits, STRINGS, type Lang } from "@/lib/i18n";
 import { CITIES, type CityId } from "@/lib/cities";
 import { catalogStations, cityCounts } from "@/lib/city-catalog";
 import { mashhadPreview } from "@/lib/mashhad-preview";
-import { TimetableHelpNotice } from "@/components/timetable-help-notice";
+
 import { findRoute } from "@/lib/route";
 import {
   getAllStations,
@@ -255,15 +255,21 @@ function MashhadRoutePanel() {
   const t = STRINGS[lang];
   const from = mashhadPreview.stations.find(s => s.id.endsWith(":vakilabad"))!;
   const to = mashhadPreview.stations.find(s => s.id.endsWith(":airport"))!;
-  return <div className="relative overflow-hidden rounded-lg border border-border bg-card">
-    <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5 text-[11px] font-bold">
-      <span>{t.cityPreviewTitle}</span><LineBadge line={1} />
-    </div>
+  const route = mashhadPreview.findPath(from.id,to.id)!;
+  const line = mashhadPreview.lines.find(line=>line.id===route.legs[0].lineId)!;
+  const intermediate = route.stationIds.slice(1,-1).map(id=>mashhadPreview.stations.find(station=>station.id===id)!);
+  const params = new URLSearchParams({lang,from:from.id,to:to.id});
+  const badge=<span className="tnum rounded-md border px-2 py-0.5 text-[10px] font-bold" style={{color:"var(--foreground)",borderColor:`${line.color}55`,backgroundColor:`${line.color}15`}}>{line.names[lang]}</span>;
+  return <div data-testid="mashhad-landing-route" className="relative overflow-hidden rounded-lg border border-border bg-card">
+    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-[11px] font-bold"><span>{t.cityPreviewTitle}</span>{badge}</div>
     <div className="px-4 py-5 sm:px-5">
-      <StationRow variant="start" label={t.from} name={from.names[lang]} lines={[1]} />
-      <div className="ms-3.5 my-2 h-24 border-s-[3px] border-primary/60" aria-hidden />
-      <StationRow variant="end" label={t.to} name={to.names[lang]} lines={[1]} />
-      <div className="mt-5 border-t border-border pt-3"><TimetableHelpNotice lang={lang} /></div>
+      <p className="mb-5 text-xs text-muted-foreground">{t.landingMashhadDirect}</p>
+      <div className="flex items-center gap-3"><span aria-hidden className="size-3.5 shrink-0 rounded-full border-[3px]" style={{borderColor:line.color}}/><strong className="text-[15px]">{from.names[lang]}</strong></div>
+      <div className="ms-[6px] border-s-2 py-4 ps-5" style={{borderColor:line.color}}>
+        <div className="rounded-lg bg-muted/50 px-3 py-3"><p className="text-xs font-semibold">{persianDigits(route.stops,lang)} {t.stops} · {t.routeDirect}</p><p className="mt-2 text-[11px] leading-6 text-muted-foreground">{[intermediate[6],intermediate[12],intermediate[17]].filter(Boolean).map(station=>station.names[lang]).join(" · ")}</p></div>
+      </div>
+      <div className="flex items-center gap-3"><span aria-hidden className="size-3.5 shrink-0 rounded-full border-[3px]" style={{borderColor:line.color,backgroundColor:line.color}}/><strong className="text-[15px]">{to.names[lang]}</strong></div>
+      <Link href={`/mashhad/route?${params}`} className="mt-5 flex min-h-11 items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-accent"><span>{t.findRoute}</span><ArrowIcon aria-hidden className="size-4 rtl:rotate-180"/></Link>
     </div>
   </div>;
 }
@@ -478,7 +484,7 @@ export function Hero({ cityId }: { cityId?: CityId }) {
 
           <div className="lg:col-span-5">
             <Reveal delay={180} className="lg:ms-auto lg:max-w-sm">
-              <div className="drift-y">
+              <div className={cityId === "mashhad" ? undefined : "drift-y"}>
                 {cityId === "mashhad" ? <MashhadRoutePanel /> : <RoutePanel />}
               </div>
               <p className="mt-3 text-center text-[11px] text-muted-foreground">

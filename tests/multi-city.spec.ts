@@ -17,6 +17,14 @@ test("landing counts match both cities and each city has its own landing", async
   await page.getByTestId("landing-city-links").getByRole("link").filter({ hasText: "Mashhad" }).click();
   await expect(page).toHaveURL(/\/mashhad\?lang=en/);
   await expect(page.getByText("36 stations · 2 lines", { exact: true })).toBeVisible();
+  const mashhadCard=page.getByTestId("mashhad-landing-route");
+  await expect(mashhadCard).toContainText("23 stops");
+  await expect(mashhadCard).toContainText("No line changes");
+  await expect(mashhadCard.getByRole("link")).toHaveAttribute("href",/\/mashhad\/route\?/);
+  await expect(page.getByText(/Train times aren't available|Help us add train times/)).toHaveCount(0);
+  await mashhadCard.getByRole("link").click();
+  await expect(page.getByTestId("city-route-result")).toBeVisible();
+  await expect(page.getByLabel("From",{exact:true})).toContainText("VakilAbad");
   await page.goto("/tehran?lang=en");
   await expect(page.getByText("151 stations · 7 lines", { exact: true })).toBeVisible();
   expect(errors.filter(message => /hydration/i.test(message))).toEqual([]);

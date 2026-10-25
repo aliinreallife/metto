@@ -31,6 +31,7 @@ export type MapStation = { id: string; name: { fa: string; en: string }; locatio
 export type MapNetwork = {
   /** Map-only source-reported infrastructure; never used by route selection. */
   construction?: { id: string; coordinates: [number, number][]; color: string }[];
+  futureStops?: {id:string;names:{fa:string;en:string};location:{lat:number;lng:number};color:string;lineLabel:{fa:string;en:string}}[];
   stations: MapStation[];
   stationMap: Map<string, MapStation>;
   edges: { a: string; b: string; line: string | number; status: string }[];
@@ -653,6 +654,14 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         interactive: false,
         className: "metto-construction-section",
       }).addTo(layer)
+    }
+
+    for (const stop of network?.futureStops ?? []) {
+      const label = document.createElement("span");
+      label.textContent = `${stop.names[lang]} · ${stop.lineLabel[lang]} · ${STRINGS[lang].planned}`;
+      const marker = L.circleMarker([stop.location.lat,stop.location.lng],{radius:4,color:stop.color,weight:1.5,dashArray:"3 3",fillColor:"var(--card)",fillOpacity:0,bubblingMouseEvents:false,className:"metto-future-stop"}).bindTooltip(label).addTo(layer);
+      const element=marker.getElement();
+      if(element){element.setAttribute("data-future-stop-id",stop.id);element.setAttribute("tabindex","0");element.setAttribute("role","img");element.setAttribute("aria-label",label.textContent);element.addEventListener("focus",()=>marker.openTooltip());element.addEventListener("blur",()=>marker.closeTooltip());}
     }
 
     // Lines. Under-construction segments render dotted so track construction
