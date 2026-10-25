@@ -23,20 +23,22 @@ test("selects Mashhad landmarks as exact endpoints and preserves them after relo
   const queries:string[]=[];
   await page.route("https://nominatim.openstreetmap.org/search?*",async route=>{
     queries.push(new URL(route.request().url()).searchParams.get("viewbox")!);
-    await route.fulfill({json:[{display_name:"Imam Reza Shrine, Mashhad",lat:"36.2879",lon:"59.6157",type:"place_of_worship"}]});
+    await route.fulfill({json:[{display_name:"Nader Shah Tomb, Mashhad",lat:"36.2949187",lon:"59.6103948",type:"place_of_worship"}]});
   });
   await page.goto("/mashhad/route?to=mashhad:station:airport&lang=en");
   await page.getByLabel("From",{exact:true}).click();
-  await expect(page.getByRole("button",{name:"Imam Reza Shrine",exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Nader Shah Tomb",exact:true})).toBeVisible();
   await expect(page.getByRole("button",{name:"Iran Mall",exact:true})).toHaveCount(0);
-  await page.locator('input[role="combobox"]').fill("Imam Reza Shrine");
-  await page.getByRole("option").filter({hasText:"Imam Reza Shrine"}).click();
+  await page.getByRole("button",{name:"Nader Shah Tomb",exact:true}).click();
+  const place=page.getByRole("option").filter({hasText:"Nader Shah Tomb"});
+  await expect.poll(async()=>Boolean(new URL(page.url()).searchParams.get("op")) || await place.isVisible()).toBe(true);
+  if(!new URL(page.url()).searchParams.get("op")) await place.click();
   await expect(page.getByTestId("city-route-result")).toBeVisible();
   expect(queries).toContain("59.35,36.10,59.85,36.50");
   const url=new URL(page.url());
   expect(url.searchParams.get("from")).toMatch(/^mashhad:station:/);
   expect(url.searchParams.get("op")).toBeTruthy();
-  await expect(page.getByRole("main")).toContainText("Imam Reza Shrine");
+  await expect(page.getByRole("main")).toContainText("Nader Shah Tomb");
   await page.reload();
   await expect(page.getByTestId("city-route-result")).toBeVisible();
   expect(new URL(page.url()).searchParams.get("op")).toBe(url.searchParams.get("op"));
