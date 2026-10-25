@@ -49,6 +49,8 @@ test("picks map endpoints, preserves exact places through route/reload, and clea
   expect(new URL(copied!).pathname).toBe("/mashhad/route");
   expect(new URL(copied!).searchParams.get("from")).toBe(from);
   await page.getByRole("link", { name: "View on map", exact: true }).click();
+  await expect(page).toHaveURL(/\/mashhad\/map\?/);
+  await mapReady(page);
   await page.reload();
   await mapReady(page);
   expect(new URL(page.url()).searchParams.get("op")).toBe(originPoint);
@@ -86,4 +88,20 @@ test("all-city endpoints do not create an intercity metro path", async ({ page }
   await page.goto("/cities/map?from=tehran:station:basij&to=mashhad:station:basij&lang=en");
   await expect(page.getByRole("main").getByRole("alert")).toHaveText("Choose two stations in the same city.");
   await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-route-station-count", "0");
+});
+
+
+test("shows source-reported construction sections without adding boarding stations or changing passenger routes",async({page})=>{
+  await page.goto("/mashhad/map?lang=en&from=mashhad:station:airport&to=mashhad:station:vakilabad");
+  await mapReady(page);
+  await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-construction-section-count","5");
+  await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-route-station-count","24");
+  await expect(page.locator(".metto-construction-section")).toHaveCount(5);
+  await expect(page.locator(".metto-construction-section").first()).toHaveAttribute("stroke-dasharray","3 7");
+  await expect(page.locator(".metto-construction-section").first()).toHaveAttribute("stroke-opacity","0.3");
+  await expect(page.getByTestId("construction-legend")).toContainText("Lines 3 & 4");
+  await page.goto("/map?lang=en");
+  await expect(page.locator(".leaflet-container")).toBeVisible();
+  await expect(page.locator(".metto-construction-section")).toHaveCount(0);
+  await expect(page.getByTestId("construction-legend")).toHaveCount(0);
 });
