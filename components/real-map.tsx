@@ -29,6 +29,9 @@ import { cn } from "@/lib/utils"
 
 export type MapStation = { id: string; name: { fa: string; en: string }; location: { lat: number; lng: number }; status: string };
 export type MapNetwork = {
+  /** Map-only source-reported infrastructure; never used by route selection. */
+  construction?: { id: string; coordinates: [number, number][]; color: string }[];
+  futureStops?: {id:string;names:{fa:string;en:string};location:{lat:number;lng:number};color:string;lineLabel:{fa:string;en:string}}[];
   stations: MapStation[];
   stationMap: Map<string, MapStation>;
   edges: { a: string; b: string; line: string | number; status: string }[];
@@ -442,7 +445,10 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       attributionControl: true,
     })
 
-    if (network?.stations.length) map.fitBounds(L.latLngBounds(network.stations.map(s => [s.location.lat, s.location.lng] as [number, number])), { padding: [28, 28], maxZoom: 13 })
+    if (network?.stations.length) map.fitBounds(L.latLngBounds([
+      ...network.stations.map(s => [s.location.lat, s.location.lng] as [number, number]),
+      ...(network.construction?.flatMap(section => section.coordinates) ?? []),
+    ]), { padding: [28, 28], maxZoom: 13 })
 
     // Start in the current map mode (no full remount needed when toggling later)
     const tileLayer = L.tileLayer(SATELLITE_URL, {
@@ -590,6 +596,14 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
   }, [mapMode])
 
   const hasWalkingPath = !!(directWalk?.coordinates?.length || walkingPaths?.origin?.length || walkingPaths?.dest?.length)
+  const hasConstruction = !!network?.construction?.length
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !hasConstruction || mapMode !== "satellite") return
+    const source = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    map.attributionControl.addAttribution(source)
+    return () => { map.attributionControl.removeAttribution(source) }
+  }, [hasConstruction, mapMode])
   // Walking sources share the basemap's compact attribution control instead
   // of covering the map with another card. Satellite imagery has no OSM
   // attribution of its own, so include the pedestrian map source there too.
@@ -629,6 +643,26 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     if (!layer) return
     layer.clearLayers()
     const hasRoute = !!route
+
+    // Separate reference geometry has no station IDs and cannot become a trip.
+    for (const section of network?.construction ?? []) {
+      L.polyline(section.coordinates, {
+        color: section.color,
+        weight: 3,
+        opacity: hasRoute || deemphasizeMetro ? 0.3 : 0.65,
+        dashArray: "3 7",
+        interactive: false,
+        className: "metto-construction-section",
+      }).addTo(layer)
+    }
+
+    for (const stop of network?.futureStops ?? []) {
+      const label = document.createElement("span");
+      label.textContent = `${stop.names[lang]} · ${stop.lineLabel[lang]} · ${STRINGS[lang].planned}`;
+      const marker = L.circleMarker([stop.location.lat,stop.location.lng],{radius:4,color:stop.color,weight:1.5,dashArray:"3 3",fillColor:"var(--card)",fillOpacity:0,bubblingMouseEvents:false,className:"metto-future-stop"}).bindTooltip(label).addTo(layer);
+      const element=marker.getElement();
+      if(element){element.setAttribute("data-future-stop-id",stop.id);element.setAttribute("tabindex","0");element.setAttribute("role","img");element.setAttribute("aria-label",label.textContent);element.addEventListener("focus",()=>marker.openTooltip());element.addEventListener("blur",()=>marker.closeTooltip());}
+    }
 
     // Lines. Under-construction segments render dotted so track construction
     // is visually distinct from station construction.

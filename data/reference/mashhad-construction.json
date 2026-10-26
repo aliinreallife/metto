@@ -1,0 +1,678 @@
+{
+  "version": 1,
+  "cityId": "mashhad",
+  "purpose": "map-reference-only",
+  "reviewStatus": "source-reported",
+  "source": "OpenStreetMap contributors",
+  "license": "ODbL-1.0",
+  "attributionUrl": "https://www.openstreetmap.org/copyright",
+  "retrievedAt": "2026-10-25T06:29:20.731074+00:00",
+  "scope": "Only OSM-tagged construction ways for Line 3 extensions and Line 4. No boarding stops, timetables, opening dates or passenger routing edges. Display colors are provisional UI colors. Not operator confirmation.",
+  "segments": [
+    {
+      "id": "osm:way:276449885",
+      "lineId": "mashhad:line:3",
+      "names": {
+        "fa": "خط ۳",
+        "en": "Line 3"
+      },
+      "status": "under_construction",
+      "displayColor": "#FA9702",
+      "coordinates": [
+        [
+          36.2968572,
+          59.6070714
+        ],
+        [
+          36.3043955,
+          59.5989531
+        ],
+        [
+          36.3128449,
+          59.589734
+        ],
+        [
+          36.3222405,
+          59.5803018
+        ],
+        [
+          36.3243283,
+          59.5667115
+        ],
+        [
+          36.3325984,
+          59.5600383
+        ],
+        [
+          36.3393122,
+          59.5513667
+        ],
+        [
+          36.3425245,
+          59.5399954
+        ],
+        [
+          36.3470039,
+          59.5223366
+        ],
+        [
+          36.3595727,
+          59.5171091
+        ],
+        [
+          36.3669802,
+          59.5062016
+        ],
+        [
+          36.372131,
+          59.4982329
+        ],
+        [
+          36.3803977,
+          59.4852478
+        ],
+        [
+          36.3897103,
+          59.4706993
+        ]
+      ]
+    },
+    {
+      "id": "osm:way:1388754302",
+      "lineId": "mashhad:line:3",
+      "names": {
+        "fa": "خط ۳",
+        "en": "Line 3"
+      },
+      "status": "under_construction",
+      "displayColor": "#FA9702",
+      "coordinates": [
+        [
+          36.2145603,
+          59.6206868
+        ],
+        [
+          36.2325302,
+          59.6118894
+        ],
+        [
+          36.245687,
+          59.6052406
+        ],
+        [
+          36.2548872,
+          59.5985133
+        ],
+        [
+          36.2601343,
+          59.5933452
+        ]
+      ]
+    },
+    {
+      "id": "osm:way:1564056417",
+      "lineId": "mashhad:line:3",
+      "names": {
+        "fa": "خط ۳",
+        "en": "Line 3"
+      },
+      "status": "under_construction",
+      "displayColor": "#FA9702",
+      "coordinates": [
+        [
+          36.2099829,
+          59.6228456
+        ],
+        [
+          36.2145603,
+          59.6206868
+        ]
+      ]
+    },
+    {
+      "id": "osm:way:1564056418",
+      "lineId": "mashhad:line:3",
+      "names": {
+        "fa": "خط ۳",
+        "en": "Line 3"
+      },
+      "status": "under_construction",
+      "displayColor": "#FA9702",
+      "coordinates": [
+        [
+          36.3897103,
+          59.4706993
+        ],
+        [
+          36.3913936,
+          59.4680961
+        ]
+      ]
+    },
+    {
+      "id": "osm:way:381927098",
+      "lineId": "mashhad:line:4",
+      "names": {
+        "fa": "خط ۴",
+        "en": "Line 4"
+      },
+      "status": "under_construction",
+      "displayColor": "#a78bfa",
+      "coordinates": [
+        [
+          36.3486222,
+          59.639003
+        ],
+        [
+          36.3413628,
+          59.630869
+        ],
+        [
+          36.3291228,
+          59.6243736
+        ],
+        [
+          36.3204016,
+          59.6198466
+        ],
+        [
+          36.3123204,
+          59.6148724
+        ],
+        [
+          36.3035549,
+          59.6095099
+        ],
+        [
+          36.2968998,
+          59.6071378
+        ],
+        [
+          36.294056,
+          59.6167906
+        ],
+        [
+          36.2891942,
+          59.6240572
+        ],
+        [
+          36.2795575,
+          59.6254716
+        ],
+        [
+          36.26948,
+          59.6363944
+        ],
+        [
+          36.2616758,
+          59.6446943
+        ],
+        [
+          36.2687862,
+          59.6607889
+        ],
+        [
+          36.2639691,
+          59.6727235
+        ],
+        [
+          36.2454547,
+          59.7229272
+        ]
+      ]
+    }
+  ],
+  "rendering": "straight-between-mapped-stops",
+  "futureStops": [
+    {
+      "id": "osm:node:3867875265",
+      "names": {
+        "fa": "توحید",
+        "en": "Towhid"
+      },
+      "location": {
+        "lat": 36.3043955,
+        "lng": 59.5989531
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867875264",
+      "names": {
+        "fa": "مجد",
+        "en": "Majd"
+      },
+      "location": {
+        "lat": 36.3128449,
+        "lng": 59.589734
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867949161",
+      "names": {
+        "fa": "فردوسی",
+        "en": "Ferdowsi"
+      },
+      "location": {
+        "lat": 36.3222405,
+        "lng": 59.5803018
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867949160",
+      "names": {
+        "fa": "جانباز",
+        "en": "Janbaz"
+      },
+      "location": {
+        "lat": 36.3243283,
+        "lng": 59.5667115
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867875263",
+      "names": {
+        "fa": "مترو آبکوه",
+        "en": "Abkooh Metro Station"
+      },
+      "location": {
+        "lat": 36.3325984,
+        "lng": 59.5600383
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867898058",
+      "names": {
+        "fa": "فرامرز عباسی",
+        "en": "Faramarz Abbasi"
+      },
+      "location": {
+        "lat": 36.3393122,
+        "lng": 59.5513667
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867949158",
+      "names": {
+        "fa": "امامت",
+        "en": "Emamat"
+      },
+      "location": {
+        "lat": 36.3425245,
+        "lng": 59.5399954
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:2810462553",
+      "names": {
+        "fa": "امام علی",
+        "en": "Imam Ali"
+      },
+      "location": {
+        "lat": 36.3470039,
+        "lng": 59.5223366
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867949165",
+      "names": {
+        "fa": "شاهد",
+        "en": "Shahed"
+      },
+      "location": {
+        "lat": 36.3595727,
+        "lng": 59.5171091
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867949159",
+      "names": {
+        "fa": "حسابی",
+        "en": "Hesabi"
+      },
+      "location": {
+        "lat": 36.3669802,
+        "lng": 59.5062016
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:2810462584",
+      "names": {
+        "fa": "امامیه",
+        "en": "Emamyeh"
+      },
+      "location": {
+        "lat": 36.372131,
+        "lng": 59.4982329
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867955957",
+      "names": {
+        "fa": "عصمتیه",
+        "en": "Esmatyeh"
+      },
+      "location": {
+        "lat": 36.3803977,
+        "lng": 59.4852478
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:8943834107",
+      "names": {
+        "fa": "امیریه",
+        "en": "Amiriyeh"
+      },
+      "location": {
+        "lat": 36.3897103,
+        "lng": 59.4706993
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867898062",
+      "names": {
+        "fa": "ابوذر",
+        "en": "Aboozar"
+      },
+      "location": {
+        "lat": 36.2145603,
+        "lng": 59.6206868
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867898061",
+      "names": {
+        "fa": "ثامن",
+        "en": "Samen"
+      },
+      "location": {
+        "lat": 36.2325302,
+        "lng": 59.6118894
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3867949163",
+      "names": {
+        "fa": "مهدی",
+        "en": "Mahdi"
+      },
+      "location": {
+        "lat": 36.245687,
+        "lng": 59.6052406
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:2810462147",
+      "names": {
+        "fa": "صبا",
+        "en": "Saba"
+      },
+      "location": {
+        "lat": 36.2548872,
+        "lng": 59.5985133
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:3"
+      ]
+    },
+    {
+      "id": "osm:node:3873023296",
+      "names": {
+        "fa": "خواجه ربیع",
+        "en": "Khajeh Rabi"
+      },
+      "location": {
+        "lat": 36.3413628,
+        "lng": 59.630869
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3873023705",
+      "names": {
+        "fa": "امام حسین",
+        "en": "Imam Hossein"
+      },
+      "location": {
+        "lat": 36.3291228,
+        "lng": 59.6243736
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3873022071",
+      "names": {
+        "fa": "گاز",
+        "en": "Gaz"
+      },
+      "location": {
+        "lat": 36.3204016,
+        "lng": 59.6198466
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3873023297",
+      "names": {
+        "fa": "کامیاب",
+        "en": "Kamyab"
+      },
+      "location": {
+        "lat": 36.3123204,
+        "lng": 59.6148724
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3873023706",
+      "names": {
+        "fa": "عبادی",
+        "en": "Ebadi"
+      },
+      "location": {
+        "lat": 36.3035549,
+        "lng": 59.6095099
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3170118329",
+      "names": {
+        "fa": "شهدا",
+        "en": "Shohada"
+      },
+      "location": {
+        "lat": 36.2968998,
+        "lng": 59.6071378
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3170118336",
+      "names": {
+        "fa": "شارستان شمالی",
+        "en": "Sharestan Shomali"
+      },
+      "location": {
+        "lat": 36.294056,
+        "lng": 59.6167906
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3170118341",
+      "names": {
+        "fa": "شارستان شرقی",
+        "en": "Sharestan Sharghi"
+      },
+      "location": {
+        "lat": 36.2891942,
+        "lng": 59.6240572
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3873023298",
+      "names": {
+        "fa": "عدالت",
+        "en": "Edalat"
+      },
+      "location": {
+        "lat": 36.2795575,
+        "lng": 59.6254716
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3873022072",
+      "names": {
+        "fa": "رستمی",
+        "en": "Rostami"
+      },
+      "location": {
+        "lat": 36.26948,
+        "lng": 59.6363944
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3873023707",
+      "names": {
+        "fa": "مصلی",
+        "en": "Mosalla"
+      },
+      "location": {
+        "lat": 36.2616758,
+        "lng": 59.6446943
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3873023299",
+      "names": {
+        "fa": "حر",
+        "en": "Hor"
+      },
+      "location": {
+        "lat": 36.2687862,
+        "lng": 59.6607889
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    },
+    {
+      "id": "osm:node:3873023708",
+      "names": {
+        "fa": "رجایی",
+        "en": "Rajayi"
+      },
+      "location": {
+        "lat": 36.2639691,
+        "lng": 59.6727235
+      },
+      "status": "planned",
+      "lineIds": [
+        "mashhad:line:4"
+      ]
+    }
+  ]
+}

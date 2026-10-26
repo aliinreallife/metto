@@ -112,6 +112,9 @@ export function CityMap({ city }: { city: CityId | "all" }) {
       </button>)}
     </div>
     <div className="pointer-events-none absolute inset-x-3 top-14 z-[600] mx-auto flex max-w-md flex-col gap-1.5">
+      {stations.some(station => station.cityId === "mashhad") && <p data-testid="construction-legend" className="self-start rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm">
+        <span aria-hidden="true" className="me-1.5 inline-block w-5 border-t-2 border-dashed border-muted-foreground align-middle" />{t.mashhadConstructionMap}
+      </p>}
       {connectivity === "offline" && <div className="rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-sm"><p className="flex items-center gap-2 font-semibold"><WifiOff aria-hidden="true" className="size-4" />{t.mapOfflineTitle}</p><p className="mt-0.5 text-muted-foreground">{t.mapOfflineBody}</p></div>}
       {crossCity && <p role="alert" className="rounded-lg border border-border bg-background/95 px-3 py-2 text-sm shadow-sm">{t.citySameCityOnly}</p>}
       {placeMarkers.map(marker => {
