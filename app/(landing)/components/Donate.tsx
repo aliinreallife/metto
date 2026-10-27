@@ -5,7 +5,7 @@ import { WELCOME_CONTENT } from "../content";
 import { Reveal } from "./Reveal";
 import { ArrowIcon, CheckIcon, HeartIcon, StarIcon } from "./Icons";
 
-const DONATE_URL = "https://reymit.ir/aliinreallife";
+const DONATE_URL = "https://www.coffeebede.com/aliinreallife";
 const REPO_URL = "https://github.com/aliinreallife/metto";
 const ISSUE_URL = "https://github.com/aliinreallife/metto/issues/new";
 
