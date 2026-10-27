@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Vazirmatn } from "next/font/google";
 import { MetroProvider } from "./providers";
 import { SerwistProvider } from "./serwist";
@@ -199,6 +200,7 @@ export default function RootLayout({
         </MetroProvider>
         </SerwistProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
