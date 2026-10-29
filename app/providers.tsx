@@ -64,8 +64,10 @@ export function MetroProvider({ children, cityIds = ["tehran"] }: { children: Re
   const enabledCityIds = useMemo(() => CITIES.filter(c => cityIds.includes(c.slug)).map(c => c.slug), [cityIds]);
   const pathname = usePathname();
   // The new city preview has its own data and no timetable/MCP integration.
-  // Never advertise Tehran tools or prime its timetable as Mashhad routing.
-  const tehranScope = cityFromPath(pathname ?? "/") === "tehran";
+  // Never advertise Tehran tools or prime its timetable on another city's screen.
+  const tehranScope =
+    !pathname?.startsWith("/preview/") &&
+    cityFromPath(pathname ?? "/") === "tehran";
   const [lang, setLangState] = useState<Lang>("fa");
   const [mapMode, setMapModeState] = useState<"satellite" | "minimalist">("minimalist");
   const [originId, setOriginId] = useState<string | null>(null);
