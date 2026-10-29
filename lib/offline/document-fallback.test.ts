@@ -17,7 +17,7 @@ describe("isCanonicalStaticDoc", () => {
     for (const p of ["/", "/route", "/map", "/stations", "/nearby"]) {
       expect(isCanonicalStaticDoc(p)).toBe(true);
     }
-    for (const p of ["/tehran", "/tehran/map", "/tehran/route", "/tehran/stations", "/tehran/nearby", "/cities", "/cities/map"]) {
+    for (const p of ["/tehran", "/tehran/map", "/tehran/route", "/tehran/stations", "/tehran/nearby", "/cities", "/cities/map", "/mashhad/map", "/isfahan", "/isfahan/map", "/isfahan/route", "/isfahan/stations", "/isfahan/nearby"]) {
       expect(isCanonicalStaticDoc(p)).toBe(true);
       expect(canonicalDocFallbackFor(p as `/${string}`, nav(`${ORIGIN}${p}?lang=en`))).toBe(p);
     }

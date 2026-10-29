@@ -7,7 +7,7 @@ export type PathStation = {
   location: { lat: number; lng: number };
   status: string;
 };
-export type PathLine = { id: string; names: { fa: string; en: string }; color: string };
+export type PathLine = { id: string; names: { fa: string; en: string }; color: string; onColor?: string };
 export type PathRoute = { id: string; lineId: string; stops: { stationId: string; status: string }[] };
 export type PathSegment = { routeId: string; from: string; to: string; status: string };
 export type PathTransfer = { stationId: string; fromLineId: string; toLineId: string };
@@ -16,6 +16,7 @@ export type PathNetwork = {
   segments: PathSegment[]; transferLinks: PathTransfer[];
 };
 export type CityRoutePath = {
+  reviewOnly?: true;
   cityId: string;
   stationIds: string[];
   legs: { lineId: string; stationIds: string[] }[];
@@ -25,7 +26,10 @@ export type CityRoutePath = {
 
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 
-export function createCityPathPlanner(network: PathNetwork) {
+export function createCityPathPlanner(network: PathNetwork, options: { reviewOnly?: boolean } = {}) {
+  // Review geometry must never become a passenger path by accident.
+  const usable = (status: string) => status === "operational" ||
+    (options.reviewOnly === true && status.startsWith("review_"));
   const { cityId } = network;
   const prefix = `${cityId}:station:`;
   const stations = new Map(network.stations.map(s => [s.id, s]));
@@ -56,14 +60,14 @@ export function createCityPathPlanner(network: PathNetwork) {
       const key = stateKey(station.id, route.lineId);
       if (states.has(key)) throw new Error("Repeated route stop");
       states.set(key, { stationId: station.id, lineId: route.lineId,
-        boardable: station.status === "operational" && stop.status === "operational" });
+        boardable: usable(station.status) && usable(stop.status) });
     }
     for (let i = 1; i < route.stops.length; i++) {
       const a = route.stops[i - 1].stationId, b = route.stops[i].stationId;
       const tracks = network.segments.filter(s => s.routeId === route.id &&
         ((s.from === a && s.to === b) || (s.from === b && s.to === a)));
       if (tracks.length !== 1) throw new Error("Missing or duplicate track segment");
-      if (tracks[0].status !== "operational") continue;
+      if (!usable(tracks[0].status)) continue;
       add(stateKey(a, route.lineId), stateKey(b, route.lineId), false);
       add(stateKey(b, route.lineId), stateKey(a, route.lineId), false);
     }
@@ -107,7 +111,7 @@ export function createCityPathPlanner(network: PathNetwork) {
     for (let key: string | null = end; key !== null; key = previous.get(key) ?? null) trace.push(key);
     trace.reverse();
     const first = states.get(trace[0])!;
-    const result: CityRoutePath = { cityId, stationIds: [fromId], legs: [{ lineId: first.lineId, stationIds: [fromId] }], transfers: [], stops: 0 };
+    const result: CityRoutePath = { ...(options.reviewOnly ? { reviewOnly: true as const } : {}), cityId, stationIds: [fromId], legs: [{ lineId: first.lineId, stationIds: [fromId] }], transfers: [], stops: 0 };
     for (let i = 1; i < trace.length; i++) {
       const before = states.get(trace[i - 1])!, after = states.get(trace[i])!;
       if (before.lineId !== after.lineId) {

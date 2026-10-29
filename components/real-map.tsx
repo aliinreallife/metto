@@ -753,7 +753,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         hit.on("mouseout", () => marker.fire("mouseout"));
         const element = hit.getElement();
         if (element) {
-          element.setAttribute("aria-label", `${s.name[lang]}${reviewOnly ? ` · ${t.candidateBoardingUnknown}` : underConstruction ? ` · ${t.underConstruction}` : ""}`);
+          element.setAttribute("aria-label", `${s.name[lang]}${reviewOnly ? ` · ${t.cityBoardingUnknown}` : underConstruction ? ` · ${t.underConstruction}` : ""}`);
           element.setAttribute("data-station-id", s.id);
           element.addEventListener("keydown", event => {
             if (event.key === " " || event.key === "Enter") { event.preventDefault(); event.stopPropagation(); onSelect(s.id); }

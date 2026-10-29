@@ -18,17 +18,17 @@
  * - unknown paths match nothing and fail normally offline.
  */
 
+import { CITIES } from "../cities";
+
+// Candidate documents are cached only when included in that deployment's
+// static build. Inactive cities have no document to fall back to.
 export const CANONICAL_STATIC_DOCS: ReadonlyArray<string> = [
   "/",
   "/route",
   "/map",
   "/stations",
   "/nearby",
-  "/tehran",
-  "/tehran/route",
-  "/tehran/map",
-  "/tehran/stations",
-  "/tehran/nearby",
+  ...CITIES.flatMap(city => ["", "/route", "/map", "/stations", "/nearby"].map(view => `/${city.slug}${view}`)),
   "/cities",
   "/cities/map",
   "/cities/route",

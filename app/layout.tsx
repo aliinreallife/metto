@@ -5,7 +5,7 @@ import { Vazirmatn } from "next/font/google";
 import { MetroProvider } from "./providers";
 import { SerwistProvider } from "./serwist";
 import "./globals.css";
-import { mashhadEnabled } from "@/lib/mashhad-access";
+import { availableCityIds } from "@/lib/city-availability";
 
 const vazirmatn = Vazirmatn({
   variable: "--font-vazirmatn",
@@ -195,7 +195,7 @@ export default function RootLayout({
           cacheOnNavigation={false}
           disable={process.env.NODE_ENV === "development"}
         >
-        <MetroProvider cityIds={mashhadEnabled() ? ["tehran", "mashhad"] : ["tehran"]}>
+        <MetroProvider cityIds={availableCityIds()}>
           {children}
         </MetroProvider>
         </SerwistProvider>

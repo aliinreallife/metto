@@ -1,4 +1,5 @@
-export type CityId = "tehran" | "mashhad";
+import { STRINGS } from "./i18n";
+export type CityId = "tehran" | "mashhad" | "isfahan";
 export type CityView = "route" | "map" | "stations" | "nearby";
 
 export interface CityMeta {
@@ -8,6 +9,11 @@ export interface CityMeta {
   /** City-specific SEO keywords (EN + FA). */
   keywords: string[];
   timing: boolean;
+  release: "public" | "preview";
+  /** West, south, east, north: never use another city's search bounds. */
+  bounds: [number, number, number, number];
+  placeExample?: { en: string; fa: string };
+  placeExampleQuery?: string;
 }
 
 export const CITIES: CityMeta[] = [
@@ -15,6 +21,9 @@ export const CITIES: CityMeta[] = [
     slug: "tehran",
     name: { en: "Tehran", fa: "تهران" },
     timing: true,
+    release: "public",
+    bounds: [51.15, 35.55, 51.65, 35.85],
+    placeExample: { en: STRINGS.en.searchHintExample, fa: STRINGS.fa.searchHintExample },
     keywords: [
       "tehran metro map",
       "tehran subway",
@@ -29,7 +38,17 @@ export const CITIES: CityMeta[] = [
   },
   {
     slug: "mashhad", name: { en: "Mashhad", fa: "مشهد" }, timing: false,
+    release: "public", bounds: [59.35, 36.10, 59.85, 36.50],
+    placeExample: { en: STRINGS.en.searchHintMashhadExample, fa: STRINGS.fa.searchHintMashhadExample },
+    placeExampleQuery: STRINGS.fa.searchHintMashhadExample,
     keywords: ["Mashhad metro map", "Mashhad metro stations", "مترو مشهد", "نقشه مترو مشهد", "ایستگاه‌های مترو مشهد"],
+  },
+  {
+    slug: "isfahan", name: { en: "Isfahan", fa: "اصفهان" }, timing: false,
+    release: "preview", bounds: [51.50, 32.50, 51.85, 32.85],
+    placeExample: { en: STRINGS.en.searchHintIsfahanExample, fa: STRINGS.fa.searchHintIsfahanExample },
+    placeExampleQuery: STRINGS.fa.searchHintIsfahanExample,
+    keywords: ["Isfahan metro map", "مترو اصفهان", "نقشه مترو اصفهان"],
   },
 ];
 
@@ -39,7 +58,7 @@ export function getCityMeta(slug: string): CityMeta | null {
 
 export function cityFromPath(path: string): CityId | "all" {
   const first = path.split("/")[1];
-  return first === "mashhad" ? "mashhad" : first === "cities" ? "all" : "tehran";
+  return first === "cities" ? "all" : getCityMeta(first)?.slug ?? "tehran";
 }
 
 export function viewFromPath(path: string): CityView {

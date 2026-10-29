@@ -6,7 +6,8 @@ import { useMetro } from "@/app/providers";
 import { CITIES, type CityId } from "@/lib/cities";
 import { CITY_LINES, catalogStations, cityCounts, normalizeCitySearch, stationRouteHref } from "@/lib/city-catalog";
 import { AMENITY_LABELS, STRINGS, persianDigits } from "@/lib/i18n";
-import { mashhadPreview } from "@/lib/mashhad-preview";
+import { getCityPreview, getUntimedCityPlanner } from "@/lib/city-previews";
+import { CityPreviewNotice } from "./city-preview-notice";
 import { haversineKm } from "@/lib/geo";
 import { Map as MapIcon, Search } from "lucide-react";
 import { CityMap } from "./city-map";
@@ -18,7 +19,6 @@ import { NearbyLocation } from "./nearby-tab";
 import { CityStationPicker } from "./city-station-picker";
 import { getCurrentPositionTolerant, classifyGeoError, type GeoErrorKind } from "@/lib/geolocation";
 import { LocationErrorActions } from "./location-error";
-import { lineOnColor } from "@/lib/metro/lines";
 
 export function CityExplorer({ city, view }: { city: CityId | "all"; view: "map" | "stations" | "nearby" }) {
   return view === "map" ? <CityMap key={city} city={city} /> : <CityDirectory key={city} city={city} view={view} />;
@@ -34,7 +34,8 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
   const stations = useMemo(() => catalogStations(cityIds, city), [cityIds, city]);
   const effectiveCity = city === "all" && view === "stations" ? cityFilter : city;
   const filtered = useMemo(() => {
-    const lineOrder = lineFilter?.startsWith("mashhad:") ? mashhadPreview.getLineStationIds(lineFilter) : [];
+    const lineCity = CITIES.find(c => lineFilter?.startsWith(`${c.slug}:`));
+    const lineOrder = lineCity && lineFilter ? getUntimedCityPlanner(lineCity.slug)?.getLineStationIds(lineFilter) ?? [] : [];
     const q = normalizeCitySearch(query);
     return stations.filter(s => (effectiveCity === "all" || s.cityId === effectiveCity) && amenityFilter.every(key => (s.reportedAmenities ?? s.amenities)[key] === true) && (!lineFilter || s.lineIds.includes(lineFilter)) && normalizeCitySearch(`${s.names.fa} ${s.names.en} ${CITIES.find(c => c.slug === s.cityId)!.name[lang]}`).includes(q))
       .sort((a, b) => location ? haversineKm(location.lat, location.lng, a.location.lat, a.location.lng) - haversineKm(location.lat, location.lng, b.location.lat, b.location.lng)
@@ -48,7 +49,7 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
     catch (error) { setGeoError(classifyGeoError(error)); }
     finally { setLocating(false); }
   };
-  const amenitiesFilter = <section>
+  const amenitiesFilter = stations.some(s => (effectiveCity === "all" || s.cityId === effectiveCity) && !getCityPreview(s.cityId)) && <section>
     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.amenities}</p>
     {stations.some(s => s.reportedAmenities && (effectiveCity === "all" || s.cityId === effectiveCity)) && <p className="mb-2 text-xs text-muted-foreground">{t.amenitiesReported}</p>}
     <div className="flex flex-wrap gap-2">
@@ -66,7 +67,7 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
             reportedAmenities={s.reportedAmenities}
             secondaryName={city === "all" ? CITIES.find(c => c.slug === s.cityId)!.name[lang] : undefined}
             lines={s.lineIds.map(id => ({ id, label: id.split(":").at(-1)!, color: CITY_LINES.find(l => l.id === id)!.color,
-              onColor: s.cityId === "mashhad" ? "#18181b" : lineOnColor(Number(id.split(":").at(-1))) }))}
+              onColor: CITY_LINES.find(l => l.id === id)!.onColor }))}
             boardableCount={s.operationalLineIds.length}
             distance={location ? haversineKm(location.lat, location.lng, s.location.lat, s.location.lng) : undefined}
             onSetDest={() => router.push(stationRouteHref(s, "to", lang))} />
@@ -87,7 +88,7 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
             onChange={id => { const station = stations.find(s => s.id === id); setNearbyStationId(id); setLocation(station?.location ?? null); setGeoError(null); }} />}
           error={geoError && <LocationErrorActions lang={lang} kind={geoError} onRetry={requestGps} />} />
         {!location ? <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-12 text-center text-sm text-muted-foreground">{t.cityNearbyHint}</div>
-          : <>{amenitiesFilter}<p className="text-xs text-muted-foreground">{t.cityStraightDistance}</p>{renderRows(filtered.filter(s => s.status === "operational").slice(0, 15))}</>}
+          : <>{amenitiesFilter}<p className="text-xs text-muted-foreground">{t.cityStraightDistance}</p>{renderRows(filtered.filter(s => s.status === "operational" || s.status.startsWith("review_")).slice(0, 15))}</>}
       </div>
     </div> : <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
       <div className="mx-auto max-w-xl">
@@ -102,6 +103,7 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
             {CITIES.filter(c => cityIds.includes(c.slug)).map(c => <FilterChip key={c.slug} active={cityFilter === c.slug} onClick={() => { setCityFilter(c.slug); setLineFilter(null); }}>{c.name[lang]}</FilterChip>)}
           </div>
         </fieldset>}
+        {city === "all" && <CityPreviewNotice city={effectiveCity} />}
         <div className="mt-4">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.filterLine}</p>
           <div className="flex flex-wrap gap-2">

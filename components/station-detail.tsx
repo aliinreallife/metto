@@ -51,6 +51,7 @@ export function StationDetailView({ station, lang, onClose, lines, scheduleLoadi
   reportedAmenities?: Partial<MetroStation["amenities"]>;
 }) {
   const t = STRINGS[lang]; const isFa = lang === "fa";
+  const reviewOnly = station.status.startsWith("review_");
   const boardableLines = lines.filter(l => l.boardable);
   const unavailableLines = lines.filter(l => !l.boardable);
   const activeAmenities = Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
@@ -71,8 +72,8 @@ export function StationDetailView({ station, lang, onClose, lines, scheduleLoadi
               <span
                 key={l.id}
                 className="flex size-7 items-center justify-center rounded-full text-xs font-bold"
-                style={{ backgroundColor: l.color, color: l.onColor, opacity: l.boardable ? 1 : 0.45 }}
-                aria-label={isFa ? `خط ${persianDigits(l.label, lang)}${l.boardable ? "" : "، غیرفعال"}` : `Line ${l.label}${l.boardable ? "" : ", not open"}`}
+                style={{ backgroundColor: l.color, color: l.onColor, opacity: l.boardable || reviewOnly ? 1 : 0.45 }}
+                aria-label={`${t.line} ${persianDigits(l.label, lang)}${reviewOnly ? ` · ${t.cityPreviewLabel}` : l.boardable ? "" : isFa ? "، غیرفعال" : ", not open"}`}
               >
                 {persianDigits(l.label, lang)}
               </span>
@@ -103,7 +104,8 @@ export function StationDetailView({ station, lang, onClose, lines, scheduleLoadi
         </p>
       )}
 
-      {station.status !== "operational" && (
+      {reviewOnly && <p className="text-xs text-muted-foreground">{station.status === "review_disputed" ? t.cityBoardingDisputed : t.cityBoardingUnknown}</p>}
+      {station.status !== "operational" && !reviewOnly && (
         <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
           <Ban aria-hidden="true" className="size-3.5" />
           {t.underConstruction}
