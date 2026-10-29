@@ -8,7 +8,7 @@ import { WELCOME_CONTENT } from "../content";
 import { persianDigits, STRINGS, type Lang } from "@/lib/i18n";
 import { CITIES, type CityId } from "@/lib/cities";
 import { catalogStations, cityCounts } from "@/lib/city-catalog";
-import { mashhadPreview } from "@/lib/mashhad-preview";
+import { getCityPreview, getUntimedCityPlanner } from "@/lib/city-previews";
 
 import { findRoute } from "@/lib/route";
 import {
@@ -250,26 +250,28 @@ function RoutePanel() {
   );
 }
 
-function MashhadRoutePanel() {
+function UntimedRoutePanel({ city }: { city: Exclude<CityId, "tehran"> }) {
+  const planner = getUntimedCityPlanner(city)!;
+  const order = planner.getLineStationIds(planner.lines[0].id);
   const { lang } = useMetro();
   const t = STRINGS[lang];
-  const from = mashhadPreview.stations.find(s => s.id.endsWith(":vakilabad"))!;
-  const to = mashhadPreview.stations.find(s => s.id.endsWith(":airport"))!;
-  const route = mashhadPreview.findPath(from.id,to.id)!;
-  const line = mashhadPreview.lines.find(line=>line.id===route.legs[0].lineId)!;
-  const intermediate = route.stationIds.slice(1,-1).map(id=>mashhadPreview.stations.find(station=>station.id===id)!);
+  const from = planner.stations.find(s => s.id === (city === "mashhad" ? "mashhad:station:vakilabad" : order[0]))!;
+  const to = planner.stations.find(s => s.id === (city === "mashhad" ? "mashhad:station:airport" : order.at(-1)))!;
+  const route = planner.findPath(from.id,to.id)!;
+  const line = planner.lines.find(line=>line.id===route.legs[0].lineId)!;
+  const intermediate = route.stationIds.slice(1,-1).map(id=>planner.stations.find(station=>station.id===id)!);
   const params = new URLSearchParams({lang,from:from.id,to:to.id});
   const badge=<span className="tnum rounded-md border px-2 py-0.5 text-[10px] font-bold" style={{color:"var(--foreground)",borderColor:`${line.color}55`,backgroundColor:`${line.color}15`}}>{line.names[lang]}</span>;
-  return <div data-testid="mashhad-landing-route" className="relative overflow-hidden rounded-lg border border-border bg-card">
-    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-[11px] font-bold"><span>{t.cityPreviewTitle}</span>{badge}</div>
+  return <div data-testid={`${city}-landing-route`} className="relative overflow-hidden rounded-lg border border-border bg-card">
+    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-[11px] font-bold"><span>{CITIES.find(c => c.slug === city)!.name[lang]}</span>{badge}</div>
     <div className="px-4 py-5 sm:px-5">
-      <p className="mb-5 text-xs text-muted-foreground">{t.landingMashhadDirect}</p>
+      <p className="mb-5 text-xs text-muted-foreground">{getCityPreview(city) ? t.cityPreviewTrack : t.landingMashhadDirect}</p>
       <div className="flex items-center gap-3"><span aria-hidden className="size-3.5 shrink-0 rounded-full border-[3px]" style={{borderColor:line.color}}/><strong className="text-[15px]">{from.names[lang]}</strong></div>
       <div className="ms-[6px] border-s-2 py-4 ps-5" style={{borderColor:line.color}}>
         <div className="rounded-lg bg-muted/50 px-3 py-3"><p className="text-xs font-semibold">{persianDigits(route.stops,lang)} {t.stops} · {t.routeDirect}</p><p className="mt-2 text-[11px] leading-6 text-muted-foreground">{[intermediate[6],intermediate[12],intermediate[17]].filter(Boolean).map(station=>station.names[lang]).join(" · ")}</p></div>
       </div>
       <div className="flex items-center gap-3"><span aria-hidden className="size-3.5 shrink-0 rounded-full border-[3px]" style={{borderColor:line.color,backgroundColor:line.color}}/><strong className="text-[15px]">{to.names[lang]}</strong></div>
-      <Link href={`/mashhad/route?${params}`} className="mt-5 flex min-h-11 items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-accent"><span>{t.findRoute}</span><ArrowIcon aria-hidden className="size-4 rtl:rotate-180"/></Link>
+      <Link href={`/${city}/route?${params}`} className="mt-5 flex min-h-11 items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-accent"><span>{t.findRoute}</span><ArrowIcon aria-hidden className="size-4 rtl:rotate-180"/></Link>
     </div>
   </div>;
 }
@@ -364,7 +366,7 @@ export function Hero({ cityId }: { cityId?: CityId }) {
   const counts = cityCounts(cityIds, cityId);
   const stationCount = counts.stations;
   const lineCount = counts.lines;
-  const interchangeCount = cityId === "mashhad" ? 1 : getAllStations().filter((s) => isInterchange(s.id)).length;
+  const interchangeCount = cityId && cityId !== "tehran" ? catalogStations(cityIds, cityId).filter(s => s.lineIds.length > 1).length : getAllStations().filter((s) => isInterchange(s.id)).length;
 
   return (
     <section className="relative flex min-h-svh flex-col overflow-hidden" id="hero">
@@ -393,7 +395,7 @@ export function Hero({ cityId }: { cityId?: CityId }) {
                 <span className="tnum">
                   {isFa
                     ? `${persianDigits(stationCount, lang)} ایستگاه · ${persianDigits(lineCount, lang)} خط`
-                    : `${stationCount} stations · ${lineCount} lines`}
+                    : `${stationCount} stations · ${lineCount} ${lineCount === 1 ? "line" : "lines"}`}
                 </span>
               </span>
             </Reveal>
@@ -441,7 +443,7 @@ export function Hero({ cityId }: { cityId?: CityId }) {
             </Reveal>
 
             <nav aria-label={strings.chooseCity} data-testid="landing-city-links" className="mt-3 flex flex-wrap gap-x-4 text-xs font-medium text-muted-foreground">
-              {CITIES.filter(c => cityIds.includes(c.slug)).map(c => <Link key={c.slug} href={`/${c.slug}?lang=${lang}`} className="inline-flex min-h-[44px] items-center underline decoration-border underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">{c.name[lang]}</Link>)}
+              {CITIES.filter(c => cityIds.includes(c.slug)).map(c => <Link key={c.slug} href={`/${c.slug}?lang=${lang}`} className="inline-flex min-h-[44px] items-center underline decoration-border underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">{c.name[lang]}{c.release === "preview" && <span className="ms-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] text-foreground/80">{strings.cityPreviewLabel}</span>}</Link>)}
               <Link href={`/cities?lang=${lang}`} className="inline-flex min-h-[44px] items-center underline decoration-border underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">{strings.allCities}</Link>
             </nav>
 
@@ -484,11 +486,11 @@ export function Hero({ cityId }: { cityId?: CityId }) {
 
           <div className="lg:col-span-5">
             <Reveal delay={180} className="lg:ms-auto lg:max-w-sm">
-              <div className={cityId === "mashhad" ? undefined : "drift-y"}>
-                {cityId === "mashhad" ? <MashhadRoutePanel /> : <RoutePanel />}
+              <div className={cityId && cityId !== "tehran" ? undefined : "drift-y"}>
+                {cityId && cityId !== "tehran" ? <UntimedRoutePanel city={cityId} /> : <RoutePanel />}
               </div>
               <p className="mt-3 text-center text-[11px] text-muted-foreground">
-                {cityId === "mashhad" ? strings.cityPreviewBadge : isFa
+                {cityId && getCityPreview(cityId) ? strings.cityPreviewLabel : cityId === "mashhad" ? strings.cityPreviewBadge : isFa
                   ? "نمایش واقعی زمان‌بندی — همین حالا در تهران"
                   : "Real timetable, right now in Tehran"}
               </p>

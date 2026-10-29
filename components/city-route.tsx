@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMetro } from "@/app/providers";
-import { mashhadPreview } from "@/lib/mashhad-preview";
+import { getCityPreview, getUntimedCityPlanner } from "@/lib/city-previews";
+import { getCityMeta, type CityId } from "@/lib/cities";
 import { shortPlaceLabel } from "@/lib/geocoding";
 import { STRINGS, type Lang } from "@/lib/i18n";
-import { AppSkipLink } from "../(app)/skip-link";
+import { AppSkipLink } from "@/app/(app)/skip-link";
 import { useSearchParams } from "next/navigation";
 import { LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
 import { RoutePlaceCard } from "@/components/route-place-card";
@@ -20,15 +21,17 @@ import { getCurrentPositionTolerant, classifyGeoError, type GeoErrorKind } from 
 import { haversineKm, parsePlaceParam, encodePlacePin } from "@/lib/geo";
 import { LocationErrorActions } from "@/components/location-error";
 import { CityStationPicker } from "@/components/city-station-picker";
-import { catalogStations } from "@/lib/city-catalog";
+import { catalogStations, CITY_LINES } from "@/lib/city-catalog";
 
-const byId = new Map(mashhadPreview.stations.map(s => [s.id, s]));
-const stations = catalogStations(["mashhad"]);
 const control = "min-h-[44px] rounded-lg border bg-background px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
-export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initialLang: langProp, embedded = false }: {
-  initialFrom?: string; initialTo?: string; initialLang?: Lang; embedded?: boolean;
+export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, initialLang: langProp, embedded = false }: {
+  city: Exclude<CityId, "tehran">; initialFrom?: string; initialTo?: string; initialLang?: Lang; embedded?: boolean;
 }) {
+  const planner = getUntimedCityPlanner(city)!;
+  const reviewOnly = !!getCityPreview(city);
+  const stations = useMemo(() => catalogStations([city]), [city]);
+  const byId = useMemo(() => new Map(planner.stations.map(s => [s.id, s])), [planner]);
   const params = useSearchParams();
   const initialFrom = fromProp ?? params.get("from") ?? undefined;
   const initialTo = toProp ?? params.get("to") ?? undefined;
@@ -52,8 +55,8 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
   useEffect(() => {
     let active = true;
     try {
-      const savedFrom = localStorage.getItem("mashhad.route.from");
-      const savedTo = localStorage.getItem("mashhad.route.to");
+      const savedFrom = localStorage.getItem(`${city}.route.from`);
+      const savedTo = localStorage.getItem(`${city}.route.to`);
       queueMicrotask(() => {
         if (!active) return;
         if (!initialFrom && savedFrom && byId.has(savedFrom)) setFrom(savedFrom);
@@ -75,10 +78,10 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
     }
     if (url.href !== window.location.href) window.history.replaceState(null, "", url);
     try {
-      if (from) localStorage.setItem("mashhad.route.from", from);
-      if (to) localStorage.setItem("mashhad.route.to", to);
+      if (from) localStorage.setItem(`${city}.route.from`, from);
+      if (to) localStorage.setItem(`${city}.route.to`, to);
     } catch { /* storage optional */ }
-  }, [from, to, lang, initialLang, preferredLang]);
+  }, [from, to, lang, initialLang, preferredLang, city]);
   const originPin = useMemo(() => from ? parsePlaceParam(params, "oP") : null, [from, params]);
   const destPin = useMemo(() => to ? parsePlaceParam(params, "dP") : null, [to, params]);
   const originStation = byId.get(from), destStation = byId.get(to);
@@ -123,7 +126,7 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
     } catch (error) { setGpsError(classifyGeoError(error)); }
     finally { setLocating(false); }
   };
-  const result = useMemo(() => mashhadPreview.findPath(from, to), [from, to]);
+  const result = useMemo(() => planner.findPath(from, to), [from, to, planner]);
   const name = (id: string) => byId.get(id)?.names[lang] ?? id;
   const Container = embedded ? "div" : "main";
 
@@ -133,14 +136,14 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
       className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10"
       lang={lang} dir={lang === "fa" ? "rtl" : "ltr"}>
       <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
-        <h1 className="sr-only">{t.cityPreviewTitle}</h1>
+        <h1 className="sr-only">{getCityMeta(city)!.name[lang]} · {t.findRoute}</h1>
         {!embedded && <button type="button" className={control} onClick={() => {
           const next = lang === "fa" ? "en" : "fa"; setSelectedLang(next); setLang(next);
         }}>{lang === "fa" ? "English" : "فارسی"}</button>}
         <section aria-label={t.findRoute} className="flex flex-col gap-2.5">
           <RouteFields lang={lang} originId="city-from" destinationId="city-to"
-            origin={<CityStationPicker id="city-from" placeSearchCity="mashhad" onPlaceSelect={place => selectPlace(place, "origin")} stations={stations} value={from} lang={lang} placeholder={t.searchStations} accentClass="bg-primary" onChange={id => { setFrom(id); clearPin("origin"); setInvalidLink(false); }} />}
-            destination={<CityStationPicker id="city-to" placeSearchCity="mashhad" onPlaceSelect={place => selectPlace(place, "dest")} stations={stations} value={to} lang={lang} placeholder={t.searchStations} accentClass="bg-foreground" onChange={id => { setTo(id); clearPin("dest"); setInvalidLink(false); }} />}
+            origin={<CityStationPicker id="city-from" placeSearchCity={city} onPlaceSelect={place => selectPlace(place, "origin")} stations={stations} value={from} lang={lang} placeholder={t.searchStations} accentClass="bg-primary" onChange={id => { setFrom(id); clearPin("origin"); setInvalidLink(false); }} />}
+            destination={<CityStationPicker id="city-to" placeSearchCity={city} onPlaceSelect={place => selectPlace(place, "dest")} stations={stations} value={to} lang={lang} placeholder={t.searchStations} accentClass="bg-foreground" onChange={id => { setTo(id); clearPin("dest"); setInvalidLink(false); }} />}
             originAction={<button type="button" aria-label={t.useMyLocation} disabled={locating} onClick={locateOrigin}
               className="flex w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-primary">
               {locating ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <LocateFixed aria-hidden="true" className="size-4" />}
@@ -155,7 +158,7 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
             onSwap={swap} />
           {(originPin || destPin) && <>
             <WalkingRouteInfo lang={lang} loading={walking.access.loading || walking.egress.loading || walking.direct.loading} hasPath={!!(walking.access.route || walking.egress.route || walking.direct.route)} saved={walking.access.saved || walking.egress.saved || walking.direct.saved} />
-            <Link href={`/mashhad/map?${mapParams}`} className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary md:py-2.5 md:text-base"><MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{t.viewOnMap}</Link>
+            <Link href={`/${city}/map?${mapParams}`} className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary md:py-2.5 md:text-base"><MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{t.viewOnMap}</Link>
           </>}
           {invalidLink ? <p role="alert" className="mt-3 text-sm">{t.cityPreviewInvalidLink}</p>
             : from && to && from === to ? <p role="alert" className="mt-3 text-sm">{t.sameStation}</p>
@@ -165,11 +168,11 @@ export function MashhadPreview({ initialFrom: fromProp, initialTo: toProp, initi
         {result && <section aria-label={t.routeOverview} data-testid="city-route-result">
           <PathRoutePanel lang={lang} stationCount={result.stationIds.length} name={name}
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
-              terminal: mashhadPreview.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
-              color: mashhadPreview.lines.find(l => l.id === leg.lineId)!.color, onColor: "#18181b" }))} />
-          <div className="mt-3"><RouteActions origin={{ name: byId.get(from)!.names, location: byId.get(from)!.location }} lang={lang} /></div>
+              terminal: planner.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
+              color: planner.lines.find(l => l.id === leg.lineId)!.color, onColor: CITY_LINES.find(l => l.id === leg.lineId)!.onColor }))} />
+          {!reviewOnly && <div className="mt-3"><RouteActions origin={{ name: byId.get(from)!.names, location: byId.get(from)!.location }} lang={lang} /></div>}
         </section>}
-        <TimetableHelpNotice lang={lang} />
+        {city === "mashhad" && <TimetableHelpNotice lang={lang} />}
         <div className="h-16 shrink-0 md:hidden" aria-hidden="true" />
       </div>
     </Container>

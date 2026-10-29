@@ -14,7 +14,7 @@ describe("city-scoped station catalog", () => {
   it("keeps duplicate names in different cities as distinct results and links", () => {
     const basij = CITY_STATIONS.filter(s => normalizeCitySearch(s.names.fa) === "بسیج");
     expect(basij.map(s => s.cityId).sort()).toEqual(["mashhad", "tehran"]);
-    expect(new Set(CITY_STATIONS.map(s => s.id)).size).toBe(187);
+    expect(new Set(CITY_STATIONS.map(s => s.id)).size).toBe(207);
     for (const s of basij) {
       const url = new URL(stationRouteHref(s, "to", "en"), "https://metto.ir");
       expect(url.pathname).toBe(`/${s.cityId}/route`);

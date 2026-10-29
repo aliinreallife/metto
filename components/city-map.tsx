@@ -5,20 +5,20 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Layers, Satellite, WifiOff } from "lucide-react";
 import { useMetro } from "@/app/providers";
-import { CITIES, type CityId } from "@/lib/cities";
+import { CITIES, getCityMeta, type CityId } from "@/lib/cities";
 import { CITY_EDGES, CITY_LINES, catalogStations, type CityStation } from "@/lib/city-catalog";
-import { mashhadPreview } from "@/lib/mashhad-preview";
+import { getUntimedCityPlanner } from "@/lib/city-previews";
 import { computeRouteTopology } from "@/lib/route";
 import { displayPlaceLabel, reverseGeocode } from "@/lib/geocoding";
 import { encodePlacePin, parsePlaceParam, haversineKm, estimateWalkMinutes, formatDistance, formatWalkTime, isLongWalk } from "@/lib/geo";
 import { useTripWalking } from "@/lib/walking/use-walking-route";
 import { useConnectivity } from "@/lib/offline/use-connectivity";
 import { STRINGS } from "@/lib/i18n";
-import { lineOnColor } from "@/lib/metro/lines";
 import { cn } from "@/lib/utils";
 import { MapPickCard } from "./map-pick-card";
 import { StationDetailView } from "./station-detail";
 import { WalkingRouteInfo } from "./walking-route-info";
+import { CityPreviewNotice } from "./city-preview-notice";
 
 const NetworkMap = dynamic(() => import("./city-network-map").then(m => m.CityNetworkMap), { ssr: false });
 const EMPTY_PATH: string[] = [];
@@ -39,19 +39,22 @@ export function CityMap({ city }: { city: CityId | "all" }) {
   const selected = selectedId ? byId.get(selectedId) : undefined;
   const origin = byId.get(params.get("from") ?? "");
   const dest = byId.get(params.get("to") ?? "");
+  const reviewCity = [selectedId, params.get("from"), params.get("to")]
+    .map(id => getCityMeta(id?.split(":")[0] ?? ""))
+    .find(meta => meta?.release === "preview")?.slug;
   const originPin = useMemo(() => origin ? parsePlaceParam(params, "oP") : null, [origin, params]);
   const destPin = useMemo(() => dest ? parsePlaceParam(params, "dP") : null, [dest, params]);
   const crossCity = !!origin && !!dest && origin.cityId !== dest.cityId;
   const pathIds = useMemo(() => {
     if (!origin || !dest || origin.cityId !== dest.cityId || origin.id === dest.id) return EMPTY_PATH;
-    if (origin.cityId === "mashhad") return mashhadPreview.findPath(origin.id, dest.id)?.stationIds ?? EMPTY_PATH;
+    if (origin.cityId !== "tehran") return getUntimedCityPlanner(origin.cityId)?.findPath(origin.id, dest.id)?.stationIds ?? EMPTY_PATH;
     return computeRouteTopology(origin.localId, dest.localId)?.path.map(id => `tehran:station:${id}`) ?? EMPTY_PATH;
   }, [origin, dest]);
   const stationName = (station: CityStation) => city === "all"
     ? `${station.names[lang]} · ${CITIES.find(c => c.slug === station.cityId)!.name[lang]}` : station.names[lang];
   const nearest = useMemo(() => {
     if (!picked) return null;
-    return stations.filter(s => s.operationalLineIds.length > 0).map(station => ({ station,
+    return stations.filter(s => s.operationalLineIds.length > 0 || s.status.startsWith("review_")).map(station => ({ station,
       km: haversineKm(picked.lat, picked.lng, station.location.lat, station.location.lng) }))
       .sort((a, b) => a.km - b.km)[0] ?? null;
   }, [picked, stations]);
@@ -69,14 +72,18 @@ export function CityMap({ city }: { city: CityId | "all" }) {
   const closeCard = () => { setPicked(null); setResolved(null); setSelectedId(null); refocusMap(); };
   const mapPath = `/${city === "all" ? "cities" : city}/map`;
   function chooseEndpoint(role: "origin" | "dest", station = nearest?.station, point = picked, label = pickedLabel) {
-    if (!station || station.operationalLineIds.length === 0) return;
+    if (!station || (!station.operationalLineIds.length && !station.status.startsWith("review_"))) return;
     const next = new URLSearchParams(params.toString());
     next.set(role === "origin" ? "from" : "to", station.id);
-    next.set(role === "origin" ? "op" : "dp", encodePlacePin({ ...(point ?? station.location), label }));
+    // A station selection is already an endpoint. Keep place pins only for
+    // an actual map point, rather than inventing a zero-distance walk card.
+    const pinKey = role === "origin" ? "op" : "dp";
+    if (point) next.set(pinKey, encodePlacePin({ ...point, label }));
+    else next.delete(pinKey);
     next.set("lang", lang); next.delete("station");
     for (const key of role === "origin" ? ["oPlat", "oPlng", "oPlabel"] : ["dPlat", "dPlng", "dPlabel"]) next.delete(key);
-    if (station.cityId === "mashhad") {
-      try { localStorage.setItem(`mashhad.route.${role === "origin" ? "from" : "to"}`, station.id); } catch { /* storage optional */ }
+    if (station.cityId !== "tehran") {
+      try { localStorage.setItem(`${station.cityId}.route.${role === "origin" ? "from" : "to"}`, station.id); } catch { /* storage optional */ }
     }
     setSelectedId(null); setPicked(null); setResolved(null);
     router.replace(`${mapPath}?${next}`);
@@ -112,6 +119,7 @@ export function CityMap({ city }: { city: CityId | "all" }) {
       </button>)}
     </div>
     <div className="pointer-events-none absolute inset-x-3 top-14 z-[600] mx-auto flex max-w-md flex-col gap-1.5">
+      {city === "all" && reviewCity && <div className="pointer-events-auto overflow-hidden rounded-lg bg-background/95 shadow-sm"><CityPreviewNotice city={reviewCity} /></div>}
       {stations.some(station => station.cityId === "mashhad") && <p data-testid="construction-legend" className="self-start rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm">
         <span aria-hidden="true" className="me-1.5 inline-block w-5 border-t-2 border-dashed border-muted-foreground align-middle" />{t.mashhadConstructionMap}
       </p>}
@@ -134,10 +142,10 @@ export function CityMap({ city }: { city: CityId | "all" }) {
       <StationDetailView station={{ id: selected.id, name: city === "all" ? { fa: `${selected.names.fa} · ${CITIES.find(c => c.slug === selected.cityId)!.name.fa}`, en: `${selected.names.en} · ${CITIES.find(c => c.slug === selected.cityId)!.name.en}` } : selected.names, location: selected.location, status: selected.status, amenities: selected.amenities }}
         reportedAmenities={selected.reportedAmenities} lang={lang} onClose={closeCard}
         lines={selected.lineIds.map(id => ({ id, label: id.split(":").at(-1)!, color: CITY_LINES.find(l => l.id === id)!.color,
-          onColor: selected.cityId === "mashhad" ? "#18181b" : lineOnColor(Number(id.split(":").at(-1))), boardable: selected.operationalLineIds.includes(id) }))} />
+          onColor: CITY_LINES.find(l => l.id === id)!.onColor, boardable: selected.operationalLineIds.includes(id) }))} />
       <div className="flex gap-2 p-3 pt-0">
-        <button type="button" disabled={!selected.operationalLineIds.length} className="min-h-11 flex-1 rounded-lg border border-border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50" onClick={() => chooseEndpoint("origin", selected, selected.location, stationName(selected))}>{t.setAsOrigin}</button>
-        <button type="button" disabled={!selected.operationalLineIds.length} className="min-h-11 flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50" onClick={() => chooseEndpoint("dest", selected, selected.location, stationName(selected))}>{t.setDestination}</button>
+        <button type="button" disabled={!selected.operationalLineIds.length && !selected.status.startsWith("review_")} className="min-h-11 flex-1 rounded-lg border border-border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50" onClick={() => chooseEndpoint("origin", selected, null, stationName(selected))}>{t.setAsOrigin}</button>
+        <button type="button" disabled={!selected.operationalLineIds.length && !selected.status.startsWith("review_")} className="min-h-11 flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50" onClick={() => chooseEndpoint("dest", selected, null, stationName(selected))}>{t.setDestination}</button>
       </div>
     </section>}
     {picked && nearest && <div className="absolute inset-x-3 bottom-3 z-[600] mx-auto max-w-md"><MapPickCard lang={lang} title={pickedLabel}

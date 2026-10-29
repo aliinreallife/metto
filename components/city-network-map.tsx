@@ -22,11 +22,12 @@ export function CityNetworkMap({ stations, edges, lang, selectedId, pathIds = EM
     const byId = new Map(stations.map(s => [s.id, s]));
     const tracks = edges.filter(e => byId.get(e.from)?.cityId === byId.get(e.to)?.cityId && byId.has(e.from) && byId.has(e.to));
     return { stations: display, stationMap: new Map(display.map(s => [s.id, s])),
+      labelMinZoom: stations.every(s => s.status.startsWith("review_")) ? 12 : undefined,
       construction: stations.some(station => station.cityId === "mashhad") ? construction.segments.map(section => ({
         id: section.id, color: section.displayColor, coordinates: section.coordinates.map(([lat, lng]) => [lat, lng] as [number, number]),
       })) : [],
       futureStops: stations.some(station=>station.cityId === "mashhad") ? construction.futureStops.map(stop=>({...stop,lineLabel:construction.segments.find(section=>section.lineId===stop.lineIds[0])?.names??{fa:"",en:""},color:construction.segments.find(section=>section.lineId===stop.lineIds[0])?.displayColor??"#888"})) : [],
-      edges: tracks.map(e => ({ a: e.from, b: e.to, line: e.lineId, status: e.status })),
+      edges: tracks.map(e => ({ a: e.from, b: e.to, line: e.lineId, status: e.status, coordinates: e.coordinates })),
       colors: Object.fromEntries(CITY_LINES.map(l => [l.id, l.color])),
       stationLines: id => byId.get(id)?.lineIds ?? [],
       isInterchange: id => (byId.get(id)?.operationalLineIds.length ?? 0) > 1,

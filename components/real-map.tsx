@@ -29,12 +29,14 @@ import { cn } from "@/lib/utils"
 
 export type MapStation = { id: string; name: { fa: string; en: string }; location: { lat: number; lng: number }; status: string };
 export type MapNetwork = {
+  /** Sparse review networks can show station labels at a wider view. */
+  labelMinZoom?: number;
   /** Map-only source-reported infrastructure; never used by route selection. */
   construction?: { id: string; coordinates: [number, number][]; color: string }[];
   futureStops?: {id:string;names:{fa:string;en:string};location:{lat:number;lng:number};color:string;lineLabel:{fa:string;en:string}}[];
   stations: MapStation[];
   stationMap: Map<string, MapStation>;
-  edges: { a: string; b: string; line: string | number; status: string }[];
+  edges: { a: string; b: string; line: string | number; status: string; coordinates?: [number, number][] }[];
   colors: Record<string, string>;
   stationLines: (id: string) => (string | number)[];
   isInterchange: (id: string) => boolean;
@@ -219,7 +221,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
     connectivity === "checking" ? null : connectivity,
   )
 
-  const edges = useMemo(() => network?.edges ?? buildMapEdges(), [network])
+  const edges = useMemo<MapNetwork["edges"]>(() => network?.edges ?? buildMapEdges(), [network])
   const stationMap = network?.stationMap ?? STATION_MAP
   const stationLines = network?.stationLines ?? getStationLines
   const interchangeAt = network?.isInterchange ?? isInterchange
@@ -315,7 +317,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       // Zoom pre-filter: becoming a candidate does NOT guarantee rendering;
       // the collision engine may still hide lower-priority labels.
       let candidate = isSelected || isHovered || isEndpoint || isOnRoute
-      if (!candidate && zoom >= 14) candidate = true
+      if (!candidate && zoom >= (network?.labelMinZoom ?? 14)) candidate = true
       else if (!candidate && zoom >= 12 && interchange) candidate = true
       if (!candidate) continue
 
@@ -671,9 +673,9 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const b = stationMap.get(e.b)
       if (!a || !b) continue
       const inRoute = routeEdgeKeys.has([e.a, e.b].sort().join("|") + "|" + e.line)
-      const underConstruction = e.status !== "operational"
+      const underConstruction = e.status !== "operational" && !e.status.startsWith("review_")
       L.polyline(
-        [
+        e.coordinates ?? [
           [a.location.lat, a.location.lng],
           [b.location.lat, b.location.lng],
         ],
@@ -682,6 +684,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
           weight: inRoute ? 6 : 4,
           opacity: hasRoute ? (inRoute ? 1 : 0.25) : deemphasizeMetro ? 0.2 : underConstruction ? 0.55 : 0.85,
           dashArray: underConstruction ? "2 6" : undefined,
+          className: e.coordinates ? "metto-source-track" : undefined,
         },
       ).addTo(layer)
     }
@@ -706,13 +709,14 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       const onRoute = routeStations.has(s.id)
       const isEndpoint = originId && destId && originId !== destId && (s.id === originId || s.id === destId)
       const dim = hasRoute && !onRoute
-      const underConstruction = s.status !== "operational"
+      const reviewOnly = s.status.startsWith("review_")
+      const underConstruction = s.status !== "operational" && !reviewOnly
       const radius = dotRadius(s)
       const marker = L.circleMarker([s.location.lat, s.location.lng], {
         radius,
         color: isEndpoint ? "#cc0e2d" : interchange ? "#111" : colors[firstLine],
         weight: underConstruction ? 1.5 : isEndpoint ? 3 : interchange ? 2 : 1.5,
-        dashArray: underConstruction ? "3 3" : undefined,
+        dashArray: underConstruction || reviewOnly ? "3 3" : undefined,
         fillColor: underConstruction ? "transparent" : interchange ? "#fff" : colors[firstLine],
         fillOpacity: underConstruction ? 0 : dim ? 0.3 : 1,
         opacity: dim ? 0.4 : 1,
@@ -749,7 +753,7 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
         hit.on("mouseout", () => marker.fire("mouseout"));
         const element = hit.getElement();
         if (element) {
-          element.setAttribute("aria-label", `${s.name[lang]}${underConstruction ? ` · ${t.underConstruction}` : ""}`);
+          element.setAttribute("aria-label", `${s.name[lang]}${reviewOnly ? ` · ${t.cityBoardingUnknown}` : underConstruction ? ` · ${t.underConstruction}` : ""}`);
           element.setAttribute("data-station-id", s.id);
           element.addEventListener("keydown", event => {
             if (event.key === " " || event.key === "Enter") { event.preventDefault(); event.stopPropagation(); onSelect(s.id); }

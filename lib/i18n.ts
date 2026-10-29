@@ -2,6 +2,14 @@ export type Lang = "en" | "fa";
 
 export const STRINGS = {
   en: {
+    cityPreviewLabel: "Preview",
+    cityPreviewSource: "About this preview",
+    cityBoardingUnknown: "Boarding not verified",
+    cityBoardingDisputed: "Boarding status disputed",
+    cityPreviewTrack: "Mapped track",
+    searchHintIsfahanExample: "Naqsh-e Jahan Square",
+    isfahanPreviewNotice: "For review, not travel. Boarding at Daneshgah and Kargar has not been confirmed.",
+
     chooseCity: "Choose city",
     cityZoomIn: "Zoom in",
     cityZoomOut: "Zoom out",
@@ -257,6 +265,14 @@ export const STRINGS = {
     rateMyket: "Myket",
   },
   fa: {
+    cityPreviewLabel: "پیش‌نمایش",
+    cityPreviewSource: "دربارهٔ این پیش‌نمایش",
+    cityBoardingUnknown: "وضعیت سوارشدن تأیید نشده",
+    cityBoardingDisputed: "وضعیت سوارشدن در حال بررسیه",
+    cityPreviewTrack: "مسیر روی نقشه",
+    searchHintIsfahanExample: "میدان نقش جهان",
+    isfahanPreviewNotice: "این نسخه برای بررسیه. وضعیت سوارشدن در دانشگاه و کارگر هنوز تأیید نشده.",
+
     chooseCity: "انتخاب شهر",
     cityZoomIn: "بزرگ‌نمایی",
     cityZoomOut: "کوچک‌نمایی",

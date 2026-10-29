@@ -14,8 +14,8 @@ export function CitySwitcher({ compact = false }: { compact?: boolean }) {
   const { state: connectivity } = useConnectivity();
   const t = STRINGS[lang]; const id = useId();
   const current = cityFromPath(pathname);
-  const options = [...CITIES.filter(c => cityIds.includes(c.slug)).map(c => ({ value: c.slug, name: c.name[lang] })),
-    { value: "all" as const, name: t.allCities }];
+  const options = [...CITIES.filter(c => cityIds.includes(c.slug)).map(c => ({ value: c.slug, name: c.name[lang], preview: c.release === "preview" })),
+    { value: "all" as const, name: t.allCities, preview: false }];
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const host = useRef<HTMLDivElement>(null);
@@ -57,6 +57,7 @@ export function CitySwitcher({ compact = false }: { compact?: boolean }) {
       }}>
       {!compact && <MapPin aria-hidden="true" className="size-3.5 shrink-0" />}
       <span className="truncate">{options.find(o => o.value === current)?.name}</span>
+      {options.find(o => o.value === current)?.preview && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-foreground/80">{t.cityPreviewLabel}</span>}
       <ChevronDown aria-hidden="true" className={cn("size-3 shrink-0 transition-transform motion-reduce:transition-none", open && "rotate-180")} />
     </button>
     {open && <ul id={`${id}-cities`} role="listbox" aria-label={t.chooseCity}
@@ -66,6 +67,7 @@ export function CitySwitcher({ compact = false }: { compact?: boolean }) {
         onMouseDown={event => event.preventDefault()} onClick={() => choose(option.value)}
         className={cn("flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3", active === index && "bg-accent", option.value === "all" && "mt-1 border-t border-border rounded-t-none")}>
         <span className="flex-1">{option.name}</span>
+        {option.preview && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-foreground/80">{t.cityPreviewLabel}</span>}
         {current === option.value && <Check aria-hidden="true" className="size-4 text-primary" />}
       </li>)}
     </ul>}

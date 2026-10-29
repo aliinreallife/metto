@@ -88,7 +88,8 @@ export function WelcomePage({ cityId }: { cityId?: CityId }) {
     try {
       if (localStorage.getItem("route.seen") === "1") {
         const saved = localStorage.getItem("city.last");
-        window.location.replace(`${saved === "mashhad" && cityIds.includes("mashhad") ? "/mashhad/route" : "/route"}${search}`);
+        const city = cityIds.find(id => id === saved);
+        window.location.replace(`${city && city !== "tehran" ? `/${city}/route` : "/route"}${search}`);
       }
     } catch {
       // Private mode etc. — show the landing.
@@ -145,7 +146,7 @@ export function WelcomePage({ cityId }: { cityId?: CityId }) {
           is the fallback (e.g. if inline scripts are stripped). */}
       {!cityId && <script
         dangerouslySetInnerHTML={{
-          __html: `try{var s=location.search,h=location.hash;if(!h||h.length<=1){if(/[?&](from|to)=/.test(s)){location.replace("/route"+s)}else if(localStorage.getItem("route.seen")==="1"){location.replace(${cityIds.includes("mashhad") ? '(localStorage.getItem("city.last")==="mashhad"?"/mashhad/route":"/route")' : '"/route"'}+s)}}}catch(e){}`,
+          __html: `try{var s=location.search,h=location.hash;if(!h||h.length<=1){if(/[?&](from|to)=/.test(s)){location.replace("/route"+s)}else if(localStorage.getItem("route.seen")==="1"){location.replace((${JSON.stringify(Object.fromEntries(cityIds.map(city => [city, city === "tehran" ? "/route" : `/${city}/route`])))}[localStorage.getItem("city.last")]||"/route")+s)}}}catch(e){}`,
         }}
       />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ ...FAQ_JSON_LD, mainEntity: FAQ_JSON_LD.mainEntity.map((q, i) => i === 1 ? { ...q, acceptedAnswer: { ...q.acceptedAnswer, text: `${CITIES.filter(c => cityIds.includes(c.slug) && (!cityId || c.slug === cityId)).map(c => c.name.fa).join("، ")} · ${persianDigits(cityCounts(cityIds, cityId).stations, "fa")} ایستگاه` } } : q) }) }} />
