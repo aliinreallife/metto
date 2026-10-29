@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Layers, Satellite, WifiOff } from "lucide-react";
 import { useMetro } from "@/app/providers";
-import { CITIES, type CityId } from "@/lib/cities";
+import { CITIES, getCityMeta, type CityId } from "@/lib/cities";
 import { CITY_EDGES, CITY_LINES, catalogStations, type CityStation } from "@/lib/city-catalog";
 import { getUntimedCityPlanner } from "@/lib/city-previews";
 import { computeRouteTopology } from "@/lib/route";
@@ -39,7 +39,9 @@ export function CityMap({ city }: { city: CityId | "all" }) {
   const selected = selectedId ? byId.get(selectedId) : undefined;
   const origin = byId.get(params.get("from") ?? "");
   const dest = byId.get(params.get("to") ?? "");
-  const reviewCity = [selected, origin, dest].find(s => s?.status.startsWith("review_"))?.cityId;
+  const reviewCity = [selectedId, params.get("from"), params.get("to")]
+    .map(id => getCityMeta(id?.split(":")[0] ?? ""))
+    .find(meta => meta?.release === "preview")?.slug;
   const originPin = useMemo(() => origin ? parsePlaceParam(params, "oP") : null, [origin, params]);
   const destPin = useMemo(() => dest ? parsePlaceParam(params, "dP") : null, [dest, params]);
   const crossCity = !!origin && !!dest && origin.cityId !== dest.cityId;
@@ -76,7 +78,7 @@ export function CityMap({ city }: { city: CityId | "all" }) {
     // A station selection is already an endpoint. Keep place pins only for
     // an actual map point, rather than inventing a zero-distance walk card.
     const pinKey = role === "origin" ? "op" : "dp";
-    if (point && point !== station.location) next.set(pinKey, encodePlacePin({ ...point, label }));
+    if (point) next.set(pinKey, encodePlacePin({ ...point, label }));
     else next.delete(pinKey);
     next.set("lang", lang); next.delete("station");
     for (const key of role === "origin" ? ["oPlat", "oPlng", "oPlabel"] : ["dPlat", "dPlng", "dPlabel"]) next.delete(key);
@@ -142,8 +144,8 @@ export function CityMap({ city }: { city: CityId | "all" }) {
         lines={selected.lineIds.map(id => ({ id, label: id.split(":").at(-1)!, color: CITY_LINES.find(l => l.id === id)!.color,
           onColor: CITY_LINES.find(l => l.id === id)!.onColor, boardable: selected.operationalLineIds.includes(id) }))} />
       <div className="flex gap-2 p-3 pt-0">
-        <button type="button" disabled={!selected.operationalLineIds.length && !selected.status.startsWith("review_")} className="min-h-11 flex-1 rounded-lg border border-border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50" onClick={() => chooseEndpoint("origin", selected, selected.location, stationName(selected))}>{t.setAsOrigin}</button>
-        <button type="button" disabled={!selected.operationalLineIds.length && !selected.status.startsWith("review_")} className="min-h-11 flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50" onClick={() => chooseEndpoint("dest", selected, selected.location, stationName(selected))}>{t.setDestination}</button>
+        <button type="button" disabled={!selected.operationalLineIds.length && !selected.status.startsWith("review_")} className="min-h-11 flex-1 rounded-lg border border-border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50" onClick={() => chooseEndpoint("origin", selected, null, stationName(selected))}>{t.setAsOrigin}</button>
+        <button type="button" disabled={!selected.operationalLineIds.length && !selected.status.startsWith("review_")} className="min-h-11 flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50" onClick={() => chooseEndpoint("dest", selected, null, stationName(selected))}>{t.setDestination}</button>
       </div>
     </section>}
     {picked && nearest && <div className="absolute inset-x-3 bottom-3 z-[600] mx-auto max-w-md"><MapPickCard lang={lang} title={pickedLabel}
