@@ -66,3 +66,9 @@ duplicate-name isolation, nearby results and offline tab navigation.
 Original rail geometry: © OpenStreetMap contributors, ODbL-1.0; see
 `ATTRIBUTION.md`. Operator timetable images are referenced, not redistributed.
 Shiraz remains at source-research stage.
+
+Isfahan reuses Tehran’s `TravelTimeCard`: the same localized date display, day/time
+steppers and now/depart/arrive controls. Arrive-by selects the latest published
+train meeting the deadline, including the previous evening for early deadlines.
+Shared URLs use the common timezone-explicit format; earlier Iran-local `at`
+links remain compatible.

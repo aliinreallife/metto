@@ -126,3 +126,25 @@ test("non-Friday public holidays disclose the Friday assumption in both language
   expect(audit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
   await page.screenshot({ path: "/tmp/isfahan-release-route-fa.png", fullPage: true });
 });
+
+test("Isfahan reuses Tehran's travel-time card, step controls and shareable arrival mode", async ({ page }) => {
+  await page.goto(`/isfahan/route?from=${qods}&to=${end}&at=2026-11-06T10:00&lang=en`);
+  const card = page.getByTestId("travel-time-card");
+  await expect(card).toBeVisible();
+  await expect(page.locator('input[type="datetime-local"]')).toHaveCount(0);
+  await card.getByRole("radio").nth(2).locator("..").click();
+  await expect(page).toHaveURL(/timeMode=arrive/);
+  await expect(page.getByTestId("isfahan-times")).toContainText("09:15");
+  await expect(page.getByTestId("isfahan-times")).toContainText("09:54");
+  const previous = new URL(page.url()).searchParams.get("at");
+  await card.getByRole("button", {name: "Increase minutes", exact: true}).click();
+  expect(new URL(page.url()).searchParams.get("at")).not.toBe(previous);
+  await page.reload(); await expect(card.getByRole("radio").nth(2)).toBeChecked();
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto(page.url().replace("lang=en", "lang=fa"));
+  await expect(card.getByRole("radio").nth(2)).toBeChecked();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  const audit = await new AxeBuilder({ page }).analyze();
+  expect(audit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
+  await page.screenshot({ path: "/tmp/isfahan-shared-picker-fa.png", fullPage: true });
+});

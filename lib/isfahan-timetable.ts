@@ -17,7 +17,7 @@ export function isfahanServiceDay(instantMs: number, holidays: HolidayDataset | 
     applicable: resolution.serviceId !== null,
   };
 }
-export function findIsfahanTrips(from: string, to: string, instantMs: number, holidays: HolidayDataset | null) {
+function findIsfahanTripsForDay(from: string, to: string, instantMs: number, holidays: HolidayDataset | null, options: { arriveBy?: boolean; notBeforeMs?: number } = {}) {
   const service = isfahanServiceDay(instantMs, holidays);
   const fromIndex = data.stationIds.indexOf(from), toIndex = data.stationIds.indexOf(to);
   const direction = fromIndex < toIndex ? "qods_to_defa" : "defa_to_qods";
@@ -27,9 +27,20 @@ export function findIsfahanTrips(from: string, to: string, instantMs: number, ho
     const depart = t.times[fromIndex], arrive = t.times[toIndex];
     if (!depart || !arrive) return [];
     const departMs = tehranMinuteToInstant(service.dateStr, parseServiceTimeToMinutes(depart));
-    return departMs < instantMs ? [] : [{ id: t.id, departure: depart, arrival: arrive, departureMs: departMs,
+    const arrivalMs = tehranMinuteToInstant(service.dateStr, parseServiceTimeToMinutes(arrive));
+    const feasible = options.arriveBy ? arrivalMs <= instantMs && departMs >= (options.notBeforeMs ?? -Infinity) : departMs >= instantMs;
+    return !feasible ? [] : [{ id: t.id, departure: depart, arrival: arrive, departureMs: departMs,
       minutes: parseServiceTimeToMinutes(arrive) - parseServiceTimeToMinutes(depart),
       terminalId: direction === "qods_to_defa" ? data.stationIds.at(-1)! : data.stationIds[0] }];
-  }).sort((a, b) => a.departureMs - b.departureMs);
+  }).sort((a, b) => options.arriveBy ? b.departureMs - a.departureMs : a.departureMs - b.departureMs);
   return { ...service, blocked, trips };
+}
+
+/** Arrive-by may use the previous evening's last train for an early deadline. */
+export function findIsfahanTrips(from: string, to: string, instantMs: number, holidays: HolidayDataset | null,
+  options: { arriveBy?: boolean; notBeforeMs?: number } = {}) {
+  const current = findIsfahanTripsForDay(from, to, instantMs, holidays, options);
+  if (!options.arriveBy) return current;
+  const previous = findIsfahanTripsForDay(from, to, tehranMinuteToInstant(current.dateStr, 0) - 1, holidays, options);
+  return current.trips.length ? current : previous.trips.length ? previous : current;
 }
