@@ -36,6 +36,7 @@ export function IsfahanStationDepartures({ stationId, lang, nowMs, holidays }: {
       </p>,
     )}</div>
     {service.holidayAssumption && <p className="mt-1 text-[10px] text-muted-foreground">{t.isfahanHolidayAssumption}</p>}
+    {service.calendarUnknown && <p className="mt-1 text-[10px] text-muted-foreground">{t.isfahanCalendarProvisional}</p>}
   </div>;
 }
 
