@@ -250,7 +250,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
           {(originPin || destPin || walkVerdict) && (
             <WalkingRouteInfo lang={lang} loading={walking.access.loading || walking.egress.loading || walking.direct.loading} hasPath={!!(walking.access.route || walking.egress.route || walking.direct.route)} saved={walking.access.saved || walking.egress.saved || walking.direct.saved} />
           )}
-          {!invalidLink && !isPastTime && !!route && (!hasTimetable || !!publishedTrip) && (
+          {!invalidLink && !!route && (
             <Link href={`/${city}/map?${mapParams}`} className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary md:py-2.5 md:text-base"><MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{t.viewOnMap}</Link>
           )}
           {hasTimetable && <div ref={timeCardRef} className="scroll-mt-4"><TravelTimeCard lang={lang} timeMode={timeMode} planAtMs={planAtMs} nowMs={nowMs}
