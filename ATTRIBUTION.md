@@ -14,7 +14,7 @@ URLs and hashes. Rail geometry remains derived from OpenStreetMap and retains
 the copyright and ODbL attribution above.
 
 
-## Tabriz Line 1 timetable preview
+## Tabriz Line 1 public network and provisional timetable
 
 The original timetable tables in `data/reference/tabriz-line1.json` were
 imported from **TimeMetro** by Behnam Pourjanali:
@@ -47,6 +47,6 @@ https://metroteca.com/data/cities/tabriz/lines.geojson
 https://www.openstreetmap.org/copyright
 
 Both timetable and mapping sources were inspected on 2026-11-03. Tabriz
-schedules are not operator-verified and are held behind the city-preview
-release boundary until discrepancies in final departures and Thursday
-operation are resolved. These are published row times, not live GPS trains.
+schedules are not operator-verified and remain visibly marked as provisional
+on the public Tabriz pages until final departures and Thursday/holiday
+patterns are confirmed. These are published row times, not live GPS trains.
