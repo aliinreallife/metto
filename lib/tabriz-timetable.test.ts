@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import data from "@/data/reference/tabriz-line1.json";
 import { findTabrizTrips, tabrizServiceDay } from "./tabriz-timetable";
 import { tehranMinuteToInstant } from "./tehran-time";
-import { CITY_NETWORKS, getCityPreview } from "./city-previews";
+import { CITY_NETWORKS, getCityPreview, getUntimedCityPlanner } from "./city-previews";
 import { cityCounts, CITY_EDGES, catalogStations } from "./city-catalog";
 import { availableCityIds } from "./city-availability";
 
@@ -10,7 +10,7 @@ const from = "tabriz:station:el-goli", to = "tabriz:station:noor";
 const at = (date: string, time: string) =>
   tehranMinuteToInstant(date, Number(time.slice(0, 2)) * 60 + Number(time.slice(3)));
 
-describe("Tabriz published timetable and preview release", () => {
+describe("Tabriz published timetable and public release", () => {
   it("keeps original direction-specific source rows instead of interpolating missing trains", () => {
     expect(data.stationIds).toHaveLength(18);
     expect(data.tracks).toHaveLength(17);
@@ -70,20 +70,25 @@ describe("Tabriz published timetable and preview release", () => {
     expect(tabrizServiceDay(at("2026-11-06", "10:00"), null).serviceId).toBe("holiday");
   });
 
-  it("uses OSM-mapped tracks and does not release unverified times to production", () => {
+  it("publishes 18 operational OSM-mapped stations but keeps the timetable explicitly unverified", () => {
     expect(cityCounts(["tehran", "mashhad", "isfahan", "tabriz"]))
       .toEqual({ stations: 225, lines: 11, cities: 4 });
-    const preview = getCityPreview("tabriz")!;
-    expect(preview).toBeDefined();
-    expect(preview.planner.findPath(from, to)?.stationIds).toEqual(data.stationIds);
-    expect(preview.planner.findPath(to, from)?.stationIds).toEqual(data.stationIds.slice().reverse());
-    expect(preview.planner.findPath(from, from)).toBeNull();
+    expect(getCityPreview("tabriz")).toBeUndefined();
+    const planner = getUntimedCityPlanner("tabriz")!;
+    expect(planner.findPath(from, to)?.stationIds).toEqual(data.stationIds);
+    expect(planner.findPath(to, from)?.stationIds).toEqual(data.stationIds.slice().reverse());
+    expect(planner.findPath(from, from)).toBeNull();
     expect(catalogStations(["tabriz"])).toHaveLength(18);
+    expect(catalogStations(["tabriz"]).every(s => s.status === "operational" && s.operationalLineIds.length === 1)).toBe(true);
     expect(CITY_EDGES.filter(e => e.lineId === "tabriz:line:1")).toHaveLength(17);
-    expect(CITY_NETWORKS.find(c => c.cityId === "tabriz")?.network.stations.every(s => s.status === "review_unverified")).toBe(true);
-    expect(availableCityIds({ VERCEL_ENV: "preview", NODE_ENV: "production" }))
-      .toContain("tabriz");
-    expect(availableCityIds({ VERCEL_ENV: "production", NODE_ENV: "production" }))
-      .not.toContain("tabriz");
+    expect(CITY_NETWORKS.find(c => c.cityId === "tabriz")?.network.stations.every(s => s.status === "operational")).toBe(true);
+    expect(data.release.productionAuthorized).toBe(true);
+    expect(data.release.operatorVerifiedTimetable).toBe(false);
+    for (const env of [
+      { VERCEL_ENV: "preview", NODE_ENV: "production" },
+      { VERCEL_ENV: "production", NODE_ENV: "production" },
+      { VERCEL_ENV: "preview", METTO_CITY_PREVIEWS: "0" },
+      { NODE_ENV: "production" },
+    ]) expect(availableCityIds(env)).toContain("tabriz");
   });
 });
