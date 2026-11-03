@@ -22,6 +22,18 @@ test("Tabriz's public landing and all four city tabs are accessible without the 
   await expect(page.getByTestId("tabriz-timetable-notice")).toHaveCount(0);
 });
 
+test("Tabriz route picker suggests the municipality Clock Tower in Persian and English", async ({ page }) => {
+  for (const [lang, expected, previous] of [
+    ["fa", "برج ساعت شهرداری تبریز", "پارک ائل‌گلی"],
+    ["en", "Tabriz Clock Tower", "El Goli Park"],
+  ] as const) {
+    await page.goto(`/tabriz/route?lang=${lang}`);
+    await page.locator("#city-from").click();
+    await expect(page.getByRole("button", { name: expected, exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: previous, exact: true })).toHaveCount(0);
+  }
+});
+
 test("Tabriz public route inherits Tehran's timed journey without the global timetable banner", async ({ page }) => {
   const response = await page.goto(`/tabriz/route?from=${el}&to=${noor}&lang=en`);
   expect(response?.status()).toBe(200);
