@@ -17,6 +17,9 @@ test("Tabriz's public landing and all four city tabs are accessible without the 
     await expect(page.getByTestId("tabriz-timetable-notice"), pathname).toHaveCount(0);
     await expect(page.getByTestId("city-preview-notice")).toHaveCount(0);
   }
+  const faResponse = await page.goto("/tabriz?lang=fa");
+  expect(faResponse?.status()).toBe(200);
+  await expect(page.getByTestId("tabriz-timetable-notice")).toHaveCount(0);
 });
 
 test("Tabriz public route inherits Tehran's timed journey without the global timetable banner", async ({ page }) => {
