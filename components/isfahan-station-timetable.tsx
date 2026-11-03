@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 import { findIsfahanTrips, isfahanServiceData, isfahanServiceDay } from "@/lib/isfahan-timetable";
 import { stationByCityId } from "@/lib/city-catalog";
@@ -49,14 +49,14 @@ export function IsfahanStationTimesheet({ stationId, lang, onClose, initialPatte
   const idIndex = isfahanServiceData.stationIds.indexOf(stationId);
   const closed = pattern === "friday" && isfahanServiceData.release.fridayNoBoardingStationIds.includes(stationId);
   const targets = terminalIds.filter(id => id !== stationId);
-  const groups = useMemo(() => targets.map(id => {
+  const groups = targets.map(id => {
     const direction = id === terminalIds[1] ? "qods_to_defa" : "defa_to_qods";
     const times = idIndex < 0 ? [] : isfahanServiceData.trips
       .filter(trip => trip.serviceId === pattern && trip.direction === direction)
       .flatMap(trip => trip.times[idIndex] ? [trip.times[idIndex]!] : [])
       .sort((a, b) => a.localeCompare(b));
     return { id, times };
-  }), [pattern, idIndex, targets.join("|")]);
+  });
 
   return <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card" data-testid="isfahan-station-timesheet">
     <div className="flex items-center justify-between border-b border-border px-4 py-3">
