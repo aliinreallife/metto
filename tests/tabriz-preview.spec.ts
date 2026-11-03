@@ -15,7 +15,7 @@ test("Tabriz route inherits Tehran's full timed journey, next train and preview 
   await expect(page.getByTestId("city-preview-notice")).toContainText("last trains");
   const journey = page.getByTestId("tabriz-journey");
   await expect(journey).toBeVisible();
-  await expect(journey.getByTestId("route-summary-stats")).toContainText("18 stops");
+  await expect(journey.getByTestId("route-summary-stats")).toContainText(/18\s*stops/);
   await expect(journey.getByTestId("route-summary-stats")).toContainText("10:45");
   await expect(journey.locator("ol")).toContainText("10:10");
   await expect(journey.locator("ol")).toContainText("Then:");
