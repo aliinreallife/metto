@@ -24,6 +24,25 @@ it("looks up Isfahan's local landmark under its verified Persian search name", a
   expect(new URL(fetcher.mock.calls[0][0]).searchParams.get("q")).toBe("میدان نقش جهان");
   expect(result[0]).toMatchObject({lat:32.6581024,lng:51.6773624});
 });
+it.each([
+  ["en", "Tabriz Clock Tower"],
+  ["fa", "برج ساعت شهرداری تبریز"],
+] as const)("resolves the %s Tabriz Clock Tower hint to Sa'at Square, not the university tower", async (lang, hint) => {
+  vi.resetModules();
+  const fetcher = vi.fn().mockImplementation(async () => Response.json([
+    { display_name: "میدان ساعت, تبریز", lat: "38.0741159", lon: "46.2962846", type: "neighbourhood" },
+  ]));
+  vi.stubGlobal("fetch", fetcher);
+  const { searchPlaces } = await import("./geocoding");
+  const { getCityMeta } = await import("./cities");
+  expect(getCityMeta("tabriz")?.placeExample?.[lang]).toBe(hint);
+  const result = await searchPlaces(hint, lang, 1, "tabriz");
+  const params = new URL(fetcher.mock.calls[0][0]).searchParams;
+  expect(params.get("q")).toBe("میدان ساعت تبریز");
+  expect(params.get("viewbox")).toBe("46.17,37.97,46.44,38.13");
+  expect(result[0]).toMatchObject({ lat: 38.0741159, lng: 46.2962846 });
+});
+
 it("isolates identical landmark queries by city and rejects foreign Mashhad results",async()=>{
   vi.resetModules();
   const fetcher=vi.fn().mockImplementation(async()=>Response.json([
