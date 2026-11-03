@@ -6,13 +6,15 @@ const el = "tabriz:station:el-goli";
 const noor = "tabriz:station:noor";
 
 test.beforeEach(async ({ page }) => {
-  test.skip(deploymentCityCounts().cities < 4, "Tabriz is not available outside city-preview deployments");
+  test.skip(deploymentCityCounts().cities < 4, "Tabriz is unavailable on this deployment");
   await page.clock.setFixedTime(new Date("2026-11-03T06:30:00Z")); // 10:00 in Iran.
 });
 
-test("Tabriz route inherits Tehran's full timed journey, next train and preview warning", async ({ page }) => {
-  await page.goto(`/tabriz/route?from=${el}&to=${noor}&lang=en`);
-  await expect(page.getByTestId("city-preview-notice")).toContainText("last trains");
+test("Tabriz public route inherits Tehran's timed journey with an explicit timetable warning", async ({ page }) => {
+  const response = await page.goto(`/tabriz/route?from=${el}&to=${noor}&lang=en`);
+  expect(response?.status()).toBe(200);
+  await expect(page.getByTestId("tabriz-timetable-notice")).toContainText("last trains");
+  await expect(page.getByTestId("city-preview-notice")).toHaveCount(0);
   const journey = page.getByTestId("tabriz-journey");
   await expect(journey).toBeVisible();
   await expect(journey.getByTestId("route-summary-stats")).toContainText(/18\s*stops/);
