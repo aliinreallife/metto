@@ -9,7 +9,8 @@ import { shortPlaceLabel } from "@/lib/geocoding";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { AppSkipLink } from "@/app/(app)/skip-link";
 import { useSearchParams } from "next/navigation";
-import { History, LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
+import { Database, ExternalLink, History, LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
+import { cityDataCredit } from "@/lib/data-credit";
 import { RoutePlaceCard } from "@/components/route-place-card";
 import { useTripWalking } from "@/lib/walking/use-walking-route";
 import { WalkingRouteInfo } from "@/components/walking-route-info";
@@ -165,8 +166,9 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
 
   return <>
     {!embedded && <AppSkipLink />}
+    <div className="flex size-full min-h-0 flex-col">
     <Container id={embedded ? undefined : "main-content"} tabIndex={-1} data-testid="city-path-preview"
-      className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10"
+      className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10"
       lang={lang} dir={lang === "fa" ? "rtl" : "ltr"}>
       <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
         <h1 className="sr-only">{getCityMeta(city)!.name[lang]} · {t.findRoute}</h1>
@@ -234,5 +236,23 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
         <div className="h-16 shrink-0 md:hidden" aria-hidden="true" />
       </div>
     </Container>
+    {embedded && hasTimetable && <footer className="hidden flex-wrap items-center gap-x-4 gap-y-1 border-t border-border bg-card/90 px-4 py-2 backdrop-blur md:flex">
+      <a href="https://github.com/aliinreallife/metto" target="_blank" rel="noopener noreferrer"
+        className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground">
+        <ExternalLink aria-hidden="true" className="size-3 text-primary" />
+        <span className="text-muted-foreground">{t.builtBy}</span>
+        <span className="font-semibold text-foreground">aliinreallife</span>
+        <span className="sr-only"> ({t.opensInNewTab})</span>
+      </a>
+      <a href={cityDataCredit(city).url} target="_blank" rel="noopener noreferrer"
+        className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground">
+        <Database aria-hidden="true" className="size-3 text-primary" />
+        <span className="text-muted-foreground">{t.dataBy}</span>
+        <span className="font-semibold text-foreground">{cityDataCredit(city).name}</span>
+        <span className="sr-only"> ({t.opensInNewTab})</span>
+      </a>
+      <a href="/#donate" className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground">{t.supportLink}</a>
+    </footer>}
+    </div>
   </>;
 }
