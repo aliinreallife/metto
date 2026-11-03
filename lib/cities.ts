@@ -53,8 +53,10 @@ export const CITIES: CityMeta[] = [
   {
     slug: "tabriz", name: { en: "Tabriz", fa: "تبریز" }, timing: true,
     release: "public", bounds: [46.17, 37.97, 46.44, 38.13],
-    placeExample: { en: "El Goli Park", fa: "پارک ائل‌گلی" },
-    placeExampleQuery: "ائل گلی تبریز",
+    placeExample: { en: "Tabriz Clock Tower", fa: "برج ساعت شهرداری تبریز" },
+    // "برج ساعت تبریز" alone matches the unrelated university tower in OSM.
+    // Search the municipality clock tower by its accurately indexed square.
+    placeExampleQuery: "میدان ساعت تبریز",
     keywords: ["Tabriz metro map", "Tabriz subway times", "مترو تبریز", "نقشه مترو تبریز", "ساعت حرکت مترو تبریز", "خط یک قطار شهری تبریز"],
   },
 
