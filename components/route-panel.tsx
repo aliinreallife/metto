@@ -15,6 +15,8 @@ import {
   Zap,
   AlertTriangle,
   Loader2,
+  LocateFixed,
+  History,
 } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import { canBoardAtStation } from "@/lib/metro/selectors";
@@ -259,45 +261,15 @@ export function RoutePanel({
   }, [route, firstWait, isFa, lang]);
 
   return (
-    <div className="flex flex-col gap-3 md:gap-4">
-      {scheduleLoading && (
-        <div role="status" className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          <Loader2 aria-hidden="true" className="size-3 animate-spin" />
-          {isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
-        </div>
-      )}
-      {plan && plan.mode === "arrive" && route.path[0] && (
-        <div data-testid="plan-banner" className="flex items-center gap-2.5 rounded-xl bg-primary px-3.5 py-2.5 text-primary-foreground">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20">
-            <AlarmClock aria-hidden="true" className="size-4" />
-          </span>
-          <p className="min-w-0 flex-1 truncate text-sm font-medium md:text-base">
-            <CountdownLine
-              lang={lang}
-              stationName={name(route.path[0])}
-              targetMs={route.departedAtMs}
-            />
-          </p>
-        </div>
-      )}
-      <RouteSummaryStats lang={lang} stationCount={route.numStops + 1} waitMinutes={firstWait}
-        travelMinutes={mins - firstWait} arrival={route.estimatedArrival ?? "—"} departedAtMs={route.departedAtMs} />
-      {afterStats}
-      {topWarning && (
-        <div
-          role={topWarning.severity === "red" ? "alert" : "status"}
-          className={
-            topWarning.severity === "red"
-              ? "flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400"
-              : "flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600 dark:text-amber-400"
-          }
-        >
-          <AlertTriangle aria-hidden="true" className="size-4 shrink-0" />
-          <span className="min-w-0">{topWarning.message}</span>
-        </div>
-      )}
-      <p className="text-xs text-muted-foreground">{route.legTiming.includes("estimated") ? t.fallbackTimeNote : t.timeNote}</p>
-
+    <TimetabledJourneyFrame lang={lang}
+      stationCount={route.numStops + 1}
+      waitMinutes={firstWait} travelMinutes={mins - firstWait}
+      arrival={route.estimatedArrival ?? "—"} departedAtMs={route.departedAtMs}
+      originName={name(route.path[0])}
+      arriveBy={plan?.mode === "arrive"} loading={scheduleLoading}
+      warning={topWarning}
+      note={route.legTiming.includes("estimated") ? t.fallbackTimeNote : t.timeNote}
+      afterStats={afterStats}>
       <ol className="flex flex-col gap-3">
         {route.segments.map((seg, i) => (
           <li key={i} className="flex flex-col gap-2">
@@ -349,8 +321,106 @@ export function RoutePanel({
           </li>
         ))}
       </ol>
+    </TimetabledJourneyFrame>
+  );
+}
+
+/**
+ * Canonical timetable journey layout for Tehran and every city with verified
+ * timetable data. Release status (preview/public) never changes this UI.
+ * City adapters supply departures and segments, not their own route chrome.
+ */
+export function TimetabledJourneyFrame({
+  lang, stationCount, waitMinutes, travelMinutes, arrival, departedAtMs,
+  originName, arriveBy = false, loading = false, warning, note, afterStats, children,
+}: {
+  lang: Lang;
+  stationCount: number; waitMinutes: number; travelMinutes: number;
+  arrival: string; departedAtMs: number;
+  originName: string; arriveBy?: boolean; loading?: boolean;
+  warning?: { severity: "red" | "amber"; message: string } | null;
+  note?: string; afterStats?: ReactNode; children: ReactNode;
+}) {
+  const t = STRINGS[lang];
+  const activeWarning = warning === undefined && waitMinutes > 60
+    ? { severity: "amber" as const, message: `${t.departureIn} ${persianDigits(waitMinutes, lang)} ${t.minEst}` }
+    : warning;
+  return (
+    <div className="flex flex-col gap-3 md:gap-4">
+      {loading && <div role="status" className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <Loader2 aria-hidden="true" className="size-3 animate-spin" />
+        {lang === "fa" ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}
+      </div>}
+      {arriveBy && originName && (
+        <div data-testid="plan-banner" className="flex items-center gap-2.5 rounded-xl bg-primary px-3.5 py-2.5 text-primary-foreground">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20">
+            <AlarmClock aria-hidden="true" className="size-4" />
+          </span>
+          <p className="min-w-0 flex-1 truncate text-sm font-medium md:text-base">
+            <CountdownLine lang={lang} stationName={originName} targetMs={departedAtMs} />
+          </p>
+        </div>
+      )}
+      <RouteSummaryStats lang={lang} stationCount={stationCount} waitMinutes={waitMinutes}
+        travelMinutes={travelMinutes} arrival={arrival} departedAtMs={departedAtMs} />
+      {afterStats}
+      {activeWarning && (
+        <div role={activeWarning.severity === "red" ? "alert" : "status"}
+          className={activeWarning.severity === "red"
+            ? "flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400"
+            : "flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600 dark:text-amber-400"}>
+          <AlertTriangle aria-hidden="true" className="size-4 shrink-0" />
+          <span className="min-w-0">{activeWarning.message}</span>
+        </div>
+      )}
+      {note && <p className="text-xs text-muted-foreground">{note}</p>}
+      {children}
     </div>
   );
+}
+
+/** Shared expired-plan state: the same actions and visual hierarchy in every city. */
+export function PastTimeNotice({ lang, mode, onUseNow, onEditTime }: {
+  lang: Lang; mode: "depart" | "arrive";
+  onUseNow: () => void; onEditTime: () => void;
+}) {
+  const t = STRINGS[lang];
+  return <div role="alert" data-testid="city-time-passed"
+    className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4">
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+      <History aria-hidden="true" className="size-4 text-muted-foreground" />
+    </span>
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-bold">{mode === "depart" ? t.timePassedTitle : t.arrivalPassedTitle}</p>
+      <p className="text-xs text-muted-foreground">{mode === "depart" ? t.timePassedBody : t.arrivalPassedBody}</p>
+    </div>
+    <div className="flex shrink-0 flex-col gap-1.5">
+      <button type="button" onClick={onUseNow}
+        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        {t.useNow}
+      </button>
+      <button type="button" onClick={onEditTime}
+        className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        {t.editTime}
+      </button>
+    </div>
+  </div>;
+}
+
+/** Same-station empty state shared by all timetable-enabled route planners. */
+export function SameStationNotice({ lang, fromSelected, sameStation = true }: { lang: Lang; fromSelected: boolean; sameStation?: boolean }) {
+  const t = STRINGS[lang];
+  return <div data-testid="same-station-notice"
+    className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground md:px-5 md:py-8 md:text-base">
+    <p>{sameStation ? t.sameStation : t.pickBoth}</p>
+    {!fromSelected && (
+      <p className="mt-2 flex flex-wrap items-center justify-center gap-1 text-xs">
+        {lang === "fa" ? "یا روی" : "or tap"}
+        <LocateFixed aria-hidden="true" className="inline size-3.5 shrink-0" />
+        {lang === "fa" ? "ضربه بزنید تا نزدیک‌ترین ایستگاه مبدأ شود" : "to set your nearest station as origin"}
+      </p>
+    )}
+  </div>;
 }
 
 /** Shared three-card summary; city adapters supply their own timetable values. */
@@ -395,12 +465,13 @@ export function RouteSummaryStats({ lang, stationCount, waitMinutes, travelMinut
 }
 
 /** Station/path summary and shared itinerary, without timetable fields. */
-export function PathRoutePanel({ lang, stationCount, legs, name, stationNote, showSummary = true, nextTrip }: {
+export function PathRoutePanel({ lang, stationCount, legs, name, stationNote, showSummary = true, nextTrip, followingTimes = [], isPlanned = false }: {
   lang: Lang; stationCount: number;
   legs: { line: number; stations: string[]; terminal: string; color: string; onColor: string }[];
   name: (id: string) => string; stationNote?: (id: string) => string | undefined; showSummary?: boolean;
   /** Published departure from a city adapter; never inferred from station distances. */
   nextTrip?: { departure: string; arrival: string; minutes: number };
+  followingTimes?: string[]; isPlanned?: boolean;
 }) {
   const t = STRINGS[lang]; const isFa = lang === "fa";
   const transferCount = Math.max(0, legs.length - 1);
@@ -421,7 +492,8 @@ export function PathRoutePanel({ lang, stationCount, legs, name, stationNote, sh
         <span>{t.transferTo} {persianDigits(leg.line, lang)} {t.via} {name(leg.stations[0])}</span>
       </div>}
       <SegmentView {...leg} name={name} lang={lang} boardable={() => true} stationNote={stationNote}
-        showNextTrain={index === 0 && !!nextTrip} publishedTrip={index === 0 ? nextTrip : undefined} />
+        showNextTrain={index === 0 && !!nextTrip} publishedTrip={index === 0 ? nextTrip : undefined}
+        followingTimes={index === 0 ? followingTimes : []} isPlanned={isPlanned} />
     </li>)}</ol>
   </div>;
 }
@@ -491,10 +563,11 @@ type SegmentViewProps = {
   trip?: TripResult; isPlanned?: boolean;
   /** Timetable-backed timing for a city using the shared segment UI. */
   publishedTrip?: { departure: string; arrival: string; minutes: number };
+  followingTimes?: string[];
 };
 
 /** Shared itinerary card, with optional timing supplied by its city adapter. */
-export function SegmentView({ line, stations, terminal, name, lang, showNextTrain = false, trip, publishedTrip,
+export function SegmentView({ line, stations, terminal, name, lang, showNextTrain = false, trip, publishedTrip, followingTimes = [],
   isPlanned = false, color = LINE_COLORS[line], onColor = lineOnColor(line),
   boardable = (id: string) => canBoardAtStation(id, line), nextDep = [], stationNote,
 }: SegmentViewProps & { color?: string; onColor?: string; boardable?: (id: string) => boolean;
@@ -555,14 +628,18 @@ export function SegmentView({ line, stations, terminal, name, lang, showNextTrai
               // "Then:" reflects live departures from now — hide it on
               // planned journeys where it would contradict the plan.
               if (isPlanned) return null;
-              // Find next departure with a different time than the main one
+              // Source-backed city adapters expose the next published
+              // departure, just as Tehran's native schedule lookup does.
               const nextDifferent = next ? nextDep.find((d) => d.time !== next.time) : null;
-              if (!nextDifferent) return null;
+              const following = publishedTrip
+                ? followingTimes.find((time) => time !== publishedTrip.departure)
+                : nextDifferent?.time;
+              if (!following) return null;
               return (
                 <p className="mt-0.5 text-[11px] text-foreground/70">
                   {isFa ? "بعدی:" : "Then:"}{" "}
-                  <span className="tnum font-semibold">{persianDigits(nextDifferent.time, lang)}</span>
-                  {nextDifferent.isExpress && (
+                  <span className="tnum font-semibold">{persianDigits(following, lang)}</span>
+                  {nextDifferent?.isExpress && (
                     <span className="ms-1 text-amber-600 dark:text-amber-400">
                       ({isFa ? "سریع السیر" : "express"})
                     </span>

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  History,
   Loader2,
   ExternalLink,
   Database,
@@ -14,7 +13,7 @@ import {
 import { RoutePlaceCard } from "@/components/route-place-card";
 import { RouteFields } from "@/components/route-fields";
 import { StationCombobox } from "@/components/station-combobox";
-import { MissedDeadlineCard, NoServiceCard, RoutePanel, WalkSuggestCard } from "@/components/route-panel";
+import { MissedDeadlineCard, NoServiceCard, PastTimeNotice, RoutePanel, SameStationNotice, WalkSuggestCard } from "@/components/route-panel";
 import { RatePromptHost } from "@/components/rate-prompt";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
@@ -667,38 +666,8 @@ function RouteView({
         ) : null}
 
         {isPastTime ? (
-          <div
-            role="alert"
-            className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4"
-          >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-              <History aria-hidden="true" className="size-4 text-muted-foreground" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">
-                {timeMode === "depart" ? t.timePassedTitle : t.arrivalPassedTitle}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {timeMode === "depart" ? t.timePassedBody : t.arrivalPassedBody}
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col gap-1.5">
-              <button
-                type="button"
-                onClick={onUseNow}
-                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {t.useNow}
-              </button>
-              <button
-                type="button"
-                onClick={expandTimeCard}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {t.editTime}
-              </button>
-            </div>
-          </div>
+          <PastTimeNotice lang={lang} mode={timeMode === "depart" ? "depart" : "arrive"}
+            onUseNow={onUseNow} onEditTime={expandTimeCard} />
         ) : arriveView && arriveView.kind === "missed" && planAtMs !== null ? (
           <MissedDeadlineCard
             lang={lang}
@@ -772,22 +741,7 @@ function RouteView({
           <>
             {walkVerdict?.kind === "same-station" && <WalkSuggestCard lang={lang} walkMin={walkVerdict.walkMin} distanceKm={walkVerdict.walkKm}
               approximate={!walking.direct.route} sameStation />}
-            <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground md:px-5 md:py-8 md:text-base">
-            <p>
-              {originId && destId && originId === destId
-                ? t.sameStation
-                : t.pickBoth}
-            </p>
-            {!originId && (
-              <p className="mt-2 flex flex-wrap items-center justify-center gap-1 text-xs">
-                {isFa ? "یا روی" : "or tap"}
-                <LocateFixed aria-hidden="true" className="inline size-3.5 shrink-0" />
-                {isFa
-                  ? "ضربه بزنید تا نزدیک‌ترین ایستگاه مبدأ شود"
-                  : "to set your nearest station as origin"}
-              </p>
-            )}
-          </div>
+            <SameStationNotice lang={lang} sameStation={!!originId && originId === destId} fromSelected={!!originId} />
           </>
         ) : null}
 
