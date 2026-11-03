@@ -61,16 +61,18 @@ export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false }: {
  * Isfahan's adapter alone selects a published source row. No extra schedule
  * disclaimer panel, and never a purely geometric trip presented as a train.
  */
-export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEditTime, onUseNow, ...path }: Parameters<typeof PathRoutePanel>[0] & {
+export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEditTime, onUseNow, published, nowMs, ...path }: Parameters<typeof PathRoutePanel>[0] & {
   plannedAt?: number; stationIds: string[]; arriveBy?: boolean;
   onEditTime: () => void; onUseNow: () => void;
+  published?: ReturnType<typeof findIsfahanTrips> | null; nowMs?: number;
 }) {
   const now = usePublishedClock();
   const { dataset } = useHolidayData();
   const t = STRINGS[path.lang];
-  if (now === null) return <p role="status" className="text-xs text-muted-foreground">{t.isfahanLoading}</p>;
+  if (nowMs === undefined && now === null) return <p role="status" className="text-xs text-muted-foreground">{t.isfahanLoading}</p>;
+  const currentNow = nowMs ?? now!;
   const from = stationIds[0], to = stationIds.at(-1)!;
-  const selection = findIsfahanTrips(from, to, plannedAt ?? now, dataset, { arriveBy, notBeforeMs: now });
+  const selection = published ?? findIsfahanTrips(from, to, plannedAt ?? currentNow, dataset, { arriveBy, notBeforeMs: currentNow });
   const trip = selection.trips[0];
   if (!selection.applicable) return <p role="status" data-testid="isfahan-service-unknown" className="rounded-xl border border-border bg-card px-4 py-5 text-sm">{t.isfahanCalendarUnknown}</p>;
   if (selection.blocked) return <p role="status" data-testid="isfahan-no-boarding" className="rounded-xl border border-border bg-card px-4 py-5 text-sm">{t.isfahanNoBoarding}</p>;
@@ -78,7 +80,7 @@ export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEdit
     if (arriveBy && plannedAt !== undefined) {
       // Tehran's missed-deadline card is used only when a real forward trip
       // proves the next possible arrival is after the requested deadline.
-      const forward = findIsfahanTrips(from, to, now, dataset);
+      const forward = findIsfahanTrips(from, to, currentNow, dataset);
       const next = forward.trips[0];
       if (next) {
         const earliestArrivalMs = tehranMinuteToInstant(forward.dateStr, parseServiceTimeToMinutes(next.arrival));
@@ -95,7 +97,7 @@ export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEdit
     {selection.holidayAssumption && <p role="status" data-testid="isfahan-holiday-assumption"
       className="rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">{t.isfahanHolidayAssumption}</p>}
     <TimetabledJourneyFrame lang={path.lang} stationCount={stationIds.filter(id => !closed.includes(id)).length}
-      waitMinutes={arriveBy ? 0 : Math.max(0, Math.round((trip.departureMs - (plannedAt ?? now)) / 60_000))}
+      waitMinutes={arriveBy ? 0 : Math.max(0, Math.round((trip.departureMs - (plannedAt ?? currentNow)) / 60_000))}
       travelMinutes={trip.minutes} arrival={trip.arrival} departedAtMs={trip.departureMs}
       originName={path.name(from)} arriveBy={arriveBy} note={t.timeNote}>
       <PathRoutePanel {...path} showSummary={false} stationCount={stationIds.filter(id => !closed.includes(id)).length}
