@@ -23,7 +23,7 @@ import { LocationErrorActions } from "@/components/location-error";
 import { CityStationPicker } from "@/components/city-station-picker";
 import { catalogStations, CITY_LINES } from "@/lib/city-catalog";
 
-import { IsfahanTimes, IsfahanPathPanel } from "./isfahan-times";
+import { IsfahanJourney } from "./isfahan-times";
 import { TravelTimeCard } from "./travel-time-card";
 import { useRouteClock } from "@/lib/use-route-clock";
 import { parseTimeModeParams, applyTimeParams, seedNextFiveMinutes, type TimeMode } from "@/lib/route-planning";
@@ -36,6 +36,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
 }) {
   const planner = getUntimedCityPlanner(city)!;
   const reviewOnly = !!getCityPreview(city);
+  const hasTimetable = getCityMeta(city)!.timing;
   const stations = useMemo(() => catalogStations([city]), [city]);
   const byId = useMemo(() => new Map(planner.stations.map(s => [s.id, s])), [planner]);
   const params = useSearchParams();
@@ -60,7 +61,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   const [timeExpanded, setTimeExpanded] = useState(() => legacyMs !== null || preference.mode !== "now");
   const nowMs = useRouteClock();
   // Match Tehran: never display a journey that would depart at a time already in the past.
-  const isPastTime = city === "isfahan" && timeMode !== "now" && planAtMs !== null && planAtMs < nowMs;
+  const isPastTime = hasTimetable && timeMode !== "now" && planAtMs !== null && planAtMs < nowMs;
   const plannedAt = timeMode === "now" ? undefined : planAtMs ?? undefined;
   function selectTimeMode(mode: TimeMode) {
     setTimeMode(mode);
@@ -155,7 +156,6 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   };
   const result = useMemo(() => planner.findPath(from, to), [from, to, planner]);
   const name = (id: string) => byId.get(id)?.names[lang] ?? id;
-  const ResultPanel = city === "isfahan" ? IsfahanPathPanel : PathRoutePanel;
   const Container = embedded ? "div" : "main";
 
   return <>
@@ -188,7 +188,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
             <WalkingRouteInfo lang={lang} loading={walking.access.loading || walking.egress.loading || walking.direct.loading} hasPath={!!(walking.access.route || walking.egress.route || walking.direct.route)} saved={walking.access.saved || walking.egress.saved || walking.direct.saved} />
             <Link href={`/${city}/map?${mapParams}`} className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary md:py-2.5 md:text-base"><MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{t.viewOnMap}</Link>
           </>}
-          {city === "isfahan" && <TravelTimeCard lang={lang} timeMode={timeMode} planAtMs={planAtMs} nowMs={nowMs}
+          {hasTimetable && <TravelTimeCard lang={lang} timeMode={timeMode} planAtMs={planAtMs} nowMs={nowMs}
             expanded={timeExpanded} onToggle={() => setTimeExpanded(value => !value)} onModeChange={selectTimeMode} onPlanAtMs={setPlanAtMs} />}
           {isPastTime && <div role="alert" data-testid="city-time-passed"
             className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4">
@@ -212,11 +212,17 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
                 : !result ? <p className="mt-4 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">{t.pickBoth}</p> : null}
         </section>
         {!isPastTime && result && <section aria-label={t.routeOverview} data-testid="city-route-result">
-          {city === "isfahan" && <div className="mb-3"><IsfahanTimes stationIds={result.stationIds} from={from} to={to} lang={lang} plannedAt={plannedAt} arriveBy={timeMode === "arrive"} /></div>}
-          <ResultPanel arriveBy={timeMode === "arrive"} stationIds={result.stationIds} plannedAt={plannedAt} lang={lang} stationCount={result.stationIds.length} name={name}
+          {city === "isfahan" ? <IsfahanJourney stationIds={result.stationIds} plannedAt={plannedAt}
+            arriveBy={timeMode === "arrive"} onEditTime={() => setTimeExpanded(true)}
+            onUseNow={() => { setTimeMode("now"); setPlanAtMs(null); }}
+            lang={lang} stationCount={result.stationIds.length} name={name}
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
               terminal: planner.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
               color: planner.lines.find(l => l.id === leg.lineId)!.color, onColor: CITY_LINES.find(l => l.id === leg.lineId)!.onColor }))} />
+            : <PathRoutePanel lang={lang} stationCount={result.stationIds.length} name={name}
+              legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
+                terminal: planner.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
+                color: planner.lines.find(l => l.id === leg.lineId)!.color, onColor: CITY_LINES.find(l => l.id === leg.lineId)!.onColor }))} />}
           {!reviewOnly && <div className="mt-3"><RouteActions origin={{ name: byId.get(from)!.names, location: byId.get(from)!.location }} lang={lang} /></div>}
         </section>}
         {city === "mashhad" && <TimetableHelpNotice lang={lang} />}
