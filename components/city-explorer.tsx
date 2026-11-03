@@ -1,10 +1,10 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMetro } from "@/app/providers";
 import { CITIES, type CityId } from "@/lib/cities";
-import { CITY_LINES, catalogStations, cityCounts, normalizeCitySearch, stationRouteHref } from "@/lib/city-catalog";
+import { CITY_LINES, catalogStations, cityCounts, normalizeCitySearch, stationRouteHref, type CityStation } from "@/lib/city-catalog";
 import { AMENITY_LABELS, STRINGS, persianDigits } from "@/lib/i18n";
 import { getUntimedCityPlanner } from "@/lib/city-previews";
 import { CityPreviewNotice } from "./city-preview-notice";
@@ -14,6 +14,10 @@ import { CityMap } from "./city-map";
 import { AMENITY_ICON_MAP } from "@/lib/amenity-icons";
 import type { AmenityKey } from "@/lib/geo";
 import { StationCardView } from "./station-card";
+import { IsfahanStationDepartures, IsfahanStationTimesheet } from "./isfahan-station-timetable";
+import { isfahanServiceDay } from "@/lib/isfahan-timetable";
+import { useHolidayData } from "@/lib/holidays/use-holiday-data";
+import { useRouteClock } from "@/lib/use-route-clock";
 import { FilterChip } from "./stations-tab";
 import { NearbyLocation } from "./nearby-tab";
 import { CityStationPicker } from "./city-station-picker";
@@ -31,6 +35,38 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false); const [geoError, setGeoError] = useState<GeoErrorKind | null>(null);
   const [nearbyStationId, setNearbyStationId] = useState("");
+  const [timetableStation, setTimetableStation] = useState<CityStation | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
+  const [clientReady, setClientReady] = useState(false);
+  const nowMs = useRouteClock();
+  const { dataset } = useHolidayData();
+  // Live departure rows are mounted client-side to avoid SSR minute-boundary mismatches.
+  useEffect(() => { queueMicrotask(() => setClientReady(true)); }, []);
+  // Same keyboard/focus behavior as Tehran's station timetable dialog.
+  useEffect(() => {
+    if (!timetableStation) return;
+    prevFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setTimetableStation(null); return; }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusables.length) { event.preventDefault(); return; }
+      if (event.shiftKey && document.activeElement === focusables[0]) {
+        event.preventDefault(); focusables[focusables.length - 1].focus();
+      } else if (!event.shiftKey && document.activeElement === focusables[focusables.length - 1]) {
+        event.preventDefault(); focusables[0].focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    requestAnimationFrame(() => {
+      const first = dialogRef.current?.querySelector<HTMLElement>("button:not([disabled])");
+      (first ?? dialogRef.current)?.focus();
+    });
+    return () => { window.removeEventListener("keydown", onKey); prevFocusRef.current?.focus(); };
+  }, [timetableStation]);
   const stations = useMemo(() => catalogStations(cityIds, city), [cityIds, city]);
   const effectiveCity = city === "all" && view === "stations" ? cityFilter : city;
   const filtered = useMemo(() => {
@@ -69,6 +105,8 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
             lines={s.lineIds.map(id => ({ id, label: id.split(":").at(-1)!, color: CITY_LINES.find(l => l.id === id)!.color,
               onColor: CITY_LINES.find(l => l.id === id)!.onColor }))}
             boardableCount={s.operationalLineIds.length}
+            departures={s.cityId === "isfahan" ? <IsfahanStationDepartures stationId={s.id} lang={lang} nowMs={clientReady ? nowMs : null} holidays={dataset} /> : undefined}
+            onShowTimetable={s.cityId === "isfahan" ? () => setTimetableStation(s) : undefined}
             distance={location ? haversineKm(location.lat, location.lng, s.location.lat, s.location.lng) : undefined}
             onSetDest={() => router.push(stationRouteHref(s, "to", lang))} />
           {city === "all" && <Link className="inline-flex min-h-11 items-center gap-1.5 text-xs text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-primary" href={`/${s.cityId}/map?${new URLSearchParams({ station: s.localId, lang })}`}><MapIcon aria-hidden="true" className="size-3.5" />{t.tabMap}</Link>}
@@ -117,6 +155,16 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
         <p role="status" className="my-3 text-xs text-muted-foreground">{persianDigits(filtered.length, lang)} {t.stops}</p>
         {renderRows(filtered)}
         {!filtered.length && <p className="py-4">{t.noResults}</p>}
+      </div>
+    </div>}
+    {timetableStation && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 md:items-center"
+      onClick={() => setTimetableStation(null)}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={timetableStation.names[lang]}
+        tabIndex={-1} className="max-h-[85vh] w-full max-w-lg overflow-hidden outline-none"
+        onClick={event => event.stopPropagation()}>
+        <IsfahanStationTimesheet key={timetableStation.id} stationId={timetableStation.id} lang={lang}
+          initialPattern={isfahanServiceDay(nowMs, dataset).serviceId === "friday" ? "friday" : "saturday_thursday"}
+          onClose={() => setTimetableStation(null)} />
       </div>
     </div>}
   </div>;
