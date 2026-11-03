@@ -197,3 +197,24 @@ test("Isfahan presents the selected published train in Tehran's shared segment c
   await expect(route.locator("ol").first()).toContainText("09:15");
   await expect(route.locator("ol").first()).toContainText("09:54");
 });
+
+test("Isfahan station cards expose next departures and a full source-backed timesheet", async ({ page }) => {
+  await page.goto("/isfahan/stations?lang=en");
+  const station = page.locator(`li[data-station-id="${qods}"]`);
+  await expect(station.getByTestId("isfahan-station-departures")).toBeVisible();
+  await station.getByRole("button", { name: "Timetable", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Qods" });
+  await expect(dialog.getByTestId("isfahan-station-timesheet")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Sat–Thu" })).toHaveAttribute("aria-pressed", "true");
+  await dialog.getByRole("button", { name: /Friday \/ holidays/ }).click();
+  await expect(dialog).toContainText("09:00");
+  await expect(dialog).toContainText("22:00");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+
+  const closedStation = page.locator('li[data-station-id="isfahan:station:baharestan"]');
+  await closedStation.getByRole("button", { name: "Timetable", exact: true }).click();
+  const fridayDialog = page.getByRole("dialog");
+  await fridayDialog.getByRole("button", { name: /Friday \/ holidays/ }).click();
+  await expect(fridayDialog).toContainText("does not board passengers");
+});
