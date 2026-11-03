@@ -9,7 +9,7 @@ import { shortPlaceLabel } from "@/lib/geocoding";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { AppSkipLink } from "@/app/(app)/skip-link";
 import { useSearchParams } from "next/navigation";
-import { LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
+import { History, LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
 import { RoutePlaceCard } from "@/components/route-place-card";
 import { useTripWalking } from "@/lib/walking/use-walking-route";
 import { WalkingRouteInfo } from "@/components/walking-route-info";
@@ -59,6 +59,8 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   const [planAtMs, setPlanAtMs] = useState<number | null>(legacyMs ?? preference.at?.getTime() ?? null);
   const [timeExpanded, setTimeExpanded] = useState(() => legacyMs !== null || preference.mode !== "now");
   const nowMs = useRouteClock();
+  // Match Tehran: never display a journey that would depart at a time already in the past.
+  const isPastTime = city === "isfahan" && timeMode !== "now" && planAtMs !== null && planAtMs < nowMs;
   const plannedAt = timeMode === "now" ? undefined : planAtMs ?? undefined;
   function selectTimeMode(mode: TimeMode) {
     setTimeMode(mode);
@@ -188,12 +190,28 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
           </>}
           {city === "isfahan" && <TravelTimeCard lang={lang} timeMode={timeMode} planAtMs={planAtMs} nowMs={nowMs}
             expanded={timeExpanded} onToggle={() => setTimeExpanded(value => !value)} onModeChange={selectTimeMode} onPlanAtMs={setPlanAtMs} />}
+          {isPastTime && <div role="alert" data-testid="city-time-passed"
+            className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+              <History aria-hidden="true" className="size-4 text-muted-foreground" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">{timeMode === "depart" ? t.timePassedTitle : t.arrivalPassedTitle}</p>
+              <p className="text-xs text-muted-foreground">{timeMode === "depart" ? t.timePassedBody : t.arrivalPassedBody}</p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-1.5">
+              <button type="button" onClick={() => { setTimeMode("now"); setPlanAtMs(null); }}
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-primary">{t.useNow}</button>
+              <button type="button" onClick={() => setTimeExpanded(true)}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary">{t.editTime}</button>
+            </div>
+          </div>}
           {invalidLink ? <p role="alert" className="mt-3 text-sm">{t.cityPreviewInvalidLink}</p>
             : from && to && from === to ? <p role="alert" className="mt-3 text-sm">{t.sameStation}</p>
               : from && to && !result ? <p role="alert" className="mt-3 text-sm">{t.noRoute}</p>
                 : !result ? <p className="mt-4 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">{t.pickBoth}</p> : null}
         </section>
-        {result && <section aria-label={t.routeOverview} data-testid="city-route-result">
+        {!isPastTime && result && <section aria-label={t.routeOverview} data-testid="city-route-result">
           {city === "isfahan" && <div className="mb-3"><IsfahanTimes stationIds={result.stationIds} from={from} to={to} lang={lang} plannedAt={plannedAt} arriveBy={timeMode === "arrive"} /></div>}
           <ResultPanel arriveBy={timeMode === "arrive"} stationIds={result.stationIds} plannedAt={plannedAt} lang={lang} stationCount={result.stationIds.length} name={name}
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,

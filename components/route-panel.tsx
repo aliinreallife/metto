@@ -395,10 +395,12 @@ export function RouteSummaryStats({ lang, stationCount, waitMinutes, travelMinut
 }
 
 /** Station/path summary and shared itinerary, without timetable fields. */
-export function PathRoutePanel({ lang, stationCount, legs, name, stationNote, showSummary = true }: {
+export function PathRoutePanel({ lang, stationCount, legs, name, stationNote, showSummary = true, nextTrip }: {
   lang: Lang; stationCount: number;
   legs: { line: number; stations: string[]; terminal: string; color: string; onColor: string }[];
   name: (id: string) => string; stationNote?: (id: string) => string | undefined; showSummary?: boolean;
+  /** Published departure from a city adapter; never inferred from station distances. */
+  nextTrip?: { departure: string; arrival: string; minutes: number };
 }) {
   const t = STRINGS[lang]; const isFa = lang === "fa";
   const transferCount = Math.max(0, legs.length - 1);
@@ -418,7 +420,8 @@ export function PathRoutePanel({ lang, stationCount, legs, name, stationNote, sh
         <Footprints aria-hidden="true" className="size-4 shrink-0" />
         <span>{t.transferTo} {persianDigits(leg.line, lang)} {t.via} {name(leg.stations[0])}</span>
       </div>}
-      <SegmentView {...leg} name={name} lang={lang} boardable={() => true} stationNote={stationNote} />
+      <SegmentView {...leg} name={name} lang={lang} boardable={() => true} stationNote={stationNote}
+        showNextTrain={index === 0 && !!nextTrip} publishedTrip={index === 0 ? nextTrip : undefined} />
     </li>)}</ol>
   </div>;
 }
@@ -486,10 +489,12 @@ type SegmentViewProps = {
   line: number; stations: string[]; terminal: string;
   name: (id: string) => string; lang: Lang; showNextTrain?: boolean;
   trip?: TripResult; isPlanned?: boolean;
+  /** Timetable-backed timing for a city using the shared segment UI. */
+  publishedTrip?: { departure: string; arrival: string; minutes: number };
 };
 
 /** Shared itinerary card, with optional timing supplied by its city adapter. */
-export function SegmentView({ line, stations, terminal, name, lang, showNextTrain = false, trip,
+export function SegmentView({ line, stations, terminal, name, lang, showNextTrain = false, trip, publishedTrip,
   isPlanned = false, color = LINE_COLORS[line], onColor = lineOnColor(line),
   boardable = (id: string) => canBoardAtStation(id, line), nextDep = [], stationNote,
 }: SegmentViewProps & { color?: string; onColor?: string; boardable?: (id: string) => boolean;
@@ -515,7 +520,7 @@ export function SegmentView({ line, stations, terminal, name, lang, showNextTrai
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="tnum text-2xl font-bold leading-none text-foreground md:text-3xl">
-                {persianDigits(trip ? trip.departTime : (next?.time ?? "—"), lang)}
+                {persianDigits(trip ? trip.departTime : (publishedTrip?.departure ?? next?.time ?? "—"), lang)}
               </span>
               {(trip?.train.isExpress || next?.isExpress) && (
                 <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
@@ -532,6 +537,13 @@ export function SegmentView({ line, stations, terminal, name, lang, showNextTrai
                   {isFa ? "رسیدن" : "arrive"} <span className="tnum font-semibold">{persianDigits(trip.arriveTime, lang)}</span>
                   <span className="mx-1.5">·</span>
                   {persianDigits(trip.travelMinutes, lang)}{isFa ? " دقیقه" : " min"}
+                </>
+              ) : publishedTrip ? (
+                <>
+                  <span className="mx-1.5">·</span>
+                  {isFa ? "رسیدن" : "arrive"} <span className="tnum font-semibold">{persianDigits(publishedTrip.arrival, lang)}</span>
+                  <span className="mx-1.5">·</span>
+                  {persianDigits(publishedTrip.minutes, lang)}{isFa ? " دقیقه" : " min"}
                 </>
               ) : next ? (
                 <span className="mx-1.5 text-amber-600 dark:text-amber-400">

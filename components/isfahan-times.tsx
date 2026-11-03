@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
-import { findIsfahanTrips, isfahanServiceData, isfahanServiceDay } from "@/lib/isfahan-timetable";
+import { findIsfahanTrips, isfahanServiceData } from "@/lib/isfahan-timetable";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatDateLabel } from "@/lib/route-planning";
 import { tehranParts } from "@/lib/tehran-time";
@@ -61,8 +61,16 @@ export function IsfahanPathPanel(props: Parameters<typeof PathRoutePanel>[0] & {
     const update = () => setNow(Date.now()); queueMicrotask(update);
     const timer = setInterval(update, 30_000); return () => clearInterval(timer);
   }, []);
-  const service = now === null ? null : arriveBy ? findIsfahanTrips(stationIds[0], stationIds.at(-1)!, plannedAt ?? now, dataset, { arriveBy: true, notBeforeMs: now }) : isfahanServiceDay(plannedAt ?? now, dataset);
-  const closed = service?.serviceId === "friday" ? isfahanServiceData.release.fridayNoBoardingStationIds : [];
+  // A valid physical path is not proof of passenger service. Match Tehran:
+  // never render a train itinerary unless the source timetable has a usable run.
+  const selection = now === null ? null : findIsfahanTrips(
+    stationIds[0], stationIds.at(-1)!, plannedAt ?? now, dataset,
+    { arriveBy, notBeforeMs: now },
+  );
+  const trip = selection?.trips[0];
+  if (!trip) return null;
+  const closed = selection?.serviceId === "friday" ? isfahanServiceData.release.fridayNoBoardingStationIds : [];
   return <PathRoutePanel {...rest} showSummary={false} stationCount={stationIds.filter(id => !closed.includes(id)).length}
+    nextTrip={trip}
     stationNote={id => closed.includes(id) ? STRINGS[props.lang].isfahanNoStopNote : undefined} />;
 }
