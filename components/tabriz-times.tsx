@@ -46,7 +46,8 @@ export function TabrizTimes({ from, to, lang, plannedAt, arriveBy = false }: {
     {results.map((result, index) => {
       const trip = result.trips[0];
       if (!trip) return <p key={index} role="status" className="text-xs text-muted-foreground">
-        {arriveBy ? t.noJourneyBy : t.isfahanNoMoreTrains}</p>;
+        {lang === "fa" ? "در منبع فعلی حرکت دیگری ثبت نشده؛ احتمال سرویس اضافه وجود دارد."
+          : "No later departure in this source; additional service may operate."}</p>;
       const terminal = stationByCityId.get(trip.terminalId)?.names[lang] ?? "";
       return <div key={index} className="flex flex-col gap-1">
         <p className="flex flex-wrap items-baseline gap-x-2">
@@ -94,9 +95,17 @@ export function TabrizJourney({ plannedAt, stationIds, arriveBy = false,
           </div>;
       }
     }
-    return <div data-testid="tabriz-no-service"><NoServiceCard lang={path.lang}
-      stationName={path.name(from)} reachableUntil="" isOrigin
-      onPlanAnotherTime={onEditTime} /></div>;
+    return <div data-testid="tabriz-no-service">
+      <p role="status" data-testid="tabriz-source-limit-note"
+        className="mb-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+        {path.lang === "fa"
+          ? "در جدول منتشرشده سفر دیگری برای این زمان پیدا نشد. ممکن است قطارهای دیرتر فعال باشند؛ اطلاعیهٔ ایستگاه را بررسی کنید."
+          : "No matching train in the published table. Later trains may operate; check station announcements."}
+      </p>
+      <NoServiceCard lang={path.lang}
+        stationName={path.name(from)} reachableUntil="" isOrigin
+        onPlanAnotherTime={onEditTime} />
+    </div>;
   }
   return <div data-testid="tabriz-journey" className="flex flex-col gap-3 md:gap-4">
     {selection.holidayAssumption && <p data-testid="tabriz-operating-pattern-note" role="status"
