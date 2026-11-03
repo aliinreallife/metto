@@ -35,10 +35,13 @@ export async function searchPlaces(
   controller?.abort()
   controller = new AbortController()
 
-  // The provider indexes this landmark under its Persian name only.
+  // Suggested examples can use a different indexed name in Nominatim.
+  // Map both the English and Persian labels to the verified search query so
+  // choosing a landmark hint never resolves a different place.
   const meta = getCityMeta(city)!
-  const searchQuery = meta.placeExampleQuery && q.toLowerCase() === meta.placeExample?.en.toLowerCase()
-    ? meta.placeExampleQuery : q
+  const isExample = q.toLowerCase() === meta.placeExample?.en.toLowerCase()
+    || q === meta.placeExample?.fa
+  const searchQuery = meta.placeExampleQuery && isExample ? meta.placeExampleQuery : q
   const params = new URLSearchParams({
     q: searchQuery,
     format: "json",
