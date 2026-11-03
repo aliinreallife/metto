@@ -236,7 +236,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
         <div className="h-16 shrink-0 md:hidden" aria-hidden="true" />
       </div>
     </Container>
-    {embedded && hasTimetable && <footer className="hidden flex-wrap items-center gap-x-4 gap-y-1 border-t border-border bg-card/90 px-4 py-2 backdrop-blur md:flex">
+    {embedded && hasTimetable && <footer role="contentinfo" className="hidden flex-wrap items-center gap-x-4 gap-y-1 border-t border-border bg-card/90 px-4 py-2 backdrop-blur md:flex">
       <a href="https://github.com/aliinreallife/metto" target="_blank" rel="noopener noreferrer"
         className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground">
         <ExternalLink aria-hidden="true" className="size-3 text-primary" />
