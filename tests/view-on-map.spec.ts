@@ -48,14 +48,30 @@ test("Persian View on map is hidden until the Tabriz journey exists", async ({ p
   await expect(mapLink).toBeVisible();
 });
 
-test("No available Tabriz departure does not show View on map", async ({ page }) => {
+test("No available Tabriz departure still allows viewing the connected route on the map", async ({ page }) => {
   await page.goto("/tabriz/route?from=tabriz:station:el-goli&to=tabriz:station:noor&timeMode=depart&at=2026-11-03T16%3A41%3A00.000Z&lang=en");
   await expect(page.getByTestId("tabriz-no-service")).toBeVisible();
-  await expect(page.getByRole("link", { name: "View on map", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "View on map", exact: true })).toBeVisible();
 });
 
-test("No available Isfahan departure does not show View on map", async ({ page }) => {
+test("No available Isfahan departure still allows viewing the connected route on the map", async ({ page }) => {
   await page.goto("/isfahan/route?from=isfahan:station:qods&to=isfahan:station:defa-e-moghaddas&at=2026-11-06T22:01&lang=en");
   await expect(page.getByTestId("isfahan-no-service")).toBeVisible();
+  await expect(page.getByRole("link", { name: "View on map", exact: true })).toBeVisible();
+});
+
+test("Past planned departures still permit viewing a connected route", async ({ page }) => {
+  for (const route of ["/route", "/isfahan/route", "/tabriz/route"]) {
+    const city = cityRoutes.find((item) => item.route === route)!;
+    await page.goto(`${route}?from=${encodeURIComponent(city.from)}&to=${encodeURIComponent(city.to)}&timeMode=depart&at=2026-11-02T10%3A00%3A00.000Z&lang=en`);
+    await expect(page.getByRole("link", { name: "View on map", exact: true }), route).toBeVisible();
+  }
+});
+
+test("Invalid or disconnected station IDs never enable the map action", async ({ page }) => {
+  await page.goto("/route?from=tajrish&to=unknown-station&lang=en");
+  await expect(page.getByRole("link", { name: "View on map", exact: true })).toHaveCount(0);
+
+  await page.goto("/tabriz/route?from=tabriz:station:el-goli&to=mashhad:station:airport&lang=en");
   await expect(page.getByRole("link", { name: "View on map", exact: true })).toHaveCount(0);
 });
