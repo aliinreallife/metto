@@ -5,11 +5,11 @@ import { findIsfahanTrips, isfahanServiceData, isfahanServiceDay } from "@/lib/i
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatDateLabel } from "@/lib/route-planning";
 import { tehranParts } from "@/lib/tehran-time";
-import { PathRoutePanel } from "./route-panel";
+import { PathRoutePanel, RouteSummaryStats } from "./route-panel";
 import { stationByCityId } from "@/lib/city-catalog";
 
 /** Published times, not real-time train positions. Uses Iran's clock on every device. */
-export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false }: { from: string; to?: string; lang: Lang; plannedAt?: number; arriveBy?: boolean }) {
+export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false, stationIds }: { from: string; to?: string; lang: Lang; plannedAt?: number; arriveBy?: boolean; stationIds?: string[] }) {
   const [now, setNow] = useState<number | null>(null);
   const { dataset } = useHolidayData();
   useEffect(() => {
@@ -23,7 +23,14 @@ export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false }: { 
   const targetIds = to ? [to] : [isfahanServiceData.stationIds[0], isfahanServiceData.stationIds.at(-1)!].filter(id => id !== from);
   const results = targetIds.map(id => findIsfahanTrips(from, id, plannedAt ?? now, dataset, { arriveBy, notBeforeMs: now }));
   const service = results[0];
-  return <div data-testid="isfahan-times" className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-sm" aria-label={t.isfahanPublishedTimes}>
+  const firstTrip = service?.trips[0];
+  const closed = service?.serviceId === "friday" ? isfahanServiceData.release.fridayNoBoardingStationIds : [];
+  return <div className="flex flex-col gap-3">
+    {firstTrip && stationIds && <RouteSummaryStats lang={lang}
+      stationCount={stationIds.filter(id => !closed.includes(id)).length}
+      waitMinutes={arriveBy ? 0 : Math.max(0, Math.round((firstTrip.departureMs - (plannedAt ?? now)) / 60_000))}
+      travelMinutes={firstTrip.minutes} arrival={firstTrip.arrival} departedAtMs={firstTrip.departureMs} />}
+    <div data-testid="isfahan-times" className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-sm" aria-label={t.isfahanPublishedTimes}>
     <p className="text-xs font-medium text-muted-foreground">{t.isfahanPublishedTimes}</p>
     {service?.holidayAssumption && <p role="status" data-testid="isfahan-holiday-assumption" className="text-sm font-medium">{t.isfahanHolidayAssumption}</p>}
     {service?.calendarUnknown && <p role="status" className="text-xs text-muted-foreground">{service.applicable ? t.isfahanCalendarProvisional : t.isfahanCalendarUnknown}</p>}
@@ -41,7 +48,7 @@ export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false }: { 
       </div>;
     })}
     <a className="self-start text-xs text-muted-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary" href={isfahanServiceData.source.pageUrl} target="_blank" rel="noreferrer">{t.isfahanTimetableSource}</a>
-  </div>;
+  </div></div>;
 }
 
 /** Keep Friday's physical track, but do not count closed boarding points as stops. */
@@ -55,6 +62,6 @@ export function IsfahanPathPanel(props: Parameters<typeof PathRoutePanel>[0] & {
   }, []);
   const service = now === null ? null : arriveBy ? findIsfahanTrips(stationIds[0], stationIds.at(-1)!, plannedAt ?? now, dataset, { arriveBy: true, notBeforeMs: now }) : isfahanServiceDay(plannedAt ?? now, dataset);
   const closed = service?.serviceId === "friday" ? isfahanServiceData.release.fridayNoBoardingStationIds : [];
-  return <PathRoutePanel {...rest} stationCount={stationIds.filter(id => !closed.includes(id)).length}
+  return <PathRoutePanel {...rest} showSummary={false} stationCount={stationIds.filter(id => !closed.includes(id)).length}
     stationNote={id => closed.includes(id) ? STRINGS[props.lang].isfahanNoStopNote : undefined} />;
 }

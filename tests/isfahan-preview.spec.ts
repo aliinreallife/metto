@@ -44,7 +44,7 @@ test("preview cities use normal city switching, map selection and route tabs wit
   await expect(page.getByRole("button", { name: "Naqsh-e Jahan Square", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Iran Mall|Nader Shah Tomb/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
-  await expect(page.getByTestId("city-route-result")).toContainText("20 stops");
+  await expect(page.getByTestId("city-route-result")).toContainText(/20\s*stops/);
   await expect(page.getByTestId("isfahan-times")).toContainText("Scheduled arrival");
   await page.getByRole("button", { name: "Swap", exact: true }).click();
   await expect(page.getByLabel("From", { exact: true })).toContainText("Defa-e Moghaddas");
@@ -107,7 +107,7 @@ test("Friday final trains and closed boarding points use the chosen Iran date", 
   await page.goto(`/isfahan/route?from=${qods}&to=${end}&at=2026-11-06T22:00&lang=en`);
   const times = page.getByTestId("isfahan-times");
   await expect(times).toContainText("22:00"); await expect(times).toContainText("22:39");
-  await expect(page.getByTestId("city-route-result")).toContainText("16 stops");
+  await expect(page.getByTestId("city-route-result")).toContainText(/16\s*stops/);
   await page.reload(); await expect(times).toContainText("22:39");
   await page.goto(`/isfahan/route?from=isfahan:station:baharestan&to=${end}&at=2026-11-06T10:00&lang=en`);
   await expect(times).toContainText("does not board passengers");
@@ -147,4 +147,18 @@ test("Isfahan reuses Tehran's travel-time card, step controls and shareable arri
   const audit = await new AxeBuilder({ page }).analyze();
   expect(audit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
   await page.screenshot({ path: "/tmp/isfahan-shared-picker-fa.png", fullPage: true });
+});
+
+
+test("Isfahan uses the same three summary cards with source-based wait, travel and arrival", async ({ page }) => {
+  await page.goto(`/isfahan/route?from=${qods}&to=${end}&at=2026-11-06T09:05&lang=en`);
+  const summary = page.getByTestId("route-summary-stats");
+  await expect(summary.locator(":scope > div")).toHaveCount(3);
+  await expect(summary).toContainText(/16\s*stops/);
+  await expect(summary).toContainText(/10\s*\+\s*39/);
+  await expect(summary).toContainText("09:54");
+  await expect(summary).toContainText("wait + travel");
+  await page.goto(`/isfahan/route?from=isfahan:station:baharestan&to=${end}&at=2026-11-06T09:05&lang=en`);
+  await expect(page.getByTestId("isfahan-times")).toContainText("does not board passengers");
+  await expect(summary).toHaveCount(0);
 });

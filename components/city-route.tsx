@@ -194,7 +194,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
                 : !result ? <p className="mt-4 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">{t.pickBoth}</p> : null}
         </section>
         {result && <section aria-label={t.routeOverview} data-testid="city-route-result">
-          {city === "isfahan" && <div className="mb-3"><IsfahanTimes from={from} to={to} lang={lang} plannedAt={plannedAt} arriveBy={timeMode === "arrive"} /></div>}
+          {city === "isfahan" && <div className="mb-3"><IsfahanTimes stationIds={result.stationIds} from={from} to={to} lang={lang} plannedAt={plannedAt} arriveBy={timeMode === "arrive"} /></div>}
           <ResultPanel arriveBy={timeMode === "arrive"} stationIds={result.stationIds} plannedAt={plannedAt} lang={lang} stationCount={result.stationIds.length} name={name}
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
               terminal: planner.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,

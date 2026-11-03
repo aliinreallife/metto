@@ -72,3 +72,8 @@ steppers and now/depart/arrive controls. Arrive-by selects the latest published
 train meeting the deadline, including the previous evening for early deadlines.
 Shared URLs use the common timezone-explicit format; earlier Iran-local `at`
 links remain compatible.
+
+The route summary also reuses Tehran’s `RouteSummaryStats`: station count,
+wait + travel and arrival. Isfahan supplies the selected published row, excludes
+Friday boarding restrictions from the count, and omits timing cards when no
+usable train exists. Map station sheets keep their compact departure display.
