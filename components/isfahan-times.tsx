@@ -4,39 +4,43 @@ import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { findIsfahanTrips, isfahanServiceData } from "@/lib/isfahan-timetable";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatDateLabel } from "@/lib/route-planning";
-import { tehranParts } from "@/lib/tehran-time";
-import { PathRoutePanel, RouteSummaryStats } from "./route-panel";
-import { METTO_DATA_CREDIT } from "@/lib/data-credit";
+import { tehranParts, parseServiceTimeToMinutes, tehranMinuteToInstant } from "@/lib/tehran-time";
+import { MissedDeadlineCard, NoServiceCard, PathRoutePanel, RouteSummaryStats } from "./route-panel";
 import { stationByCityId } from "@/lib/city-catalog";
 
-/** Published times, not real-time train positions. Uses Iran's clock on every device. */
-export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false, stationIds }: { from: string; to?: string; lang: Lang; plannedAt?: number; arriveBy?: boolean; stationIds?: string[] }) {
+function usePublishedClock() {
   const [now, setNow] = useState<number | null>(null);
-  const { dataset } = useHolidayData();
   useEffect(() => {
     const update = () => setNow(Date.now());
     queueMicrotask(update);
     const timer = setInterval(update, 30_000);
-    return () => clearInterval(timer);
+    const visible = () => { if (!document.hidden) update(); };
+    window.addEventListener("pageshow", update);
+    document.addEventListener("visibilitychange", visible);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("pageshow", update);
+      document.removeEventListener("visibilitychange", visible);
+    };
   }, []);
+  return now;
+}
+
+/** Compact departures for station map cards, not a second route-results panel. */
+export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false }: {
+  from: string; to?: string; lang: Lang; plannedAt?: number; arriveBy?: boolean;
+}) {
+  const now = usePublishedClock();
+  const { dataset } = useHolidayData();
   const t = STRINGS[lang];
   if (now === null) return <p role="status" className="text-xs text-muted-foreground">{t.isfahanLoading}</p>;
   const targetIds = to ? [to] : [isfahanServiceData.stationIds[0], isfahanServiceData.stationIds.at(-1)!].filter(id => id !== from);
   const results = targetIds.map(id => findIsfahanTrips(from, id, plannedAt ?? now, dataset, { arriveBy, notBeforeMs: now }));
   const service = results[0];
-  const firstTrip = service?.trips[0];
-  const closed = service?.serviceId === "friday" ? isfahanServiceData.release.fridayNoBoardingStationIds : [];
-  return <div className="flex flex-col gap-3">
-    {firstTrip && stationIds && <RouteSummaryStats lang={lang}
-      stationCount={stationIds.filter(id => !closed.includes(id)).length}
-      waitMinutes={arriveBy ? 0 : Math.max(0, Math.round((firstTrip.departureMs - (plannedAt ?? now)) / 60_000))}
-      travelMinutes={firstTrip.minutes} arrival={firstTrip.arrival} departedAtMs={firstTrip.departureMs} />}
-    <div data-testid="isfahan-times" className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-sm" aria-label={t.isfahanPublishedTimes}>
-    <p className="text-xs font-medium text-muted-foreground">{t.isfahanPublishedTimes}</p>
-    {service?.holidayAssumption && <p role="status" data-testid="isfahan-holiday-assumption" className="text-sm font-medium">{t.isfahanHolidayAssumption}</p>}
-    {service?.calendarUnknown && <p role="status" className="text-xs text-muted-foreground">{service.applicable ? t.isfahanCalendarProvisional : t.isfahanCalendarUnknown}</p>}
-    {service && !service.applicable && !service.calendarUnknown && <p role="status">{t.isfahanCalendarUnknown}</p>}
-    {service?.applicable && results.slice(0, service.blocked ? 1 : results.length).map((result, i) => {
+  if (!service?.applicable) return <p role="status" className="text-xs text-muted-foreground">{t.isfahanCalendarUnknown}</p>;
+  return <div data-testid="isfahan-times" className="flex flex-col gap-2 text-sm" aria-label={t.isfahanPublishedTimes}>
+    {service.holidayAssumption && <p role="status" className="text-xs text-muted-foreground">{t.isfahanHolidayAssumption}</p>}
+    {results.slice(0, service.blocked ? 1 : results.length).map((result, i) => {
       const trip = result.trips[0];
       if (result.blocked) return <p key={i} role="status">{t.isfahanNoBoarding}</p>;
       if (!trip) return <p key={i} role="status">{arriveBy ? t.noJourneyBy : t.isfahanNoMoreTrains}</p>;
@@ -48,29 +52,52 @@ export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false, stat
         {!arriveBy && result.trips.length > 1 && <p className="text-xs text-muted-foreground">{t.isfahanFollowingTrains} <span className="tnum" dir="ltr">{result.trips.slice(1, 3).map(tr => persianDigits(tr.departure, lang)).join(" · ")}</span></p>}
       </div>;
     })}
-    <a className="self-start text-xs text-muted-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary" href={METTO_DATA_CREDIT.url} target="_blank" rel="noreferrer">{t.isfahanTimetableSource}</a>
-  </div></div>;
+  </div>;
 }
 
-/** Keep Friday's physical track, but do not count closed boarding points as stops. */
-export function IsfahanPathPanel(props: Parameters<typeof PathRoutePanel>[0] & { plannedAt?: number; stationIds: string[]; arriveBy?: boolean }) {
-  const { plannedAt, stationIds, arriveBy, ...rest } = props;
+/**
+ * Timetable-enabled cities must use the same passenger-facing route flow as
+ * Tehran: one planned journey, or a specific no-service / missed-deadline card.
+ * Isfahan's adapter alone selects a published source row. No extra schedule
+ * disclaimer panel, and never a purely geometric trip presented as a train.
+ */
+export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEditTime, onUseNow, ...path }: Parameters<typeof PathRoutePanel>[0] & {
+  plannedAt?: number; stationIds: string[]; arriveBy?: boolean;
+  onEditTime: () => void; onUseNow: () => void;
+}) {
+  const now = usePublishedClock();
   const { dataset } = useHolidayData();
-  const [now, setNow] = useState<number | null>(null);
-  useEffect(() => {
-    const update = () => setNow(Date.now()); queueMicrotask(update);
-    const timer = setInterval(update, 30_000); return () => clearInterval(timer);
-  }, []);
-  // A valid physical path is not proof of passenger service. Match Tehran:
-  // never render a train itinerary unless the source timetable has a usable run.
-  const selection = now === null ? null : findIsfahanTrips(
-    stationIds[0], stationIds.at(-1)!, plannedAt ?? now, dataset,
-    { arriveBy, notBeforeMs: now },
-  );
-  const trip = selection?.trips[0];
-  if (!trip) return null;
-  const closed = selection?.serviceId === "friday" ? isfahanServiceData.release.fridayNoBoardingStationIds : [];
-  return <PathRoutePanel {...rest} showSummary={false} stationCount={stationIds.filter(id => !closed.includes(id)).length}
-    nextTrip={trip}
-    stationNote={id => closed.includes(id) ? STRINGS[props.lang].isfahanNoStopNote : undefined} />;
+  const t = STRINGS[path.lang];
+  if (now === null) return <p role="status" className="text-xs text-muted-foreground">{t.isfahanLoading}</p>;
+  const from = stationIds[0], to = stationIds.at(-1)!;
+  const selection = findIsfahanTrips(from, to, plannedAt ?? now, dataset, { arriveBy, notBeforeMs: now });
+  const trip = selection.trips[0];
+  if (!selection.applicable) return <p role="status" data-testid="isfahan-service-unknown" className="rounded-xl border border-border bg-card px-4 py-5 text-sm">{t.isfahanCalendarUnknown}</p>;
+  if (selection.blocked) return <p role="status" data-testid="isfahan-no-boarding" className="rounded-xl border border-border bg-card px-4 py-5 text-sm">{t.isfahanNoBoarding}</p>;
+  if (!trip) {
+    if (arriveBy && plannedAt !== undefined) {
+      // Tehran's missed-deadline card is used only when a real forward trip
+      // proves the next possible arrival is after the requested deadline.
+      const forward = findIsfahanTrips(from, to, now, dataset);
+      const next = forward.trips[0];
+      if (next) {
+        const earliestArrivalMs = tehranMinuteToInstant(forward.dateStr, parseServiceTimeToMinutes(next.arrival));
+        if (earliestArrivalMs > plannedAt) return <div data-testid="isfahan-missed-deadline"><MissedDeadlineCard lang={path.lang}
+          deadlineMs={plannedAt} earliestArrivalMs={earliestArrivalMs}
+          onEditTime={onEditTime} onRouteFromNow={onUseNow} /></div>;
+      }
+    }
+    return <div data-testid="isfahan-no-service"><NoServiceCard lang={path.lang}
+      stationName={path.name(from)} reachableUntil="" isOrigin onPlanAnotherTime={onEditTime} /></div>;
+  }
+  const closed = selection.serviceId === "friday" ? isfahanServiceData.release.fridayNoBoardingStationIds : [];
+  return <div data-testid="isfahan-times" className="flex flex-col gap-3 md:gap-4">
+    {selection.holidayAssumption && <p role="status" data-testid="isfahan-holiday-assumption"
+      className="rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">{t.isfahanHolidayAssumption}</p>}
+    <RouteSummaryStats lang={path.lang} stationCount={stationIds.filter(id => !closed.includes(id)).length}
+      waitMinutes={arriveBy ? 0 : Math.max(0, Math.round((trip.departureMs - (plannedAt ?? now)) / 60_000))}
+      travelMinutes={trip.minutes} arrival={trip.arrival} departedAtMs={trip.departureMs} />
+    <PathRoutePanel {...path} showSummary={false} stationCount={stationIds.filter(id => !closed.includes(id)).length}
+      nextTrip={trip} stationNote={id => closed.includes(id) ? t.isfahanNoStopNote : undefined} />
+  </div>;
 }
