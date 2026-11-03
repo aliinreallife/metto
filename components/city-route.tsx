@@ -26,11 +26,13 @@ import { CityStationPicker } from "@/components/city-station-picker";
 import { catalogStations, CITY_LINES } from "@/lib/city-catalog";
 
 import { IsfahanJourney } from "./isfahan-times";
+import { TabrizJourney } from "./tabriz-times";
 import { TravelTimeCard } from "./travel-time-card";
 import { useRouteClock } from "@/lib/use-route-clock";
 import { parseTimeModeParams, applyTimeParams, seedNextFiveMinutes, directWalkVerdict, type TimeMode } from "@/lib/route-planning";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { findIsfahanTrips } from "@/lib/isfahan-timetable";
+import { findTabrizTrips } from "@/lib/tabriz-timetable";
 import { tehranMinuteToInstant, parseServiceTimeToMinutes } from "@/lib/tehran-time";
 
 // Any new public OR preview city that declares a timetable must register a
@@ -39,6 +41,7 @@ import { tehranMinuteToInstant, parseServiceTimeToMinutes } from "@/lib/tehran-t
 const TIMETABLED_CITY_JOURNEYS: Record<Exclude<CityId, "tehran">, typeof IsfahanJourney | null> = {
   mashhad: null,
   isfahan: IsfahanJourney,
+  tabriz: TabrizJourney,
 };
 
 const control = "min-h-[44px] rounded-lg border bg-background px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -137,10 +140,13 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
     [from, to, planner]);
   // City adapters supply the source-backed time; every timed city receives
   // Tehran's walking-comparison and same-station behavior from the template.
-  const published = useMemo(() => city === "isfahan" && route && !isPastTime
-    ? findIsfahanTrips(from, to, plannedAt ?? nowMs, holidayDataset,
-        { arriveBy: timeMode === "arrive", notBeforeMs: nowMs })
-    : null, [city, route, from, to, plannedAt, nowMs, holidayDataset, timeMode, isPastTime]);
+  const published = useMemo(() => {
+    if (!route || isPastTime) return null;
+    const options = { arriveBy: timeMode === "arrive", notBeforeMs: nowMs };
+    if (city === "isfahan") return findIsfahanTrips(from, to, plannedAt ?? nowMs, holidayDataset, options);
+    if (city === "tabriz") return findTabrizTrips(from, to, plannedAt ?? nowMs, holidayDataset, options);
+    return null;
+  }, [city, route, from, to, plannedAt, nowMs, holidayDataset, timeMode, isPastTime]);
   const publishedTrip = published?.applicable && !published.blocked ? published.trips[0] : undefined;
   const lastCountedRouteKey = useRef<string | null>(null);
   useEffect(() => {
