@@ -17,6 +17,7 @@ import { WalkingRouteInfo } from "@/components/walking-route-info";
 import { RouteFields } from "@/components/route-fields";
 import { TimetableHelpNotice } from "@/components/timetable-help-notice";
 import { RouteActions } from "@/components/route-actions";
+import { recordRouteSuccess } from "@/lib/app-rating";
 import { PathRoutePanel, SameStationNotice, WalkSuggestCard } from "@/components/route-panel";
 import { getCurrentPositionTolerant, classifyGeoError, type GeoErrorKind } from "@/lib/geolocation";
 import { haversineKm, parsePlaceParam, encodePlacePin } from "@/lib/geo";
@@ -141,6 +142,14 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
         { arriveBy: timeMode === "arrive", notBeforeMs: nowMs })
     : null, [city, route, from, to, plannedAt, nowMs, holidayDataset, timeMode, isPastTime]);
   const publishedTrip = published?.applicable && !published.blocked ? published.trips[0] : undefined;
+  const lastCountedRouteKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!hasTimetable || !publishedTrip || isPastTime) return;
+    const key = `${city}|${from}|${to}|${timeMode}|${planAtMs ?? "now"}`;
+    if (lastCountedRouteKey.current === key) return;
+    lastCountedRouteKey.current = key;
+    try { recordRouteSuccess(new Date()); } catch { /* rating is best-effort */ }
+  }, [hasTimetable, publishedTrip, isPastTime, city, from, to, timeMode, planAtMs]);
   const waitSeconds = publishedTrip
     ? Math.max(0, Math.round((publishedTrip.departureMs - (plannedAt ?? nowMs)) / 1000))
     : 0;
