@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Loader2,
   LocateFixed,
+  History,
 } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import { canBoardAtStation } from "@/lib/metro/selectors";
@@ -376,6 +377,34 @@ export function TimetabledJourneyFrame({
       {children}
     </div>
   );
+}
+
+/** Shared expired-plan state: the same actions and visual hierarchy in every city. */
+export function PastTimeNotice({ lang, mode, onUseNow, onEditTime }: {
+  lang: Lang; mode: "depart" | "arrive";
+  onUseNow: () => void; onEditTime: () => void;
+}) {
+  const t = STRINGS[lang];
+  return <div role="alert" data-testid="city-time-passed"
+    className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4">
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+      <History aria-hidden="true" className="size-4 text-muted-foreground" />
+    </span>
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-bold">{mode === "depart" ? t.timePassedTitle : t.arrivalPassedTitle}</p>
+      <p className="text-xs text-muted-foreground">{mode === "depart" ? t.timePassedBody : t.arrivalPassedBody}</p>
+    </div>
+    <div className="flex shrink-0 flex-col gap-1.5">
+      <button type="button" onClick={onUseNow}
+        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        {t.useNow}
+      </button>
+      <button type="button" onClick={onEditTime}
+        className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        {t.editTime}
+      </button>
+    </div>
+  </div>;
 }
 
 /** Same-station empty state shared by all timetable-enabled route planners. */
