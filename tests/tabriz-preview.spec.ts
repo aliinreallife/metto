@@ -10,6 +10,18 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-11-03T06:30:00Z")); // 10:00 in Iran.
 });
 
+test("Tabriz's public landing and all four city tabs are accessible with a lasting source notice", async ({ page }) => {
+  for (const pathname of ["/tabriz", "/tabriz/route", "/tabriz/map", "/tabriz/stations", "/tabriz/nearby"]) {
+    const response = await page.goto(`${pathname}?lang=en`);
+    expect(response?.status(), pathname).toBe(200);
+    const notice = page.getByTestId("tabriz-timetable-notice");
+    await expect(notice, pathname).toContainText("Unofficial Tabriz timetable");
+    await expect(notice, pathname).toContainText("last trains");
+    await expect(notice.getByRole("link", { name: "Source: TimeMetro" })).toHaveAttribute("href", "https://github.com/pourjanali/TimeMetro");
+    await expect(page.getByTestId("city-preview-notice")).toHaveCount(0);
+  }
+});
+
 test("Tabriz public route inherits Tehran's timed journey with an explicit timetable warning", async ({ page }) => {
   const response = await page.goto(`/tabriz/route?from=${el}&to=${noor}&lang=en`);
   expect(response?.status()).toBe(200);
@@ -44,6 +56,7 @@ test("Tabriz respects published Friday departures and no-service after last sour
   await expect(page.getByTestId("tabriz-journey").locator("ol")).toContainText("08:05");
   await page.goto(`/tabriz/route?from=${el}&to=${noor}&timeMode=depart&at=2026-11-03T16:41:00.000Z&lang=en`);
   await expect(page.getByTestId("tabriz-no-service")).toBeVisible();
+  await expect(page.getByTestId("tabriz-source-limit-note")).toContainText("Later trains may operate");
   await expect(page.getByTestId("route-summary-stats")).toHaveCount(0);
 });
 
