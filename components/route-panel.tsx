@@ -320,7 +320,11 @@ export function RoutePanel({
           </li>
         ))}
       </ol>
-    </TimetabledJourney/**
+    </TimetabledJourneyFrame>
+  );
+}
+
+/**
  * Canonical timetable journey layout for Tehran and every city with verified
  * timetable data. Release status (preview/public) never changes this UI.
  * City adapters supply departures and segments, not their own route chrome.
@@ -388,10 +392,6 @@ export function SameStationNotice({ lang, fromSelected }: { lang: Lang; fromSele
       </p>
     )}
   </div>;
-}
-
-Frame>
-  );
 }
 
 /** Shared three-card summary; city adapters supply their own timetable values. */
