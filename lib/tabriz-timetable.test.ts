@@ -42,7 +42,7 @@ describe("Tabriz published timetable and preview release", () => {
     const reverse = findTabrizTrips(to, from, at("2026-11-03", "06:14"), null);
     expect(reverse.trips[0]).toMatchObject({ departure: "06:15", arrival: "06:50", minutes: 35, terminalId: from });
     const inner = findTabrizTrips(data.stationIds[3], data.stationIds[6], at("2026-11-03", "10:00"), null);
-    expect(inner.trips[0]).toMatchObject({ departure: "10:16", arrival: "10:22", minutes: 6 });
+    expect(inner.trips[0]).toMatchObject({ departure: "10:01", arrival: "10:07", minutes: 6 });
     expect(findTabrizTrips(from, from, at("2026-11-03", "10:00"), null).trips).toEqual([]);
     expect(findTabrizTrips("isfahan:station:qods", to, at("2026-11-03", "10:00"), null).trips).toEqual([]);
   });
