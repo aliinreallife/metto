@@ -560,7 +560,6 @@ function RouteView({
       ? { lat: destPlaceInfo.lat, lng: destPlaceInfo.lng, label: destPlaceInfo.placeName }
       : null,
   });
-  const showViewOnMap = originPlaceInfo !== null || destPlaceInfo !== null || walkVerdict !== null;
 
   return (
     <div className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10">
@@ -646,15 +645,13 @@ function RouteView({
               hasPath={!!(walking.direct.route || walking.access.route || walking.egress.route)}
               saved={walking.direct.saved || walking.access.saved || walking.egress.saved} />
           )}
-          {showViewOnMap && (
-            <Link
-              href={mapHref}
-              className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:py-2.5 md:text-base"
-            >
-              <MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />
-              {t.viewOnMap}
-            </Link>
-          )}
+          <Link
+            href={mapHref}
+            className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:py-2.5 md:text-base"
+          >
+            <MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />
+            {t.viewOnMap}
+          </Link>
         </div>
 
         {selected ? (
