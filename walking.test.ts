@@ -5,6 +5,8 @@ import { parsePedestrianRoute, usableSavedWalk, validWalkingRoute, walkingKey, t
 import type { WalkStorage } from "./lib/walking/store";
 import { directWalkVerdict } from "./lib/route-planning";
 import { googleMapsDirectionsUrl } from "./lib/geo";
+import { CITY_STATIONS } from "./lib/city-catalog";
+import { isSupportedWalkingPair } from "./lib/walking/city-coverage";
 import { walkingQuota, createWalkingQuota, WalkingQuotaStoreError } from "./lib/walking/quota";
 
 // Next's persistent cache needs a server request context. Exercise the actual
@@ -90,6 +92,49 @@ describe("server-only pedestrian API", () => {
     expect(json.coordinates).toEqual(route().coordinates);
     expect(JSON.stringify(json)).not.toContain("test-walking-key");
   });
+  it.each(["isfahan", "mashhad"] as const)(
+    "accepts real pedestrian geometry for %s using the same API as Tehran",
+    async (city) => {
+      const station = CITY_STATIONS.find(s => s.cityId === city && s.location)!;
+      const from = {
+        lat: Number(station.location.lat.toFixed(5)),
+        lng: Number(station.location.lng.toFixed(5)),
+      };
+      const to = { lat: Number((from.lat + 0.00015).toFixed(5)), lng: from.lng };
+      expect(isSupportedWalkingPair(from, to)).toBe(true);
+      vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-walking-key");
+      const apiResponse = {
+        metadata: { query: { profile: "foot-walking" } },
+        features: [{
+          geometry: { type: "LineString", coordinates: [
+            [from.lng, from.lat],
+            [from.lng + 0.00004, from.lat + 0.00008],
+            [to.lng, to.lat],
+          ] },
+          properties: { summary: { distance: 35, duration: 28 } },
+        }],
+      };
+      const fetcher = vi.fn().mockResolvedValue(Response.json(apiResponse));
+      vi.stubGlobal("fetch", fetcher);
+      const query = `fromLat=${from.lat}&fromLng=${from.lng}&toLat=${to.lat}&toLng=${to.lng}`;
+      const result = await GET(request(query));
+      expect(result.status).toBe(200);
+      expect(fetcher).toHaveBeenCalledOnce();
+      expect(JSON.parse(fetcher.mock.calls[0][1].body).coordinates)
+        .toEqual([[from.lng, from.lat], [to.lng, to.lat]]);
+      const body = await result.json();
+      expect(body.coordinates).toHaveLength(3);
+      expect(body.durationSeconds).toBe(28);
+    },
+  );
+
+  it("requires both pedestrian endpoints to be near the same supported city's network", () => {
+    const isfahan = CITY_STATIONS.find(s => s.cityId === "isfahan")!.location;
+    const tehran = CITY_STATIONS.find(s => s.cityId === "tehran")!.location;
+    expect(isSupportedWalkingPair(isfahan, tehran)).toBe(false);
+    expect(isSupportedWalkingPair({ lat: 48, lng: 8 }, { lat: 48.001, lng: 8.001 })).toBe(false);
+  });
+
   it("does not call the provider with missing credentials or invalid/out-of-area inputs", async () => {
     vi.stubEnv("OPENROUTESERVICE_API_KEY", "");
     const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
