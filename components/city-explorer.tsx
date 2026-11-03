@@ -16,6 +16,8 @@ import type { AmenityKey } from "@/lib/geo";
 import { StationCardView } from "./station-card";
 import { IsfahanStationDepartures, IsfahanStationTimesheet } from "./isfahan-station-timetable";
 import { isfahanServiceDay } from "@/lib/isfahan-timetable";
+import { tabrizServiceDay } from "@/lib/tabriz-timetable";
+import { TabrizStationDepartures, TabrizStationTimesheet } from "./tabriz-station-timetable";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { useRouteClock } from "@/lib/use-route-clock";
 import { FilterChip } from "./stations-tab";
@@ -105,8 +107,10 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
             lines={s.lineIds.map(id => ({ id, label: id.split(":").at(-1)!, color: CITY_LINES.find(l => l.id === id)!.color,
               onColor: CITY_LINES.find(l => l.id === id)!.onColor }))}
             boardableCount={s.operationalLineIds.length}
-            departures={s.cityId === "isfahan" ? <IsfahanStationDepartures stationId={s.id} lang={lang} nowMs={clientReady ? nowMs : null} holidays={dataset} /> : undefined}
-            onShowTimetable={s.cityId === "isfahan" ? () => setTimetableStation(s) : undefined}
+            departures={s.cityId === "isfahan" ? <IsfahanStationDepartures stationId={s.id} lang={lang} nowMs={clientReady ? nowMs : null} holidays={dataset} />
+              : s.cityId === "tabriz" ? <TabrizStationDepartures stationId={s.id} lang={lang} nowMs={clientReady ? nowMs : null} holidays={dataset} />
+              : undefined}
+            onShowTimetable={s.cityId === "isfahan" || s.cityId === "tabriz" ? () => setTimetableStation(s) : undefined}
             distance={location ? haversineKm(location.lat, location.lng, s.location.lat, s.location.lng) : undefined}
             onSetDest={() => router.push(stationRouteHref(s, "to", lang))} />
           {city === "all" && <Link className="inline-flex min-h-11 items-center gap-1.5 text-xs text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-primary" href={`/${s.cityId}/map?${new URLSearchParams({ station: s.localId, lang })}`}><MapIcon aria-hidden="true" className="size-3.5" />{t.tabMap}</Link>}
@@ -162,9 +166,13 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={timetableStation.names[lang]}
         tabIndex={-1} className="max-h-[85vh] w-full max-w-lg overflow-hidden outline-none"
         onClick={event => event.stopPropagation()}>
-        <IsfahanStationTimesheet key={timetableStation.id} stationId={timetableStation.id} lang={lang}
-          initialPattern={isfahanServiceDay(nowMs, dataset).serviceId === "friday" ? "friday" : "saturday_thursday"}
-          onClose={() => setTimetableStation(null)} />
+        {timetableStation.cityId === "isfahan"
+          ? <IsfahanStationTimesheet key={timetableStation.id} stationId={timetableStation.id} lang={lang}
+              initialPattern={isfahanServiceDay(nowMs, dataset).serviceId === "friday" ? "friday" : "saturday_thursday"}
+              onClose={() => setTimetableStation(null)} />
+          : <TabrizStationTimesheet key={timetableStation.id} stationId={timetableStation.id} lang={lang}
+              initialPattern={tabrizServiceDay(nowMs, dataset).serviceId}
+              onClose={() => setTimetableStation(null)} />}
       </div>
     </div>}
   </div>;

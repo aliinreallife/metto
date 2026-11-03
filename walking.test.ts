@@ -92,7 +92,7 @@ describe("server-only pedestrian API", () => {
     expect(json.coordinates).toEqual(route().coordinates);
     expect(JSON.stringify(json)).not.toContain("test-walking-key");
   });
-  it.each(["isfahan", "mashhad"] as const)(
+  it.each(["isfahan", "mashhad", "tabriz"] as const)(
     "accepts real pedestrian geometry for %s using the same API as Tehran",
     async (city) => {
       const station = CITY_STATIONS.find(s => s.cityId === city && s.location)!;

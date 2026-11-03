@@ -30,9 +30,12 @@ test("preview cities use normal city switching, map selection and route tabs wit
   await start.focus(); await page.keyboard.press("Enter");
   await expect(page.getByTestId("map-station-card")).toContainText("Defa-e Moghaddas");
   await page.getByRole("button", { name: "Set as origin", exact: true }).click();
-  await page.locator(`.city-station-hit[data-station-id="${end}"]`).focus();
-  await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "Set as Destination", exact: true }).click();
+  // The first station above already exercises keyboard selection. Use a
+  // pointer here and wait for the destination card before its action: the
+  // map remounts when the origin changes, so Enter can hit the old focus.
+  await page.locator(`.city-station-hit[data-station-id="${end}"]`).click();
+  await expect(page.getByTestId("map-station-card")).toContainText("Defa-e Moghaddas");
+  await page.getByTestId("map-station-card").getByRole("button", { name: "Set as Destination", exact: true }).click();
   await expect.poll(() => new URL(page.url()).searchParams.has("op")).toBe(false);
   await expect.poll(() => new URL(page.url()).searchParams.has("dp")).toBe(false);
   await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-route-station-count", "20");

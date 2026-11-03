@@ -1,5 +1,5 @@
 import { STRINGS } from "./i18n";
-export type CityId = "tehran" | "mashhad" | "isfahan";
+export type CityId = "tehran" | "mashhad" | "isfahan" | "tabriz";
 export type CityView = "route" | "map" | "stations" | "nearby";
 
 export interface CityMeta {
@@ -50,6 +50,14 @@ export const CITIES: CityMeta[] = [
     placeExampleQuery: STRINGS.fa.searchHintIsfahanExample,
     keywords: ["Isfahan metro map", "مترو اصفهان", "نقشه مترو اصفهان"],
   },
+  {
+    slug: "tabriz", name: { en: "Tabriz", fa: "تبریز" }, timing: true,
+    release: "preview", bounds: [46.17, 37.97, 46.44, 38.13],
+    placeExample: { en: "El Goli Park", fa: "پارک ائل‌گلی" },
+    placeExampleQuery: "ائل گلی تبریز",
+    keywords: ["Tabriz metro map", "Tabriz subway times", "مترو تبریز", "نقشه مترو تبریز", "ساعت حرکت مترو تبریز", "خط یک قطار شهری تبریز"],
+  },
+
 ];
 
 export function getCityMeta(slug: string): CityMeta | null {

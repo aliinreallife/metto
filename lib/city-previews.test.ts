@@ -8,14 +8,14 @@ import { createCityPathPlanner } from "./city-route-path";
 
 it("publishes authorized Isfahan in production and retains the future preview registry", () => {
   for (const env of [{ VERCEL_ENV: "preview", NODE_ENV: "production" }, { NODE_ENV: "development" }])
-    expect(availableCityIds(env)).toEqual(["tehran", "mashhad", "isfahan"]);
+    expect(availableCityIds(env)).toEqual(["tehran", "mashhad", "isfahan", "tabriz"]);
   for (const env of [
     { VERCEL_ENV: "production", NODE_ENV: "production" },
     { VERCEL_ENV: "production", NODE_ENV: "development" },
     { VERCEL_ENV: "preview", METTO_CITY_PREVIEWS: "0" },
     { NODE_ENV: "production" }, {},
   ]) expect(availableCityIds(env)).toEqual(["tehran", "mashhad", "isfahan"]);
-  expect(availableCityIds({ VERCEL_ENV: "preview", METTO_MASHHAD_ENABLED: "0" })).toEqual(["tehran", "isfahan"]);
+  expect(availableCityIds({ VERCEL_ENV: "preview", METTO_MASHHAD_ENABLED: "0" })).toEqual(["tehran", "isfahan", "tabriz"]);
   expect(CITY_PREVIEWS.map(c => c.cityId)).toEqual(CITIES.filter(c => c.release === "preview").map(c => c.slug));
 });
 

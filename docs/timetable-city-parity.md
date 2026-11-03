@@ -38,3 +38,24 @@ Currently Tehran uses its mature timetable/routing engine; Isfahan provides publ
 - City maps, station lists and directions use their own coordinates, names, status and available amenity data.
 - Isfahan holiday-operation assumptions must remain explicit where the operator has not confirmed its exceptional timetable. A normal weekday within the bundled calendar's coverage does **not** receive a generic unverified warning.
 - No city should gain realtime positioning, verified holidays, or a missing train solely to match a visual example.
+
+
+## Tabriz review adapter (November 2026)
+
+Tabriz Line 1 uses the canonical Tehran timetable experience in **preview**
+for 18 operating stations. Its line geometry and station positions are
+OpenStreetMap-derived and the imported TimeMetro dataset supplies 57
+normal-day and 49 holiday rows per direction. Every timetable trip comes
+from an original, complete station-by-station row.
+
+**Do not promote as operator-verified timetable data.** The TimeMetro CSV
+ends at 20:10 from El Goli and 20:30 from Noor on normal days, while other
+autumn-1405 sources give later departure times (20:40 and 21:15). Thursday
+patterns also disagree between secondary sources. For now normal service
+is provisionally chosen for Thursday; the UI calls it out explicitly.
+Never synthesize missing evening trains to make the schedule look complete.
+
+Remaining release gate: confirm latest station-by-station departures and
+Thursday/public holiday service patterns against Tabriz operator notices,
+then update the source release and tests. Public preview users can inspect
+the source and should rely on official station announcements for last trains.
