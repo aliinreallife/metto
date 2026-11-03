@@ -52,5 +52,5 @@ export function cityCounts(cities: readonly CityId[], city?: CityId | "all") {
   return { stations: catalogStations(selected).length, lines: CITY_LINES.filter(l => selected.includes(l.cityId)).length, cities: selected.length };
 }
 export function stationRouteHref(station: CityStation, role: "from" | "to", lang: string) {
-  return `/${station.cityId}/route?${new URLSearchParams({ [role]: station.localId, lang })}`;
+  // Tehran uses local graph IDs; city planners use namespaced catalog IDs.\n  const id = station.cityId === "tehran" ? station.localId : station.id;\n  return `/${station.cityId}/route?${new URLSearchParams({ [role]: id, lang })}`;
 }
