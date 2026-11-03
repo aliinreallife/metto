@@ -19,6 +19,7 @@ import { useMetro } from "./providers";
 import { cityDataCredit } from "@/lib/data-credit";
 import { STRINGS } from "@/lib/i18n";
 import { buildStatefulTabHref } from "@/lib/tab-href";
+import { applyTimeParams, parseTimeModeParams } from "@/lib/route-planning";
 import { noteRatingQaNavigation } from "@/lib/rating-qa";
 import {
   isPrecachedTabUrl,
@@ -178,6 +179,12 @@ export function AppNav() {
       for (const key of ["op", "dp"]) {
         const pin = searchParams.get(key);
         if (pin) params.set(key, pin);
+      }
+      // Timetable cities preserve Tehran\'s complete time-plan state on all tabs.
+      // Release status must not affect the planner UI.
+      if (city !== "all" && getCityMeta(city)?.timing) {
+        const plan = parseTimeModeParams(new URLSearchParams(searchParams.toString()));
+        applyTimeParams(params, plan.mode, plan.at);
       }
       return `${destination}?${params}`;
     }
