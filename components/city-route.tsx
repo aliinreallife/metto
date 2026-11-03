@@ -32,6 +32,14 @@ import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { findIsfahanTrips } from "@/lib/isfahan-timetable";
 import { tehranMinuteToInstant, parseServiceTimeToMinutes } from "@/lib/tehran-time";
 
+// Any new public OR preview city that declares a timetable must register a
+// source-backed journey adapter. Do not silently downgrade it to an untimed
+// geometric path (which would invent a departure/arrival experience).
+const TIMETABLED_CITY_JOURNEYS: Record<Exclude<CityId, "tehran">, typeof IsfahanJourney | null> = {
+  mashhad: null,
+  isfahan: IsfahanJourney,
+};
+
 const control = "min-h-[44px] rounded-lg border bg-background px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, initialLang: langProp, embedded = false }: {
@@ -40,6 +48,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   const planner = getUntimedCityPlanner(city)!;
   const reviewOnly = !!getCityPreview(city);
   const hasTimetable = getCityMeta(city)!.timing;
+  const TimetabledJourney = TIMETABLED_CITY_JOURNEYS[city];
   const stations = useMemo(() => catalogStations([city]), [city]);
   const byId = useMemo(() => new Map(planner.stations.map(s => [s.id, s])), [planner]);
   const params = useSearchParams();
@@ -258,7 +267,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
           {walkVerdict?.kind === "beats-metro" && <div className="mb-3"><WalkSuggestCard lang={lang}
             walkMin={walkVerdict.walkMin} distanceKm={walkVerdict.walkKm}
             approximate={!walking.direct.route || walking.accessApproximate} /></div>}
-          {city === "isfahan" ? <IsfahanJourney stationIds={result.stationIds} plannedAt={plannedAt}
+          {hasTimetable ? (TimetabledJourney ? <TimetabledJourney stationIds={result.stationIds} plannedAt={plannedAt}
             published={published} nowMs={nowMs}
             arriveBy={timeMode === "arrive"} onEditTime={expandTimeCard}
             onUseNow={() => { setTimeMode("now"); setPlanAtMs(null); }}
@@ -266,11 +275,12 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
               terminal: planner.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
               color: planner.lines.find(l => l.id === leg.lineId)!.color, onColor: CITY_LINES.find(l => l.id === leg.lineId)!.onColor }))} />
+            : <p role="alert" className="rounded-xl border border-border bg-card px-4 py-5 text-sm">{t.noRoute}</p>)
             : <PathRoutePanel lang={lang} stationCount={result.stationIds.length} name={name}
               legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
                 terminal: planner.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
                 color: planner.lines.find(l => l.id === leg.lineId)!.color, onColor: CITY_LINES.find(l => l.id === leg.lineId)!.onColor }))} />}
-          {!reviewOnly && <div className="mt-3"><RouteActions origin={{ name: byId.get(from)!.names, location: byId.get(from)!.location }} lang={lang} /></div>}
+          {(!reviewOnly || hasTimetable) && <div className="mt-3"><RouteActions origin={{ name: byId.get(from)!.names, location: byId.get(from)!.location }} lang={lang} /></div>}
         </section>}
         {city === "mashhad" && <TimetableHelpNotice lang={lang} />}
         <div className="h-16 shrink-0 md:hidden" aria-hidden="true" />
