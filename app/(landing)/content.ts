@@ -184,7 +184,7 @@ const fa = {
       },
       {
         q: "داده‌ها از کجاست؟",
-        a: "ایستگاه‌ها و خط‌ها از مجموعه‌داده باز mostafa-kheibary گرفته شده و زمان‌بندی‌ها بر اساس اطلاعات اعلام‌شده شرکت مترو است. اگر جایی اشتباه دیدی، روی گیت‌هاب بگو تا درستش کنیم.",
+        a: "داده‌های شهرها در metto-data گردآوری و نگهداری می‌شوند و منابع هر شهر هم همان‌جا ثبت شده‌اند. اگر جایی اشتباه دیدی، روی گیت‌هاب بگو تا درستش کنیم.",
       },
     ],
     more: "چیز دیگری می‌خواهی بدانی؟",
@@ -399,7 +399,7 @@ const en: typeof fa = {
       },
       {
         q: "Where does the data come from?",
-        a: "Stations and lines come from the open dataset by mostafa-kheibary, and timetables follow the metro company's published information. Spotted a mistake? Say so on GitHub and we will fix it.",
+        a: "City data is collected and maintained in metto-data, with the original sources recorded for each city. Spotted a mistake? Say so on GitHub and we will fix it.",
       },
     ],
     more: "Anything else you want to know?",

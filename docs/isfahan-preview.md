@@ -66,3 +66,19 @@ duplicate-name isolation, nearby results and offline tab navigation.
 Original rail geometry: © OpenStreetMap contributors, ODbL-1.0; see
 `ATTRIBUTION.md`. Operator timetable images are referenced, not redistributed.
 Shiraz remains at source-research stage.
+
+Isfahan reuses Tehran’s `TravelTimeCard`: the same localized date display, day/time
+steppers and now/depart/arrive controls. Arrive-by selects the latest published
+train meeting the deadline, including the previous evening for early deadlines.
+Shared URLs use the common timezone-explicit format; earlier Iran-local `at`
+links remain compatible.
+
+The route summary also reuses Tehran’s `RouteSummaryStats`: station count,
+wait + travel and arrival. Isfahan supplies the selected published row, excludes
+Friday boarding restrictions from the count, and omits timing cards when no
+usable train exists. Map station sheets keep their compact departure display.
+
+Collection credits for Metto-curated data link to `aliinreallife/metto-data` in
+the app. `cityDataCredit` retains the individual dataset credits for Tehran and
+Mashhad. Detailed original-source URLs/hashes and required map attribution remain
+preserved; the visible collection link does not replace the provenance record.

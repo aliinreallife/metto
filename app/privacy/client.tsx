@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useMetro } from "@/app/providers";
 
 const REPO_URL = "https://github.com/aliinreallife/metto";
-const DATA_URL = "https://github.com/mostafa-kheibary/tehran-metro-data";
+const DATA_URL = "https://github.com/aliinreallife/metto-data";
 const REYMIT_URL = "https://reymit.ir/aliinreallife";
 
 type Section = { h: string; ps: string[] };
@@ -71,7 +71,7 @@ const COPY: Record<"fa" | "en", { title: string; intro: string; back: string; se
       {
         h: "منبع و تماس",
         ps: [
-          "متو متن‌باز است و داده‌های مترو از مجموعه mostafa-kheibary گرفته شده است. گزارش خطا و پیشنهاد در گیت‌هاب انجام می‌شود.",
+          "متو متن‌باز است و داده‌ها در metto-data نگهداری می‌شوند؛ منابع و مشارکت‌کنندگان هم همان‌جا ثبت شده‌اند. گزارش خطا و پیشنهاد در گیت‌هاب انجام می‌شود.",
         ],
       },
     ],
@@ -135,7 +135,7 @@ const COPY: Record<"fa" | "en", { title: string; intro: string; back: string; se
       {
         h: "Source & contact",
         ps: [
-          "metto is open source and the metro data comes from mostafa-kheibary's dataset. Bug reports and ideas live on GitHub.",
+          "metto is open source and its data is maintained in metto-data, with original sources and contributors credited there. Bug reports and ideas live on GitHub.",
         ],
       },
     ],

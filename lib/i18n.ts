@@ -14,7 +14,7 @@ export const STRINGS = {
     isfahanNoMoreTrains: "No more departures are listed for this day and direction.",
     isfahanScheduledArrival: "Scheduled arrival:",
     isfahanFollowingTrains: "Following trains:",
-    isfahanTimetableSource: "Operator timetable (opens in a new tab)",
+    isfahanTimetableSource: "Timetable data · metto-data (opens in a new tab)",
     isfahanDepartureAt: "Departure date and time (Iran time)",
     isfahanLeaveNow: "Leave now",
 
@@ -294,7 +294,7 @@ export const STRINGS = {
     isfahanNoMoreTrains: "برای این روز و جهت، حرکت دیگری در برنامه نیست.",
     isfahanScheduledArrival: "رسیدن طبق برنامه:",
     isfahanFollowingTrains: "حرکت‌های بعدی:",
-    isfahanTimetableSource: "برنامهٔ رسمی مترو (در برگهٔ جدید)",
+    isfahanTimetableSource: "داده‌های برنامهٔ حرکت در metto-data (در برگهٔ جدید)",
     isfahanDepartureAt: "تاریخ و ساعت حرکت (به وقت ایران)",
     isfahanLeaveNow: "حرکت در همین لحظه",
 

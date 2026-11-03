@@ -6,10 +6,10 @@ import { useMetro } from "@/app/providers";
 import { WELCOME_CONTENT, WELCOME_NAV } from "../content";
 import { persianDigits } from "@/lib/i18n";
 import { CITIES, type CityId } from "@/lib/cities";
+import { cityDataCredit } from "@/lib/data-credit";
 import { cityCounts } from "@/lib/city-catalog";
 
 const AUTHOR_URL = "https://github.com/aliinreallife";
-const DATA_URL = "https://github.com/mostafa-kheibary/tehran-metro-data";
 const REPO_URL = "https://github.com/aliinreallife/metto";
 
 export function WelcomeFooter({ cityId }: { cityId?: CityId }) {
@@ -100,8 +100,8 @@ export function WelcomeFooter({ cityId }: { cityId?: CityId }) {
               </a>
               <span className="mx-2 text-border">·</span>
               {t.dataSource}{" "}
-              <a href={DATA_URL} target="_blank" rel="noreferrer noopener" className="font-bold text-foreground underline decoration-primary decoration-2 underline-offset-4 hover:text-primary">
-                mostafa-kheibary
+              <a href={cityDataCredit(cityId).url} target="_blank" rel="noreferrer noopener" className="font-bold text-foreground underline decoration-primary decoration-2 underline-offset-4 hover:text-primary">
+                {cityDataCredit(cityId).name}
               </a>
             </p>
 

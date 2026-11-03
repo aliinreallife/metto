@@ -44,3 +44,17 @@ it("flags the holiday Friday assumption and unknown calendars without inventing 
   expect(findIsfahanTrips(start, end, at("2026-11-03", 6, 40), holidays).trips[0].departure).not.toBe("06:42");
   expect(findIsfahanTrips("mashhad:station:qods", end, at(date, 10), calendar).trips).toEqual([]);
 });
+
+it("arrive-by chooses the latest real departure before the deadline in either direction", () => {
+  for (const [from, to] of [[start, end], [end, start]]) {
+    const r = findIsfahanTrips(from, to, at("2026-11-06", 10), holidays, { arriveBy: true, notBeforeMs: at("2026-11-06", 8) });
+    expect(r.trips[0]).toMatchObject({ departure: "09:15", arrival: "09:54" });
+    expect(findIsfahanTrips(from, to, at("2026-11-06", 10), holidays, { arriveBy: true, notBeforeMs: at("2026-11-06", 9, 16) }).trips).toEqual([]);
+  }
+});
+
+it("an early arrive-by deadline can use the previous evening's source row and service rules", () => {
+  const result = findIsfahanTrips(start, end, at("2026-11-07", 1), holidays, { arriveBy: true, notBeforeMs: at("2026-11-06", 20) });
+  expect(result).toMatchObject({ dateStr: "2026-11-06", serviceId: "friday" });
+  expect(result.trips[0]).toMatchObject({ departure: "22:00", arrival: "22:39" });
+});
