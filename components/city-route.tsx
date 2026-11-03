@@ -17,7 +17,7 @@ import { WalkingRouteInfo } from "@/components/walking-route-info";
 import { RouteFields } from "@/components/route-fields";
 import { TimetableHelpNotice } from "@/components/timetable-help-notice";
 import { RouteActions } from "@/components/route-actions";
-import { PathRoutePanel } from "@/components/route-panel";
+import { PathRoutePanel, SameStationNotice, WalkSuggestCard } from "@/components/route-panel";
 import { getCurrentPositionTolerant, classifyGeoError, type GeoErrorKind } from "@/lib/geolocation";
 import { haversineKm, parsePlaceParam, encodePlacePin } from "@/lib/geo";
 import { LocationErrorActions } from "@/components/location-error";
@@ -27,7 +27,9 @@ import { catalogStations, CITY_LINES } from "@/lib/city-catalog";
 import { IsfahanJourney } from "./isfahan-times";
 import { TravelTimeCard } from "./travel-time-card";
 import { useRouteClock } from "@/lib/use-route-clock";
-import { parseTimeModeParams, applyTimeParams, seedNextFiveMinutes, type TimeMode } from "@/lib/route-planning";
+import { parseTimeModeParams, applyTimeParams, seedNextFiveMinutes, directWalkVerdict, type TimeMode } from "@/lib/route-planning";
+import { useHolidayData } from "@/lib/holidays/use-holiday-data";
+import { findIsfahanTrips } from "@/lib/isfahan-timetable";
 import { tehranMinuteToInstant, parseServiceTimeToMinutes } from "@/lib/tehran-time";
 
 const control = "min-h-[44px] rounded-lg border bg-background px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -66,6 +68,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
     requestAnimationFrame(() => timeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }));
   }
   const nowMs = useRouteClock();
+  const { dataset: holidayDataset } = useHolidayData();
   // Match Tehran: never display a journey that would depart at a time already in the past.
   const isPastTime = hasTimetable && timeMode !== "now" && planAtMs !== null && planAtMs < nowMs;
   const plannedAt = timeMode === "now" ? undefined : planAtMs ?? undefined;
@@ -119,8 +122,34 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   const originPin = useMemo(() => from ? parsePlaceParam(params, "oP") : null, [from, params]);
   const destPin = useMemo(() => to ? parsePlaceParam(params, "dP") : null, [to, params]);
   const originStation = byId.get(from), destStation = byId.get(to);
-  const walking = useTripWalking(originPin ?? originStation?.location, destPin ?? destStation?.location,
-    originStation?.location, destStation?.location, null);
+  const route = useMemo(() =>
+    from && to && from !== to ? planner.findPath(from, to) : null,
+    [from, to, planner]);
+  // City adapters supply the source-backed time; every timed city receives
+  // Tehran's walking-comparison and same-station behavior from the template.
+  const published = useMemo(() => city === "isfahan" && route && !isPastTime
+    ? findIsfahanTrips(from, to, plannedAt ?? nowMs, holidayDataset,
+        { arriveBy: timeMode === "arrive", notBeforeMs: nowMs })
+    : null, [city, route, from, to, plannedAt, nowMs, holidayDataset, timeMode, isPastTime]);
+  const publishedTrip = published?.applicable && !published.blocked ? published.trips[0] : undefined;
+  const waitSeconds = publishedTrip
+    ? Math.max(0, Math.round((publishedTrip.departureMs - (plannedAt ?? nowMs)) / 1000))
+    : 0;
+  const metroWalkPlan = publishedTrip
+    ? { status: "complete" as const, totalSeconds: waitSeconds + publishedTrip.minutes * 60,
+        initialWaitSeconds: waitSeconds }
+    : null;
+  const originPoint = originPin ?? originStation?.location;
+  const destPoint = destPin ?? destStation?.location;
+  const walking = useTripWalking(originPoint, destPoint, originStation?.location,
+    destStation?.location, metroWalkPlan);
+  const walkVerdict = directWalkVerdict({
+    origin: originPoint, dest: destPoint, sameStation: !!from && from === to,
+    metroTotalSeconds: metroWalkPlan?.totalSeconds ?? null,
+    initialWaitSeconds: metroWalkPlan?.initialWaitSeconds,
+    accessMinutes: walking.accessMinutes,
+    walkingRoute: walking.accessApproximate ? null : walking.direct.route,
+  });
   function clearPin(role: "origin" | "dest") {
     const url = new URL(window.location.href);
     for (const key of role === "origin" ? ["op", "oPlat", "oPlng", "oPlabel"] : ["dp", "dPlat", "dPlng", "dPlabel"]) url.searchParams.delete(key);
@@ -160,7 +189,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
     } catch (error) { setGpsError(classifyGeoError(error)); }
     finally { setLocating(false); }
   };
-  const result = useMemo(() => planner.findPath(from, to), [from, to, planner]);
+  const result = route;
   const name = (id: string) => byId.get(id)?.names[lang] ?? id;
   const Container = embedded ? "div" : "main";
 
@@ -191,7 +220,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
             afterDestination={destPin && destStation && <RoutePlaceCard lang={lang} placeName={destPin.label} stationName={destStation.names[lang]}
               distanceKm={haversineKm(destPin.lat, destPin.lng, destStation.location.lat, destStation.location.lng)} walkingRoute={walking.egress.route} onClear={() => clearPin("dest")} />}
             onSwap={swap} />
-          {(originPin || destPin) && <>
+          {(originPin || destPin || walkVerdict) && <>
             <WalkingRouteInfo lang={lang} loading={walking.access.loading || walking.egress.loading || walking.direct.loading} hasPath={!!(walking.access.route || walking.egress.route || walking.direct.route)} saved={walking.access.saved || walking.egress.saved || walking.direct.saved} />
             <Link href={`/${city}/map?${mapParams}`} className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary md:py-2.5 md:text-base"><MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{t.viewOnMap}</Link>
           </>}
@@ -214,12 +243,22 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
             </div>
           </div>}
           {invalidLink ? <p role="alert" className="mt-3 text-sm">{t.cityPreviewInvalidLink}</p>
-            : from && to && from === to ? <p role="alert" className="mt-3 text-sm">{t.sameStation}</p>
+            : from && to && from === to ? null
               : from && to && !result ? <p role="alert" className="mt-3 text-sm">{t.noRoute}</p>
-                : !result ? <p className="mt-4 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">{t.pickBoth}</p> : null}
+                : !result ? <SameStationNotice lang={lang} sameStation={false} fromSelected={!!from} /> : null}
         </section>
+        {!isPastTime && !invalidLink && from && to && from === to && <div className="flex flex-col gap-3" data-testid="city-same-station">
+          {walkVerdict?.kind === "same-station" && <WalkSuggestCard lang={lang}
+            walkMin={walkVerdict.walkMin} distanceKm={walkVerdict.walkKm}
+            approximate={!walking.direct.route} sameStation />}
+          <SameStationNotice lang={lang} fromSelected sameStation />
+        </div>}
         {!isPastTime && result && <section aria-label={t.routeOverview} data-testid="city-route-result">
+          {walkVerdict?.kind === "beats-metro" && <div className="mb-3"><WalkSuggestCard lang={lang}
+            walkMin={walkVerdict.walkMin} distanceKm={walkVerdict.walkKm}
+            approximate={!walking.direct.route || walking.accessApproximate} /></div>}
           {city === "isfahan" ? <IsfahanJourney stationIds={result.stationIds} plannedAt={plannedAt}
+            published={published} nowMs={nowMs}
             arriveBy={timeMode === "arrive"} onEditTime={expandTimeCard}
             onUseNow={() => { setTimeMode("now"); setPlanAtMs(null); }}
             lang={lang} stationCount={result.stationIds.length} name={name}
