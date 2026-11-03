@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { findIsfahanTrips, isfahanServiceData } from "@/lib/isfahan-timetable";
+import type { findTabrizTrips } from "@/lib/tabriz-timetable";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatDateLabel } from "@/lib/route-planning";
 import { tehranParts, parseServiceTimeToMinutes, tehranMinuteToInstant } from "@/lib/tehran-time";
@@ -65,7 +66,7 @@ export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false }: {
 export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEditTime, onUseNow, published, nowMs, ...path }: Parameters<typeof PathRoutePanel>[0] & {
   plannedAt?: number; stationIds: string[]; arriveBy?: boolean;
   onEditTime: () => void; onUseNow: () => void;
-  published?: ReturnType<typeof findIsfahanTrips> | null; nowMs?: number;
+  published?: ReturnType<typeof findIsfahanTrips> | ReturnType<typeof findTabrizTrips> | null; nowMs?: number;
 }) {
   const now = usePublishedClock();
   const { dataset } = useHolidayData();
