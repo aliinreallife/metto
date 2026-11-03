@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { parsePedestrianRouteResult, walkingKey } from "@/lib/walking/route";
 import { walkingQuota, WalkingQuotaStoreError } from "@/lib/walking/quota";
-import { nearestStations } from "@/lib/geo";
+import { isSupportedWalkingPair } from "@/lib/walking/city-coverage";
 
 class WalkingError extends Error {
   constructor(
@@ -90,10 +90,7 @@ export async function GET(request: Request) {
   const [fromLat, fromLng, toLat, toLng] = fields.map((name) => Number(Number(params.get(name)).toFixed(5)));
   const from = { lat: fromLat, lng: fromLng };
   const to = { lat: toLat, lng: toLng };
-  if (!walkingKey(from, to) || [from, to].some((point) => {
-    const nearest = nearestStations(point.lat, point.lng, { limit: 1 })[0];
-    return !nearest || nearest.km > 15;
-  })) {
+  if (!walkingKey(from, to) || !isSupportedWalkingPair(from, to)) {
     return NextResponse.json({ error: "Invalid or unsupported walking endpoints" }, { status: 400 });
   }
   const apiKey = process.env.OPENROUTESERVICE_API_KEY;
