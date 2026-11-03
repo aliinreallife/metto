@@ -465,12 +465,13 @@ export function RouteSummaryStats({ lang, stationCount, waitMinutes, travelMinut
 }
 
 /** Station/path summary and shared itinerary, without timetable fields. */
-export function PathRoutePanel({ lang, stationCount, legs, name, stationNote, showSummary = true, nextTrip }: {
+export function PathRoutePanel({ lang, stationCount, legs, name, stationNote, showSummary = true, nextTrip, followingTimes = [], isPlanned = false }: {
   lang: Lang; stationCount: number;
   legs: { line: number; stations: string[]; terminal: string; color: string; onColor: string }[];
   name: (id: string) => string; stationNote?: (id: string) => string | undefined; showSummary?: boolean;
   /** Published departure from a city adapter; never inferred from station distances. */
   nextTrip?: { departure: string; arrival: string; minutes: number };
+  followingTimes?: string[]; isPlanned?: boolean;
 }) {
   const t = STRINGS[lang]; const isFa = lang === "fa";
   const transferCount = Math.max(0, legs.length - 1);
@@ -491,7 +492,8 @@ export function PathRoutePanel({ lang, stationCount, legs, name, stationNote, sh
         <span>{t.transferTo} {persianDigits(leg.line, lang)} {t.via} {name(leg.stations[0])}</span>
       </div>}
       <SegmentView {...leg} name={name} lang={lang} boardable={() => true} stationNote={stationNote}
-        showNextTrain={index === 0 && !!nextTrip} publishedTrip={index === 0 ? nextTrip : undefined} />
+        showNextTrain={index === 0 && !!nextTrip} publishedTrip={index === 0 ? nextTrip : undefined}
+        followingTimes={index === 0 ? followingTimes : []} isPlanned={isPlanned} />
     </li>)}</ol>
   </div>;
 }
@@ -561,10 +563,11 @@ type SegmentViewProps = {
   trip?: TripResult; isPlanned?: boolean;
   /** Timetable-backed timing for a city using the shared segment UI. */
   publishedTrip?: { departure: string; arrival: string; minutes: number };
+  followingTimes?: string[];
 };
 
 /** Shared itinerary card, with optional timing supplied by its city adapter. */
-export function SegmentView({ line, stations, terminal, name, lang, showNextTrain = false, trip, publishedTrip,
+export function SegmentView({ line, stations, terminal, name, lang, showNextTrain = false, trip, publishedTrip, followingTimes = [],
   isPlanned = false, color = LINE_COLORS[line], onColor = lineOnColor(line),
   boardable = (id: string) => canBoardAtStation(id, line), nextDep = [], stationNote,
 }: SegmentViewProps & { color?: string; onColor?: string; boardable?: (id: string) => boolean;
@@ -625,14 +628,18 @@ export function SegmentView({ line, stations, terminal, name, lang, showNextTrai
               // "Then:" reflects live departures from now — hide it on
               // planned journeys where it would contradict the plan.
               if (isPlanned) return null;
-              // Find next departure with a different time than the main one
+              // Source-backed city adapters expose the next published
+              // departure, just as Tehran's native schedule lookup does.
               const nextDifferent = next ? nextDep.find((d) => d.time !== next.time) : null;
-              if (!nextDifferent) return null;
+              const following = publishedTrip
+                ? followingTimes.find((time) => time !== publishedTrip.departure)
+                : nextDifferent?.time;
+              if (!following) return null;
               return (
                 <p className="mt-0.5 text-[11px] text-foreground/70">
                   {isFa ? "بعدی:" : "Then:"}{" "}
-                  <span className="tnum font-semibold">{persianDigits(nextDifferent.time, lang)}</span>
-                  {nextDifferent.isExpress && (
+                  <span className="tnum font-semibold">{persianDigits(following, lang)}</span>
+                  {nextDifferent?.isExpress && (
                     <span className="ms-1 text-amber-600 dark:text-amber-400">
                       ({isFa ? "سریع السیر" : "express"})
                     </span>
