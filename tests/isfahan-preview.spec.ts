@@ -28,7 +28,7 @@ test("preview cities use normal city switching, map selection and route tabs wit
   await expect(page.locator(".metto-source-track")).toHaveCount(19);
   const start = page.locator(`.city-station-hit[data-station-id="${qods}"]`);
   await start.focus(); await page.keyboard.press("Enter");
-  await expect(page.getByTestId("map-station-card")).toContainText("Published timetable");
+  await expect(page.getByTestId("map-station-card")).toContainText("Defa-e Moghaddas");
   await page.getByRole("button", { name: "Set as origin", exact: true }).click();
   await page.locator(`.city-station-hit[data-station-id="${end}"]`).focus();
   await page.keyboard.press("Enter");
@@ -179,7 +179,7 @@ test("ordinary Isfahan journeys use Tehran's route flow without repeated calenda
 });
 
 test("a missed Isfahan arrival deadline uses Tehran's actionable missed-deadline card", async ({ page }) => {
-  await page.goto(`/isfahan/route?from=${qods}&to=${end}&at=2026-11-03T10:15&timeMode=arrive&lang=en`);
+  await page.goto(`/isfahan/route?from=${qods}&to=${end}&at=2026-11-03T06:45:00.000Z&timeMode=arrive&lang=en`);
   const missed = page.getByTestId("isfahan-missed-deadline");
   await expect(missed).toBeVisible();
   await expect(missed).toContainText("10:15");
