@@ -379,11 +379,11 @@ export function TimetabledJourneyFrame({
 }
 
 /** Same-station empty state shared by all timetable-enabled route planners. */
-export function SameStationNotice({ lang, fromSelected }: { lang: Lang; fromSelected: boolean }) {
+export function SameStationNotice({ lang, fromSelected, sameStation = true }: { lang: Lang; fromSelected: boolean; sameStation?: boolean }) {
   const t = STRINGS[lang];
   return <div data-testid="same-station-notice"
     className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground md:px-5 md:py-8 md:text-base">
-    <p>{t.sameStation}</p>
+    <p>{sameStation ? t.sameStation : t.pickBoth}</p>
     {!fromSelected && (
       <p className="mt-2 flex flex-wrap items-center justify-center gap-1 text-xs">
         {lang === "fa" ? "یا روی" : "or tap"}
