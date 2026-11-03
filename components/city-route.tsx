@@ -59,6 +59,11 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   const [timeMode, setTimeMode] = useState<TimeMode>(legacyMs !== null ? "depart" : preference.mode);
   const [planAtMs, setPlanAtMs] = useState<number | null>(legacyMs ?? preference.at?.getTime() ?? null);
   const [timeExpanded, setTimeExpanded] = useState(() => legacyMs !== null || preference.mode !== "now");
+  const timeCardRef = useRef<HTMLDivElement>(null);
+  function expandTimeCard() {
+    setTimeExpanded(true);
+    requestAnimationFrame(() => timeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+  }
   const nowMs = useRouteClock();
   // Match Tehran: never display a journey that would depart at a time already in the past.
   const isPastTime = hasTimetable && timeMode !== "now" && planAtMs !== null && planAtMs < nowMs;
@@ -188,8 +193,8 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
             <WalkingRouteInfo lang={lang} loading={walking.access.loading || walking.egress.loading || walking.direct.loading} hasPath={!!(walking.access.route || walking.egress.route || walking.direct.route)} saved={walking.access.saved || walking.egress.saved || walking.direct.saved} />
             <Link href={`/${city}/map?${mapParams}`} className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary md:py-2.5 md:text-base"><MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{t.viewOnMap}</Link>
           </>}
-          {hasTimetable && <TravelTimeCard lang={lang} timeMode={timeMode} planAtMs={planAtMs} nowMs={nowMs}
-            expanded={timeExpanded} onToggle={() => setTimeExpanded(value => !value)} onModeChange={selectTimeMode} onPlanAtMs={setPlanAtMs} />}
+          {hasTimetable && <div ref={timeCardRef} className="scroll-mt-4"><TravelTimeCard lang={lang} timeMode={timeMode} planAtMs={planAtMs} nowMs={nowMs}
+            expanded={timeExpanded} onToggle={() => setTimeExpanded(value => !value)} onModeChange={selectTimeMode} onPlanAtMs={setPlanAtMs} /></div>}
           {isPastTime && <div role="alert" data-testid="city-time-passed"
             className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -202,7 +207,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
             <div className="flex shrink-0 flex-col gap-1.5">
               <button type="button" onClick={() => { setTimeMode("now"); setPlanAtMs(null); }}
                 className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-primary">{t.useNow}</button>
-              <button type="button" onClick={() => setTimeExpanded(true)}
+              <button type="button" onClick={expandTimeCard}
                 className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary">{t.editTime}</button>
             </div>
           </div>}
@@ -213,7 +218,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
         </section>
         {!isPastTime && result && <section aria-label={t.routeOverview} data-testid="city-route-result">
           {city === "isfahan" ? <IsfahanJourney stationIds={result.stationIds} plannedAt={plannedAt}
-            arriveBy={timeMode === "arrive"} onEditTime={() => setTimeExpanded(true)}
+            arriveBy={timeMode === "arrive"} onEditTime={expandTimeCard}
             onUseNow={() => { setTimeMode("now"); setPlanAtMs(null); }}
             lang={lang} stationCount={result.stationIds.length} name={name}
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
