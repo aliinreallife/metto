@@ -110,6 +110,19 @@ test.describe("walk suggestion", () => {
     await expect(card).toContainText("۲ دقیقه");
   });
 
+  test("Isfahan uses the same measured pedestrian route and map path as Tehran", async ({ page }) => {
+    const qods = "isfahan:station:qods";
+    const params = `from=${qods}&to=${qods}&op=32.7149,51.6032,Origin&dp=32.7151,51.6032,Destination&lang=en`;
+    await page.goto(`/isfahan/route?${params}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("walk-suggest")).toContainText("Walk between these places");
+    await expect(page.getByTestId("walking-route-info"))
+      .toContainText("Available walking distances and times use mapped footpaths.", { timeout: 15_000 });
+    await page.locator("header").getByRole("link", { name: "Map", exact: true }).click();
+    await expect(page.locator("path.metto-walking-path")).toHaveCount(1, { timeout: 15_000 });
+    await expect(page.getByTestId("map-place-card")).toContainText("Walk between these places");
+    await expect(page.getByTestId("walking-route-info")).toContainText("Solid lines follow mapped footpaths.");
+  });
+
   test("long same-station walks suggest another transport option", async ({ page }) => {
     await page.goto("/route?from=chitgar&to=chitgar&op=35.7265,51.2427,Origin&dp=35.7500,51.2427,Destination");
     await expect(page.getByTestId("walk-suggest")).toContainText("شاید وسیلهٔ دیگری مناسب‌تر باشد");
