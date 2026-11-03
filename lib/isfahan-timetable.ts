@@ -39,7 +39,7 @@ function findIsfahanTripsForDay(from: string, to: string, instantMs: number, hol
   return { ...service, blocked, trips };
 }
 
-/** Arrive-by may use the previous evening's last train for an early deadline. */
+/** Arrive-by can use a previous service date only when the train arrives after midnight on the selected arrival date. */
 export function findIsfahanTrips(from: string, to: string, instantMs: number, holidays: HolidayDataset | null,
   options: { arriveBy?: boolean; notBeforeMs?: number } = {}) {
   const current = findIsfahanTripsForDay(from, to, instantMs, holidays, options);
