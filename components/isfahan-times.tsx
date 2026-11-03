@@ -5,7 +5,7 @@ import { findIsfahanTrips, isfahanServiceData } from "@/lib/isfahan-timetable";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatDateLabel } from "@/lib/route-planning";
 import { tehranParts, parseServiceTimeToMinutes, tehranMinuteToInstant } from "@/lib/tehran-time";
-import { MissedDeadlineCard, NoServiceCard, PathRoutePanel, RouteSummaryStats } from "./route-panel";
+import { MissedDeadlineCard, NoServiceCard, PathRoutePanel, TimetabledJourneyFrame } from "./route-panel";
 import { stationByCityId } from "@/lib/city-catalog";
 
 function usePublishedClock() {
@@ -94,10 +94,12 @@ export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEdit
   return <div data-testid="isfahan-times" className="flex flex-col gap-3 md:gap-4">
     {selection.holidayAssumption && <p role="status" data-testid="isfahan-holiday-assumption"
       className="rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">{t.isfahanHolidayAssumption}</p>}
-    <RouteSummaryStats lang={path.lang} stationCount={stationIds.filter(id => !closed.includes(id)).length}
+    <TimetabledJourneyFrame lang={path.lang} stationCount={stationIds.filter(id => !closed.includes(id)).length}
       waitMinutes={arriveBy ? 0 : Math.max(0, Math.round((trip.departureMs - (plannedAt ?? now)) / 60_000))}
-      travelMinutes={trip.minutes} arrival={trip.arrival} departedAtMs={trip.departureMs} />
-    <PathRoutePanel {...path} showSummary={false} stationCount={stationIds.filter(id => !closed.includes(id)).length}
-      nextTrip={trip} stationNote={id => closed.includes(id) ? t.isfahanNoStopNote : undefined} />
+      travelMinutes={trip.minutes} arrival={trip.arrival} departedAtMs={trip.departureMs}
+      originName={path.name(from)} arriveBy={arriveBy} note={t.timeNote}>
+      <PathRoutePanel {...path} showSummary={false} stationCount={stationIds.filter(id => !closed.includes(id)).length}
+        nextTrip={trip} stationNote={id => closed.includes(id) ? t.isfahanNoStopNote : undefined} />
+    </TimetabledJourneyFrame>
   </div>;
 }
