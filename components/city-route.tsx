@@ -174,6 +174,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
     setFrom(to); setTo(from); setInvalidLink(false);
   }
   const mapParams = new URLSearchParams({ from, to, lang });
+  if (hasTimetable) applyTimeParams(mapParams, timeMode, planAtMs !== null ? new Date(planAtMs) : null);
   if (originPin) mapParams.set("op", encodePlacePin(originPin));
   if (destPin) mapParams.set("dp", encodePlacePin(destPin));
   const locateOrigin = async () => {
