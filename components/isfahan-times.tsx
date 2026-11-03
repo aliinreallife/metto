@@ -70,7 +70,9 @@ export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEdit
   const now = usePublishedClock();
   const { dataset } = useHolidayData();
   const t = STRINGS[path.lang];
-  if (nowMs === undefined && now === null) return <p role="status" className="text-xs text-muted-foreground">{t.isfahanLoading}</p>;
+  // Keep the SSR/client mount gate even when the parent supplies its clock:
+  // the server clock can differ from the browser clock during hydration.
+  if (now === null) return <p role="status" className="text-xs text-muted-foreground">{t.isfahanLoading}</p>;
   const currentNow = nowMs ?? now!;
   const from = stationIds[0], to = stationIds.at(-1)!;
   const selection = published ?? findIsfahanTrips(from, to, plannedAt ?? currentNow, dataset, { arriveBy, notBeforeMs: currentNow });
