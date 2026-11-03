@@ -13,7 +13,10 @@ export function isfahanServiceDay(instantMs: number, holidays: HolidayDataset | 
   const resolution = resolveIsfahanServiceDate(dateStr, holiday === "holiday" ? "public_holiday" : holiday === "non-holiday" || covered ? "ordinary" : "unknown");
   return { dateStr, minuteOfDay, serviceId: resolution.serviceId,
     holidayAssumption: resolution.availability === "assumed_pattern",
-    calendarUnknown: holiday === "unknown" && dayType !== "friday",
+    // The holiday catalog lists exceptional days, not every ordinary date.
+    // Within its documented coverage, an unlisted weekday uses the ordinary
+    // pattern without falsely branding every normal journey as uncertain.
+    calendarUnknown: !covered && holiday === "unknown" && dayType !== "friday",
     applicable: resolution.serviceId !== null,
   };
 }
@@ -42,5 +45,11 @@ export function findIsfahanTrips(from: string, to: string, instantMs: number, ho
   const current = findIsfahanTripsForDay(from, to, instantMs, holidays, options);
   if (!options.arriveBy) return current;
   const previous = findIsfahanTripsForDay(from, to, tehranMinuteToInstant(current.dateStr, 0) - 1, holidays, options);
-  return current.trips.length ? current : previous.trips.length ? previous : current;
+  // Match Tehran's arrive-by semantics: the trip must *arrive on the
+  // requested date*. A Friday 22:39 arrival is not a valid Saturday 01:00
+  // journey. Only actual post-midnight services from yesterday may qualify.
+  const previousOvernight = previous.trips.filter(trip =>
+    tehranParts(tehranMinuteToInstant(previous.dateStr, parseServiceTimeToMinutes(trip.arrival))).dateStr === current.dateStr,
+  );
+  return current.trips.length ? current : previousOvernight.length ? { ...previous, trips: previousOvernight } : current;
 }
