@@ -36,7 +36,7 @@ const definitions: CityPreviewDefinition[] = [{
     coordinates: t.geometry.map(p => [p.lat, p.lng] as [number, number]) })),
 }];
 // Tabriz: actual mapped OSM track and a published, *unverified* timetable.
-// Keep the preview flag until the operator resolves contradictory last trains.
+// Public station/path data is supported; timetable authenticity remains explicitly unverified.
 const tabrizLineId = "tabriz:line:1";
 const tabrizRouteId = "tabriz:route:1-core";
 definitions.push({
@@ -50,14 +50,14 @@ definitions.push({
     cityId: "tabriz",
     stations: tabriz.stations.map(s => ({
       id: s.id, cityId: "tabriz", names: s.names, location: s.representativePoint,
-      status: "review_unverified",
+      status: tabriz.release.productionAuthorized ? "operational" : "review_unverified",
     })),
     lines: [{ id: tabrizLineId, names: { fa: "خط ۱", en: "Line 1" },
       color: "#147049", onColor: "#ffffff" }],
     routes: [{ id: tabrizRouteId, lineId: tabrizLineId,
-      stops: tabriz.stations.map(s => ({ stationId: s.id, status: "review_unverified" })) }],
+      stops: tabriz.stations.map(s => ({ stationId: s.id, status: tabriz.release.productionAuthorized ? "operational" : "review_unverified" })) }],
     segments: tabriz.tracks.map(t => ({ routeId: tabrizRouteId,
-      from: t.fromStationId, to: t.toStationId, status: "review_unverified" })),
+      from: t.fromStationId, to: t.toStationId, status: tabriz.release.productionAuthorized ? "operational" : "review_unverified" })),
     transferLinks: [],
   },
   geometry: tabriz.tracks.map(t => ({ from: t.fromStationId, to: t.toStationId,
