@@ -33,8 +33,8 @@ test("preview cities use normal city switching, map selection and route tabs wit
   await page.locator(`.city-station-hit[data-station-id="${end}"]`).focus();
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Set as Destination", exact: true }).click();
-  expect(new URL(page.url()).searchParams.has("op")).toBe(false);
-  expect(new URL(page.url()).searchParams.has("dp")).toBe(false);
+  await expect.poll(() => new URL(page.url()).searchParams.has("op")).toBe(false);
+  await expect.poll(() => new URL(page.url()).searchParams.has("dp")).toBe(false);
   await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-route-station-count", "20");
   await page.locator("header").getByRole("link", { name: "Route", exact: true }).click();
   await expect(page).toHaveURL(/\/isfahan\/route\?/);
