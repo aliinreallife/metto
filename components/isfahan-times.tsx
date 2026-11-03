@@ -106,7 +106,10 @@ export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEdit
       afterStats={<RatePromptHost lang={path.lang} routeSucceeded
         routeKey={`isfahan|${from}|${to}|${arriveBy ? "arrive" : plannedAt === undefined ? "now" : "depart"}|${plannedAt ?? "now"}`} />}>
       <PathRoutePanel {...path} showSummary={false} stationCount={stationIds.filter(id => !closed.includes(id)).length}
-        nextTrip={trip} stationNote={id => closed.includes(id) ? t.isfahanNoStopNote : undefined} />
+        nextTrip={trip} followingTimes={!arriveBy && plannedAt === undefined
+          ? selection.trips.slice(1, 3).map(next => next.departure) : []}
+        isPlanned={plannedAt !== undefined}
+        stationNote={id => closed.includes(id) ? t.isfahanNoStopNote : undefined} />
     </TimetabledJourneyFrame>
   </div>;
 }
