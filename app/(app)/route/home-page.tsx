@@ -645,13 +645,15 @@ function RouteView({
               hasPath={!!(walking.direct.route || walking.access.route || walking.egress.route)}
               saved={walking.direct.saved || walking.access.saved || walking.egress.saved} />
           )}
-          <Link
-            href={mapHref}
-            className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:py-2.5 md:text-base"
-          >
-            <MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />
-            {t.viewOnMap}
-          </Link>
+          {route?.status === "complete" && (
+            <Link
+              href={mapHref}
+              className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:py-2.5 md:text-base"
+            >
+              <MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />
+              {t.viewOnMap}
+            </Link>
+          )}
         </div>
 
         {selected ? (
