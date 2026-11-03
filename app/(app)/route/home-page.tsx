@@ -14,7 +14,7 @@ import {
 import { RoutePlaceCard } from "@/components/route-place-card";
 import { RouteFields } from "@/components/route-fields";
 import { StationCombobox } from "@/components/station-combobox";
-import { MissedDeadlineCard, NoServiceCard, RoutePanel, WalkSuggestCard } from "@/components/route-panel";
+import { MissedDeadlineCard, NoServiceCard, RoutePanel, SameStationNotice, WalkSuggestCard } from "@/components/route-panel";
 import { RatePromptHost } from "@/components/rate-prompt";
 import { RouteActions } from "@/components/route-actions";
 import { StationDetail } from "@/components/station-detail";
@@ -772,22 +772,7 @@ function RouteView({
           <>
             {walkVerdict?.kind === "same-station" && <WalkSuggestCard lang={lang} walkMin={walkVerdict.walkMin} distanceKm={walkVerdict.walkKm}
               approximate={!walking.direct.route} sameStation />}
-            <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground md:px-5 md:py-8 md:text-base">
-            <p>
-              {originId && destId && originId === destId
-                ? t.sameStation
-                : t.pickBoth}
-            </p>
-            {!originId && (
-              <p className="mt-2 flex flex-wrap items-center justify-center gap-1 text-xs">
-                {isFa ? "یا روی" : "or tap"}
-                <LocateFixed aria-hidden="true" className="inline size-3.5 shrink-0" />
-                {isFa
-                  ? "ضربه بزنید تا نزدیک‌ترین ایستگاه مبدأ شود"
-                  : "to set your nearest station as origin"}
-              </p>
-            )}
-          </div>
+            <SameStationNotice lang={lang} sameStation={!!originId && originId === destId} fromSelected={!!originId} />
           </>
         ) : null}
 
