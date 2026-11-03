@@ -52,7 +52,7 @@ export const CITIES: CityMeta[] = [
   },
   {
     slug: "tabriz", name: { en: "Tabriz", fa: "تبریز" }, timing: true,
-    release: "preview", bounds: [46.17, 37.97, 46.44, 38.13],
+    release: "public", bounds: [46.17, 37.97, 46.44, 38.13],
     placeExample: { en: "El Goli Park", fa: "پارک ائل‌گلی" },
     placeExampleQuery: "ائل گلی تبریز",
     keywords: ["Tabriz metro map", "Tabriz subway times", "مترو تبریز", "نقشه مترو تبریز", "ساعت حرکت مترو تبریز", "خط یک قطار شهری تبریز"],
