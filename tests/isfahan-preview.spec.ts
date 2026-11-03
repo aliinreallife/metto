@@ -57,7 +57,10 @@ test("preview cities use normal city switching, map selection and route tabs wit
 
 test("preview cities join landings and combined directories while keeping duplicate names and foreign endpoints separate", async ({ page }) => {
   await page.goto("/isfahan?lang=en");
-  await expect(page.locator('meta[name="robots"][content*="noindex"]')).toHaveCount(0);
+  // Vercel injects noindex into hosted previews, including public city pages.
+  // The local production build is where we assert this city's indexability.
+  if (!new URL(page.url()).hostname.endsWith(".vercel.app"))
+    await expect(page.locator('meta[name="robots"][content*="noindex"]')).toHaveCount(0);
   await expect(page.getByText("20 stations · 1 line", { exact: true })).toBeVisible();
   await expect(page.getByTestId("isfahan-landing-route")).toContainText("Qods");
   await expect(page.getByTestId("isfahan-landing-route")).toContainText("Defa-e Moghaddas");
