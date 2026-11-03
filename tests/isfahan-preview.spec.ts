@@ -204,6 +204,15 @@ test("timetabled Isfahan inherits Tehran's live countdown to reach the first sta
   await expect(page.getByTestId("plan-banner")).toHaveCount(0);
 });
 
+test("Isfahan Now route shows the following published train like Tehran", async ({ page }) => {
+  // Fixed by beforeEach: 10:00 Iran, source departures Qods 10:06 then 10:17.
+  await page.goto(`/isfahan/route?from=${qods}&to=${end}&lang=en`);
+  const journey = page.getByTestId("isfahan-times");
+  await expect(journey.locator("ol")).toContainText("10:06");
+  await expect(journey.locator("ol")).toContainText("Then:");
+  await expect(journey.locator("ol")).toContainText("10:17");
+});
+
 test("same-station Isfahan follows Tehran's empty and direct-walk states", async ({ page }) => {
   await page.goto(`/isfahan/route?from=${qods}&to=${qods}&lang=en`);
   await expect(page.getByTestId("same-station-notice")).toContainText("Origin and destination are the same.");
