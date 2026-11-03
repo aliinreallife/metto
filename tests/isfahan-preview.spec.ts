@@ -188,6 +188,51 @@ test("a missed Isfahan arrival deadline uses Tehran's actionable missed-deadline
   await expect(missed).toHaveCount(0);
 });
 
+test("timetabled Isfahan inherits Tehran's live countdown to reach the first station", async ({ page }) => {
+  // Fixed now: 10:00 Iran time, with a scheduled Qods train at 10:06.
+  await page.goto(`/isfahan/route?from=${qods}&to=${end}&timeMode=arrive&at=2026-11-03T07:20:00.000Z&lang=en`);
+  const banner = page.getByTestId("plan-banner");
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText(/You've got/);
+  await expect(banner).toContainText(/to reach Qods/);
+  await expect(banner).toContainText(/sec/);
+  await expect(page.getByTestId("route-summary-stats")).toBeVisible();
+  await expect(page.getByTestId("isfahan-times").locator("ol")).toHaveCount(1);
+
+  // Leaving arrive-by must hide the timer, as on Tehran.
+  await page.getByTestId("travel-time-card").getByText("Leave now", { exact: true }).click();
+  await expect(page.getByTestId("plan-banner")).toHaveCount(0);
+});
+
+test("same-station Isfahan follows Tehran's empty and direct-walk states", async ({ page }) => {
+  await page.goto(`/isfahan/route?from=${qods}&to=${qods}&lang=en`);
+  await expect(page.getByTestId("same-station-notice")).toContainText("Origin and destination are the same.");
+  await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
+  await expect(page.getByTestId("city-route-result")).toHaveCount(0);
+  await expect(page.getByTestId("route-summary-stats")).toHaveCount(0);
+
+  await page.goto(`/isfahan/route?from=${qods}&to=${qods}&op=32.7149,51.6032,Origin&dp=32.7150,51.6032,Destination&lang=en`);
+  await expect(page.getByTestId("walk-suggest")).toContainText("Walk between these places");
+  await expect(page.getByTestId("same-station-notice")).toContainText("Origin and destination are the same.");
+  await expect(page.getByTestId("city-route-result")).toHaveCount(0);
+});
+
+test("timetabled city retains the same route time across tabs and reloads", async ({ page }) => {
+  const iso = "2026-11-03T07:20:00.000Z";
+  await page.goto(`/isfahan/route?from=${qods}&to=${end}&timeMode=arrive&at=${encodeURIComponent(iso)}&lang=en`);
+  await expect(page.getByTestId("plan-banner")).toBeVisible();
+  await page.locator("header").getByRole("link", { name: "Map", exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("timeMode")).toBe("arrive");
+  expect(new URL(page.url()).searchParams.get("at")).toBe(iso);
+  await page.locator("header").getByRole("link", { name: "Stations", exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("timeMode")).toBe("arrive");
+  expect(new URL(page.url()).searchParams.get("at")).toBe(iso);
+  await page.locator("header").getByRole("link", { name: "Route", exact: true }).click();
+  await expect(page.getByTestId("plan-banner")).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId("plan-banner")).toBeVisible();
+});
+
 test("Isfahan never shows a fake train itinerary when a route has no usable departure", async ({ page }) => {
   // The final Friday Qods departure is 22:00, even though the rails
   // remain connected and downstream stations have later boarding times.
