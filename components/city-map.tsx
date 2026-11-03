@@ -19,6 +19,11 @@ import { cn } from "@/lib/utils";
 import { MapPickCard } from "./map-pick-card";
 import { StationDetailView } from "./station-detail";
 import { WalkingRouteInfo } from "./walking-route-info";
+import { WalkSuggestCard } from "./route-panel";
+import { directWalkVerdict, parseTimeModeParams } from "@/lib/route-planning";
+import { findIsfahanTrips } from "@/lib/isfahan-timetable";
+import { useHolidayData } from "@/lib/holidays/use-holiday-data";
+import { useRouteClock } from "@/lib/use-route-clock";
 import { CityPreviewNotice } from "./city-preview-notice";
 
 const NetworkMap = dynamic(() => import("./city-network-map").then(m => m.CityNetworkMap), { ssr: false });
@@ -30,6 +35,8 @@ export function CityMap({ city }: { city: CityId | "all" }) {
   const { lang, cityIds, mapMode, setMapMode } = useMetro();
   const params = useSearchParams(); const router = useRouter(); const t = STRINGS[lang];
   const { state: connectivity } = useConnectivity();
+  const nowMs = useRouteClock();
+  const { dataset: holidayDataset } = useHolidayData();
   const host = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState(params.get("station"));
   const [picked, setPicked] = useState<Point | null>(null);
@@ -97,16 +104,41 @@ export function CityMap({ city }: { city: CityId | "all" }) {
     setSelectedId(null); setPicked(null); setResolved(null);
     router.replace(`${mapPath}?${next}`);
   }
-  const walking = useTripWalking(originPin ?? origin?.location, destPin ?? dest?.location,
-    origin?.location, dest?.location, null);
+  const routePlan = parseTimeModeParams(new URLSearchParams(params.toString()));
+  const planAtMs = routePlan.at?.getTime();
+  const plannedAt = routePlan.mode === "now" ? nowMs : planAtMs ?? nowMs;
+  const published = useMemo(() =>
+    origin?.cityId === "isfahan" && dest?.cityId === "isfahan" && origin.id !== dest.id
+      ? findIsfahanTrips(origin.id, dest.id, plannedAt, holidayDataset,
+          { arriveBy: routePlan.mode === "arrive", notBeforeMs: nowMs })
+      : null, [origin, dest, plannedAt, nowMs, holidayDataset, routePlan.mode]);
+  const sourceTrip = published?.applicable && !published.blocked ? published.trips[0] : undefined;
+  const waitSeconds = sourceTrip ? Math.max(0, Math.round((sourceTrip.departureMs - plannedAt) / 1000)) : 0;
+  const metroWalkPlan = sourceTrip
+    ? { status: "complete" as const, totalSeconds: waitSeconds + sourceTrip.minutes * 60,
+        initialWaitSeconds: waitSeconds }
+    : null;
+  const walkOrigin = originPin ?? origin?.location;
+  const walkDest = destPin ?? dest?.location;
+  const walking = useTripWalking(walkOrigin, walkDest, origin?.location, dest?.location, metroWalkPlan);
+  const walkVerdict = directWalkVerdict({
+    origin: walkOrigin, dest: walkDest,
+    sameStation: !!origin && !!dest && origin.id === dest.id,
+    metroTotalSeconds: metroWalkPlan?.totalSeconds ?? null,
+    initialWaitSeconds: metroWalkPlan?.initialWaitSeconds,
+    accessMinutes: walking.accessMinutes,
+    walkingRoute: walking.accessApproximate ? null : walking.direct.route,
+  });
+  const mergedSameStation = !!origin && !!dest && origin.id === dest.id && !!originPin && !!destPin;
+
   const placeMarkers = useMemo(() => [
     ...(originPin && origin ? [{ ...originPin, role: "origin" as const, stationId: origin.id, label: displayPlaceLabel(originPin.label, lang) }] : []),
     ...(destPin && dest ? [{ ...destPin, role: "dest" as const, stationId: dest.id, label: displayPlaceLabel(destPin.label, lang) }] : []),
   ], [originPin, origin, destPin, dest, lang]);
   const walkingPaths = useMemo(() => ({ origin: walking.access.route?.coordinates, dest: walking.egress.route?.coordinates }), [walking.access.route, walking.egress.route]);
-  const directWalk = useMemo(() => origin && dest && origin.id === dest.id && originPin && destPin
-    ? { from: originPin, to: destPin, coordinates: walking.direct.route?.coordinates } : null,
-    [origin, dest, originPin, destPin, walking.direct.route]);
+  const directWalk = walkVerdict && walkOrigin && walkDest
+    ? { from: walkOrigin, to: walkDest, coordinates: walking.direct.route?.coordinates }
+    : null;
   return <div ref={host} data-testid="city-map" className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden"
     onKeyDown={event => { if (event.key === "Escape" && (picked || selected)) { event.preventDefault(); closeCard(); } }}>
     <NetworkMap stations={stations} edges={edges} lang={lang} selectedId={selectedId ?? undefined} pathIds={pathIds}
@@ -126,7 +158,19 @@ export function CityMap({ city }: { city: CityId | "all" }) {
       </p>}
       {connectivity === "offline" && <div className="rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-sm"><p className="flex items-center gap-2 font-semibold"><WifiOff aria-hidden="true" className="size-4" />{t.mapOfflineTitle}</p><p className="mt-0.5 text-muted-foreground">{t.mapOfflineBody}</p></div>}
       {crossCity && <p role="alert" className="rounded-lg border border-border bg-background/95 px-3 py-2 text-sm shadow-sm">{t.citySameCityOnly}</p>}
-      {placeMarkers.map(marker => {
+      {walkVerdict?.kind === "beats-metro" && <div className="pointer-events-auto"><WalkSuggestCard
+        lang={lang} walkMin={walkVerdict.walkMin} distanceKm={walkVerdict.walkKm}
+        approximate={!walking.direct.route || walking.accessApproximate} /></div>}
+      {mergedSameStation && walkVerdict?.kind === "same-station" ? (
+        <div data-testid="map-place-card" className="rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-sm">
+          <p className="truncate font-medium">{originPin?.label} · {destPin?.label}</p>
+          <p className="mt-0.5 text-sm font-bold">{t.walkBetweenPlaces}</p>
+          <p className="tnum mt-0.5 text-muted-foreground">
+            {walking.direct.route ? "" : "~"}{formatWalkTime(walkVerdict.walkMin, lang)} {t.walkTime} · {formatDistance(walkVerdict.walkKm, lang)}
+          </p>
+          {isLongWalk(walkVerdict.walkKm, walkVerdict.walkMin) && <p className="mt-0.5 font-medium text-foreground">{t.longWalkConsiderTransport}</p>}
+        </div>
+      ) : placeMarkers.map(marker => {
         const station = byId.get(marker.stationId)!;
         const street = marker.role === "origin" ? walking.access.route : walking.egress.route;
         const km = street ? street.distanceMeters / 1000 : haversineKm(marker.lat, marker.lng, station.location.lat, station.location.lng);
@@ -136,7 +180,7 @@ export function CityMap({ city }: { city: CityId | "all" }) {
           {isLongWalk(km, minutes) && <p className="mt-0.5 font-medium text-foreground">{t.longWalkConsiderTransport}</p>}
         </div>;
       })}
-      {placeMarkers.length > 0 && <WalkingRouteInfo lang={lang} onMap loading={walking.access.loading || walking.egress.loading || walking.direct.loading}
+      {(placeMarkers.length > 0 || walkVerdict !== null) && <WalkingRouteInfo lang={lang} onMap loading={walking.access.loading || walking.egress.loading || walking.direct.loading}
         hasPath={!!(walking.access.route || walking.egress.route || walking.direct.route)} saved={walking.access.saved || walking.egress.saved || walking.direct.saved} />}
     </div>
     {selected && <section data-testid="map-station-card" className="absolute inset-x-3 bottom-3 z-[600] mx-auto max-w-md overflow-hidden rounded-xl bg-card shadow-sm" aria-label={stationName(selected)}>
