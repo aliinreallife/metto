@@ -16,6 +16,7 @@ import {
 import { InstallNavButton } from "@/components/install-nav-button";
 import { OfflineStatus } from "@/components/offline-status";
 import { useMetro } from "./providers";
+import { cityDataCredit } from "@/lib/data-credit";
 import { STRINGS } from "@/lib/i18n";
 import { buildStatefulTabHref } from "@/lib/tab-href";
 import { noteRatingQaNavigation } from "@/lib/rating-qa";
@@ -283,7 +284,7 @@ export function AppNav() {
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
           <a
-            href={city === "mashhad" ? "https://github.com/shahriaarrr/mashhad-metro-data" : city === "tehran" ? "https://github.com/mostafa-kheibary/tehran-metro-data" : "https://www.openstreetmap.org/copyright"}
+            href={cityDataCredit(city).url}
             target="_blank"
             rel="noopener noreferrer"
             className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
@@ -291,7 +292,7 @@ export function AppNav() {
             <Database className="size-3 shrink-0 text-primary" />
             <span className="shrink-0 text-muted-foreground">{t.dataBy}</span>
             <span className="truncate font-semibold text-foreground">
-              {city === "mashhad" ? "shahriaarrr" : city === "tehran" ? "mostafa-kheibary" : "OpenStreetMap"}
+              {cityDataCredit(city).name}
             </span>
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>

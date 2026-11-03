@@ -151,6 +151,7 @@ test("Isfahan reuses Tehran's travel-time card, step controls and shareable arri
 
 
 test("Isfahan uses the same three summary cards with source-based wait, travel and arrival", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/isfahan/route?from=${qods}&to=${end}&at=2026-11-06T09:05&lang=en`);
   const summary = page.getByTestId("route-summary-stats");
   await expect(summary.locator(":scope > div")).toHaveCount(3);
@@ -158,6 +159,8 @@ test("Isfahan uses the same three summary cards with source-based wait, travel a
   await expect(summary).toContainText(/10\s*\+\s*39/);
   await expect(summary).toContainText("09:54");
   await expect(summary).toContainText("wait + travel");
+  await expect(page.getByTestId("isfahan-times").getByRole("link")).toHaveAttribute("href", "https://github.com/aliinreallife/metto-data");
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: /metto-data/ })).toBeVisible();
   await page.goto(`/isfahan/route?from=isfahan:station:baharestan&to=${end}&at=2026-11-06T09:05&lang=en`);
   await expect(page.getByTestId("isfahan-times")).toContainText("does not board passengers");
   await expect(summary).toHaveCount(0);

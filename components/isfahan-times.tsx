@@ -6,6 +6,7 @@ import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatDateLabel } from "@/lib/route-planning";
 import { tehranParts } from "@/lib/tehran-time";
 import { PathRoutePanel, RouteSummaryStats } from "./route-panel";
+import { METTO_DATA_CREDIT } from "@/lib/data-credit";
 import { stationByCityId } from "@/lib/city-catalog";
 
 /** Published times, not real-time train positions. Uses Iran's clock on every device. */
@@ -47,7 +48,7 @@ export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false, stat
         {!arriveBy && result.trips.length > 1 && <p className="text-xs text-muted-foreground">{t.isfahanFollowingTrains} <span className="tnum" dir="ltr">{result.trips.slice(1, 3).map(tr => persianDigits(tr.departure, lang)).join(" · ")}</span></p>}
       </div>;
     })}
-    <a className="self-start text-xs text-muted-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary" href={isfahanServiceData.source.pageUrl} target="_blank" rel="noreferrer">{t.isfahanTimetableSource}</a>
+    <a className="self-start text-xs text-muted-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary" href={METTO_DATA_CREDIT.url} target="_blank" rel="noreferrer">{t.isfahanTimetableSource}</a>
   </div></div>;
 }
 
