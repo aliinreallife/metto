@@ -200,7 +200,7 @@ test("timetabled Isfahan inherits Tehran's live countdown to reach the first sta
   await expect(page.getByTestId("isfahan-times").locator("ol")).toHaveCount(1);
 
   // Leaving arrive-by must hide the timer, as on Tehran.
-  await page.getByTestId("travel-time-card").getByText("Leave now", { exact: true }).click();
+  await page.getByTestId("travel-time-card").locator("fieldset").getByText("Leave now", { exact: true }).click();
   await expect(page.getByTestId("plan-banner")).toHaveCount(0);
 });
 
@@ -215,6 +215,16 @@ test("same-station Isfahan follows Tehran's empty and direct-walk states", async
   await expect(page.getByTestId("walk-suggest")).toContainText("Walk between these places");
   await expect(page.getByTestId("same-station-notice")).toContainText("Origin and destination are the same.");
   await expect(page.getByTestId("city-route-result")).toHaveCount(0);
+});
+
+test("the Isfahan map merges two pins at one station like Tehran instead of showing duplicate cards", async ({ page }) => {
+  await page.goto(`/isfahan/map?from=${qods}&to=${qods}&op=32.7149,51.6032,Origin&dp=32.7150,51.6032,Destination&lang=en`);
+  const merged = page.getByTestId("map-place-card");
+  await expect(merged).toHaveCount(1);
+  await expect(merged).toContainText("Origin");
+  await expect(merged).toContainText("Destination");
+  await expect(merged).toContainText("Walk between these places");
+  await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-route-station-count", "0");
 });
 
 test("timetabled city retains the same route time across tabs and reloads", async ({ page }) => {
