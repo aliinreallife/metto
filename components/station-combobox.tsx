@@ -9,7 +9,7 @@ import { searchPlaces, type PlaceResult } from "@/lib/geocoding"
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
-import type { CityId } from "@/lib/cities"
+import { getCityMeta, type CityId } from "@/lib/cities"
 
 type Props = {
   placeSearchCity?: CityId
@@ -26,7 +26,7 @@ type Props = {
 
 export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, lang, accentClass, id, catalog, placeSearchCity }: Props) {
   const canSearchPlaces = !catalog || Boolean(placeSearchCity && onPlaceSelect)
-  const searchExample = placeSearchCity === "mashhad" ? STRINGS[lang].searchHintMashhadExample : STRINGS[lang].searchHintExample
+  const searchExample = getCityMeta(placeSearchCity ?? "tehran")?.placeExample?.[lang]
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [places, setPlaces] = useState<PlaceResult[]>([])
@@ -311,7 +311,7 @@ export function StationCombobox({ value, onChange, onPlaceSelect, placeholder, l
             aria-label={placeholder}
             className="max-h-64 overflow-y-auto py-1"
           >
-            {query.length === 0 && onPlaceSelect && (
+            {query.length === 0 && onPlaceSelect && searchExample && (
               <li role="presentation" dir={isFa ? "rtl" : "ltr"} className="px-3 py-2 text-center text-xs text-muted-foreground md:px-4 md:py-2.5 md:text-sm">
                 {STRINGS[lang].searchHintBefore}{" "}
                 <button

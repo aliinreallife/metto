@@ -1,4 +1,4 @@
-import type { CityId } from "./cities"
+import { getCityMeta, type CityId } from "./cities"
 import { STRINGS, type Lang } from "./i18n"
 
 export type PlaceResult = {
@@ -20,6 +20,9 @@ export async function searchPlaces(
 ): Promise<PlaceResult[]> {
   const q = query.trim()
   if (q.length < 2) return []
+  const bounds = getCityMeta(city)?.bounds
+  if (!bounds) return []
+  const [west, south, east, north] = bounds
 
   const cacheKey = `${city}:${lang}:${q}:${limit}`
   const cached = cache.get(cacheKey)
@@ -33,9 +36,9 @@ export async function searchPlaces(
   controller = new AbortController()
 
   // The provider indexes this landmark under its Persian name only.
-  const searchQuery = city === "mashhad" && q.toLowerCase() === "nader shah tomb"
-    ? "آرامگاه نادرشاه"
-    : q
+  const meta = getCityMeta(city)!
+  const searchQuery = meta.placeExampleQuery && q.toLowerCase() === meta.placeExample?.en.toLowerCase()
+    ? meta.placeExampleQuery : q
   const params = new URLSearchParams({
     q: searchQuery,
     format: "json",
@@ -44,7 +47,7 @@ export async function searchPlaces(
     "accept-language": lang === "fa" ? "fa,en" : "en,fa",
     addressdetails: "1",
     // Keep place results inside the selected city.
-    viewbox: city === "mashhad" ? "59.35,36.10,59.85,36.50" : "51.15,35.55,51.65,35.85",
+    viewbox: bounds.join(","),
     bounded: "1",
   })
 
@@ -71,7 +74,7 @@ export async function searchPlaces(
       lng: parseFloat(item.lon),
       type: item.type,
     })).filter(place => Number.isFinite(place.lat) && Number.isFinite(place.lng) &&
-      (city !== "mashhad" || (place.lat >= 36.10 && place.lat <= 36.50 && place.lng >= 59.35 && place.lng <= 59.85)))
+      (place.lat >= south && place.lat <= north && place.lng >= west && place.lng <= east))
 
     cache.set(cacheKey, results)
     return results

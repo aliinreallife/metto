@@ -68,7 +68,8 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
   reportedAmenities?: Partial<MetroStation["amenities"]>;
 }) {
   const t = STRINGS[lang]; const isFa = lang === "fa";
-  const underConstruction = station.status !== "operational";
+  const reviewOnly = station.status.startsWith("review_");
+  const underConstruction = station.status !== "operational" && !reviewOnly;
   const activeAmenities = Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const constructionId = `station-card-${station.id}-${uid}-construction`;
@@ -97,6 +98,7 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {reviewOnly && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground/80">{t.cityPreviewLabel}</span>}
           {underConstruction && (
             <span id={constructionId} className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
               <Ban aria-hidden="true" className="size-3" />
@@ -121,6 +123,7 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
         </div>
       </div>
 
+      {reviewOnly && <p className="px-4 pb-2 text-xs text-muted-foreground">{station.status === "review_disputed" ? t.cityBoardingDisputed : t.cityBoardingUnknown}</p>}
       {reportedAmenities && <p className="px-4 pb-2 text-[10px] text-muted-foreground">{t.amenitiesReported}</p>}
       {/* Amenities as icon pills */}
       {activeAmenities.length > 0 && (

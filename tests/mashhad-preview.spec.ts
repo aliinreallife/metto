@@ -34,7 +34,7 @@ test("selects Mashhad landmarks as exact endpoints and preserves them after relo
   await expect.poll(async()=>Boolean(new URL(page.url()).searchParams.get("op")) || await place.isVisible()).toBe(true);
   if(!new URL(page.url()).searchParams.get("op")) await place.click();
   await expect(page.getByTestId("city-route-result")).toBeVisible();
-  expect(queries).toContain("59.35,36.10,59.85,36.50");
+  expect(queries.map(q => q.split(",").map(Number))).toContainEqual([59.35,36.10,59.85,36.50]);
   const url=new URL(page.url());
   expect(url.searchParams.get("from")).toMatch(/^mashhad:station:/);
   expect(url.searchParams.get("op")).toBeTruthy();

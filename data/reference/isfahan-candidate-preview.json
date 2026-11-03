@@ -1,0 +1,924 @@
+{
+  "reviewOnly": true,
+  "readyForProduction": false,
+  "source": {
+    "repository": "aliinreallife/metto-data",
+    "commit": "1e83f67df3b3dd8e599eb416c42ed93a2a2bee7f",
+    "reviewPR": 37,
+    "reportSha256": "51a0d6e2c063ab84dad4037e1fa8bddc68eca8d9dc89ef5cf5d6d4bc76611099"
+  },
+  "stations": [
+    {
+      "id": "isfahan:station:qods",
+      "names": {
+        "fa": "قدس",
+        "en": "Qods"
+      },
+      "aliasesFa": [
+        "قدس"
+      ],
+      "representativePoint": {
+        "lat": 32.7148829,
+        "lng": 51.6032288
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:baharestan",
+      "names": {
+        "fa": "بهارستان",
+        "en": "Baharestan"
+      },
+      "aliasesFa": [
+        "بهارستان"
+      ],
+      "representativePoint": {
+        "lat": 32.7148823,
+        "lng": 51.6211184
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:golestan",
+      "names": {
+        "fa": "گلستان",
+        "en": "Golestan"
+      },
+      "aliasesFa": [
+        "گلستان"
+      ],
+      "representativePoint": {
+        "lat": 32.7155809,
+        "lng": 51.6313237
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:shahid-mofatteh",
+      "names": {
+        "fa": "شهید مفتح",
+        "en": "Shahid Mofatteh"
+      },
+      "aliasesFa": [
+        "شهید مفتح"
+      ],
+      "representativePoint": {
+        "lat": 32.7163279,
+        "lng": 51.6453535
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:shahid-alikhani",
+      "names": {
+        "fa": "شهید علیخانی",
+        "en": "Shahid Alikhani"
+      },
+      "aliasesFa": [
+        "شهید علیخانی"
+      ],
+      "representativePoint": {
+        "lat": 32.7152696,
+        "lng": 51.6590583
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:jaber",
+      "names": {
+        "fa": "جابر",
+        "en": "Jaber"
+      },
+      "aliasesFa": [
+        "جابر"
+      ],
+      "representativePoint": {
+        "lat": 32.7083937,
+        "lng": 51.6661068
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:kaveh",
+      "names": {
+        "fa": "کاوه",
+        "en": "Kaveh"
+      },
+      "aliasesFa": [
+        "کاوه"
+      ],
+      "representativePoint": {
+        "lat": 32.698631,
+        "lng": 51.6724482
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:shahid-chamran",
+      "names": {
+        "fa": "شهید چمران",
+        "en": "Shahid Chamran"
+      },
+      "aliasesFa": [
+        "شهید چمران"
+      ],
+      "representativePoint": {
+        "lat": 32.687444,
+        "lng": 51.6732146
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:shahid-bahonar",
+      "names": {
+        "fa": "شهید باهنر",
+        "en": "Shahid Bahonar"
+      },
+      "aliasesFa": [
+        "شهید باهنر"
+      ],
+      "representativePoint": {
+        "lat": 32.679601,
+        "lng": 51.6721977
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:shohada",
+      "names": {
+        "fa": "شهدا",
+        "en": "Shohada"
+      },
+      "aliasesFa": [
+        "شهدا"
+      ],
+      "representativePoint": {
+        "lat": 32.671975,
+        "lng": 51.6712572
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:takhti",
+      "names": {
+        "fa": "تختی",
+        "en": "Takhti"
+      },
+      "aliasesFa": [
+        "تختی"
+      ],
+      "representativePoint": {
+        "lat": 32.6643927,
+        "lng": 51.6701484
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:imam-hossein",
+      "names": {
+        "fa": "امام حسین",
+        "en": "Imam Hossein"
+      },
+      "aliasesFa": [
+        "امام حسین"
+      ],
+      "representativePoint": {
+        "lat": 32.6581181,
+        "lng": 51.6693574
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:enghelab",
+      "names": {
+        "fa": "انقلاب",
+        "en": "Enghelab"
+      },
+      "aliasesFa": [
+        "انقلاب"
+      ],
+      "representativePoint": {
+        "lat": 32.648819,
+        "lng": 51.668157
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:si-o-se-pol",
+      "names": {
+        "fa": "سی‌وسه‌پل",
+        "en": "Si-o-se-pol"
+      },
+      "aliasesFa": [
+        "سی و سه پل",
+        "سی‌وسه‌پل"
+      ],
+      "representativePoint": {
+        "lat": 32.6388443,
+        "lng": 51.6664168
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:shariati",
+      "names": {
+        "fa": "دکتر شریعتی",
+        "en": "Shariati"
+      },
+      "aliasesFa": [
+        "دکتر شریعتی",
+        "شریعتی"
+      ],
+      "representativePoint": {
+        "lat": 32.6292636,
+        "lng": 51.6654863
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:azadi",
+      "names": {
+        "fa": "آزادی",
+        "en": "Azadi"
+      },
+      "aliasesFa": [
+        "آزادی"
+      ],
+      "representativePoint": {
+        "lat": 32.6221521,
+        "lng": 51.6644983
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:daneshgah",
+      "names": {
+        "fa": "دانشگاه",
+        "en": "Daneshgah"
+      },
+      "aliasesFa": [
+        "دانشگاه"
+      ],
+      "representativePoint": {
+        "lat": 32.6148663,
+        "lng": 51.6635355
+      },
+      "boardingReview": "conflicting-reports"
+    },
+    {
+      "id": "isfahan:station:kargar",
+      "names": {
+        "fa": "کارگر",
+        "en": "Kargar"
+      },
+      "aliasesFa": [
+        "کارگر"
+      ],
+      "representativePoint": {
+        "lat": 32.6052398,
+        "lng": 51.6642805
+      },
+      "boardingReview": "conflicting-reports"
+    },
+    {
+      "id": "isfahan:station:kooye-imam",
+      "names": {
+        "fa": "کوی امام",
+        "en": "Kooye Imam"
+      },
+      "aliasesFa": [
+        "کوی امام"
+      ],
+      "representativePoint": {
+        "lat": 32.5984867,
+        "lng": 51.6682293
+      },
+      "boardingReview": "not-station-verified"
+    },
+    {
+      "id": "isfahan:station:defa-e-moghaddas",
+      "names": {
+        "fa": "دفاع مقدس",
+        "en": "Defa-e Moghaddas"
+      },
+      "aliasesFa": [
+        "دفاع مقدس",
+        "دفاع مقدس (صفه)",
+        "صفه"
+      ],
+      "representativePoint": {
+        "lat": 32.5881295,
+        "lng": 51.6696844
+      },
+      "boardingReview": "not-station-verified"
+    }
+  ],
+  "tracks": [
+    {
+      "fromStationId": "isfahan:station:qods",
+      "toStationId": "isfahan:station:baharestan",
+      "geometry": [
+        {
+          "lat": 32.71484,
+          "lng": 51.6031978
+        },
+        {
+          "lat": 32.7146777,
+          "lng": 51.6069627
+        },
+        {
+          "lat": 32.714555,
+          "lng": 51.6081508
+        },
+        {
+          "lat": 32.7145491,
+          "lng": 51.6092592
+        },
+        {
+          "lat": 32.7146706,
+          "lng": 51.6129036
+        },
+        {
+          "lat": 32.7148559,
+          "lng": 51.6183631
+        },
+        {
+          "lat": 32.7149238,
+          "lng": 51.6211329
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:baharestan",
+      "toStationId": "isfahan:station:golestan",
+      "geometry": [
+        {
+          "lat": 32.7149238,
+          "lng": 51.6211329
+        },
+        {
+          "lat": 32.7148901,
+          "lng": 51.6219581
+        },
+        {
+          "lat": 32.7150345,
+          "lng": 51.6239
+        },
+        {
+          "lat": 32.7151428,
+          "lng": 51.6245652
+        },
+        {
+          "lat": 32.715197,
+          "lng": 51.6255737
+        },
+        {
+          "lat": 32.7154859,
+          "lng": 51.6305358
+        },
+        {
+          "lat": 32.7155083,
+          "lng": 51.6308767
+        },
+        {
+          "lat": 32.7155249,
+          "lng": 51.63119
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:golestan",
+      "toStationId": "isfahan:station:shahid-mofatteh",
+      "geometry": [
+        {
+          "lat": 32.7155249,
+          "lng": 51.63119
+        },
+        {
+          "lat": 32.7159688,
+          "lng": 51.6380996
+        },
+        {
+          "lat": 32.7160861,
+          "lng": 51.6401971
+        },
+        {
+          "lat": 32.7161945,
+          "lng": 51.6425574
+        },
+        {
+          "lat": 32.7159959,
+          "lng": 51.6446227
+        },
+        {
+          "lat": 32.7159492,
+          "lng": 51.6453761
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:shahid-mofatteh",
+      "toStationId": "isfahan:station:shahid-alikhani",
+      "geometry": [
+        {
+          "lat": 32.7159492,
+          "lng": 51.6453761
+        },
+        {
+          "lat": 32.715188,
+          "lng": 51.6531629
+        },
+        {
+          "lat": 32.7149977,
+          "lng": 51.6555201
+        },
+        {
+          "lat": 32.7146641,
+          "lng": 51.6595423
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:shahid-alikhani",
+      "toStationId": "isfahan:station:jaber",
+      "geometry": [
+        {
+          "lat": 32.7146641,
+          "lng": 51.6595423
+        },
+        {
+          "lat": 32.7145211,
+          "lng": 51.6611365
+        },
+        {
+          "lat": 32.7144864,
+          "lng": 51.6616565
+        },
+        {
+          "lat": 32.7144748,
+          "lng": 51.6617942
+        },
+        {
+          "lat": 32.7143476,
+          "lng": 51.6629023
+        },
+        {
+          "lat": 32.7142149,
+          "lng": 51.663247
+        },
+        {
+          "lat": 32.7136583,
+          "lng": 51.6640165
+        },
+        {
+          "lat": 32.7125525,
+          "lng": 51.6646173
+        },
+        {
+          "lat": 32.7091997,
+          "lng": 51.6658308
+        },
+        {
+          "lat": 32.7084383,
+          "lng": 51.6660942
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:jaber",
+      "toStationId": "isfahan:station:kaveh",
+      "geometry": [
+        {
+          "lat": 32.7084383,
+          "lng": 51.6660942
+        },
+        {
+          "lat": 32.7078562,
+          "lng": 51.666299
+        },
+        {
+          "lat": 32.706459,
+          "lng": 51.6667953
+        },
+        {
+          "lat": 32.7058225,
+          "lng": 51.6668597
+        },
+        {
+          "lat": 32.705177,
+          "lng": 51.6670206
+        },
+        {
+          "lat": 32.7046362,
+          "lng": 51.667117
+        },
+        {
+          "lat": 32.7042742,
+          "lng": 51.6671815
+        },
+        {
+          "lat": 32.7040356,
+          "lng": 51.667232
+        },
+        {
+          "lat": 32.703412,
+          "lng": 51.6673639
+        },
+        {
+          "lat": 32.7026085,
+          "lng": 51.667557
+        },
+        {
+          "lat": 32.7016931,
+          "lng": 51.6680982
+        },
+        {
+          "lat": 32.7010286,
+          "lng": 51.6688767
+        },
+        {
+          "lat": 32.7005727,
+          "lng": 51.669397
+        },
+        {
+          "lat": 32.7001163,
+          "lng": 51.6699815
+        },
+        {
+          "lat": 32.6997223,
+          "lng": 51.6707217
+        },
+        {
+          "lat": 32.6990893,
+          "lng": 51.6717935
+        },
+        {
+          "lat": 32.6986591,
+          "lng": 51.6724704
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:kaveh",
+      "toStationId": "isfahan:station:shahid-chamran",
+      "geometry": [
+        {
+          "lat": 32.6986591,
+          "lng": 51.6724704
+        },
+        {
+          "lat": 32.6982181,
+          "lng": 51.6731507
+        },
+        {
+          "lat": 32.6977578,
+          "lng": 51.6738501
+        },
+        {
+          "lat": 32.6972791,
+          "lng": 51.6742665
+        },
+        {
+          "lat": 32.6964123,
+          "lng": 51.6744221
+        },
+        {
+          "lat": 32.6941235,
+          "lng": 51.6742021
+        },
+        {
+          "lat": 32.6885028,
+          "lng": 51.6734373
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:shahid-chamran",
+      "toStationId": "isfahan:station:shahid-bahonar",
+      "geometry": [
+        {
+          "lat": 32.6885028,
+          "lng": 51.6734373
+        },
+        {
+          "lat": 32.6797416,
+          "lng": 51.6722584
+        },
+        {
+          "lat": 32.6795638,
+          "lng": 51.6722402
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:shahid-bahonar",
+      "toStationId": "isfahan:station:shohada",
+      "geometry": [
+        {
+          "lat": 32.6795638,
+          "lng": 51.6722402
+        },
+        {
+          "lat": 32.6718981,
+          "lng": 51.6711793
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:shohada",
+      "toStationId": "isfahan:station:takhti",
+      "geometry": [
+        {
+          "lat": 32.6718981,
+          "lng": 51.6711793
+        },
+        {
+          "lat": 32.6642048,
+          "lng": 51.6701309
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:takhti",
+      "toStationId": "isfahan:station:imam-hossein",
+      "geometry": [
+        {
+          "lat": 32.6642048,
+          "lng": 51.6701309
+        },
+        {
+          "lat": 32.6581791,
+          "lng": 51.6693454
+        },
+        {
+          "lat": 32.6580858,
+          "lng": 51.6693288
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:imam-hossein",
+      "toStationId": "isfahan:station:enghelab",
+      "geometry": [
+        {
+          "lat": 32.6580858,
+          "lng": 51.6693288
+        },
+        {
+          "lat": 32.6573662,
+          "lng": 51.6692013
+        },
+        {
+          "lat": 32.6545973,
+          "lng": 51.668827
+        },
+        {
+          "lat": 32.6533872,
+          "lng": 51.6686622
+        },
+        {
+          "lat": 32.6490252,
+          "lng": 51.6680745
+        },
+        {
+          "lat": 32.6489188,
+          "lng": 51.6680612
+        },
+        {
+          "lat": 32.6487094,
+          "lng": 51.6680345
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:enghelab",
+      "toStationId": "isfahan:station:si-o-se-pol",
+      "geometry": [
+        {
+          "lat": 32.6487094,
+          "lng": 51.6680345
+        },
+        {
+          "lat": 32.6468466,
+          "lng": 51.6677675
+        },
+        {
+          "lat": 32.6467285,
+          "lng": 51.6677556
+        },
+        {
+          "lat": 32.646631,
+          "lng": 51.6677423
+        },
+        {
+          "lat": 32.6465976,
+          "lng": 51.6677378
+        },
+        {
+          "lat": 32.6465552,
+          "lng": 51.6677171
+        },
+        {
+          "lat": 32.6462083,
+          "lng": 51.6675475
+        },
+        {
+          "lat": 32.6453583,
+          "lng": 51.667139
+        },
+        {
+          "lat": 32.6443366,
+          "lng": 51.6668355
+        },
+        {
+          "lat": 32.6434496,
+          "lng": 51.6667059
+        },
+        {
+          "lat": 32.6413745,
+          "lng": 51.6669536
+        },
+        {
+          "lat": 32.6405816,
+          "lng": 51.6670177
+        },
+        {
+          "lat": 32.6388817,
+          "lng": 51.6667077
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:si-o-se-pol",
+      "toStationId": "isfahan:station:shariati",
+      "geometry": [
+        {
+          "lat": 32.6388817,
+          "lng": 51.6667077
+        },
+        {
+          "lat": 32.6348047,
+          "lng": 51.6661341
+        },
+        {
+          "lat": 32.6293341,
+          "lng": 51.6653932
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:shariati",
+      "toStationId": "isfahan:station:azadi",
+      "geometry": [
+        {
+          "lat": 32.6293341,
+          "lng": 51.6653932
+        },
+        {
+          "lat": 32.6226258,
+          "lng": 51.6644847
+        },
+        {
+          "lat": 32.6226038,
+          "lng": 51.6644822
+        },
+        {
+          "lat": 32.6225576,
+          "lng": 51.6644753
+        },
+        {
+          "lat": 32.6222743,
+          "lng": 51.6644617
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:azadi",
+      "toStationId": "isfahan:station:daneshgah",
+      "geometry": [
+        {
+          "lat": 32.6222743,
+          "lng": 51.6644617
+        },
+        {
+          "lat": 32.6219047,
+          "lng": 51.6644247
+        },
+        {
+          "lat": 32.6196199,
+          "lng": 51.6641287
+        },
+        {
+          "lat": 32.6150356,
+          "lng": 51.6635347
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:daneshgah",
+      "toStationId": "isfahan:station:kargar",
+      "geometry": [
+        {
+          "lat": 32.6150356,
+          "lng": 51.6635347
+        },
+        {
+          "lat": 32.6088549,
+          "lng": 51.6626604
+        },
+        {
+          "lat": 32.6085649,
+          "lng": 51.662654
+        },
+        {
+          "lat": 32.6079291,
+          "lng": 51.6628335
+        },
+        {
+          "lat": 32.6075006,
+          "lng": 51.6629855
+        },
+        {
+          "lat": 32.606511,
+          "lng": 51.6634411
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:kargar",
+      "toStationId": "isfahan:station:kooye-imam",
+      "geometry": [
+        {
+          "lat": 32.606511,
+          "lng": 51.6634411
+        },
+        {
+          "lat": 32.6064753,
+          "lng": 51.6634544
+        },
+        {
+          "lat": 32.6054362,
+          "lng": 51.6641089
+        },
+        {
+          "lat": 32.6040964,
+          "lng": 51.6650299
+        },
+        {
+          "lat": 32.6023596,
+          "lng": 51.6661718
+        },
+        {
+          "lat": 32.5984343,
+          "lng": 51.6682146
+        }
+      ]
+    },
+    {
+      "fromStationId": "isfahan:station:kooye-imam",
+      "toStationId": "isfahan:station:defa-e-moghaddas",
+      "geometry": [
+        {
+          "lat": 32.5984343,
+          "lng": 51.6682146
+        },
+        {
+          "lat": 32.5977351,
+          "lng": 51.6685581
+        },
+        {
+          "lat": 32.5968768,
+          "lng": 51.6688705
+        },
+        {
+          "lat": 32.5959086,
+          "lng": 51.6690362
+        },
+        {
+          "lat": 32.5950381,
+          "lng": 51.669145
+        },
+        {
+          "lat": 32.5940851,
+          "lng": 51.6692539
+        },
+        {
+          "lat": 32.5913045,
+          "lng": 51.6693139
+        },
+        {
+          "lat": 32.5896762,
+          "lng": 51.6695146
+        },
+        {
+          "lat": 32.589633,
+          "lng": 51.6695199
+        },
+        {
+          "lat": 32.5882288,
+          "lng": 51.6696663
+        }
+      ]
+    }
+  ]
+}

@@ -27,7 +27,7 @@ import {
 } from "@/lib/offline/use-connectivity";
 import { cn } from "@/lib/utils";
 import { CitySwitcher } from "@/components/city-switcher";
-import { cityFromPath, cityHref, viewFromPath } from "@/lib/cities";
+import { cityFromPath, cityHref, viewFromPath, getCityMeta } from "@/lib/cities";
 
 const NAV_ITEMS = [
   { href: "/route", labelKey: "tabRoute" as const, icon: RouteIcon },
@@ -167,12 +167,12 @@ export function AppNav() {
 
   function getHref(base: string) {
     const view = viewFromPath(base);
-    const destination = cityHref(city, view, !/^\/(tehran|mashhad|cities)(\/|$)/.test(currentPath));
+    const destination = cityHref(city, view, !getCityMeta(currentPath.split("/")[1]));
     if (city !== "tehran") {
       const params = new URLSearchParams({ lang });
       for (const key of ["from", "to"]) {
         const id = searchParams.get(key);
-        if (id && (city === "mashhad" ? id.startsWith("mashhad:station:") : /^(tehran|mashhad):station:/.test(id))) params.set(key, id);
+        if (id && (city === "all" ? !!getCityMeta(id.split(":")[0]) && id.includes(":station:") : id.startsWith(`${city}:station:`))) params.set(key, id);
       }
       for (const key of ["op", "dp"]) {
         const pin = searchParams.get(key);
@@ -283,7 +283,7 @@ export function AppNav() {
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>
           <a
-            href={city === "mashhad" ? "https://github.com/shahriaarrr/mashhad-metro-data" : "https://github.com/mostafa-kheibary/tehran-metro-data"}
+            href={city === "mashhad" ? "https://github.com/shahriaarrr/mashhad-metro-data" : city === "tehran" ? "https://github.com/mostafa-kheibary/tehran-metro-data" : "https://www.openstreetmap.org/copyright"}
             target="_blank"
             rel="noopener noreferrer"
             className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground"
@@ -291,7 +291,7 @@ export function AppNav() {
             <Database className="size-3 shrink-0 text-primary" />
             <span className="shrink-0 text-muted-foreground">{t.dataBy}</span>
             <span className="truncate font-semibold text-foreground">
-              {city === "mashhad" ? "shahriaarrr" : "mostafa-kheibary"}
+              {city === "mashhad" ? "shahriaarrr" : city === "tehran" ? "mostafa-kheibary" : "OpenStreetMap"}
             </span>
             <span className="sr-only"> ({t.opensInNewTab})</span>
           </a>

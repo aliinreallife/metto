@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { pickCityStation } from "./helpers/city-stations";
+import { deploymentCityCounts, pickCityStation } from "./helpers/city-stations";
 import { networkSafeTest as test } from "./helpers/walking";
 
 test.beforeEach(async ({ request }) => {
@@ -9,11 +9,11 @@ test.beforeEach(async ({ request }) => {
   expect(response.status()).toBe(200);
 });
 
-test("landing counts match both cities and each city has its own landing", async ({ page }) => {
+test("landing counts match available cities and each city has its own landing", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/?lang=en");
-  await expect(page.getByText("187 stations · 9 lines", { exact: true })).toBeVisible();
+  await expect(page.getByText(`${deploymentCityCounts().stations} stations · ${deploymentCityCounts().lines} lines`, { exact: true })).toBeVisible();
   await page.getByTestId("landing-city-links").getByRole("link").filter({ hasText: "Mashhad" }).click();
   await expect(page).toHaveURL(/\/mashhad\?lang=en/);
   await expect(page.getByText("36 stations · 2 lines", { exact: true })).toBeVisible();
@@ -106,8 +106,8 @@ test("city landings remain visible to returning users while the root restores th
 
 test("the all-city map contains distinct markers and no missing stations", async ({ page }) => {
   await page.goto("/cities/map?lang=en");
-  await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-station-count", "187");
-  await expect(page.locator('.leaflet-marker-icon[data-station-id]')).toHaveCount(187);
+  await expect(page.getByTestId("city-network-map")).toHaveAttribute("data-station-count", String(deploymentCityCounts().stations));
+  await expect(page.locator('.leaflet-marker-icon[data-station-id]')).toHaveCount(deploymentCityCounts().stations);
   await expect(page.locator('.leaflet-marker-icon[data-station-id="tehran:station:basij"]')).toHaveAttribute("aria-label", "Basij · Tehran");
   await expect(page.locator('.leaflet-marker-icon[data-station-id="mashhad:station:basij"]')).toHaveAttribute("aria-label", "Basij · Mashhad");
   await page.locator('.leaflet-marker-icon[data-station-id="mashhad:station:basij"]').focus();
@@ -177,7 +177,7 @@ test("All-cities Stations filters cities alongside search and line filters", asy
   await page.goto("/cities?lang=en");
   const cities = page.getByRole("group", { name: "Choose city", exact: true });
   const rows = page.locator("li[data-station-id]");
-  await expect(rows).toHaveCount(187);
+  await expect(rows).toHaveCount(deploymentCityCounts().stations);
   await cities.getByRole("button", { name: "Mashhad", exact: true }).click();
   await expect(rows).toHaveCount(36);
   await expect(page.getByRole("combobox", { name: "Choose city" })).toContainText("All cities");
@@ -192,7 +192,7 @@ test("All-cities Stations filters cities alongside search and line filters", asy
   await expect(rows).toHaveCount(151);
   await expect(page.getByRole("button", { name: "Mashhad · Line 2", exact: true })).toHaveCount(0);
   await cities.getByRole("button", { name: "All cities", exact: true }).click();
-  await expect(rows).toHaveCount(187);
+  await expect(rows).toHaveCount(deploymentCityCounts().stations);
 });
 
 test("Mashhad source amenities are visible and remain explicitly unverified", async ({ page }) => {

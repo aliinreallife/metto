@@ -7,6 +7,7 @@ import { ArrowUpDown } from "lucide-react";
 import { CityStationPicker } from "./city-station-picker";
 import { catalogStations } from "@/lib/city-catalog";
 import { STRINGS } from "@/lib/i18n";
+import { CityPreviewNotice } from "./city-preview-notice";
 
 export function AllCityRoute() {
   const { lang, cityIds } = useMetro(); const params = useSearchParams(); const t = STRINGS[lang];
@@ -20,6 +21,7 @@ export function AllCityRoute() {
   return <div className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden p-4 md:items-center md:p-8 lg:p-10" dir={lang === "fa" ? "rtl" : "ltr"}>
     <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
       <h1 className="sr-only">{t.findRoute} · {t.allCities}</h1>
+      <CityPreviewNotice city={origin?.cityId ?? destination?.cityId ?? "all"} />
       <div className="flex flex-col gap-2.5">
         <label htmlFor="all-from" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:text-sm">{t.from}</label>
         <CityStationPicker id="all-from" stations={stations} value={from} onChange={setFrom} lang={lang} placeholder={t.searchStations} accentClass="bg-primary" showCity />
