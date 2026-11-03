@@ -9,7 +9,7 @@ import { shortPlaceLabel } from "@/lib/geocoding";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { AppSkipLink } from "@/app/(app)/skip-link";
 import { useSearchParams } from "next/navigation";
-import { Database, ExternalLink, History, LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
+import { Database, ExternalLink, LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
 import { cityDataCredit } from "@/lib/data-credit";
 import { RoutePlaceCard } from "@/components/route-place-card";
 import { useTripWalking } from "@/lib/walking/use-walking-route";
@@ -18,7 +18,7 @@ import { RouteFields } from "@/components/route-fields";
 import { TimetableHelpNotice } from "@/components/timetable-help-notice";
 import { RouteActions } from "@/components/route-actions";
 import { recordRouteSuccess } from "@/lib/app-rating";
-import { PathRoutePanel, SameStationNotice, WalkSuggestCard } from "@/components/route-panel";
+import { PathRoutePanel, PastTimeNotice, SameStationNotice, WalkSuggestCard } from "@/components/route-panel";
 import { getCurrentPositionTolerant, classifyGeoError, type GeoErrorKind } from "@/lib/geolocation";
 import { haversineKm, parsePlaceParam, encodePlacePin } from "@/lib/geo";
 import { LocationErrorActions } from "@/components/location-error";
@@ -245,22 +245,8 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
           </>}
           {hasTimetable && <div ref={timeCardRef} className="scroll-mt-4"><TravelTimeCard lang={lang} timeMode={timeMode} planAtMs={planAtMs} nowMs={nowMs}
             expanded={timeExpanded} onToggle={() => setTimeExpanded(value => !value)} onModeChange={selectTimeMode} onPlanAtMs={setPlanAtMs} /></div>}
-          {isPastTime && <div role="alert" data-testid="city-time-passed"
-            className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-              <History aria-hidden="true" className="size-4 text-muted-foreground" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">{timeMode === "depart" ? t.timePassedTitle : t.arrivalPassedTitle}</p>
-              <p className="text-xs text-muted-foreground">{timeMode === "depart" ? t.timePassedBody : t.arrivalPassedBody}</p>
-            </div>
-            <div className="flex shrink-0 flex-col gap-1.5">
-              <button type="button" onClick={() => { setTimeMode("now"); setPlanAtMs(null); }}
-                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-primary">{t.useNow}</button>
-              <button type="button" onClick={expandTimeCard}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary">{t.editTime}</button>
-            </div>
-          </div>}
+          {isPastTime && <PastTimeNotice lang={lang} mode={timeMode === "depart" ? "depart" : "arrive"}
+            onUseNow={() => { setTimeMode("now"); setPlanAtMs(null); }} onEditTime={expandTimeCard} />}
           {invalidLink ? <p role="alert" className="mt-3 text-sm">{t.cityPreviewInvalidLink}</p>
             : from && to && from === to ? null
               : from && to && !result ? <p role="alert" className="mt-3 text-sm">{t.noRoute}</p>
