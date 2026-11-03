@@ -9,7 +9,8 @@ import { shortPlaceLabel } from "@/lib/geocoding";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { AppSkipLink } from "@/app/(app)/skip-link";
 import { useSearchParams } from "next/navigation";
-import { History, LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
+import { Database, ExternalLink, History, LocateFixed, Loader2, Map as MapIcon } from "lucide-react";
+import { cityDataCredit } from "@/lib/data-credit";
 import { RoutePlaceCard } from "@/components/route-place-card";
 import { useTripWalking } from "@/lib/walking/use-walking-route";
 import { WalkingRouteInfo } from "@/components/walking-route-info";
@@ -23,7 +24,7 @@ import { LocationErrorActions } from "@/components/location-error";
 import { CityStationPicker } from "@/components/city-station-picker";
 import { catalogStations, CITY_LINES } from "@/lib/city-catalog";
 
-import { IsfahanTimes, IsfahanPathPanel } from "./isfahan-times";
+import { IsfahanJourney } from "./isfahan-times";
 import { TravelTimeCard } from "./travel-time-card";
 import { useRouteClock } from "@/lib/use-route-clock";
 import { parseTimeModeParams, applyTimeParams, seedNextFiveMinutes, type TimeMode } from "@/lib/route-planning";
@@ -36,6 +37,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
 }) {
   const planner = getUntimedCityPlanner(city)!;
   const reviewOnly = !!getCityPreview(city);
+  const hasTimetable = getCityMeta(city)!.timing;
   const stations = useMemo(() => catalogStations([city]), [city]);
   const byId = useMemo(() => new Map(planner.stations.map(s => [s.id, s])), [planner]);
   const params = useSearchParams();
@@ -58,9 +60,14 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   const [timeMode, setTimeMode] = useState<TimeMode>(legacyMs !== null ? "depart" : preference.mode);
   const [planAtMs, setPlanAtMs] = useState<number | null>(legacyMs ?? preference.at?.getTime() ?? null);
   const [timeExpanded, setTimeExpanded] = useState(() => legacyMs !== null || preference.mode !== "now");
+  const timeCardRef = useRef<HTMLDivElement>(null);
+  function expandTimeCard() {
+    setTimeExpanded(true);
+    requestAnimationFrame(() => timeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+  }
   const nowMs = useRouteClock();
   // Match Tehran: never display a journey that would depart at a time already in the past.
-  const isPastTime = city === "isfahan" && timeMode !== "now" && planAtMs !== null && planAtMs < nowMs;
+  const isPastTime = hasTimetable && timeMode !== "now" && planAtMs !== null && planAtMs < nowMs;
   const plannedAt = timeMode === "now" ? undefined : planAtMs ?? undefined;
   function selectTimeMode(mode: TimeMode) {
     setTimeMode(mode);
@@ -155,13 +162,13 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   };
   const result = useMemo(() => planner.findPath(from, to), [from, to, planner]);
   const name = (id: string) => byId.get(id)?.names[lang] ?? id;
-  const ResultPanel = city === "isfahan" ? IsfahanPathPanel : PathRoutePanel;
   const Container = embedded ? "div" : "main";
 
   return <>
     {!embedded && <AppSkipLink />}
+    <div className="flex size-full min-h-0 flex-col">
     <Container id={embedded ? undefined : "main-content"} tabIndex={-1} data-testid="city-path-preview"
-      className="no-scrollbar flex size-full flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10"
+      className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:items-center md:p-8 lg:p-10"
       lang={lang} dir={lang === "fa" ? "rtl" : "ltr"}>
       <div className="flex w-full max-w-xl flex-col gap-4 md:max-w-2xl md:gap-5">
         <h1 className="sr-only">{getCityMeta(city)!.name[lang]} · {t.findRoute}</h1>
@@ -188,8 +195,8 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
             <WalkingRouteInfo lang={lang} loading={walking.access.loading || walking.egress.loading || walking.direct.loading} hasPath={!!(walking.access.route || walking.egress.route || walking.direct.route)} saved={walking.access.saved || walking.egress.saved || walking.direct.saved} />
             <Link href={`/${city}/map?${mapParams}`} className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary md:py-2.5 md:text-base"><MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{t.viewOnMap}</Link>
           </>}
-          {city === "isfahan" && <TravelTimeCard lang={lang} timeMode={timeMode} planAtMs={planAtMs} nowMs={nowMs}
-            expanded={timeExpanded} onToggle={() => setTimeExpanded(value => !value)} onModeChange={selectTimeMode} onPlanAtMs={setPlanAtMs} />}
+          {hasTimetable && <div ref={timeCardRef} className="scroll-mt-4"><TravelTimeCard lang={lang} timeMode={timeMode} planAtMs={planAtMs} nowMs={nowMs}
+            expanded={timeExpanded} onToggle={() => setTimeExpanded(value => !value)} onModeChange={selectTimeMode} onPlanAtMs={setPlanAtMs} /></div>}
           {isPastTime && <div role="alert" data-testid="city-time-passed"
             className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 md:px-4">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -202,7 +209,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
             <div className="flex shrink-0 flex-col gap-1.5">
               <button type="button" onClick={() => { setTimeMode("now"); setPlanAtMs(null); }}
                 className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-primary">{t.useNow}</button>
-              <button type="button" onClick={() => setTimeExpanded(true)}
+              <button type="button" onClick={expandTimeCard}
                 className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary">{t.editTime}</button>
             </div>
           </div>}
@@ -212,16 +219,40 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
                 : !result ? <p className="mt-4 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">{t.pickBoth}</p> : null}
         </section>
         {!isPastTime && result && <section aria-label={t.routeOverview} data-testid="city-route-result">
-          {city === "isfahan" && <div className="mb-3"><IsfahanTimes stationIds={result.stationIds} from={from} to={to} lang={lang} plannedAt={plannedAt} arriveBy={timeMode === "arrive"} /></div>}
-          <ResultPanel arriveBy={timeMode === "arrive"} stationIds={result.stationIds} plannedAt={plannedAt} lang={lang} stationCount={result.stationIds.length} name={name}
+          {city === "isfahan" ? <IsfahanJourney stationIds={result.stationIds} plannedAt={plannedAt}
+            arriveBy={timeMode === "arrive"} onEditTime={expandTimeCard}
+            onUseNow={() => { setTimeMode("now"); setPlanAtMs(null); }}
+            lang={lang} stationCount={result.stationIds.length} name={name}
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
               terminal: planner.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
               color: planner.lines.find(l => l.id === leg.lineId)!.color, onColor: CITY_LINES.find(l => l.id === leg.lineId)!.onColor }))} />
+            : <PathRoutePanel lang={lang} stationCount={result.stationIds.length} name={name}
+              legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
+                terminal: planner.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
+                color: planner.lines.find(l => l.id === leg.lineId)!.color, onColor: CITY_LINES.find(l => l.id === leg.lineId)!.onColor }))} />}
           {!reviewOnly && <div className="mt-3"><RouteActions origin={{ name: byId.get(from)!.names, location: byId.get(from)!.location }} lang={lang} /></div>}
         </section>}
         {city === "mashhad" && <TimetableHelpNotice lang={lang} />}
         <div className="h-16 shrink-0 md:hidden" aria-hidden="true" />
       </div>
     </Container>
+    {embedded && hasTimetable && <footer role="contentinfo" className="hidden flex-wrap items-center gap-x-4 gap-y-1 border-t border-border bg-card/90 px-4 py-2 backdrop-blur md:flex">
+      <a href="https://github.com/aliinreallife/metto" target="_blank" rel="noopener noreferrer"
+        className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground">
+        <ExternalLink aria-hidden="true" className="size-3 text-primary" />
+        <span className="text-muted-foreground">{t.builtBy}</span>
+        <span className="font-semibold text-foreground">aliinreallife</span>
+        <span className="sr-only"> ({t.opensInNewTab})</span>
+      </a>
+      <a href={cityDataCredit(city).url} target="_blank" rel="noopener noreferrer"
+        className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] transition-colors hover:text-foreground">
+        <Database aria-hidden="true" className="size-3 text-primary" />
+        <span className="text-muted-foreground">{t.dataBy}</span>
+        <span className="font-semibold text-foreground">{cityDataCredit(city).name}</span>
+        <span className="sr-only"> ({t.opensInNewTab})</span>
+      </a>
+      <Link href="/#donate" className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground">{t.supportLink}</Link>
+    </footer>}
+    </div>
   </>;
 }

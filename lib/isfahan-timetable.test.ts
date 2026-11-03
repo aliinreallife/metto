@@ -53,8 +53,16 @@ it("arrive-by chooses the latest real departure before the deadline in either di
   }
 });
 
-it("an early arrive-by deadline can use the previous evening's source row and service rules", () => {
+it("does not recommend a previous-evening arrival for an early arrive-by deadline", () => {
   const result = findIsfahanTrips(start, end, at("2026-11-07", 1), holidays, { arriveBy: true, notBeforeMs: at("2026-11-06", 20) });
-  expect(result).toMatchObject({ dateStr: "2026-11-06", serviceId: "friday" });
-  expect(result.trips[0]).toMatchObject({ departure: "22:00", arrival: "22:39" });
+  expect(result.dateStr).toBe("2026-11-07");
+  expect(result.trips).toEqual([]);
+});
+
+it("normal weekdays within the published holiday calendar do not show a false unknown-day notice", () => {
+  const ordinary = findIsfahanTrips(start, end, at("2026-11-03", 10), holidays);
+  expect(ordinary).toMatchObject({ applicable: true, calendarUnknown: false, holidayAssumption: false });
+  expect(ordinary.trips.length).toBeGreaterThan(0);
+  const unsupported = findIsfahanTrips(start, end, at("2027-04-03", 10), holidays);
+  expect(unsupported).toMatchObject({ applicable: false });
 });

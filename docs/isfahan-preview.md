@@ -42,8 +42,8 @@ operator, in Persian and English. The older Chamran/Kargar source discrepancy
 remains recorded. Known exact-date exceptions override the general pattern.
 
 The existing local holiday dataset covers 1405. Its unlisted dates remain
-UNKNOWN; within coverage the app can show the weekday pattern with a separate
-notice that date-specific exceptions are unconfirmed. Outside coverage, unknown
+UNKNOWN in the calendar data; within coverage the app uses the normal weekday
+pattern without repeating a passenger-facing warning for every normal date. Outside coverage, unknown
 non-Friday dates do not receive departure promises. The October 2026 poster is
 not applied to earlier dates. No Nowruz exceptions are invented, and unknown
 station amenities remain omitted.
@@ -69,7 +69,7 @@ Shiraz remains at source-research stage.
 
 Isfahan reuses Tehran’s `TravelTimeCard`: the same localized date display, day/time
 steppers and now/depart/arrive controls. Arrive-by selects the latest published
-train meeting the deadline, including the previous evening for early deadlines.
+train meeting the deadline, while requiring arrival on the selected calendar date; a train that arrives the previous evening is not eligible.
 Shared URLs use the common timezone-explicit format; earlier Iran-local `at`
 links remain compatible.
 
@@ -82,3 +82,10 @@ Collection credits for Metto-curated data link to `aliinreallife/metto-data` in
 the app. `cityDataCredit` retains the individual dataset credits for Tehran and
 Mashhad. Detailed original-source URLs/hashes and required map attribution remain
 preserved; the visible collection link does not replace the provenance record.
+
+Timetabled Isfahan route results reuse Tehran's journey, no-service and missed-
+deadline cards. The redundant published-timetable warning and source link have
+been removed from every route result; data attribution remains in the shared
+footer and the full station timesheet. Date-specific calendar exceptions and
+Friday no-boarding rules are still enforced, and public holidays still show
+their source-specific provisional Friday rule.

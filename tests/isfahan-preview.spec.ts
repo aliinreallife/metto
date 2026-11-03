@@ -28,7 +28,7 @@ test("preview cities use normal city switching, map selection and route tabs wit
   await expect(page.locator(".metto-source-track")).toHaveCount(19);
   const start = page.locator(`.city-station-hit[data-station-id="${qods}"]`);
   await start.focus(); await page.keyboard.press("Enter");
-  await expect(page.getByTestId("map-station-card")).toContainText("Published timetable");
+  await expect(page.getByTestId("map-station-card")).toContainText("Defa-e Moghaddas");
   await page.getByRole("button", { name: "Set as origin", exact: true }).click();
   await page.locator(`.city-station-hit[data-station-id="${end}"]`).focus();
   await page.keyboard.press("Enter");
@@ -45,7 +45,7 @@ test("preview cities use normal city switching, map selection and route tabs wit
   await expect(page.getByRole("button", { name: /Iran Mall|Nader Shah Tomb/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("city-route-result")).toContainText(/20\s*stops/);
-  await expect(page.getByTestId("isfahan-times")).toContainText("Scheduled arrival");
+  await expect(page.getByTestId("isfahan-times")).toContainText("arrive");
   await page.getByRole("button", { name: "Swap", exact: true }).click();
   await expect(page.getByLabel("From", { exact: true })).toContainText("Defa-e Moghaddas");
   await page.locator("header").getByRole("link", { name: "Map", exact: true }).click();
@@ -110,8 +110,8 @@ test("Friday final trains and closed boarding points use the chosen Iran date", 
   await expect(page.getByTestId("city-route-result")).toContainText(/16\s*stops/);
   await page.reload(); await expect(times).toContainText("22:39");
   await page.goto(`/isfahan/route?from=isfahan:station:baharestan&to=${end}&at=2026-11-06T10:00&lang=en`);
-  await expect(times).toContainText("does not board passengers");
-  await expect(times).not.toContainText("Scheduled arrival");
+  await expect(page.getByTestId("isfahan-no-boarding")).toContainText("does not board passengers");
+  await expect(page.getByTestId("isfahan-times")).toHaveCount(0);
 });
 
 test("non-Friday public holidays disclose the Friday assumption in both languages", async ({ page }) => {
@@ -159,24 +159,46 @@ test("Isfahan uses the same three summary cards with source-based wait, travel a
   await expect(summary).toContainText(/10\s*\+\s*39/);
   await expect(summary).toContainText("09:54");
   await expect(summary).toContainText("wait + travel");
-  await expect(page.getByTestId("isfahan-times").getByRole("link")).toHaveAttribute("href", "https://github.com/aliinreallife/metto-data");
+  await expect(page.getByTestId("isfahan-times")).not.toContainText("Published timetable");
   await expect(page.getByRole("contentinfo").getByRole("link", { name: /metto-data/ })).toBeVisible();
   await page.goto(`/isfahan/route?from=isfahan:station:baharestan&to=${end}&at=2026-11-06T09:05&lang=en`);
-  await expect(page.getByTestId("isfahan-times")).toContainText("does not board passengers");
+  await expect(page.getByTestId("isfahan-no-boarding")).toContainText("does not board passengers");
   await expect(summary).toHaveCount(0);
+});
+
+test("ordinary Isfahan journeys use Tehran's route flow without repeated calendar and source notices", async ({ page }) => {
+  await page.goto(`/isfahan/route?from=${qods}&to=${end}&at=2026-11-03T10:00&lang=fa`);
+  const journey = page.getByTestId("isfahan-times");
+  await expect(journey).toBeVisible();
+  await expect(journey.getByTestId("route-summary-stats")).toBeVisible();
+  await expect(journey.locator("ol")).toHaveCount(1);
+  await expect(journey).not.toContainText("تغییرات موردی");
+  await expect(journey).not.toContainText("طبق برنامهٔ حرکت");
+  await expect(journey).not.toContainText("داده‌های برنامهٔ حرکت");
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: /metto-data/ })).toBeVisible();
+});
+
+test("a missed Isfahan arrival deadline uses Tehran's actionable missed-deadline card", async ({ page }) => {
+  await page.goto(`/isfahan/route?from=${qods}&to=${end}&at=2026-11-03T06:45:00.000Z&timeMode=arrive&lang=en`);
+  const missed = page.getByTestId("isfahan-missed-deadline");
+  await expect(missed).toBeVisible();
+  await expect(missed).toContainText("10:15");
+  await missed.getByRole("button", { name: "Route from now" }).click();
+  await expect(page.getByTestId("isfahan-times")).toBeVisible();
+  await expect(missed).toHaveCount(0);
 });
 
 test("Isfahan never shows a fake train itinerary when a route has no usable departure", async ({ page }) => {
   // The final Friday Qods departure is 22:00, even though the rails
   // remain connected and downstream stations have later boarding times.
   await page.goto(`/isfahan/route?from=${qods}&to=${end}&at=2026-11-06T22:01&lang=en`);
-  await expect(page.getByTestId("isfahan-times")).toBeVisible();
+  await expect(page.getByTestId("isfahan-no-service")).toBeVisible();
   await expect(page.getByTestId("route-summary-stats")).toHaveCount(0);
   await expect(page.getByTestId("city-route-result").locator("ol")).toHaveCount(0);
 
   // Friday no-boarding endpoints must not offer an itinerary either.
   await page.goto(`/isfahan/route?from=isfahan:station:baharestan&to=${end}&at=2026-11-06T10:00&lang=en`);
-  await expect(page.getByTestId("isfahan-times")).toContainText("does not board passengers");
+  await expect(page.getByTestId("isfahan-no-boarding")).toContainText("does not board passengers");
   await expect(page.getByTestId("city-route-result").locator("ol")).toHaveCount(0);
 });
 
