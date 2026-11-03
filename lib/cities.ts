@@ -44,19 +44,20 @@ export const CITIES: CityMeta[] = [
     keywords: ["Mashhad metro map", "Mashhad metro stations", "مترو مشهد", "نقشه مترو مشهد", "ایستگاه‌های مترو مشهد"],
   },
   {
-    slug: "tabriz", name: { en: "Tabriz", fa: "تبریز" }, timing: true,
-    release: "preview", bounds: [46.17, 37.97, 46.44, 38.13],
-    placeExample: { en: "El Goli Park", fa: "پارک ائل‌گلی" },
-    placeExampleQuery: "ائل گلی تبریز",
-    keywords: ["Tabriz metro map", "Tabriz subway times", "مترو تبریز", "نقشه مترو تبریز", "ساعت حرکت مترو تبریز", "خط یک قطار شهری تبریز"],
-  },
-  {
     slug: "isfahan", name: { en: "Isfahan", fa: "اصفهان" }, timing: true,
     release: "public", bounds: [51.50, 32.50, 51.85, 32.85],
     placeExample: { en: STRINGS.en.searchHintIsfahanExample, fa: STRINGS.fa.searchHintIsfahanExample },
     placeExampleQuery: STRINGS.fa.searchHintIsfahanExample,
     keywords: ["Isfahan metro map", "مترو اصفهان", "نقشه مترو اصفهان"],
   },
+  {
+    slug: "tabriz", name: { en: "Tabriz", fa: "تبریز" }, timing: true,
+    release: "preview", bounds: [46.17, 37.97, 46.44, 38.13],
+    placeExample: { en: "El Goli Park", fa: "پارک ائل‌گلی" },
+    placeExampleQuery: "ائل گلی تبریز",
+    keywords: ["Tabriz metro map", "Tabriz subway times", "مترو تبریز", "نقشه مترو تبریز", "ساعت حرکت مترو تبریز", "خط یک قطار شهری تبریز"],
+  },
+
 ];
 
 export function getCityMeta(slug: string): CityMeta | null {
