@@ -251,7 +251,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
         <span className="font-semibold text-foreground">{cityDataCredit(city).name}</span>
         <span className="sr-only"> ({t.opensInNewTab})</span>
       </a>
-      <a href="/#donate" className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground">{t.supportLink}</a>
+      <Link href="/#donate" className="shrink-0 whitespace-nowrap text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground">{t.supportLink}</Link>
     </footer>}
     </div>
   </>;
