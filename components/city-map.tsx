@@ -1,4 +1,5 @@
 "use client";
+import { IsfahanTimes } from "./isfahan-times";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -140,6 +141,7 @@ export function CityMap({ city }: { city: CityId | "all" }) {
     </div>
     {selected && <section data-testid="map-station-card" className="absolute inset-x-3 bottom-3 z-[600] mx-auto max-w-md overflow-hidden rounded-xl bg-card shadow-sm" aria-label={stationName(selected)}>
       <StationDetailView station={{ id: selected.id, name: city === "all" ? { fa: `${selected.names.fa} · ${CITIES.find(c => c.slug === selected.cityId)!.name.fa}`, en: `${selected.names.en} · ${CITIES.find(c => c.slug === selected.cityId)!.name.en}` } : selected.names, location: selected.location, status: selected.status, amenities: selected.amenities }}
+        departures={selected.cityId === "isfahan" ? <IsfahanTimes from={selected.id} lang={lang} /> : undefined}
         reportedAmenities={selected.reportedAmenities} lang={lang} onClose={closeCard}
         lines={selected.lineIds.map(id => ({ id, label: id.split(":").at(-1)!, color: CITY_LINES.find(l => l.id === id)!.color,
           onColor: CITY_LINES.find(l => l.id === id)!.onColor, boardable: selected.operationalLineIds.includes(id) }))} />

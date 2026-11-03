@@ -23,6 +23,9 @@ import { LocationErrorActions } from "@/components/location-error";
 import { CityStationPicker } from "@/components/city-station-picker";
 import { catalogStations, CITY_LINES } from "@/lib/city-catalog";
 
+import { IsfahanTimes, IsfahanPathPanel } from "./isfahan-times";
+import { tehranMinuteToInstant, parseServiceTimeToMinutes } from "@/lib/tehran-time";
+
 const control = "min-h-[44px] rounded-lg border bg-background px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, initialLang: langProp, embedded = false }: {
@@ -44,6 +47,8 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   const languageReady = useRef(!initialLang);
   const lang = embedded ? preferredLang : selectedLang ?? preferredLang;
   const t = STRINGS[lang];
+  const [departureInput, setDepartureInput] = useState(params.get("at") ?? "");
+  const plannedAt = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(departureInput) ? tehranMinuteToInstant(departureInput.slice(0, 10), parseServiceTimeToMinutes(departureInput.slice(11))) : undefined;
   const [locating, setLocating] = useState(false);
   const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null);
   const [from, setFrom] = useState(byId.has(initialFrom ?? "") ? initialFrom! : "");
@@ -73,7 +78,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
       languageReady.current = true;
     }
     const url = new URL(window.location.href);
-    for (const [key, value] of Object.entries({ from, to, lang })) {
+    for (const [key, value] of Object.entries({ from, to, lang, at: departureInput })) {
       if (value) url.searchParams.set(key, value); else url.searchParams.delete(key);
     }
     if (url.href !== window.location.href) window.history.replaceState(null, "", url);
@@ -81,7 +86,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
       if (from) localStorage.setItem(`${city}.route.from`, from);
       if (to) localStorage.setItem(`${city}.route.to`, to);
     } catch { /* storage optional */ }
-  }, [from, to, lang, initialLang, preferredLang, city]);
+  }, [from, to, lang, initialLang, preferredLang, city, departureInput]);
   const originPin = useMemo(() => from ? parsePlaceParam(params, "oP") : null, [from, params]);
   const destPin = useMemo(() => to ? parsePlaceParam(params, "dP") : null, [to, params]);
   const originStation = byId.get(from), destStation = byId.get(to);
@@ -128,6 +133,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
   };
   const result = useMemo(() => planner.findPath(from, to), [from, to, planner]);
   const name = (id: string) => byId.get(id)?.names[lang] ?? id;
+  const ResultPanel = city === "isfahan" ? IsfahanPathPanel : PathRoutePanel;
   const Container = embedded ? "div" : "main";
 
   return <>
@@ -160,13 +166,20 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
             <WalkingRouteInfo lang={lang} loading={walking.access.loading || walking.egress.loading || walking.direct.loading} hasPath={!!(walking.access.route || walking.egress.route || walking.direct.route)} saved={walking.access.saved || walking.egress.saved || walking.direct.saved} />
             <Link href={`/${city}/map?${mapParams}`} className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary md:py-2.5 md:text-base"><MapIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{t.viewOnMap}</Link>
           </>}
+          {city === "isfahan" && <div className="flex flex-wrap items-end gap-2">
+            <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-medium">{t.isfahanDepartureAt}
+              <input type="datetime-local" value={departureInput} onChange={e => setDepartureInput(e.target.value)} className={control + " min-w-0"} dir="ltr" />
+            </label>
+            {departureInput && <button type="button" className={control} onClick={() => setDepartureInput("")}>{t.isfahanLeaveNow}</button>}
+          </div>}
           {invalidLink ? <p role="alert" className="mt-3 text-sm">{t.cityPreviewInvalidLink}</p>
             : from && to && from === to ? <p role="alert" className="mt-3 text-sm">{t.sameStation}</p>
               : from && to && !result ? <p role="alert" className="mt-3 text-sm">{t.noRoute}</p>
                 : !result ? <p className="mt-4 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">{t.pickBoth}</p> : null}
         </section>
         {result && <section aria-label={t.routeOverview} data-testid="city-route-result">
-          <PathRoutePanel lang={lang} stationCount={result.stationIds.length} name={name}
+          {city === "isfahan" && <div className="mb-3"><IsfahanTimes from={from} to={to} lang={lang} plannedAt={plannedAt} /></div>}
+          <ResultPanel stationIds={result.stationIds} plannedAt={plannedAt} lang={lang} stationCount={result.stationIds.length} name={name}
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
               terminal: planner.getTerminal(leg.lineId, leg.stationIds[0], leg.stationIds.at(-1)!) ?? leg.stationIds.at(-1)!,
               color: planner.lines.find(l => l.id === leg.lineId)!.color, onColor: CITY_LINES.find(l => l.id === leg.lineId)!.onColor }))} />

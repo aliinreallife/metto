@@ -386,10 +386,10 @@ export function RoutePanel({
 }
 
 /** Station/path summary and shared itinerary, without timetable fields. */
-export function PathRoutePanel({ lang, stationCount, legs, name }: {
+export function PathRoutePanel({ lang, stationCount, legs, name, stationNote }: {
   lang: Lang; stationCount: number;
   legs: { line: number; stations: string[]; terminal: string; color: string; onColor: string }[];
-  name: (id: string) => string;
+  name: (id: string) => string; stationNote?: (id: string) => string | undefined;
 }) {
   const t = STRINGS[lang]; const isFa = lang === "fa";
   const transferCount = Math.max(0, legs.length - 1);
@@ -409,7 +409,7 @@ export function PathRoutePanel({ lang, stationCount, legs, name }: {
         <Footprints aria-hidden="true" className="size-4 shrink-0" />
         <span>{t.transferTo} {persianDigits(leg.line, lang)} {t.via} {name(leg.stations[0])}</span>
       </div>}
-      <SegmentView {...leg} name={name} lang={lang} boardable={() => true} />
+      <SegmentView {...leg} name={name} lang={lang} boardable={() => true} stationNote={stationNote} />
     </li>)}</ol>
   </div>;
 }
@@ -482,9 +482,9 @@ type SegmentViewProps = {
 /** Shared itinerary card, with optional timing supplied by its city adapter. */
 export function SegmentView({ line, stations, terminal, name, lang, showNextTrain = false, trip,
   isPlanned = false, color = LINE_COLORS[line], onColor = lineOnColor(line),
-  boardable = (id: string) => canBoardAtStation(id, line), nextDep = [],
+  boardable = (id: string) => canBoardAtStation(id, line), nextDep = [], stationNote,
 }: SegmentViewProps & { color?: string; onColor?: string; boardable?: (id: string) => boolean;
-  nextDep?: ReturnType<typeof getNextDepartures> }) {
+  nextDep?: ReturnType<typeof getNextDepartures>; stationNote?: (id: string) => string | undefined }) {
   const [open, setOpen] = useState(false);
   const t = STRINGS[lang]; const isFa = lang === "fa";
   const intermediates = stations.slice(1, -1);
@@ -653,6 +653,7 @@ export function SegmentView({ line, stations, terminal, name, lang, showNextTrai
                   {intermediates.map((id) => (
                     <li key={id} className="truncate py-0.5">
                       {name(id)}
+                      {stationNote?.(id) && <span className="ms-1.5 text-[10px]">({stationNote(id)})</span>}
                       {!boardable(id) && (
                         <span className="ms-1.5 text-[10px]">
                           {isFa ? "(عبور بدون توقف)" : "(passes through)"}

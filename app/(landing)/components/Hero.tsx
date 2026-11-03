@@ -265,7 +265,7 @@ function UntimedRoutePanel({ city }: { city: Exclude<CityId, "tehran"> }) {
   return <div data-testid={`${city}-landing-route`} className="relative overflow-hidden rounded-lg border border-border bg-card">
     <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-[11px] font-bold"><span>{CITIES.find(c => c.slug === city)!.name[lang]}</span>{badge}</div>
     <div className="px-4 py-5 sm:px-5">
-      <p className="mb-5 text-xs text-muted-foreground">{getCityPreview(city) ? t.cityPreviewTrack : t.landingMashhadDirect}</p>
+      <p className="mb-5 text-xs text-muted-foreground">{getCityPreview(city) ? t.cityPreviewTrack : city === "isfahan" ? t.isfahanLineOne : t.landingMashhadDirect}</p>
       <div className="flex items-center gap-3"><span aria-hidden className="size-3.5 shrink-0 rounded-full border-[3px]" style={{borderColor:line.color}}/><strong className="text-[15px]">{from.names[lang]}</strong></div>
       <div className="ms-[6px] border-s-2 py-4 ps-5" style={{borderColor:line.color}}>
         <div className="rounded-lg bg-muted/50 px-3 py-3"><p className="text-xs font-semibold">{persianDigits(route.stops,lang)} {t.stops} · {t.routeDirect}</p><p className="mt-2 text-[11px] leading-6 text-muted-foreground">{[intermediate[6],intermediate[12],intermediate[17]].filter(Boolean).map(station=>station.names[lang]).join(" · ")}</p></div>
@@ -359,7 +359,7 @@ export function Hero({ cityId }: { cityId?: CityId }) {
   const cities = CITIES.filter(c => cityIds.includes(c.slug) && (!cityId || c.slug === cityId));
   const t = { ...WELCOME_CONTENT[lang].hero,
     city: cities.map(c => c.name[lang]).join(" · "),
-    sub: cityId === "tehran" ? strings.cityLandingTehran : cityId === "mashhad" ? strings.cityLandingMashhad : strings.multiCityDescription,
+    sub: cityId === "tehran" ? strings.cityLandingTehran : cityId === "mashhad" ? strings.cityLandingMashhad : cityId === "isfahan" ? strings.cityLandingIsfahan : strings.multiCityDescription,
     ctaPrimary: WELCOME_CONTENT[lang].hero.ctaPrimary,
   };
   const isFa = lang === "fa";
@@ -490,7 +490,7 @@ export function Hero({ cityId }: { cityId?: CityId }) {
                 {cityId && cityId !== "tehran" ? <UntimedRoutePanel city={cityId} /> : <RoutePanel />}
               </div>
               <p className="mt-3 text-center text-[11px] text-muted-foreground">
-                {cityId && getCityPreview(cityId) ? strings.cityPreviewLabel : cityId === "mashhad" ? strings.cityPreviewBadge : isFa
+                {cityId && getCityPreview(cityId) ? strings.cityPreviewLabel : cityId === "mashhad" ? strings.cityPreviewBadge : cityId === "isfahan" ? strings.isfahanPublishedTimes : isFa
                   ? "نمایش واقعی زمان‌بندی — همین حالا در تهران"
                   : "Real timetable, right now in Tehran"}
               </p>

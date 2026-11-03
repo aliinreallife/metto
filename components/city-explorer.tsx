@@ -6,7 +6,7 @@ import { useMetro } from "@/app/providers";
 import { CITIES, type CityId } from "@/lib/cities";
 import { CITY_LINES, catalogStations, cityCounts, normalizeCitySearch, stationRouteHref } from "@/lib/city-catalog";
 import { AMENITY_LABELS, STRINGS, persianDigits } from "@/lib/i18n";
-import { getCityPreview, getUntimedCityPlanner } from "@/lib/city-previews";
+import { getUntimedCityPlanner } from "@/lib/city-previews";
 import { CityPreviewNotice } from "./city-preview-notice";
 import { haversineKm } from "@/lib/geo";
 import { Map as MapIcon, Search } from "lucide-react";
@@ -49,7 +49,7 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
     catch (error) { setGeoError(classifyGeoError(error)); }
     finally { setLocating(false); }
   };
-  const amenitiesFilter = stations.some(s => (effectiveCity === "all" || s.cityId === effectiveCity) && !getCityPreview(s.cityId)) && <section>
+  const amenitiesFilter = stations.some(s => (effectiveCity === "all" || s.cityId === effectiveCity) && Object.keys(s.reportedAmenities ?? s.amenities).length > 0) && <section>
     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.amenities}</p>
     {stations.some(s => s.reportedAmenities && (effectiveCity === "all" || s.cityId === effectiveCity)) && <p className="mb-2 text-xs text-muted-foreground">{t.amenitiesReported}</p>}
     <div className="flex flex-wrap gap-2">

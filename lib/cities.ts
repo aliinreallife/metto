@@ -44,8 +44,8 @@ export const CITIES: CityMeta[] = [
     keywords: ["Mashhad metro map", "Mashhad metro stations", "مترو مشهد", "نقشه مترو مشهد", "ایستگاه‌های مترو مشهد"],
   },
   {
-    slug: "isfahan", name: { en: "Isfahan", fa: "اصفهان" }, timing: false,
-    release: "preview", bounds: [51.50, 32.50, 51.85, 32.85],
+    slug: "isfahan", name: { en: "Isfahan", fa: "اصفهان" }, timing: true,
+    release: "public", bounds: [51.50, 32.50, 51.85, 32.85],
     placeExample: { en: STRINGS.en.searchHintIsfahanExample, fa: STRINGS.fa.searchHintIsfahanExample },
     placeExampleQuery: STRINGS.fa.searchHintIsfahanExample,
     keywords: ["Isfahan metro map", "مترو اصفهان", "نقشه مترو اصفهان"],

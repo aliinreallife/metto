@@ -1,64 +1,68 @@
-# City previews inside Metto
+# City previews and Isfahan's public release
 
-Isfahan is available on preview builds through the normal city selector and
-`/isfahan`, `/isfahan/route`, `/isfahan/map`, `/isfahan/stations`, and
-`/isfahan/nearby`. The original `/preview/isfahan` link redirects to the normal map.
-It uses the same navigation, station cards, route form, map and nearby directory
-as other cities. There is no separate review application.
+Isfahan Line 1 is now authorized for public release: 20 stations, the existing
+rail corridor and the regular published timetable. It uses Metto's normal city
+selector, landing, map, stations, nearby and route pages. Production totals are
+207 stations / 10 lines / 3 cities. `/preview/isfahan` redirects to the normal map.
 
-## Release boundary
+## Sources and bounded authorization
 
-`CityMeta.release` in `lib/cities.ts` distinguishes public cities from candidate
-previews. `availableCityIds()` is the server boundary used by static route
-registration and the root provider. Preview cities are included on Vercel preview
-builds and local development, and excluded from production builds. Setting
-`METTO_CITY_PREVIEWS=0` disables them even on previews. Query parameters and
-browser storage cannot enable a hidden city.
+`data/reference/isfahan-candidate-preview.json` retains the original reviewed OSM
+projection and its historical flags. It is pinned to metto-data commit
+`1e83f67df3b3dd8e599eb416c42ed93a2a2bee7f`, graph SHA-256
+`51a0d6e2c063ab84dad4037e1fa8bddc68eca8d9dc89ef5cf5d6d4bc76611099`.
+Construction extensions and inactive stops remain excluded.
 
-The selector and landing links label candidate cities “Preview”. Their normal
-app screens retain a short review notice and source link. Their station cards
-state unverified/disputed boarding rather than incorrectly marking the whole
-city as under construction. Unknown amenities are omitted. Candidate city pages
-are noindex and are never added to the production sitemap, even in a preview
-build. Production station/line totals remain 187/9; this preview totals 207/10.
+The separate `isfahan-service.json` public projection records the owner's
+2026-11-03 authorization. Its exact metto-data revision, path and file hash are
+in `isfahan-service-source.json`. Import it offline with
+`node scripts/import-isfahan-service.mjs /path/to/metto-data`; the build checks
+its content hash, scope, station order, null cells and monotonic times. Historical
+review metadata is not silently rewritten as operator certification.
 
-## Adding another city preview
+278 regular runs contain 5,136 printed times. Five conditional extra dispatches
+are excluded from passenger next-train results. Times use Asia/Tehran everywhere,
+including when the passenger's device is abroad. Source row, direction, source
+images and source-cell audit hashes are preserved in the imported artifact.
+The published station times are scheduled times, not real-time observations.
+Tehran's schedule updater, fallback estimates and MCP/API remain city-scoped.
 
-1. Prepare a pinned candidate dataset with city-scoped station/line/route IDs,
-   explicit track connections, reviewed physical identities, source attribution
-   and rail geometry. Do not infer connections or transfers from similar names,
-   street routes or coordinate proximity.
-2. Add the city's metadata to `CITIES`: slug/name, `release: "preview"`, geographic
-   search bounds, and an optional local landmark example. Unknown cities never
-   inherit Tehran's search bounds or Iran Mall suggestion.
-3. Register its `CityPreviewDefinition` in `lib/city-previews.ts`: source URL,
-   bilingual review notice, path network and original track geometry. The normal
-   app automatically includes the city in selection, landings, counts, combined
-   search/filtering, all-city map, route/map endpoints and city tabs. No new city
-   screen is needed. Existing public Mashhad uses the same untimed route screen.
-4. Run lint, typecheck, unit tests, a preview build, and the browser flows. Check
-   keyboard/mobile access, duplicate names across cities, foreign endpoints,
-   saved-trip isolation, source geometry, nearby search and offline tab navigation.
-5. Publish the branch to inspect its Vercel preview before any production release.
+## Friday and holiday behavior
 
-Releasing passenger service is a separate data review: a metadata change alone
-must not certify candidate boarding or track data. The ordinary path planner
-rejects review statuses unless explicitly constructed in review mode. Candidate
-paths carry `reviewOnly: true`, have no timetable/arrival estimates, and do not
-activate Tehran's timetable/MCP integration. Selections use each city's own
-storage keys and retain namespaced IDs through map, route, reload and sharing.
-Offline navigation recognizes registered city paths; only the documents actually
-included in that deployment's static build are cached.
+Friday no-boarding stations are بهارستان، گلستان، دانشگاه، کارگر. Route results
+at those endpoints offer no departure or arrival, while physical track remains
+intact for journeys between other stations. The intermediate list marks those
+points without claiming that the source establishes nonstop passage. Both
+22:00 final terminal departures and their 22:39 opposite-terminal times remain
+available. Downstream boarding after 22:00 is not cut off prematurely.
 
-## Current Isfahan source
+By explicit owner instruction, non-Friday official holidays provisionally use
+the Friday pattern. Every such result visibly says this is unconfirmed by the
+operator, in Persian and English. The older Chamran/Kargar source discrepancy
+remains recorded. Known exact-date exceptions override the general pattern.
 
-The 20-station projection in `data/reference/isfahan-candidate-preview.json` is
-pinned to the deterministic report at metto-data commit
-`1e83f67df3b3dd8e599eb416c42ed93a2a2bee7f` (PR #37), with its original SHA-256.
-Construction extensions and inactive stops are excluded. Boarding at Daneshgah
-and Kargar is unresolved. Other boarding/amenity/timetable facts are unverified;
-this is a preview, not passenger release authorization.
+The existing local holiday dataset covers 1405. Its unlisted dates remain
+UNKNOWN; within coverage the app can show the weekday pattern with a separate
+notice that date-specific exceptions are unconfirmed. Outside coverage, unknown
+non-Friday dates do not receive departure promises. The October 2026 poster is
+not applied to earlier dates. No Nowruz exceptions are invented, and unknown
+station amenities remain omitted.
 
-Original source: © OpenStreetMap contributors, ODbL-1.0. See `ATTRIBUTION.md` and
-the pinned source PR. Shiraz remains in source research until a complete candidate
-network is available; the preview mechanism does not invent missing tracks.
+## Future city previews
+
+`CityMeta.release` distinguishes public cities from previews. `availableCityIds`
+is the server boundary for static routes and the root provider. Candidate cities
+appear only in preview/development builds; `METTO_CITY_PREVIEWS=0` disables them.
+Storage and query parameters cannot enable hidden cities. Preview pages are
+noindex and excluded from the public sitemap.
+
+New cities add source-backed, namespaced data to `CITY_NETWORKS` in
+`lib/city-previews.ts`, plus city metadata and geographic search bounds. Preview
+networks require explicit review routing, retain review notices and cannot gain
+passenger authorization merely by changing a UI flag. Public Isfahan uses its
+separate authorized projection. The shared app supplies map endpoints, counts,
+duplicate-name isolation, nearby results and offline tab navigation.
+
+Original rail geometry: © OpenStreetMap contributors, ODbL-1.0; see
+`ATTRIBUTION.md`. Operator timetable images are referenced, not redistributed.
+Shiraz remains at source-research stage.

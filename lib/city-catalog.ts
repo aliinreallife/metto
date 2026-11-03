@@ -8,7 +8,7 @@ import { reportedMashhadAmenities } from "./mashhad-reported-amenities";
 import type { StationAmenities } from "./metro/types";
 import rawGraph from "../data/previews/mashhad/graph.json";
 import type { CityId } from "./cities";
-import { CITY_PREVIEWS } from "./city-previews";
+import { CITY_NETWORKS } from "./city-previews";
 
 export type CityStation = {
   id: string; localId: string; cityId: CityId;
@@ -25,22 +25,22 @@ export const CITY_STATIONS: CityStation[] = [
     amenities: rawStations.find(raw => raw.id === s.id)!.amenities,
     reportedAmenities: reportedMashhadAmenities(rawStations.find(raw => raw.id === s.id)!.sourceKeys.upstreamKey),
     lineIds: mashhadPreview.getStationLineIds(s.id), operationalLineIds: mashhadPreview.getStationLineIds(s.id) })),
-  ...CITY_PREVIEWS.flatMap(preview => preview.network.stations.map(s => ({
+  ...CITY_NETWORKS.flatMap(preview => preview.network.stations.map(s => ({
     ...s, cityId: preview.cityId, localId: s.id, amenities: {},
-    lineIds: preview.planner.getStationLineIds(s.id), operationalLineIds: [],
+    lineIds: preview.planner.getStationLineIds(s.id), operationalLineIds: s.status === "operational" ? preview.planner.getStationLineIds(s.id) : [],
   }))),
 ];
 export const CITY_LINES = [
   ...LINES.map(l => ({ id: `tehran:line:${l.id}`, cityId: "tehran" as const, color: l.color, onColor: lineOnColor(l.id) })),
   ...mashhadPreview.lines.map(l => ({ id: l.id, cityId: "mashhad" as const, color: l.color, onColor: "#18181b" })),
-  ...CITY_PREVIEWS.flatMap(preview => preview.network.lines.map(l => ({ id: l.id, cityId: preview.cityId, color: l.color, onColor: l.onColor ?? "#ffffff" }))),
+  ...CITY_NETWORKS.flatMap(preview => preview.network.lines.map(l => ({ id: l.id, cityId: preview.cityId, color: l.color, onColor: l.onColor ?? "#ffffff" }))),
 ];
 export const CITY_EDGES: CityEdge[] = [
   ...buildMapEdges().map(e => ({ from: `tehran:station:${e.a}`, to: `tehran:station:${e.b}`,
     lineId: `tehran:line:${e.line}`, status: e.status })),
   ...rawGraph.segments.filter(e => mashhadPreview.lines.some(l => l.id === e.lineId))
     .map(e => ({ from: e.from, to: e.to, lineId: e.lineId, status: e.status })),
-  ...CITY_PREVIEWS.flatMap(preview => preview.geometry.map(edge => ({ ...edge, status: "review_unverified" }))),
+  ...CITY_NETWORKS.flatMap(preview => preview.geometry.map(edge => ({ ...edge, status: preview.network.segments[0]?.status ?? "review_unverified" }))),
 ];
 export const stationByCityId = new Map(CITY_STATIONS.map(s => [s.id, s]));
 export const normalizeCitySearch = (value: string) => value.toLowerCase().replace(/ك/g, "ک").replace(/ي/g, "ی").replace(/\u200c/g, " ").trim();
