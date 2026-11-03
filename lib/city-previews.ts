@@ -4,6 +4,7 @@ import { createCityPathPlanner, type PathNetwork } from "./city-route-path";
 import { mashhadPreview } from "./mashhad-preview";
 import { getCityMeta, type CityId } from "./cities";
 import service from "@/data/reference/isfahan-service.json";
+import tabriz from "@/data/reference/tabriz-line1.json";
 
 /** New cities supply data here; the existing app owns their screens. */
 export type CityPreviewDefinition = {
@@ -34,6 +35,36 @@ const definitions: CityPreviewDefinition[] = [{
   geometry: data.tracks.map(t => ({ from: t.fromStationId, to: t.toStationId, lineId,
     coordinates: t.geometry.map(p => [p.lat, p.lng] as [number, number]) })),
 }];
+// Tabriz: actual mapped OSM track and a published, *unverified* timetable.
+// Keep the preview flag until the operator resolves contradictory last trains.
+const tabrizLineId = "tabriz:line:1";
+const tabrizRouteId = "tabriz:route:1-core";
+definitions.push({
+  cityId: "tabriz",
+  sourceUrl: tabriz.provenance.timetableUrl,
+  notice: {
+    fa: "زمان‌بندی خط ۱ تبریز فعلاً برای بررسی است. ساعت آخرین قطار بین منابع متفاوت است؛ پیش از سفر اطلاعیهٔ ایستگاه را بررسی کنید.",
+    en: "Tabriz Line 1 timetable is under review. Published sources disagree about the last trains; check station notices before travel.",
+  },
+  network: {
+    cityId: "tabriz",
+    stations: tabriz.stations.map(s => ({
+      id: s.id, cityId: "tabriz", names: s.names, location: s.representativePoint,
+      status: "review_unverified",
+    })),
+    lines: [{ id: tabrizLineId, names: { fa: "خط ۱", en: "Line 1" },
+      color: "#147049", onColor: "#ffffff" }],
+    routes: [{ id: tabrizRouteId, lineId: tabrizLineId,
+      stops: tabriz.stations.map(s => ({ stationId: s.id, status: "review_unverified" })) }],
+    segments: tabriz.tracks.map(t => ({ routeId: tabrizRouteId,
+      from: t.fromStationId, to: t.toStationId, status: "review_unverified" })),
+    transferLinks: [],
+  },
+  geometry: tabriz.tracks.map(t => ({ from: t.fromStationId, to: t.toStationId,
+    lineId: tabrizLineId,
+    coordinates: t.geometry.map(p => [p.lat, p.lng] as [number, number]) })),
+});
+
 export const CITY_NETWORKS = definitions.map(definition => ({
   ...definition, planner: createCityPathPlanner(definition.network, { reviewOnly: getCityMeta(definition.cityId)?.release === "preview" }),
 }));
