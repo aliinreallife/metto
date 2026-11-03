@@ -7,6 +7,7 @@ import { formatDateLabel } from "@/lib/route-planning";
 import { tehranParts, parseServiceTimeToMinutes, tehranMinuteToInstant } from "@/lib/tehran-time";
 import { MissedDeadlineCard, NoServiceCard, PathRoutePanel, TimetabledJourneyFrame } from "./route-panel";
 import { stationByCityId } from "@/lib/city-catalog";
+import { RatePromptHost } from "./rate-prompt";
 
 function usePublishedClock() {
   const [now, setNow] = useState<number | null>(null);
@@ -99,7 +100,9 @@ export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEdit
     <TimetabledJourneyFrame lang={path.lang} stationCount={stationIds.filter(id => !closed.includes(id)).length}
       waitMinutes={arriveBy ? 0 : Math.max(0, Math.round((trip.departureMs - (plannedAt ?? currentNow)) / 60_000))}
       travelMinutes={trip.minutes} arrival={trip.arrival} departedAtMs={trip.departureMs}
-      originName={path.name(from)} arriveBy={arriveBy} note={t.timeNote}>
+      originName={path.name(from)} arriveBy={arriveBy} note={t.timeNote}
+      afterStats={<RatePromptHost lang={path.lang} routeSucceeded
+        routeKey={`isfahan|${from}|${to}|${arriveBy ? "arrive" : plannedAt === undefined ? "now" : "depart"}|${plannedAt ?? "now"}`} />}>
       <PathRoutePanel {...path} showSummary={false} stationCount={stationIds.filter(id => !closed.includes(id)).length}
         nextTrip={trip} stationNote={id => closed.includes(id) ? t.isfahanNoStopNote : undefined} />
     </TimetabledJourneyFrame>
