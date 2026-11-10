@@ -29,6 +29,7 @@ import { IsfahanJourney } from "./isfahan-times";
 import { TabrizJourney } from "./tabriz-times";
 import { TravelTimeCard } from "./travel-time-card";
 import { useRouteClock } from "@/lib/use-route-clock";
+import { firstCityTrainForRoute } from "@/lib/first-train";
 import { parseTimeModeParams, applyTimeParams, seedNextFiveMinutes, directWalkVerdict, type TimeMode } from "@/lib/route-planning";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { findIsfahanTrips } from "@/lib/isfahan-timetable";
@@ -125,7 +126,7 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
     for (const [key, value] of Object.entries({ from, to, lang })) {
       if (value) url.searchParams.set(key, value); else url.searchParams.delete(key);
     }
-    if (city === "isfahan") applyTimeParams(url.searchParams, timeMode, planAtMs === null ? null : new Date(planAtMs));
+    if (hasTimetable) applyTimeParams(url.searchParams, timeMode, planAtMs === null ? null : new Date(planAtMs));
     if (url.href !== window.location.href) window.history.replaceState(null, "", url);
     try {
       if (from) localStorage.setItem(`${city}.route.from`, from);
@@ -148,6 +149,13 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
     return null;
   }, [city, route, from, to, plannedAt, nowMs, holidayDataset, timeMode, isPastTime]);
   const publishedTrip = published?.applicable && !published.blocked ? published.trips[0] : undefined;
+  const firstTrainAtMs = useMemo(() => {
+    if (!hasTimetable || !route || !from || !to || isPastTime || publishedTrip ||
+      (city !== "isfahan" && city !== "tabriz")) return null;
+    return firstCityTrainForRoute(
+      city, from, to, Math.max(nowMs, planAtMs ?? nowMs), nowMs, holidayDataset,
+    );
+  }, [hasTimetable, city, route, from, to, isPastTime, publishedTrip, nowMs, planAtMs, holidayDataset]);
   const lastCountedRouteKey = useRef<string | null>(null);
   useEffect(() => {
     if (!hasTimetable || !publishedTrip || isPastTime) return;
@@ -275,6 +283,12 @@ export function CityRoute({ city, initialFrom: fromProp, initialTo: toProp, init
           {hasTimetable ? (TimetabledJourney ? <TimetabledJourney stationIds={result.stationIds} plannedAt={plannedAt}
             published={published} nowMs={nowMs}
             arriveBy={timeMode === "arrive"} onEditTime={expandTimeCard}
+            firstTrainAtMs={firstTrainAtMs}
+            onFirstTrain={() => {
+              if (firstTrainAtMs === null) return;
+              setPlanAtMs(firstTrainAtMs);
+              setTimeMode("depart");
+            }}
             onUseNow={() => { setTimeMode("now"); setPlanAtMs(null); }}
             lang={lang} stationCount={result.stationIds.length} name={name}
             legs={result.legs.map(leg => ({ line: Number(leg.lineId.split(":").at(-1)), stations: leg.stationIds,
