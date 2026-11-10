@@ -16,16 +16,17 @@ export function firstTehranTrainForRoute(
   from: string,
   to: string,
   notBeforeMs: number,
+  nowMs: number,
   isHolidayDate?: IsHolidayDate,
 ): number | null {
   const topology = computeRouteTopology(from, to);
   const line = topology?.segments[0]?.line;
   if (line === undefined) return null;
 
-  const today = tehranParts(notBeforeMs).dateStr;
+  const today = tehranParts(nowMs).dateStr;
   for (let offset = 0; offset <= MAX_DAYS_AHEAD; offset++) {
     const date = shiftTehranDate(today, offset);
-    const earliest = Math.max(notBeforeMs, tehranMinuteToInstant(date, 0));
+    const earliest = Math.max(nowMs, notBeforeMs, tehranMinuteToInstant(date, 0));
 
     // In the usual case a single forward plan from midnight (or the selected
     // time today) finds the first boardable train AND proves all transfers.
@@ -67,12 +68,13 @@ export function firstCityTrainForRoute(
   from: string,
   to: string,
   notBeforeMs: number,
+  nowMs: number,
   holidays: HolidayDataset | null,
 ): number | null {
-  const today = tehranParts(notBeforeMs).dateStr;
+  const today = tehranParts(nowMs).dateStr;
   for (let offset = 0; offset <= MAX_DAYS_AHEAD; offset++) {
     const date = shiftTehranDate(today, offset);
-    const readyAtMs = Math.max(notBeforeMs, tehranMinuteToInstant(date, 0));
+    const readyAtMs = Math.max(nowMs, notBeforeMs, tehranMinuteToInstant(date, 0));
     const result = city === "isfahan"
       ? findIsfahanTrips(from, to, readyAtMs, holidays)
       : findTabrizTrips(from, to, readyAtMs, holidays);
