@@ -72,6 +72,23 @@ test("Tabriz respects published Friday departures and no-service after last sour
   await expect(page.getByTestId("route-summary-stats")).toHaveCount(0);
 });
 
+test("Tabriz offers its next published first train as the primary no-service action", async ({ page }) => {
+  const at = "2026-11-03T16:41:00.000Z";
+  await page.goto(`/tabriz/route?from=${el}&to=${noor}&timeMode=depart&at=${encodeURIComponent(at)}&lang=en`);
+  const noService = page.getByTestId("tabriz-no-service");
+  await expect(noService).toBeVisible();
+  const firstTrain = noService.getByRole("button", { name: /Take the first train/ });
+  await expect(firstTrain).toHaveClass(/bg-primary/);
+  await expect(noService.getByRole("button", { name: "Plan for another time" })).toBeVisible();
+  await firstTrain.click();
+  await expect(page.getByTestId("tabriz-journey")).toBeVisible();
+  const url = new URL(page.url());
+  expect(url.searchParams.get("timeMode")).toBe("depart");
+  expect(Date.parse(url.searchParams.get("at")!)).toBeGreaterThan(Date.parse(at));
+  await page.reload();
+  await expect(page.getByTestId("tabriz-journey")).toBeVisible();
+});
+
 test("Tabriz same-station behavior, map and all stations are city-scoped", async ({ page }) => {
   await page.goto(`/tabriz/route?from=${el}&to=${el}&lang=en`);
   await expect(page.getByTestId("same-station-notice")).toContainText("Origin and destination are the same.");

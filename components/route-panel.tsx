@@ -37,8 +37,8 @@ import { useScheduleData } from "@/lib/use-schedule-data";
 /**
  * Dedicated no-service state: the subway cannot complete this journey from
  * the requested start. Reusable across modes — callers decide when to show
- * it; this component bakes in no mode assumptions. `onPlanAnotherTime`
- * opens the time planner (callers wire it to the sheet).
+ * it; this component bakes in no mode assumptions. The first-train action
+ * uses a verified departure supplied by the parent; editing remains available.
  */
 export function NoServiceCard({
   lang,
@@ -46,6 +46,8 @@ export function NoServiceCard({
   reachableUntil,
   isOrigin,
   onPlanAnotherTime,
+  firstTrainAtMs,
+  onFirstTrain,
 }: {
   lang: Lang;
   /** Last station with propagated timing (localized display name). */
@@ -55,6 +57,8 @@ export function NoServiceCard({
   /** True when even the origin has no usable onward service. */
   isOrigin: boolean;
   onPlanAnotherTime: () => void;
+  firstTrainAtMs?: number | null;
+  onFirstTrain?: () => void;
 }) {
   const t = STRINGS[lang];
   const isFa = lang === "fa";
@@ -68,13 +72,24 @@ export function NoServiceCard({
       </span>
       <h2 className="text-base font-bold md:text-lg">{t.noServiceTitle}</h2>
       <p className="max-w-sm text-sm text-muted-foreground">{body}</p>
-      <button
-        type="button"
-        onClick={onPlanAnotherTime}
-        className="mt-1 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {t.planAnotherTime}
-      </button>
+      <div className="mt-1 flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
+        {firstTrainAtMs !== null && firstTrainAtMs !== undefined && onFirstTrain && (
+          <button
+            type="button"
+            onClick={onFirstTrain}
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {t.firstTrainDeparture} <span className="tnum" dir="ltr">{persianDigits(formatTehranClock(firstTrainAtMs), lang)}</span>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onPlanAnotherTime}
+          className="rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {t.planAnotherTime}
+        </button>
+      </div>
     </div>
   );
 }

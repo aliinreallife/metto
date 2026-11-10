@@ -203,6 +203,32 @@ test.describe("travel time card", () => {
     await expect(page.getByText("دیگر دیر شده")).toBeVisible();
   });
 
+  for (const mode of ["now", "depart", "arrive"] as const) {
+    test(`no-service offers the first train in ${mode} mode`, async ({ page }) => {
+      // A fixed late-night clock makes the no-service state deterministic.
+      await page.clock.install({ time: new Date("2026-11-10T23:30:00+03:30") });
+      const at = encodeURIComponent("2026-11-10T23:45:00+03:30");
+      const timeParams = mode === "now" ? "" : `&timeMode=${mode}&at=${at}`;
+      await page.goto(`/route?from=${FROM}&to=${TO}${timeParams}`, {
+        waitUntil: "domcontentloaded",
+      });
+      await expect(page.getByText("در حال حاضر با مترو نمی‌رسید")).toBeVisible({ timeout: 15_000 });
+      const firstTrain = page.getByRole("button", { name: /حرکت با اولین قطار/ });
+      const planAhead = page.getByRole("button", { name: "برنامه‌ریزی برای زمان دیگر" });
+      await expect(firstTrain).toBeVisible();
+      await expect(firstTrain).toHaveClass(/bg-primary/);
+      await expect(planAhead).toBeVisible();
+
+      await firstTrain.click();
+      await expect(page.getByTestId("route-summary-stats")).toBeVisible();
+      const url = new URL(page.url());
+      expect(url.searchParams.get("timeMode")).toBe("depart");
+      expect(Date.parse(url.searchParams.get("at")!)).toBeGreaterThan(
+        new Date("2026-11-10T23:30:00+03:30").getTime(),
+      );
+    });
+  }
+
   test("late-night depart shows the no-service card with a plan-ahead action", async ({ page }) => {
     // Last Tajrish departure is 22:00 on every timetable: 23:00 tomorrow
     // has no usable origin service on any day type.
@@ -213,11 +239,26 @@ test.describe("travel time card", () => {
     );
     await expect(page.getByText("در حال حاضر با مترو نمی‌رسید")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("از این ایستگاه سرویسی در دسترس نیست")).toBeVisible();
-    // Primary action expands the inline planner directly.
-    await page.getByRole("button", { name: "برنامه‌ریزی برای زمان دیگر" }).click();
+    const firstTrain = page.getByRole("button", { name: /حرکت با اولین قطار/ });
+    const planAnotherTime = page.getByRole("button", { name: "برنامه‌ریزی برای زمان دیگر" });
+    await expect(firstTrain).toBeVisible();
+    await expect(firstTrain).toHaveClass(/bg-primary/);
+    await expect(planAnotherTime).toHaveClass(/border/);
+    // Secondary action still expands the inline planner.
+    await planAnotherTime.click();
     await expect(
       card(page).getByRole("button", { name: /زمان سفر/ }),
     ).toHaveAttribute("aria-expanded", "true");
+
+    // Primary action picks the next verified first train after the failed
+    // departure (NOT a train earlier today), and persists the departure mode.
+    await firstTrain.click();
+    await expect(page.getByTestId("route-summary-stats")).toBeVisible();
+    const url = new URL(page.url());
+    expect(url.searchParams.get("timeMode")).toBe("depart");
+    expect(Date.parse(url.searchParams.get("at")!)).toBeGreaterThan(Date.parse(at));
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("route-summary-stats")).toBeVisible();
   });
 
   test("impossible arrive-by shows the missed-deadline card", async ({ page }) => {

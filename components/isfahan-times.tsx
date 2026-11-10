@@ -63,9 +63,10 @@ export function IsfahanTimes({ from, to, lang, plannedAt, arriveBy = false }: {
  * Isfahan's adapter alone selects a published source row. No extra schedule
  * disclaimer panel, and never a purely geometric trip presented as a train.
  */
-export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEditTime, onUseNow, published, nowMs, ...path }: Parameters<typeof PathRoutePanel>[0] & {
+export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEditTime, onUseNow, firstTrainAtMs, onFirstTrain, published, nowMs, ...path }: Parameters<typeof PathRoutePanel>[0] & {
   plannedAt?: number; stationIds: string[]; arriveBy?: boolean;
   onEditTime: () => void; onUseNow: () => void;
+  firstTrainAtMs?: number | null; onFirstTrain?: () => void;
   published?: ReturnType<typeof findIsfahanTrips> | ReturnType<typeof findTabrizTrips> | null; nowMs?: number;
 }) {
   const now = usePublishedClock();
@@ -94,7 +95,8 @@ export function IsfahanJourney({ plannedAt, stationIds, arriveBy = false, onEdit
       }
     }
     return <div data-testid="isfahan-no-service"><NoServiceCard lang={path.lang}
-      stationName={path.name(from)} reachableUntil="" isOrigin onPlanAnotherTime={onEditTime} /></div>;
+      stationName={path.name(from)} reachableUntil="" isOrigin onPlanAnotherTime={onEditTime}
+      firstTrainAtMs={firstTrainAtMs} onFirstTrain={onFirstTrain} /></div>;
   }
   const closed = selection.serviceId === "friday" ? isfahanServiceData.release.fridayNoBoardingStationIds : [];
   return <div data-testid="isfahan-times" className="flex flex-col gap-3 md:gap-4">
