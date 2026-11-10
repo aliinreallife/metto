@@ -3,14 +3,12 @@
 // dates. Nothing here guesses a network-wide opening hour.
 import { computeRouteTopology, findRoute } from "./route";
 import { getAllDepartures } from "./schedule-utils";
-import { getDayTypeForServiceDate, shiftTehranDate } from "./route-planning";
+import { getDayTypeForServiceDate, PLAN_HORIZON_DAYS, shiftTehranDate } from "./route-planning";
 import { parseServiceTimeToMinutes, tehranMinuteToInstant, tehranParts } from "./tehran-time";
 import { findIsfahanTrips } from "./isfahan-timetable";
 import { findTabrizTrips } from "./tabriz-timetable";
 import type { HolidayDataset } from "./holidays/local-dataset";
 import type { IsHolidayDate } from "./holidays/types";
-
-const MAX_DAYS_AHEAD = 7;
 
 export function firstTehranTrainForRoute(
   from: string,
@@ -24,7 +22,8 @@ export function firstTehranTrainForRoute(
   if (line === undefined) return null;
 
   const today = tehranParts(nowMs).dateStr;
-  for (let offset = 0; offset <= MAX_DAYS_AHEAD; offset++) {
+  const horizonDate = shiftTehranDate(today, PLAN_HORIZON_DAYS);
+  for (let offset = 0; offset <= PLAN_HORIZON_DAYS; offset++) {
     const date = shiftTehranDate(today, offset);
     const earliest = Math.max(nowMs, notBeforeMs, tehranMinuteToInstant(date, 0));
     if (tehranParts(earliest).dateStr !== date) continue;
@@ -43,7 +42,7 @@ export function firstTehranTrainForRoute(
         parseServiceTimeToMinutes(firstTrip.departTime),
       );
       return departureMs >= earliest &&
-        tehranParts(departureMs).dateStr <= shiftTehranDate(today, MAX_DAYS_AHEAD)
+        tehranParts(departureMs).dateStr <= horizonDate
         ? departureMs : null;
     };
 
@@ -75,7 +74,8 @@ export function firstCityTrainForRoute(
   holidays: HolidayDataset | null,
 ): number | null {
   const today = tehranParts(nowMs).dateStr;
-  for (let offset = 0; offset <= MAX_DAYS_AHEAD; offset++) {
+  const horizonDate = shiftTehranDate(today, PLAN_HORIZON_DAYS);
+  for (let offset = 0; offset <= PLAN_HORIZON_DAYS; offset++) {
     const date = shiftTehranDate(today, offset);
     const readyAtMs = Math.max(nowMs, notBeforeMs, tehranMinuteToInstant(date, 0));
     if (tehranParts(readyAtMs).dateStr !== date) continue;
@@ -85,7 +85,7 @@ export function firstCityTrainForRoute(
     if (!result.applicable || result.blocked) continue;
     const first = result.trips[0]?.departureMs;
     if (first !== undefined && first >= readyAtMs &&
-      tehranParts(first).dateStr <= shiftTehranDate(today, MAX_DAYS_AHEAD)) return first;
+      tehranParts(first).dateStr <= horizonDate) return first;
   }
   return null;
 }
