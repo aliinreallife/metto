@@ -67,7 +67,7 @@ export function TabrizTimes({ from, to, lang, plannedAt, arriveBy = false }: {
 
 /** Tehran's shared journey chrome with Tabriz-specific, source-backed rows. */
 export function TabrizJourney({ plannedAt, stationIds, arriveBy = false,
-  onEditTime, onUseNow, published, nowMs, ...path }: Parameters<typeof IsfahanJourney>[0]) {
+  onEditTime, onUseNow, firstTrainAtMs, onFirstTrain, published, nowMs, ...path }: Parameters<typeof IsfahanJourney>[0]) {
   const mountedNow = usePublishedClock();
   const { dataset } = useHolidayData();
   const t = STRINGS[path.lang];
@@ -104,7 +104,8 @@ export function TabrizJourney({ plannedAt, stationIds, arriveBy = false,
       </p>
       <NoServiceCard lang={path.lang}
         stationName={path.name(from)} reachableUntil="" isOrigin
-        onPlanAnotherTime={onEditTime} />
+        onPlanAnotherTime={onEditTime}
+        firstTrainAtMs={firstTrainAtMs} onFirstTrain={onFirstTrain} />
     </div>;
   }
   return <div data-testid="tabriz-journey" className="flex flex-col gap-3 md:gap-4">
