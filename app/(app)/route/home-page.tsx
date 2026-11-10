@@ -51,6 +51,7 @@ import {
 } from "@/lib/geolocation";
 import { LocationErrorActions } from "@/components/location-error";
 import { useRouteClock } from "@/lib/use-route-clock";
+import { firstTehranTrainForRoute } from "@/lib/first-train";
 import { useTripWalking } from "@/lib/walking/use-walking-route";
 import type { WalkingRoute } from "@/lib/walking/route";
 import { WalkingRouteInfo } from "@/components/walking-route-info";
@@ -264,6 +265,16 @@ export function HomePage() {
       ? getArriveByViewState(route, nowRoute, planAtMs)
       : null;
 
+  // A first train must be after the unavailable plan (not merely after now),
+  // fit the existing seven-day planner horizon, and complete the full route.
+  const firstTrainAtMs = useMemo(() => {
+    if (!loaded || !originId || !destId || isPastTime ||
+      (route?.status !== "no_service" && arriveView?.kind !== "no_service")) return null;
+    return firstTehranTrainForRoute(
+      originId, destId, Math.max(nowMs, planAtMs ?? nowMs), nowMs, isHolidayDate,
+    );
+  }, [loaded, originId, destId, isPastTime, route, arriveView, nowMs, planAtMs, isHolidayDate]);
+
   // Rating usage: count one success per distinct settled planning that
   // genuinely produced a complete journey. Re-renders of the same route
   // (language, clock ticks, GPS) never recount. Corrupt storage is
@@ -340,6 +351,7 @@ export function HomePage() {
           nowMs={nowMs}
           isPastTime={isPastTime}
           arriveView={arriveView}
+          firstTrainAtMs={firstTrainAtMs}
           setTimeMode={setTimeMode}
           setPlanAtMs={setPlanAtMs}
           onUseNow={useNow}
@@ -411,6 +423,7 @@ function RouteView({
   nowMs,
   isPastTime,
   arriveView,
+  firstTrainAtMs,
   setTimeMode,
   setPlanAtMs,
   onUseNow,
@@ -435,6 +448,7 @@ function RouteView({
   nowMs: number;
   isPastTime: boolean;
   arriveView: ReturnType<typeof getArriveByViewState> | null;
+  firstTrainAtMs: number | null;
   setTimeMode: (mode: TimeMode) => void;
   setPlanAtMs: (ms: number | null) => void;
   onUseNow: () => void;
@@ -688,6 +702,12 @@ function RouteView({
               reachableUntil={arriveView.route.reachableUntil}
               isOrigin={arriveView.route.reachableUntilStationId === originId}
               onPlanAnotherTime={expandTimeCard}
+              firstTrainAtMs={firstTrainAtMs}
+              onFirstTrain={() => {
+                if (firstTrainAtMs === null) return;
+                setPlanAtMs(firstTrainAtMs);
+                setTimeMode("depart");
+              }}
             />
             {originId && (() => {
               const origin = STATION_MAP.get(originId);
