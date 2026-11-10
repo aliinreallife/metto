@@ -27,6 +27,7 @@ export function firstTehranTrainForRoute(
   for (let offset = 0; offset <= MAX_DAYS_AHEAD; offset++) {
     const date = shiftTehranDate(today, offset);
     const earliest = Math.max(nowMs, notBeforeMs, tehranMinuteToInstant(date, 0));
+    if (tehranParts(earliest).dateStr !== date) continue;
 
     // In the usual case a single forward plan from midnight (or the selected
     // time today) finds the first boardable train AND proves all transfers.
@@ -41,7 +42,9 @@ export function firstTehranTrainForRoute(
         tehranParts(readyAtMs).dateStr,
         parseServiceTimeToMinutes(firstTrip.departTime),
       );
-      return departureMs >= earliest ? departureMs : null;
+      return departureMs >= earliest &&
+        tehranParts(departureMs).dateStr <= shiftTehranDate(today, MAX_DAYS_AHEAD)
+        ? departureMs : null;
     };
 
     const first = verifiedDeparture(earliest);
@@ -75,12 +78,14 @@ export function firstCityTrainForRoute(
   for (let offset = 0; offset <= MAX_DAYS_AHEAD; offset++) {
     const date = shiftTehranDate(today, offset);
     const readyAtMs = Math.max(nowMs, notBeforeMs, tehranMinuteToInstant(date, 0));
+    if (tehranParts(readyAtMs).dateStr !== date) continue;
     const result = city === "isfahan"
       ? findIsfahanTrips(from, to, readyAtMs, holidays)
       : findTabrizTrips(from, to, readyAtMs, holidays);
     if (!result.applicable || result.blocked) continue;
     const first = result.trips[0]?.departureMs;
-    if (first !== undefined && first >= readyAtMs) return first;
+    if (first !== undefined && first >= readyAtMs &&
+      tehranParts(first).dateStr <= shiftTehranDate(today, MAX_DAYS_AHEAD)) return first;
   }
   return null;
 }
