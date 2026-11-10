@@ -79,7 +79,7 @@ export function NoServiceCard({
             onClick={onFirstTrain}
             className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {t.firstTrainDeparture} <span className="tnum" dir="ltr">· {persianDigits(formatTehranClock(firstTrainAtMs), lang)}</span>
+            {t.firstTrainDeparture} <span className="tnum" dir="ltr">{persianDigits(formatTehranClock(firstTrainAtMs), lang)}</span>
           </button>
         )}
         <button
