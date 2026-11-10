@@ -90,6 +90,20 @@ test("preview cities join landings and combined directories while keeping duplic
   await expect(page.getByTestId("city-route-result")).toHaveCount(0);
 });
 
+test("Isfahan offers the next published first train when service has finished", async ({ page }) => {
+  const at = "2026-11-03T19:30:00.000Z"; // 23:00 in Iran, after the final train
+  await page.goto(`/isfahan/route?from=${qods}&to=${end}&timeMode=depart&at=${encodeURIComponent(at)}&lang=en`);
+  const noService = page.getByTestId("isfahan-no-service");
+  await expect(noService).toBeVisible();
+  const firstTrain = noService.getByRole("button", { name: /Take the first train/ });
+  await expect(firstTrain).toHaveClass(/bg-primary/);
+  await firstTrain.click();
+  await expect(page.getByTestId("isfahan-times")).toBeVisible();
+  const url = new URL(page.url());
+  expect(url.searchParams.get("timeMode")).toBe("depart");
+  expect(Date.parse(url.searchParams.get("at")!)).toBeGreaterThan(Date.parse(at));
+});
+
 test("the normal preview tabs remain accessible on a narrow Persian screen", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/isfahan/stations?lang=fa");
