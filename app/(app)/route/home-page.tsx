@@ -723,6 +723,12 @@ function RouteView({
               reachableUntil={route.reachableUntil}
               isOrigin={route.reachableUntilStationId === originId}
               onPlanAnotherTime={expandTimeCard}
+              firstTrainAtMs={firstTrainAtMs}
+              onFirstTrain={() => {
+                if (firstTrainAtMs === null) return;
+                setPlanAtMs(firstTrainAtMs);
+                setTimeMode("depart");
+              }}
             />
             {originId && (() => {
               const origin = STATION_MAP.get(originId);
