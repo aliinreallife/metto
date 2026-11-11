@@ -626,6 +626,7 @@ function RouteView({
               lang={lang}
               info={originPlaceInfo}
               walkingRoute={walking.access.route}
+              walkingLoading={walking.access.loading}
               onClear={clearOriginPlace}
             />
           )}
@@ -641,6 +642,7 @@ function RouteView({
               lang={lang}
               info={destPlaceInfo}
               walkingRoute={walking.egress.route}
+              walkingLoading={walking.egress.loading}
               onClear={clearDestPlace}
             />
           )}
@@ -788,11 +790,11 @@ function RouteView({
 }
 
 
-function PlaceCard({ lang, info, onClear, walkingRoute }: {
-  lang: Lang; info: PlaceInfo; onClear: () => void; walkingRoute?: WalkingRoute | null;
+function PlaceCard({ lang, info, onClear, walkingRoute, walkingLoading }: {
+  lang: Lang; info: PlaceInfo; onClear: () => void; walkingRoute?: WalkingRoute | null; walkingLoading?: boolean;
 }) {
   const station = STATION_MAP.get(info.stationId);
   return <RoutePlaceCard lang={lang} placeName={info.placeName}
     stationName={station?.name[lang] ?? info.stationId} distanceKm={info.distanceKm}
-    onClear={onClear} walkingRoute={walkingRoute} />;
+    onClear={onClear} walkingRoute={walkingRoute} walkingLoading={walkingLoading} />;
 }
