@@ -279,6 +279,7 @@ export type RouteTopology = {
 export function computeRouteTopology(
   originInput: string,
   destInput: string,
+  opts?: { normalizeEramWalkPenalty?: boolean },
 ): RouteTopology | null {
   const originId = resolveStationId(originInput) ?? originInput;
   const destId = resolveStationId(destInput) ?? destInput;
@@ -391,10 +392,19 @@ export function computeRouteTopology(
           routeId,
           r2.id,
         );
+        // Comparison-only setting: treat Eram's 8-minute transfer like a
+        // standard transfer for route RANKING, but never change its actual
+        // 8-minute walking time or the production route preference.
+        const rankingWalkS =
+          opts?.normalizeEramWalkPenalty &&
+          stationId === "eram-e-sabz" &&
+          ((curLine === 4 && r2.lineId === 5) || (curLine === 5 && r2.lineId === 4))
+            ? DEFAULT_TRANSFER_WALK_SECONDS
+            : walkS;
         const nextCost =
           cost +
           RIDE_COST +
-          TRANSFER_PENALTY * (walkS / DEFAULT_TRANSFER_WALK_SECONDS);
+          TRANSFER_PENALTY * (rankingWalkS / DEFAULT_TRANSFER_WALK_SECONDS);
         const nk = key(stationId, r2.lineId, r2.id);
         if (nextCost < (dist.get(nk) ?? Infinity)) {
           dist.set(nk, nextCost);

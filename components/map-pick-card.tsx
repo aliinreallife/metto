@@ -14,7 +14,6 @@ export function MapPickCard({
   title,
   stationName,
   distanceText,
-  walkText,
   destPrimary,
   onChooseOrigin,
   onChooseDest,
@@ -25,7 +24,6 @@ export function MapPickCard({
   title: string;
   stationName: string;
   distanceText: string;
-  walkText: string;
   /** True to emphasize "destination" (an origin already exists). */
   destPrimary: boolean;
   onChooseOrigin: () => void;
@@ -46,7 +44,7 @@ export function MapPickCard({
           </p>
           <h3 className="mt-0.5 truncate text-sm font-bold">{title}</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {t.nearestStation}: {stationName} · {distanceText} · ~{walkText} {t.walkTime}
+            {t.nearestStation}: {stationName} · {t.straightLineDistance}: {distanceText}
           </p>
         </div>
         <button

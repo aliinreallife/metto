@@ -71,6 +71,144 @@ for (const [from, to] of [
   });
 }
 
+test("Open on map works directly after selecting a searched landmark with no destination", async ({ page }) => {
+  await prepare(page);
+  await streetFixture(page);
+  const station = STATION_MAP.get("tajrish")!.location;
+  const landmarkLat = Number((station.lat + 0.002).toFixed(5));
+  await page.route("https://nominatim.openstreetmap.org/search?*", (request) => request.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([{
+      display_name: "North Landmark, Tehran, Iran",
+      lat: String(landmarkLat),
+      lon: String(station.lng),
+      type: "attraction",
+    }]),
+  }));
+
+  await page.goto("/route?lang=en", { waitUntil: "domcontentloaded" });
+  await page.locator("#origin-combobox").click();
+  await page.locator("#origin-combobox-input").fill("North Landmark");
+  await page.getByRole("listbox").getByRole("option", { name: "North Landmark, Tehran, Iran" }).click();
+  const openOnMap = page.getByRole("link", { name: STRINGS.en.viewOnMap });
+  await expect(openOnMap).toBeVisible({ timeout: 15_000 });
+  const target = await openOnMap.getAttribute("href");
+  expect(target).toContain("from=");
+  expect(target).toContain("op=");
+  await openOnMap.click();
+
+  await expect(page).toHaveURL(/\/map\?/);
+  expect(new URL(page.url()).searchParams.get("op")).toContain("North Landmark");
+  await expect(page.getByTestId("map-place-card")).toContainText("North Landmark");
+  await expect(page.locator("path.metto-walking-path")).toHaveCount(1, { timeout: 15_000 });
+});
+
+test("Open on map also works with only a destination landmark or same-station landmarks", async ({ page }) => {
+  await prepare(page);
+  await streetFixture(page);
+  const station = STATION_MAP.get("chitgar")!.location;
+  const start = (station.lat + 0.002).toFixed(5);
+  const end = (station.lat + 0.003).toFixed(5);
+  const oneDestination = `/route?to=chitgar&dp=${end},${station.lng},EndLandmark`;
+  await page.goto(oneDestination, { waitUntil: "domcontentloaded" });
+  const firstLink = page.getByRole("link", { name: STRINGS.en.viewOnMap });
+  await expect(firstLink).toBeVisible();
+  await firstLink.click();
+  await expect(page).toHaveURL(/\/map\?/);
+  await expect(page.getByTestId("map-place-card")).toContainText("EndLandmark");
+  await expect(page.locator("path.metto-walking-path")).toHaveCount(1, { timeout: 15_000 });
+
+  // These resolve to a single station: there is no metro topology, but the
+  // pair of place pins still has a meaningful walking-only map.
+  await page.goto(
+    `/route?from=chitgar&to=chitgar&op=${start},${station.lng},StartLandmark&dp=${end},${station.lng},EndLandmark`,
+    { waitUntil: "domcontentloaded" },
+  );
+  const secondLink = page.getByRole("link", { name: STRINGS.en.viewOnMap });
+  await expect(secondLink).toBeVisible();
+  await secondLink.click();
+  await expect(page).toHaveURL(/\/map\?/);
+  const params = new URL(page.url()).searchParams;
+  expect(params.get("op")).toContain("StartLandmark");
+  expect(params.get("dp")).toContain("EndLandmark");
+  await expect(page.getByTestId("map-place-card")).toHaveCount(1);
+});
+
+test("opening Map automatically routes both searched landmarks to their stations", async ({ page }) => {
+  await prepare(page);
+  const calls = await streetFixture(page);
+  const originStation = STATION_MAP.get("tajrish")!.location;
+  const destStation = STATION_MAP.get("shahid-beheshti")!.location;
+  const originPin = {
+    lat: Number((originStation.lat + 0.002).toFixed(5)),
+    lng: originStation.lng,
+  };
+  const destPin = {
+    lat: Number((destStation.lat + 0.002).toFixed(5)),
+    lng: destStation.lng,
+  };
+
+  // This starts on the route tab, as a real place-search result does.
+  await page.goto(
+    `/route?from=tajrish&to=shahid-beheshti&op=${originPin.lat},${originPin.lng},StartLandmark&dp=${destPin.lat},${destPin.lng},EndLandmark`,
+    { waitUntil: "domcontentloaded" },
+  );
+  await expect(page.getByTestId("route-summary-stats")).toBeVisible();
+  await page.getByRole("link", { name: "Map", exact: true }).last().click();
+
+  // Both searched places survive tab navigation; walking directions start
+  // automatically without a special button or manual zoom action.
+  await expect(page).toHaveURL(/\/map\?/);
+  const params = new URL(page.url()).searchParams;
+  expect(params.get("op")).toContain("StartLandmark");
+  expect(params.get("dp")).toContain("EndLandmark");
+  await expect(page.getByTestId("map-place-card")).toHaveCount(2);
+  await expect(page.getByTestId("map-place-card").first().getByRole("button", {
+    name: STRINGS.en.viewWalkingRoute,
+  })).toHaveCount(0);
+
+  const paths = page.locator("path.metto-walking-path");
+  await expect(paths).toHaveCount(2, { timeout: 15_000 });
+  await expect(page.locator("path.metto-walking-path[stroke='#22c55e']")).toHaveCount(1);
+  await expect(page.locator("path.metto-walking-path[stroke='#ef4444']")).toHaveCount(1);
+
+  // The requests must follow the journey directions: start point -> first
+  // station and last station -> destination point, not the reverse.
+  expect(calls.some((url) => {
+    const q = new URL(url).searchParams;
+    return q.get("fromLat") === originPin.lat.toFixed(5) &&
+      q.get("toLat") === originStation.lat.toFixed(5);
+  })).toBe(true);
+  expect(calls.some((url) => {
+    const q = new URL(url).searchParams;
+    return q.get("fromLat") === destStation.lat.toFixed(5) &&
+      q.get("toLat") === destPin.lat.toFixed(5);
+  })).toBe(true);
+});
+
+test("unroutable landmark never shows a straight dashed line or invented walking ETA", async ({ page }) => {
+  await prepare(page);
+  let requests = 0;
+  await mockWalkingApi(page, () => {
+    requests++;
+    return { status: 422, body: { error: "Walking directions unavailable", code: "endpoints_off_footpath" } };
+  });
+  // A long off-network landmark, similar to a large mall, may resolve to a
+  // nearby metro station by aerial distance but not to a pedestrian route.
+  const pin = "35.80000,51.42000,MallLandmark";
+  await page.goto(`/map?from=tajrish&op=${pin}`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("map-place-card")).toContainText("MallLandmark");
+  await expect(page.getByTestId("map-walking-unavailable")).toContainText(STRINGS.en.walkRouteUnavailableLabel, { timeout: 15_000 });
+  expect(requests).toBeGreaterThan(0);
+  await expect(page.locator("path.metto-walking-path")).toHaveCount(0);
+  await expect(page.locator("path.metto-walking-approximation")).toHaveCount(0);
+  const card = page.getByTestId("map-place-card");
+  await expect(card).toContainText(STRINGS.en.straightLineDistance);
+  await expect(card).not.toContainText(/\d+ min(?:utes)?/);
+  await expect(page.getByTestId("walking-route-info")).toContainText("Straight-line distances");
+});
+
 test("street geometry and distances persist offline; uncached endpoints stay approximate", async ({ page, context }) => {
   await prepare(page);
   const calls = await streetFixture(page);
@@ -103,7 +241,7 @@ test("street geometry and distances persist offline; uncached endpoints stay app
   await expect(page.getByTestId("walking-route-info")).toContainText("approximate");
   await expect(path).toHaveCount(0);
   await expect(card).toContainText("Approximate");
-  await expect(page.locator("path.metto-walking-approximation")).not.toHaveCount(0);
+  await expect(page.locator("path.metto-walking-approximation")).toHaveCount(0);
   expect(calls.length).toBe(initialRequests);
 });
 
@@ -140,7 +278,7 @@ for (const lang of ["en", "fa"] as const) {
     expect(params.get("to")).toBeTruthy();
     expect(params.get("op")).not.toBe(params.get("dp"));
     await expect(page.locator("path.metto-walking-path")).toHaveCount(0);
-    await expect(page.locator("path.metto-walking-approximation")).not.toHaveCount(0);
+    await expect(page.locator("path.metto-walking-approximation")).toHaveCount(0);
     await expect(page.getByTestId("map-place-card").first()).toContainText(t.walkRouteApproximateLabel);
     expect(documents).toEqual([]);
     expect(calls.length).toBe(initialRequests);
@@ -179,7 +317,8 @@ test("provider failure leaves dashed approximations and does not retry in a loop
   await preparedOffline(page);
   await expect(page.getByTestId("walking-route-info")).toContainText("approximate");
   await expect(page.locator("path.metto-walking-path")).toHaveCount(0);
-  await expect(page.getByTestId("map-place-card")).toContainText("~");
+  await expect(page.getByTestId("map-place-card")).toContainText(STRINGS.en.straightLineDistance);
+  await expect(page.getByTestId("map-walking-unavailable")).toContainText(STRINGS.en.walkRouteUnavailableLabel);
   const count = calls;
   expect(count).toBeGreaterThan(0);
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));

@@ -21,6 +21,7 @@ import {
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import { canBoardAtStation } from "@/lib/metro/selectors";
 import { STATION_MAP, type RouteResult } from "@/lib/route";
+import { getEramAvoidanceReason } from "@/lib/route-explanations";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { formatTehranClock } from "@/lib/tehran-time";
 import { formatCountdown } from "@/lib/route-planning";
@@ -222,6 +223,7 @@ export function RoutePanel({
   // All connection timing comes from route.ts (source of truth); this panel
   // renders it and never recomputes the timetable.
   const firstWait = Math.round(route.initialWaitSeconds / 60);
+  const eramAvoidance = useMemo(() => getEramAvoidanceReason(route), [route]);
 
   const originNoService = route.legTiming[0] === "no-service";
   const failedConn = route.connections.find((c) => c.status === "no-service");
@@ -285,6 +287,19 @@ export function RoutePanel({
       warning={topWarning}
       note={route.legTiming.includes("estimated") ? t.fallbackTimeNote : t.timeNote}
       afterStats={afterStats}>
+      {eramAvoidance && (
+        <aside data-testid="eram-route-explanation" aria-label={isFa ? "دلیل پیشنهاد مسیر" : "Why this route"} className="flex items-start gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 text-foreground">
+          <Footprints aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">{isFa ? "چرا این مسیر؟" : "Why this route?"}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              {isFa
+                ? `این مسیر با تعویض خط بیشتر، پیاده‌روی حدود ${persianDigits(eramAvoidance.eramWalkMinutes, lang)} دقیقه‌ایِ تعویض خط در ارم سبز را دور می‌زند.`
+                : `This route changes lines more often to avoid the roughly ${eramAvoidance.eramWalkMinutes}-minute transfer walk at Eram-e Sabz.`}
+            </p>
+          </div>
+        </aside>
+      )}
       <ol className="flex flex-col gap-3">
         {route.segments.map((seg, i) => (
           <li key={i} className="flex flex-col gap-2">

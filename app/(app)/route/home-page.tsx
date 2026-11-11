@@ -21,7 +21,7 @@ import { TravelTimeCard } from "@/components/travel-time-card";
 import { recordRouteSuccess } from "@/lib/app-rating";
 import { useMetro } from "@/app/providers";
 import { TabLink } from "@/app/nav";
-import { STATION_MAP, computeRouteTopology, findRoute } from "@/lib/route";
+import { STATION_MAP, findRoute } from "@/lib/route";
 import {
   applyTimeParams,
   directWalkVerdict,
@@ -564,11 +564,10 @@ function RouteView({
     }
   }
 
-  // The map describes network connectivity, not service at the chosen time.
-  const hasMapRoute = useMemo(
-    () => !!originId && !!destId && computeRouteTopology(originId, destId) !== null,
-    [originId, destId],
-  );
+  // A map can show a single selected place and its station approach,
+  // same-station places, or a route whose trains are currently unavailable.
+  // Do not require a full metro topology just to open the map.
+  const hasMapSelection = !!(originId || destId || originPlaceInfo || destPlaceInfo);
   const mapHref = buildMapHref({
     from: originId,
     to: destId,
@@ -627,6 +626,7 @@ function RouteView({
               lang={lang}
               info={originPlaceInfo}
               walkingRoute={walking.access.route}
+              walkingLoading={walking.access.loading}
               onClear={clearOriginPlace}
             />
           )}
@@ -642,6 +642,7 @@ function RouteView({
               lang={lang}
               info={destPlaceInfo}
               walkingRoute={walking.egress.route}
+              walkingLoading={walking.egress.loading}
               onClear={clearDestPlace}
             />
           )}
@@ -664,7 +665,7 @@ function RouteView({
               hasPath={!!(walking.direct.route || walking.access.route || walking.egress.route)}
               saved={walking.direct.saved || walking.access.saved || walking.egress.saved} />
           )}
-          {hasMapRoute && (
+          {hasMapSelection && (
             <Link
               href={mapHref}
               className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:py-2.5 md:text-base"
@@ -789,11 +790,11 @@ function RouteView({
 }
 
 
-function PlaceCard({ lang, info, onClear, walkingRoute }: {
-  lang: Lang; info: PlaceInfo; onClear: () => void; walkingRoute?: WalkingRoute | null;
+function PlaceCard({ lang, info, onClear, walkingRoute, walkingLoading }: {
+  lang: Lang; info: PlaceInfo; onClear: () => void; walkingRoute?: WalkingRoute | null; walkingLoading?: boolean;
 }) {
   const station = STATION_MAP.get(info.stationId);
   return <RoutePlaceCard lang={lang} placeName={info.placeName}
     stationName={station?.name[lang] ?? info.stationId} distanceKm={info.distanceKm}
-    onClear={onClear} walkingRoute={walkingRoute} />;
+    onClear={onClear} walkingRoute={walkingRoute} walkingLoading={walkingLoading} />;
 }

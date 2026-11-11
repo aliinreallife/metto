@@ -9,13 +9,19 @@ test.beforeEach(async ({ request }) => {
   expect(response.status()).toBe(200);
 });
 
-test("landing counts match available cities and each city has its own landing", async ({ page }) => {
+test("landing city choices open the selected route planner; dedicated city landings still work", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/?lang=en");
   await expect(page.getByText(`${deploymentCityCounts().stations} stations · ${deploymentCityCounts().lines} lines`, { exact: true })).toBeVisible();
-  await page.getByTestId("landing-city-links").getByRole("link").filter({ hasText: "Mashhad" }).click();
-  await expect(page).toHaveURL(/\/mashhad\?lang=en/);
+  const cityLinks = page.getByTestId("landing-city-links");
+  await expect(cityLinks.getByRole("link", { name: "Mashhad" })).toHaveAttribute("href", "/mashhad/route?lang=en");
+  await expect(cityLinks.getByRole("link", { name: "Tehran" })).toHaveAttribute("href", "/tehran/route?lang=en");
+  await cityLinks.getByRole("link", { name: "Mashhad" }).click();
+  await expect(page).toHaveURL(/\/mashhad\/route\?lang=en/);
+  await expect(page.getByTestId("city-path-preview")).toBeVisible();
+  // Dedicated city landing URLs remain available for informational pages.
+  await page.goto("/mashhad?lang=en");
   await expect(page.getByText("36 stations · 2 lines", { exact: true })).toBeVisible();
   const mashhadCard=page.getByTestId("mashhad-landing-route");
   await expect(mashhadCard).toContainText("23 stops");

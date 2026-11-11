@@ -172,8 +172,15 @@ export function CityMap({ city }: { city: CityId | "all" }) {
           <p className="truncate font-medium">{originPin?.label} · {destPin?.label}</p>
           <p className="mt-0.5 text-sm font-bold">{t.walkBetweenPlaces}</p>
           <p className="tnum mt-0.5 text-muted-foreground">
-            {walking.direct.route ? "" : "~"}{formatWalkTime(walkVerdict.walkMin, lang)} {t.walkTime} · {formatDistance(walkVerdict.walkKm, lang)}
+            {walking.direct.route
+              ? `${formatWalkTime(walking.direct.route.durationSeconds / 60, lang)} ${t.walkTime} · ${formatDistance(walking.direct.route.distanceMeters / 1000, lang)}`
+              : `${t.straightLineDistance}: ${formatDistance(walkVerdict.walkKm, lang)}`}
           </p>
+          {!walking.direct.route && (
+            <p data-testid="map-walking-unavailable" className="mt-1 text-muted-foreground">
+              {walking.direct.loading ? t.walkRouteLoading : t.walkRouteUnavailableLabel}
+            </p>
+          )}
           {isLongWalk(walkVerdict.walkKm, walkVerdict.walkMin) && <p className="mt-0.5 font-medium text-foreground">{t.longWalkConsiderTransport}</p>}
         </div>
       ) : placeMarkers.map(marker => {
@@ -182,7 +189,17 @@ export function CityMap({ city }: { city: CityId | "all" }) {
         const km = street ? street.distanceMeters / 1000 : haversineKm(marker.lat, marker.lng, station.location.lat, station.location.lng);
         const minutes = street ? street.durationSeconds / 60 : estimateWalkMinutes(km);
         return <div key={marker.role} data-testid="map-place-card" className="rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-sm">
-          <p className="truncate font-medium">{marker.label}</p><p className="mt-0.5 text-muted-foreground">{t.nearestStation}: {stationName(station)} · {formatDistance(km, lang)} · {street ? "" : "~"}{formatWalkTime(minutes, lang)} {t.walkTime}</p>
+          <p className="truncate font-medium">{marker.label}</p>
+          <p className="mt-0.5 text-muted-foreground">
+            {t.nearestStation}: {stationName(station)} · {street
+              ? `${formatDistance(km, lang)} · ${formatWalkTime(minutes, lang)} ${t.walkTime}`
+              : `${t.straightLineDistance}: ${formatDistance(km, lang)}`}
+          </p>
+          {!street && (
+            <p data-testid="map-walking-unavailable" className="mt-1 text-muted-foreground">
+              {(marker.role === "origin" ? walking.access.loading : walking.egress.loading) ? t.walkRouteLoading : t.walkRouteUnavailableLabel}
+            </p>
+          )}
           {isLongWalk(km, minutes) && <p className="mt-0.5 font-medium text-foreground">{t.longWalkConsiderTransport}</p>}
         </div>;
       })}
@@ -202,7 +219,7 @@ export function CityMap({ city }: { city: CityId | "all" }) {
       </div>
     </section>}
     {picked && nearest && <div className="absolute inset-x-3 bottom-3 z-[600] mx-auto max-w-md"><MapPickCard lang={lang} title={pickedLabel}
-      stationName={stationName(nearest.station)} distanceText={formatDistance(nearest.km, lang)} walkText={formatWalkTime(estimateWalkMinutes(nearest.km), lang)}
+      stationName={stationName(nearest.station)} distanceText={formatDistance(nearest.km, lang)}
       destPrimary={!!origin} onChooseOrigin={() => chooseEndpoint("origin")} onChooseDest={() => chooseEndpoint("dest")} onClose={closeCard} /></div>}
   </div>;
 }
