@@ -443,7 +443,7 @@ export function Hero({ cityId }: { cityId?: CityId }) {
             </Reveal>
 
             <nav aria-label={strings.chooseCity} data-testid="landing-city-links" className="mt-3 flex flex-wrap gap-x-4 text-xs font-medium text-muted-foreground">
-              {CITIES.filter(c => cityIds.includes(c.slug)).map(c => <Link key={c.slug} href={`/${c.slug}?lang=${lang}`} className="inline-flex min-h-[44px] items-center underline decoration-border underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">{c.name[lang]}{c.release === "preview" && <span className="ms-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] text-foreground/80">{strings.cityPreviewLabel}</span>}</Link>)}
+              {CITIES.filter(c => cityIds.includes(c.slug)).map(c => <Link key={c.slug} href={`/${c.slug}/route?lang=${lang}`} className="inline-flex min-h-[44px] items-center underline decoration-border underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">{c.name[lang]}{c.release === "preview" && <span className="ms-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] text-foreground/80">{strings.cityPreviewLabel}</span>}</Link>)}
               <Link href={`/cities?lang=${lang}`} className="inline-flex min-h-[44px] items-center underline decoration-border underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">{strings.allCities}</Link>
             </nav>
 
