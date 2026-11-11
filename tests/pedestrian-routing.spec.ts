@@ -187,6 +187,28 @@ test("opening Map automatically routes both searched landmarks to their stations
   })).toBe(true);
 });
 
+test("unroutable landmark never shows a straight dashed line or invented walking ETA", async ({ page }) => {
+  await prepare(page);
+  let requests = 0;
+  await mockWalkingApi(page, () => {
+    requests++;
+    return { status: 422, body: { error: "Walking directions unavailable", code: "endpoints_off_footpath" } };
+  });
+  // A long off-network landmark, similar to a large mall, may resolve to a
+  // nearby metro station by aerial distance but not to a pedestrian route.
+  const pin = "35.80000,51.42000,MallLandmark";
+  await page.goto(`/map?from=tajrish&op=${pin}`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("map-place-card")).toContainText("MallLandmark");
+  await expect(page.getByTestId("map-walking-unavailable")).toContainText(STRINGS.en.walkRouteUnavailableLabel, { timeout: 15_000 });
+  expect(requests).toBeGreaterThan(0);
+  await expect(page.locator("path.metto-walking-path")).toHaveCount(0);
+  await expect(page.locator("path.metto-walking-approximation")).toHaveCount(0);
+  const card = page.getByTestId("map-place-card");
+  await expect(card).toContainText(STRINGS.en.straightLineDistance);
+  await expect(card).not.toContainText(/\\d+ min(?:utes)?/);
+  await expect(page.getByTestId("walking-route-info")).toContainText("Straight-line distances");
+});
+
 test("street geometry and distances persist offline; uncached endpoints stay approximate", async ({ page, context }) => {
   await prepare(page);
   const calls = await streetFixture(page);
@@ -219,7 +241,7 @@ test("street geometry and distances persist offline; uncached endpoints stay app
   await expect(page.getByTestId("walking-route-info")).toContainText("approximate");
   await expect(path).toHaveCount(0);
   await expect(card).toContainText("Approximate");
-  await expect(page.locator("path.metto-walking-approximation")).not.toHaveCount(0);
+  await expect(page.locator("path.metto-walking-approximation")).toHaveCount(0);
   expect(calls.length).toBe(initialRequests);
 });
 
@@ -256,7 +278,7 @@ for (const lang of ["en", "fa"] as const) {
     expect(params.get("to")).toBeTruthy();
     expect(params.get("op")).not.toBe(params.get("dp"));
     await expect(page.locator("path.metto-walking-path")).toHaveCount(0);
-    await expect(page.locator("path.metto-walking-approximation")).not.toHaveCount(0);
+    await expect(page.locator("path.metto-walking-approximation")).toHaveCount(0);
     await expect(page.getByTestId("map-place-card").first()).toContainText(t.walkRouteApproximateLabel);
     expect(documents).toEqual([]);
     expect(calls.length).toBe(initialRequests);
@@ -295,7 +317,8 @@ test("provider failure leaves dashed approximations and does not retry in a loop
   await preparedOffline(page);
   await expect(page.getByTestId("walking-route-info")).toContainText("approximate");
   await expect(page.locator("path.metto-walking-path")).toHaveCount(0);
-  await expect(page.getByTestId("map-place-card")).toContainText("~");
+  await expect(page.getByTestId("map-place-card")).toContainText(STRINGS.en.straightLineDistance);
+  await expect(page.getByTestId("map-walking-unavailable")).toContainText(STRINGS.en.walkRouteUnavailableLabel);
   const count = calls;
   expect(count).toBeGreaterThan(0);
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
