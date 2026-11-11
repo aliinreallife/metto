@@ -31,7 +31,7 @@ export type EramAvoidanceReason = {
  */
 export function compareEramAvoidance(
   selected: SelectedRoute,
-  noEramExtraPenalty: RouteTopology | null,
+  noEramExtraPenalty: Pick<RouteTopology, "segments" | "numTransfers"> | null,
 ): EramAvoidanceReason | null {
   if (selected.status !== "complete" || !noEramExtraPenalty ||
       selected.numTransfers <= noEramExtraPenalty.numTransfers ||
