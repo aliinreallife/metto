@@ -288,12 +288,10 @@ export function RoutePanel({
       note={route.legTiming.includes("estimated") ? t.fallbackTimeNote : t.timeNote}
       afterStats={afterStats}>
       {eramAvoidance && (
-        <aside data-testid="eram-route-explanation" aria-label={isFa ? "دلیل پیشنهاد مسیر" : "Why this route"} className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 px-3.5 py-3 text-foreground">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Footprints aria-hidden="true" className="size-4" />
-          </span>
+        <aside data-testid="eram-route-explanation" aria-label={isFa ? "دلیل پیشنهاد مسیر" : "Why this route"} className="flex items-start gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 text-foreground">
+          <Footprints aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
-            <p className="text-sm font-bold">{isFa ? "چرا این مسیر؟" : "Why this route?"}</p>
+            <p className="text-sm font-semibold">{isFa ? "چرا این مسیر؟" : "Why this route?"}</p>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
               {isFa
                 ? `این مسیر با تعویض خط بیشتر، پیاده‌روی حدود ${persianDigits(eramAvoidance.eramWalkMinutes, lang)} دقیقه‌ایِ تعویض خط در ارم سبز را دور می‌زند.`
