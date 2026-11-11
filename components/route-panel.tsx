@@ -288,14 +288,19 @@ export function RoutePanel({
       note={route.legTiming.includes("estimated") ? t.fallbackTimeNote : t.timeNote}
       afterStats={afterStats}>
       {eramAvoidance && (
-        <div data-testid="eram-route-explanation" className="flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-          <Footprints aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-          <span>
-            {isFa
-              ? `این مسیر با تعویض خط بیشتر، پیاده‌روی حدود ${persianDigits(eramAvoidance.eramWalkMinutes, lang)} دقیقه‌ایِ تعویض خط در ارم سبز را دور می‌زند.`
-              : `This route changes lines more often to avoid the roughly ${eramAvoidance.eramWalkMinutes}-minute transfer walk at Eram-e Sabz.`}
+        <aside data-testid="eram-route-explanation" aria-label={isFa ? "دلیل پیشنهاد مسیر" : "Why this route"} className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 px-3.5 py-3 text-foreground">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Footprints aria-hidden="true" className="size-4" />
           </span>
-        </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold">{isFa ? "چرا این مسیر؟" : "Why this route?"}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              {isFa
+                ? `این مسیر با تعویض خط بیشتر، پیاده‌روی حدود ${persianDigits(eramAvoidance.eramWalkMinutes, lang)} دقیقه‌ایِ تعویض خط در ارم سبز را دور می‌زند.`
+                : `This route changes lines more often to avoid the roughly ${eramAvoidance.eramWalkMinutes}-minute transfer walk at Eram-e Sabz.`}
+            </p>
+          </div>
+        </aside>
       )}
       <ol className="flex flex-col gap-3">
         {route.segments.map((seg, i) => (
