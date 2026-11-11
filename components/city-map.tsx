@@ -202,7 +202,7 @@ export function CityMap({ city }: { city: CityId | "all" }) {
       </div>
     </section>}
     {picked && nearest && <div className="absolute inset-x-3 bottom-3 z-[600] mx-auto max-w-md"><MapPickCard lang={lang} title={pickedLabel}
-      stationName={stationName(nearest.station)} distanceText={formatDistance(nearest.km, lang)} walkText={formatWalkTime(estimateWalkMinutes(nearest.km), lang)}
+      stationName={stationName(nearest.station)} distanceText={formatDistance(nearest.km, lang)}
       destPrimary={!!origin} onChooseOrigin={() => chooseEndpoint("origin")} onChooseDest={() => chooseEndpoint("dest")} onClose={closeCard} /></div>}
   </div>;
 }
