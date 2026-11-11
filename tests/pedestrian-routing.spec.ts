@@ -205,7 +205,7 @@ test("unroutable landmark never shows a straight dashed line or invented walking
   await expect(page.locator("path.metto-walking-approximation")).toHaveCount(0);
   const card = page.getByTestId("map-place-card");
   await expect(card).toContainText(STRINGS.en.straightLineDistance);
-  await expect(card).not.toContainText(/\\d+ min(?:utes)?/);
+  await expect(card).not.toContainText(/\d+ min(?:utes)?/);
   await expect(page.getByTestId("walking-route-info")).toContainText("Straight-line distances");
 });
 
