@@ -61,8 +61,6 @@ type Props = {
    *  replaces the pin-to-station stubs. */
   directWalk?: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; coordinates?: [number, number][] } | null
   walkingPaths?: { origin?: [number, number][]; dest?: [number, number][] }
-  /** A user-triggered focus of one pedestrian leg, not an automatic recenter. */
-  focusWalk?: { role: "origin" | "dest" | "direct"; id: number } | null
   /** True when walking is the recommendation: show the network as context, not a highlighted route. */
   deemphasizeMetro?: boolean
   /** Map-local clear control (rendered with the zoom/locate stack). */
@@ -168,7 +166,7 @@ function buildLabelIcon(
   })
 }
 
-export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick, directWalk, walkingPaths, focusWalk, deemphasizeMetro = false, network }: Props) {
+export function RealMap({ lang, mapMode, route, originId, destId, selectedId, onSelect, onPickPoint, onClearRoute, showClearRoute, initialCenter, initialZoom, onViewChange, placeMarkers, pendingPick, directWalk, walkingPaths, deemphasizeMetro = false, network }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const overlayRef = useRef<L.LayerGroup | null>(null)
@@ -861,45 +859,6 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       }
     }
   }, [placeMarkers, route, directWalk, walkingPaths, stationMap])
-
-  // The full metro itinerary may be kilometres long, making short station
-  // approaches nearly invisible at the default fit. Focus only on demand;
-  // late pedestrian API responses must not yank the map while someone pans.
-  const lastWalkFocusRef = useRef<number | null>(null)
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !focusWalk || lastWalkFocusRef.current === focusWalk.id) return
-
-    let points: [number, number][] = []
-    if (focusWalk.role === "direct") {
-      const origin = directWalk?.from ?? placeMarkers?.find((p) => p.role === "origin")
-      const dest = directWalk?.to ?? placeMarkers?.find((p) => p.role === "dest")
-      if (origin && dest) {
-        points = [[origin.lat, origin.lng], [dest.lat, dest.lng]]
-        if (directWalk?.coordinates?.length) {
-          points.push(...directWalk.coordinates.map(([lng, lat]): [number, number] => [lat, lng]))
-        }
-      }
-    } else {
-      const pin = placeMarkers?.find((p) => p.role === focusWalk.role)
-      const station = pin?.stationId ? stationMap.get(pin.stationId) : null
-      if (pin && station) {
-        points = [[pin.lat, pin.lng], [station.location.lat, station.location.lng]]
-        const coordinates = focusWalk.role === "origin" ? walkingPaths?.origin : walkingPaths?.dest
-        if (coordinates?.length) {
-          points.push(...coordinates.map(([lng, lat]): [number, number] => [lat, lng]))
-        }
-      }
-    }
-
-    if (points.length < 2) return
-    lastWalkFocusRef.current = focusWalk.id
-    map.fitBounds(L.latLngBounds(points), {
-      maxZoom: 16,
-      paddingTopLeft: [24, 150],
-      paddingBottomRight: [24, 36],
-    })
-  }, [focusWalk, directWalk, walkingPaths, placeMarkers, stationMap])
 
   // Pending arbitrary pick: exact-coordinate marker in its own layer. The
   // label goes through the shared engine (pendingPick extra above), so it
