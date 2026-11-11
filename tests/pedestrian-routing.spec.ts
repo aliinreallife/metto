@@ -71,26 +71,56 @@ for (const [from, to] of [
   });
 }
 
-test("searched landmark retains its walking route on the map and can focus it", async ({ page }) => {
+test("opening Map automatically routes both searched landmarks to their stations", async ({ page }) => {
   await prepare(page);
-  await streetFixture(page);
-  const station = STATION_MAP.get("tajrish")!.location;
-  const pin = { lat: Number((station.lat + 0.002).toFixed(5)), lng: station.lng };
+  const calls = await streetFixture(page);
+  const originStation = STATION_MAP.get("tajrish")!.location;
+  const destStation = STATION_MAP.get("shahid-beheshti")!.location;
+  const originPin = {
+    lat: Number((originStation.lat + 0.002).toFixed(5)),
+    lng: originStation.lng,
+  };
+  const destPin = {
+    lat: Number((destStation.lat + 0.002).toFixed(5)),
+    lng: destStation.lng,
+  };
+
+  // This starts on the route tab, as a real place-search result does.
   await page.goto(
-    `/route?from=tajrish&to=shahid-beheshti&op=${pin.lat},${pin.lng},Landmark`,
+    `/route?from=tajrish&to=shahid-beheshti&op=${originPin.lat},${originPin.lng},StartLandmark&dp=${destPin.lat},${destPin.lng},EndLandmark`,
     { waitUntil: "domcontentloaded" },
   );
+  await expect(page.getByTestId("route-summary-stats")).toBeVisible();
   await page.getByRole("link", { name: "Map", exact: true }).last().click();
-  await expect(page).toHaveURL(/\/map\?/);
-  expect(new URL(page.url()).searchParams.get("op")).toContain("Landmark");
 
-  const path = page.locator("path.metto-walking-path");
-  await expect(path).toHaveCount(1, { timeout: 15_000 });
-  const landmark = page.getByTestId("map-place-card").filter({ hasText: "Landmark" });
-  await expect(landmark).toBeVisible();
-  const initialWidth = (await path.boundingBox())?.width ?? 0;
-  await landmark.getByRole("button", { name: STRINGS.en.viewWalkingRoute }).click();
-  await expect.poll(async () => (await path.boundingBox())?.width ?? 0).toBeGreaterThan(initialWidth * 1.2);
+  // Both searched places survive tab navigation; walking directions start
+  // automatically without a special button or manual zoom action.
+  await expect(page).toHaveURL(/\/map\?/);
+  const params = new URL(page.url()).searchParams;
+  expect(params.get("op")).toContain("StartLandmark");
+  expect(params.get("dp")).toContain("EndLandmark");
+  await expect(page.getByTestId("map-place-card")).toHaveCount(2);
+  await expect(page.getByTestId("map-place-card").first().getByRole("button", {
+    name: STRINGS.en.viewWalkingRoute,
+  })).toHaveCount(0);
+
+  const paths = page.locator("path.metto-walking-path");
+  await expect(paths).toHaveCount(2, { timeout: 15_000 });
+  await expect(page.locator("path.metto-walking-path[stroke='#22c55e']")).toHaveCount(1);
+  await expect(page.locator("path.metto-walking-path[stroke='#ef4444']")).toHaveCount(1);
+
+  // The requests must follow the journey directions: start point -> first
+  // station and last station -> destination point, not the reverse.
+  expect(calls.some((url) => {
+    const q = new URL(url).searchParams;
+    return q.get("fromLat") === originPin.lat.toFixed(5) &&
+      q.get("toLat") === originStation.lat.toFixed(5);
+  })).toBe(true);
+  expect(calls.some((url) => {
+    const q = new URL(url).searchParams;
+    return q.get("fromLat") === destStation.lat.toFixed(5) &&
+      q.get("toLat") === destPin.lat.toFixed(5);
+  })).toBe(true);
 });
 
 test("street geometry and distances persist offline; uncached endpoints stay approximate", async ({ page, context }) => {
