@@ -803,17 +803,22 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
 
     const pts: [number, number][] = []
     const drawWalk = (from: { lat: number; lng: number }, to: { lat: number; lng: number }, coordinates: [number, number][] | undefined, color: string) => {
-      const path: [number, number][] = coordinates
-        ? coordinates.map(([lng, lat]) => [lat, lng])
-        : [[from.lat, from.lng], [to.lat, to.lng]]
+      // Do not draw a straight line across streets, buildings or motorways
+      // when the pedestrian provider cannot verify the route. Both endpoints
+      // still contribute to the camera bounds, and the place card explains
+      // that there are no usable walking directions.
+      if (!coordinates || coordinates.length < 2) {
+        pts.push([from.lat, from.lng], [to.lat, to.lng])
+        return
+      }
+      const path: [number, number][] = coordinates.map(([lng, lat]) => [lat, lng])
       L.polyline(path, {
         color, weight: 3, opacity: 0.9, interactive: false, smoothFactor: 0,
-        dashArray: coordinates ? undefined : "6 6",
-        className: coordinates ? "metto-walking-path" : "metto-walking-approximation",
+        className: "metto-walking-path",
       }).addTo(layer)
-      // The provider may snap to a nearby footpath. Keep the short approach
-      // separate and dashed instead of claiming it is mapped street geometry.
-      if (coordinates) {
+      // Only the server-validated, short endpoint snaps remain dashed.
+      // Their straight sections are explicitly *not* verified footpaths.
+      {
         const approaches: [number, number][][] = [
           [[from.lat, from.lng], path[0]],
           [path[path.length - 1], [to.lat, to.lng]],
