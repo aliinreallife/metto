@@ -5,9 +5,9 @@ import { displayPlaceLabel } from "@/lib/geocoding";
 import { formatDistance, formatWalkTime, estimateWalkMinutes, isLongWalk } from "@/lib/geo";
 import type { WalkingRoute } from "@/lib/walking/route";
 
-export function RoutePlaceCard({ lang, placeName, stationName, distanceKm: approximateKm, onClear, walkingRoute }: {
+export function RoutePlaceCard({ lang, placeName, stationName, distanceKm: approximateKm, onClear, walkingRoute, walkingLoading = false }: {
   lang: Lang; placeName: string; stationName: string; distanceKm: number;
-  onClear: () => void; walkingRoute?: WalkingRoute | null;
+  onClear: () => void; walkingRoute?: WalkingRoute | null; walkingLoading?: boolean;
 }) {
   const t = STRINGS[lang];
   const distanceKm = walkingRoute ? walkingRoute.distanceMeters / 1000 : approximateKm;
@@ -23,11 +23,16 @@ export function RoutePlaceCard({ lang, placeName, stationName, distanceKm: appro
             {t.nearestStation}: <span className="font-medium">{stationName}</span>
           </span>
           <span className="ms-1.5 text-muted-foreground">
-            {" "}({formatDistance(distanceKm, lang)} · {walkingRoute ? "" : "~"}{formatWalkTime(walkMin, lang)} {t.walkTime})
+            {" "}({walkingRoute ? `${formatDistance(distanceKm, lang)} · ${formatWalkTime(walkMin, lang)} ${t.walkTime}` : `${t.straightLineDistance}: ${formatDistance(distanceKm, lang)}`})
           </span>
         </div>
+        {!walkingRoute && (
+          <p className="mt-0.5 text-xs text-muted-foreground" data-testid="route-walking-unavailable">
+            {walkingLoading ? t.walkRouteLoading : t.walkRouteUnavailableLabel}
+          </p>
+        )}
         {isLongWalk(distanceKm, walkMin) && (
-          <p className="mt-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+          <p className="mt-0.5 text-xs font-medium text-muted-foreground">
             {t.longWalkConsiderTransport}
           </p>
         )}
