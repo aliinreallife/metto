@@ -165,14 +165,15 @@ export function MapPage() {
           label: m.label,
           stationName: isFa ? station.name.fa : station.name.en,
           distanceText: formatDistance(km, lang),
-          walkText: formatWalkTime(walkMin, lang),
+          walkText: street ? formatWalkTime(walkMin, lang) : null,
           approximate: !street,
+          loading: m.role === "origin" ? walking.access.loading : walking.egress.loading,
           saved: m.role === "origin" ? walking.access.saved : walking.egress.saved,
           tooFar: isLongWalk(km, walkMin),
         };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
-  }, [placeMarkers, isFa, lang, walking.access.route, walking.egress.route, walking.access.saved, walking.egress.saved]);
+  }, [placeMarkers, isFa, lang, walking.access.route, walking.egress.route, walking.access.loading, walking.egress.loading, walking.access.saved, walking.egress.saved]);
 
   // Walking context for the pending pick (nearest station only informs the
   // card + route endpoints; the exact point stays the visible endpoint).
@@ -181,12 +182,10 @@ export function MapPage() {
     const nearest = nearestStations(picked.lat, picked.lng, { limit: 1 })[0];
     if (!nearest) return null;
     const km = haversineKm(picked.lat, picked.lng, nearest.station.location.lat, nearest.station.location.lng);
-    const walkMin = estimateWalkMinutes(km);
     return {
       station: nearest.station,
       stationName: isFa ? nearest.station.name.fa : nearest.station.name.en,
       distanceText: formatDistance(km, lang),
-      walkText: formatWalkTime(walkMin, lang),
     };
   }, [picked, isFa, lang]);
 
@@ -272,12 +271,13 @@ export function MapPage() {
       destLabel: dest.label,
       stationName: isFa ? originStation.name.fa : originStation.name.en,
       distanceText: formatDistance(walkKm, lang),
-      walkText: formatWalkTime(walkMin, lang),
+      walkText: walking.direct.route ? formatWalkTime(walkMin, lang) : null,
       approximate: !walking.direct.route,
+      loading: walking.direct.loading,
       saved: walking.direct.saved,
       tooFar: isLongWalk(walkKm, walkMin),
     };
-  }, [placeMarkers, isFa, lang, walking.direct.route, walking.direct.saved]);
+  }, [placeMarkers, isFa, lang, walking.direct.route, walking.direct.loading, walking.direct.saved]);
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
     center: initialParams.center,
     zoom: initialParams.zoom,
@@ -488,7 +488,7 @@ export function MapPage() {
                 <p className="text-sm font-bold md:text-base">{t.walkBetweenPlaces}</p>
                 {(mergedPlaceInfo.approximate || mergedPlaceInfo.saved) && (
                   <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
-                    {mergedPlaceInfo.approximate ? t.walkRouteApproximateLabel : t.walkRouteSavedLabel}
+                    {mergedPlaceInfo.loading ? t.walkRouteLoading : mergedPlaceInfo.approximate ? t.walkRouteApproximateLabel : t.walkRouteSavedLabel}
                   </span>
                 )}
               </div>
@@ -496,13 +496,18 @@ export function MapPage() {
                 {mergedPlaceInfo.originLabel}
                 <span aria-hidden="true" className="mx-1.5">→</span>
                 {mergedPlaceInfo.destLabel}
-                {" · "}{mergedPlaceInfo.distanceText} · {mergedPlaceInfo.approximate ? "~" : ""}{mergedPlaceInfo.walkText} {t.walkTime}
+                {" · "}{mergedPlaceInfo.approximate ? `${t.straightLineDistance}: ${mergedPlaceInfo.distanceText}` : `${mergedPlaceInfo.distanceText} · ${mergedPlaceInfo.walkText} ${t.walkTime}`}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {t.nearestStation}: {mergedPlaceInfo.stationName}
               </p>
+              {mergedPlaceInfo.approximate && (
+                <p data-testid="map-walking-unavailable" className="mt-1 text-xs text-muted-foreground">
+                  {mergedPlaceInfo.loading ? t.walkRouteLoading : t.walkRouteUnavailableLabel}
+                </p>
+              )}
               {mergedPlaceInfo.tooFar && (
-                <p className="mt-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                <p className="mt-0.5 text-xs font-medium text-muted-foreground">
                   {t.longWalkConsiderTransport}
                 </p>
               )}
@@ -512,15 +517,10 @@ export function MapPage() {
           <div
             key={`${p.role}:${p.label}`}
             data-testid="map-place-card"
-            className={cn(
-              "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm backdrop-blur",
-              p.tooFar
-                ? "border-amber-500/40 bg-background/95 text-foreground"
-                : "border-border bg-background/90 text-foreground",
-            )}
+            className="flex items-start gap-2 rounded-lg border border-border bg-background/95 px-3 py-2 text-xs text-foreground shadow-sm backdrop-blur"
           >
             {p.tooFar ? (
-              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             ) : (
               <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
             )}
@@ -529,15 +529,20 @@ export function MapPage() {
                 <p className="min-w-0 truncate font-medium">{p.label}</p>
                 {(p.approximate || p.saved) && (
                   <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
-                    {p.approximate ? t.walkRouteApproximateLabel : t.walkRouteSavedLabel}
+                    {p.loading ? t.walkRouteLoading : p.approximate ? t.walkRouteApproximateLabel : t.walkRouteSavedLabel}
                   </span>
                 )}
               </div>
               <p className="mt-0.5 text-muted-foreground">
-                {t.nearestStation}: {p.stationName} · {p.distanceText} · {p.approximate ? "~" : ""}{p.walkText} {t.walkTime}
+                {t.nearestStation}: {p.stationName} · {p.approximate ? `${t.straightLineDistance}: ${p.distanceText}` : `${p.distanceText} · ${p.walkText} ${t.walkTime}`}
               </p>
+              {p.approximate && (
+                <p data-testid="map-walking-unavailable" className="mt-1 text-muted-foreground">
+                  {p.loading ? t.walkRouteLoading : t.walkRouteUnavailableLabel}
+                </p>
+              )}
               {p.tooFar && (
-                <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
+                <p className="mt-0.5 font-medium text-muted-foreground">
                   {t.longWalkConsiderTransport}
                 </p>
               )}
@@ -606,7 +611,6 @@ export function MapPage() {
             title={pickedLabel}
             stationName={pickedInfo.stationName}
             distanceText={pickedInfo.distanceText}
-            walkText={pickedInfo.walkText}
             destPrimary={!!initialParams.from}
             onChooseOrigin={() => chooseEndpoint("origin")}
             onChooseDest={() => chooseEndpoint("dest")}
