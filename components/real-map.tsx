@@ -818,16 +818,14 @@ export function RealMap({ lang, mapMode, route, originId, destId, selectedId, on
       }).addTo(layer)
       // Only the server-validated, short endpoint snaps remain dashed.
       // Their straight sections are explicitly *not* verified footpaths.
-      {
-        const approaches: [number, number][][] = [
-          [[from.lat, from.lng], path[0]],
-          [path[path.length - 1], [to.lat, to.lng]],
-        ]
-        for (const approach of approaches) {
-          if (approach[0][0] === approach[1][0] && approach[0][1] === approach[1][1]) continue
-          L.polyline(approach, { color, weight: 2, dashArray: "3 5", interactive: false,
-            className: "metto-walking-approximation" }).addTo(layer)
-        }
+      const approaches: [number, number][][] = [
+        [[from.lat, from.lng], path[0]],
+        [path[path.length - 1], [to.lat, to.lng]],
+      ]
+      for (const approach of approaches) {
+        if (approach[0][0] === approach[1][0] && approach[0][1] === approach[1][1]) continue
+        L.polyline(approach, { color, weight: 2, dashArray: "3 5", interactive: false,
+          className: "metto-walking-approximation" }).addTo(layer)
       }
       pts.push([from.lat, from.lng], ...path, [to.lat, to.lng])
     }
