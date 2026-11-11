@@ -71,6 +71,28 @@ for (const [from, to] of [
   });
 }
 
+test("searched landmark retains its walking route on the map and can focus it", async ({ page }) => {
+  await prepare(page);
+  await streetFixture(page);
+  const station = STATION_MAP.get("tajrish")!.location;
+  const pin = { lat: Number((station.lat + 0.002).toFixed(5)), lng: station.lng };
+  await page.goto(
+    `/route?from=tajrish&to=shahid-beheshti&op=${pin.lat},${pin.lng},Landmark`,
+    { waitUntil: "domcontentloaded" },
+  );
+  await page.getByRole("link", { name: "Map", exact: true }).last().click();
+  await expect(page).toHaveURL(/\/map\?/);
+  expect(new URL(page.url()).searchParams.get("op")).toContain("Landmark");
+
+  const path = page.locator("path.metto-walking-path");
+  await expect(path).toHaveCount(1, { timeout: 15_000 });
+  const landmark = page.getByTestId("map-place-card").filter({ hasText: "Landmark" });
+  await expect(landmark).toBeVisible();
+  const initialWidth = (await path.boundingBox())?.width ?? 0;
+  await landmark.getByRole("button", { name: STRINGS.en.viewWalkingRoute }).click();
+  await expect.poll(async () => (await path.boundingBox())?.width ?? 0).toBeGreaterThan(initialWidth * 1.2);
+});
+
 test("street geometry and distances persist offline; uncached endpoints stay approximate", async ({ page, context }) => {
   await prepare(page);
   const calls = await streetFixture(page);
