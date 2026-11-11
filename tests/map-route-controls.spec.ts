@@ -327,7 +327,7 @@ test.describe("map route controls", () => {
     await expect(pick).toHaveCount(0);
   });
 
-  test("same-station pins draw one direct walk line, no station stubs", async ({
+  test("same-station pins do not fabricate a direct walk line when directions fail", async ({
     page,
   }) => {
     await suppressSaveNotice(page);
@@ -337,10 +337,11 @@ test.describe("map route controls", () => {
     );
     await mapReady(page);
     const overlay = ".leaflet-overlay-pane";
-    // Single neutral pin-to-pin line…
+    // No invented pin-to-pin line when the pedestrian API is unavailable.
     await expect(
       page.locator(`${overlay} path[stroke="#a3a3a3"]`),
-    ).toHaveCount(1, { timeout: 15_000 });
+    ).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.getByTestId("map-walking-unavailable")).toContainText("مسیر پیاده‌روی پیدا نشد");
     // …instead of the green/red pin-to-station stubs.
     await expect(
       page.locator(`${overlay} path[stroke="#22c55e"]`),
@@ -365,9 +366,11 @@ test.describe("map route controls", () => {
     await expect(page.getByTestId("map-place-card")).toHaveCount(2);
     await expect(page.getByTestId("walk-suggest")).toHaveCount(0);
     await expect(page.locator(`${overlay} path[stroke="#a3a3a3"]`)).toHaveCount(0);
-    // The origin and destination station approaches remain visible.
-    await expect(page.locator(`${overlay} path[stroke="#22c55e"]`)).not.toHaveCount(0);
-    await expect(page.locator(`${overlay} path[stroke="#ef4444"]`)).not.toHaveCount(0);
+    // Both pin-to-station attempts failed: keep endpoint markers and the
+    // metro path, but never invent straight walking lines.
+    await expect(page.locator(`${overlay} path[stroke="#22c55e"]`)).toHaveCount(0);
+    await expect(page.locator(`${overlay} path[stroke="#ef4444"]`)).toHaveCount(0);
+    await expect(page.getByTestId("map-walking-unavailable")).toHaveCount(2);
   });
 
   test("unverified walking never displaces the metro itinerary", async ({ page }) => {
