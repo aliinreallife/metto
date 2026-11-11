@@ -117,8 +117,7 @@ export function MapPage() {
     const originPin = parsePlaceParam(searchParams, "oP") ?? (routeCleared ? null : ctxOriginPlace);
     const destPin = parsePlaceParam(searchParams, "dP") ?? (routeCleared ? null : ctxDestPlace);
     return { center, zoom, station, from, to, originPin, destPlace: destPin };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, ctxOriginPlace, ctxDestPlace, routeCleared]);
 
   const scheduleLoaded = useScheduleData();
   const nowMs = useRouteClock();
@@ -275,6 +274,12 @@ export function MapPage() {
       tooFar: isLongWalk(walkKm, walkMin),
     };
   }, [placeMarkers, isFa, lang, walking.direct.route, walking.direct.saved]);
+  // An explicit walking focus keeps the pin-to-station leg discoverable
+  // even when the full metro route spans many kilometres.
+  const [walkFocus, setWalkFocus] = useState<{ role: "origin" | "dest" | "direct"; id: number } | null>(null);
+  function focusWalk(role: "origin" | "dest" | "direct") {
+    setWalkFocus((previous) => ({ role, id: (previous?.id ?? 0) + 1 }));
+  }
   const [mapView, setMapView] = useState<{ center: [number, number]; zoom: number }>({
     center: initialParams.center,
     zoom: initialParams.zoom,
@@ -317,6 +322,7 @@ export function MapPage() {
   // Map-local clear: route overlay, pins, selection and URL params go away.
   // Context + localStorage are untouched, so the planner keeps its state.
   function clearRoute() {
+    setWalkFocus(null);
     setPicked(null);
     setResolved(null);
     setSelectedId(null);
@@ -330,6 +336,7 @@ export function MapPage() {
   // metro route, the exact coordinate rides along as the place pin.
   function chooseEndpoint(role: "origin" | "dest") {
     if (!picked || !pickedLabel) return;
+    setWalkFocus(null);
     const nearest = nearestStations(picked.lat, picked.lng, { limit: 1 })[0];
     if (!nearest) return;
     const pin = { lat: picked.lat, lng: picked.lng, label: pickedLabel };
@@ -414,6 +421,7 @@ export function MapPage() {
         pendingPick={picked && pickedLabel ? { ...picked, label: pickedLabel } : null}
         directWalk={walkGuide?.line ?? null}
         walkingPaths={walkingPaths}
+        focusWalk={walkFocus}
       />
 
       {/* Top overlay stack: banner/notice/place cards lay out in normal
@@ -503,6 +511,11 @@ export function MapPage() {
                   {t.longWalkConsiderTransport}
                 </p>
               )}
+              <button type="button" onClick={() => focusWalk("direct")}
+                className="mt-1.5 inline-flex min-h-7 items-center gap-1 rounded-md text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Footprints aria-hidden="true" className="size-3.5" />
+                {t.viewWalkingRoute}
+              </button>
             </div>
           </div>
         ) : visiblePlaceInfos.map((p) => (
@@ -538,6 +551,11 @@ export function MapPage() {
                   {t.longWalkConsiderTransport}
                 </p>
               )}
+              <button type="button" onClick={() => focusWalk(walkGuide ? "direct" : p.role)}
+                className="mt-1 inline-flex min-h-7 items-center gap-1 rounded-md font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Footprints aria-hidden="true" className="size-3.5" />
+                {t.viewWalkingRoute}
+              </button>
             </div>
             {ENABLE_PLACE_CARD_DISMISS && (
               <button
