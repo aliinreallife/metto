@@ -71,6 +71,70 @@ for (const [from, to] of [
   });
 }
 
+test("Open on map works directly after selecting a searched landmark with no destination", async ({ page }) => {
+  await prepare(page);
+  await streetFixture(page);
+  const station = STATION_MAP.get("tajrish")!.location;
+  const landmarkLat = Number((station.lat + 0.002).toFixed(5));
+  await page.route("https://nominatim.openstreetmap.org/search?*", (request) => request.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([{
+      display_name: "North Landmark, Tehran, Iran",
+      lat: String(landmarkLat),
+      lon: String(station.lng),
+      type: "attraction",
+    }]),
+  }));
+
+  await page.goto("/route?lang=en", { waitUntil: "domcontentloaded" });
+  await page.locator("#origin-combobox").click();
+  await page.locator("#origin-combobox-input").fill("North Landmark");
+  await page.getByRole("listbox").getByRole("option", { name: "North Landmark, Tehran, Iran" }).click();
+  const openOnMap = page.getByRole("link", { name: STRINGS.en.viewOnMap });
+  await expect(openOnMap).toBeVisible({ timeout: 15_000 });
+  const target = await openOnMap.getAttribute("href");
+  expect(target).toContain("from=");
+  expect(target).toContain("op=");
+  await openOnMap.click();
+
+  await expect(page).toHaveURL(/\/map\?/);
+  expect(new URL(page.url()).searchParams.get("op")).toContain("North Landmark");
+  await expect(page.getByTestId("map-place-card")).toContainText("North Landmark");
+  await expect(page.locator("path.metto-walking-path")).toHaveCount(1, { timeout: 15_000 });
+});
+
+test("Open on map also works with only a destination landmark or same-station landmarks", async ({ page }) => {
+  await prepare(page);
+  await streetFixture(page);
+  const station = STATION_MAP.get("chitgar")!.location;
+  const start = (station.lat + 0.002).toFixed(5);
+  const end = (station.lat + 0.003).toFixed(5);
+  const oneDestination = `/route?to=chitgar&dp=${end},${station.lng},EndLandmark`;
+  await page.goto(oneDestination, { waitUntil: "domcontentloaded" });
+  const firstLink = page.getByRole("link", { name: STRINGS.en.viewOnMap });
+  await expect(firstLink).toBeVisible();
+  await firstLink.click();
+  await expect(page).toHaveURL(/\/map\?/);
+  await expect(page.getByTestId("map-place-card")).toContainText("EndLandmark");
+  await expect(page.locator("path.metto-walking-path")).toHaveCount(1, { timeout: 15_000 });
+
+  // These resolve to a single station: there is no metro topology, but the
+  // pair of place pins still has a meaningful walking-only map.
+  await page.goto(
+    `/route?from=chitgar&to=chitgar&op=${start},${station.lng},StartLandmark&dp=${end},${station.lng},EndLandmark`,
+    { waitUntil: "domcontentloaded" },
+  );
+  const secondLink = page.getByRole("link", { name: STRINGS.en.viewOnMap });
+  await expect(secondLink).toBeVisible();
+  await secondLink.click();
+  await expect(page).toHaveURL(/\/map\?/);
+  const params = new URL(page.url()).searchParams;
+  expect(params.get("op")).toContain("StartLandmark");
+  expect(params.get("dp")).toContain("EndLandmark");
+  await expect(page.getByTestId("map-place-card")).toHaveCount(1);
+});
+
 test("opening Map automatically routes both searched landmarks to their stations", async ({ page }) => {
   await prepare(page);
   const calls = await streetFixture(page);
