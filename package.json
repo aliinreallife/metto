@@ -31,7 +31,7 @@
     "metro-data:import": "node scripts/import-metto-data.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@types/leaflet": "^1.9.21",
     "@upstash/redis": "^1.38.4",
     "@vercel/analytics": "1.6.1",
