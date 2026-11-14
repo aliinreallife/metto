@@ -81,14 +81,6 @@ export function WelcomeFooter({ cityId }: { cityId?: CityId }) {
                   </Link>
                 </li>
               ))}
-              {/* Optional guide; leave the established app links unchanged. */}
-              {isFa && (!cityId || cityId === "tehran") && (
-                <li>
-                  <Link href="/tehran/stations/directory" className="text-sm font-medium transition-colors hover:text-primary">
-                    راهنمای ایستگاه‌های تهران
-                  </Link>
-                </li>
-              )}
               <li>
                 <a href="#donate" className="text-sm font-medium transition-colors hover:text-primary">
                   {donateCta}
