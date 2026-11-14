@@ -19,10 +19,14 @@ export function StationDetail({
   station,
   lang,
   onClose,
+  headingLevel,
+  fullTitle,
 }: {
   station: MetroStation;
   lang: Lang;
-  onClose: () => void;
+  onClose?: () => void;
+  headingLevel?: "h1" | "h3";
+  fullTitle?: boolean;
 }) {
   const loaded = useScheduleData();
   const { isHolidayDate } = useHolidayData();
@@ -33,7 +37,7 @@ export function StationDetail({
   }, [station.id, loaded, isHolidayDate]);
 
   const boardableLines = getOperationalStationLines(station.id);
-  return <StationDetailView station={station} lang={lang} onClose={onClose}
+  return <StationDetailView station={station} lang={lang} onClose={onClose} headingLevel={headingLevel} fullTitle={fullTitle}
     lines={getStationLines(station.id).map(line => ({ id: String(line), label: line, color: LINE_COLORS[line], onColor: lineOnColor(line), boardable: boardableLines.includes(line) }))}
     scheduleLoading={!loaded}
     departures={loaded && departures.length > 0 ? <div className="flex flex-col gap-1.5">
@@ -43,9 +47,10 @@ export function StationDetail({
 }
 
 /** Shared map station sheet; city wrappers supply available facts and timing. */
-export function StationDetailView({ station, lang, onClose, lines, scheduleLoading = false, departures, reportedAmenities }: {
+export function StationDetailView({ station, lang, onClose, headingLevel = "h3", fullTitle = false, lines, scheduleLoading = false, departures, reportedAmenities }: {
   station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]> };
-  lang: Lang; onClose: () => void;
+  lang: Lang; onClose?: () => void;
+  headingLevel?: "h1" | "h3"; fullTitle?: boolean;
   lines: { id: string; label: number | string; color: string; onColor: string; boardable: boolean }[];
   scheduleLoading?: boolean; departures?: ReactNode;
   reportedAmenities?: Partial<MetroStation["amenities"]>;
@@ -55,13 +60,16 @@ export function StationDetailView({ station, lang, onClose, lines, scheduleLoadi
   const boardableLines = lines.filter(l => l.boardable);
   const unavailableLines = lines.filter(l => !l.boardable);
   const activeAmenities = Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
+  const Heading = headingLevel;
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold leading-tight">
-            {isFa ? station.name.fa : station.name.en}
-          </h3>
+          <Heading className={headingLevel === "h1" ? "text-xl font-extrabold leading-relaxed sm:text-2xl" : "text-base font-bold leading-tight"}>
+            {fullTitle
+              ? isFa ? `ایستگاه مترو ${station.name.fa}` : `${station.name.en} Metro Station`
+              : isFa ? station.name.fa : station.name.en}
+          </Heading>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {isFa ? station.name.en : station.name.fa}
           </p>
@@ -79,14 +87,16 @@ export function StationDetailView({ station, lang, onClose, lines, scheduleLoadi
               </span>
             ))}
           </div>
-          <button
-            type="button"
-            aria-label={t.close}
-            onClick={onClose}
-            className="flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <X aria-hidden="true" className="size-4" />
-          </button>
+          {onClose && (
+            <button
+              type="button"
+              aria-label={t.close}
+              onClick={onClose}
+              className="flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <X aria-hidden="true" className="size-4" />
+            </button>
+          )}
         </div>
       </div>
 
