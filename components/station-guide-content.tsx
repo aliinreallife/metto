@@ -11,6 +11,7 @@ import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import { getOperationalStationLines, getRoutesForStation, getStationTerminalRoutes } from "@/lib/metro/selectors";
 import type { MetroStation } from "@/lib/metro/types";
 import { stationSeoPath } from "@/lib/station-seo";
+import type { StationTimetableSummary } from "@/lib/station-seo-timetable";
 import { getCityMeta } from "@/lib/cities";
 
 type Neighbor = {
@@ -23,9 +24,11 @@ type Neighbor = {
 export function StationGuideContent({
   station,
   neighbors,
+  timetableSummary,
 }: {
   station: MetroStation;
   neighbors: Neighbor[];
+  timetableSummary: StationTimetableSummary | null;
 }) {
   const { lang } = useMetro();
   const isFa = lang === "fa";
@@ -167,7 +170,7 @@ export function StationGuideContent({
         </p>
       </section>
 
-      <StationGuideSchedule station={station} lang={lang} />
+      <StationGuideSchedule station={station} lang={lang} bundledSummary={timetableSummary} />
 
       <nav aria-label={isFa ? "مسیریابی و نقشه" : "Route and map"}
         className="grid grid-cols-2 gap-2 pt-1">
