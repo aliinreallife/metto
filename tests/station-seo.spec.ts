@@ -5,7 +5,10 @@ test.describe("station details within the app", () => {
   test("a station guide shares the app chrome, useful content and schema", async ({ page }) => {
     await page.goto("/tehran/stations/tajrish", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "مسیریابی و نقشه" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "مسیریابی و نقشه" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "موقعیت در خط" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "حرکت‌های بعدی" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "مسیر صفحه" })).toBeVisible();
     await expect(page.locator("footer.fixed.bottom-0")).toHaveCount(1);
     await expect(page.getByRole("link", { name: "مسیریابی به این ایستگاه" }))
@@ -35,6 +38,28 @@ test.describe("station details within the app", () => {
     await page.getByRole("link", { name: "بازگشت به ایستگاه‌ها" }).click();
     await expect(page).toHaveURL(/\/stations\?lang=fa$/);
     await expect(page.getByRole("heading", { name: "ایستگاه‌های مترو تهران" })).toHaveCount(1);
+  });
+
+  test("uses verified Azadegan amenities and the real full timetable", async ({ page }) => {
+    await page.goto("/tehran/stations/azadegan", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: "ایستگاه مترو آزادگان" })).toBeVisible();
+    await expect(page.getByText("پارکینگ دوچرخه")).toBeVisible();
+    await expect(page.getByText("پلیس مترو")).toBeVisible();
+    await expect(page.getByText("سرویس بهداشتی")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "نعمت آباد" })).toBeVisible();
+
+    await page.getByRole("button", { name: "شنبه تا چهارشنبه" }).click();
+    await expect(page.getByText("۱۴۶", { exact: true })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole("button", { name: /نمایش برنامه کامل/ }).click();
+    await expect(page.getByText("۵:۳۰", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("۲۲:۰۰", { exact: true }).first()).toBeVisible();
+  });
+
+  test("honors existing English language support on station pages", async ({ page }) => {
+    await page.goto("/tehran/stations/azadegan?lang=en", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: "Azadegan Metro Station" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sat–Wed" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Route to this station" })).toBeVisible();
   });
 
   test("offline commuters get the existing details sheet, not a failed page", async ({ page, context }) => {
