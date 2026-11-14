@@ -10,6 +10,11 @@ test.describe("station details within the app", () => {
     await expect(page.getByRole("heading", { name: "حرکت‌های بعدی" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "مسیر صفحه" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "مترو تهران", exact: true })).toBeVisible();
+    await expect(page).toHaveTitle(/تجریش تهران.*خط ۱/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href", "https://metto.ir/tehran/stations/tajrish",
+    );
     await expect(page.locator("footer.fixed.bottom-0")).toHaveCount(1);
     await expect(page.getByRole("link", { name: "مسیریابی به این ایستگاه" }))
       .toHaveAttribute("href", "/tehran/route?to=tajrish&lang=fa");
@@ -25,6 +30,7 @@ test.describe("station details within the app", () => {
       }));
     expect(types).toContain("BreadcrumbList");
     expect(types).toContain("SubwayStation");
+    expect(types).toContain("WebPage");
   });
 
   test("original stations tab opens the station and has a reliable way back", async ({ page }) => {
@@ -43,6 +49,9 @@ test.describe("station details within the app", () => {
   test("uses verified Azadegan amenities and the real full timetable", async ({ page }) => {
     await page.goto("/tehran/stations/azadegan", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "ایستگاه مترو آزادگان" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "مترو تهران", exact: true })).toHaveAttribute(
+      "href", "/tehran?lang=fa",
+    );
     await expect(page.getByText("پارکینگ دوچرخه")).toBeVisible();
     await expect(page.getByText("پلیس مترو")).toBeVisible();
     await expect(page.getByText("سرویس بهداشتی")).toHaveCount(0);
@@ -60,6 +69,21 @@ test.describe("station details within the app", () => {
     await expect(page.getByRole("heading", { name: "Azadegan Metro Station" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Sat–Wed" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Route to this station" })).toBeVisible();
+  });
+
+  test("prerenders station-specific timetable data without requiring JavaScript", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      const page = await context.newPage();
+      await page.goto("/tehran/stations/azadegan", { waitUntil: "domcontentloaded" });
+      await expect(page.getByRole("heading", { name: "ایستگاه مترو آزادگان" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
+      const content = await page.getByRole("heading", { name: "برنامه حرکت" })
+        .locator("xpath=..").locator("xpath=..").innerText();
+      expect(content).toMatch(/۱۴۶|۱۰۸|۹۸/);
+    } finally {
+      await context.close();
+    }
   });
 
   test("offline commuters get the existing details sheet, not a failed page", async ({ page, context }) => {
