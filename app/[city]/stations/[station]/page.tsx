@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LINES } from "@/lib/metro/lines";
-import { getOperationalStationLines } from "@/lib/metro/selectors";
+import { getOperationalStationLines, getOperationalNeighbors } from "@/lib/metro/selectors";
 import { AMENITY_LABELS } from "@/lib/i18n";
 import {
   SEO_STATIONS, STATION_DIRECTORY_PATH, absoluteSeoUrl,
@@ -51,6 +51,9 @@ export default async function StationGuide({ params }: Props) {
       .filter(([, value]) => value === true)
       .map(([key]) => AMENITY_LABELS[key as keyof typeof AMENITY_LABELS]?.fa)
       .filter((name): name is string => Boolean(name));
+  const neighboringIds = [...new Set(
+    getOperationalNeighbors(station.id).map(neighbor => neighbor.stationId),
+  )].filter(id => Boolean(getSeoStation(id)));
   const crumbs = [
     { name: "متو", href: "/" },
     { name: "مترو تهران", href: "/tehran" },
@@ -105,6 +108,28 @@ export default async function StationGuide({ params }: Props) {
             : <p className="text-sm leading-7 text-muted-foreground">اطلاعات تأییدشده‌ای برای نمایش امکانات این ایستگاه نداریم.</p>}
           <p className="mt-3 text-xs text-muted-foreground">فقط امکانات ثبت‌شده نمایش داده می‌شوند؛ نبودن یک مورد به معنی نبودن آن در ایستگاه نیست.</p>
         </section>
+
+        <section aria-labelledby="station-location" className="mb-5 rounded-2xl border border-border bg-card p-5">
+          <h2 id="station-location" className="mb-3 text-lg font-bold">موقعیت ایستگاه</h2>
+          <p className="text-sm leading-7 text-muted-foreground">
+            مختصات ثبت‌شده در نقشه: <span dir="ltr" className="inline-block tabular-nums">{station.location.lat.toFixed(5)}, {station.location.lng.toFixed(5)}</span>
+          </p>
+        </section>
+
+        {neighboringIds.length > 0 && (
+          <section aria-labelledby="station-neighbors" className="mb-5 rounded-2xl border border-border bg-card p-5">
+            <h2 id="station-neighbors" className="mb-3 text-lg font-bold">ایستگاه‌های مجاور در خطوط فعال</h2>
+            <ul className="flex flex-wrap gap-2">
+              {neighboringIds.map(id => (
+                <li key={id}>
+                  <Link className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm hover:border-primary hover:text-primary" href={stationSeoPath(id)}>
+                    {getSeoStation(id)!.name.fa}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section aria-labelledby="station-actions" className="rounded-2xl border border-border bg-card p-5">
           <h2 id="station-actions" className="mb-2 text-lg font-bold">مسیریابی و نقشه</h2>
