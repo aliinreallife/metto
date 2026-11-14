@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { LINE_COLORS } from "@/lib/metro/lines";
 import { getAllStations } from "@/lib/metro/selectors";
-import { getStation, getStationLines } from "@/lib/metro/selectors";
+import { getStation, getStationLines, getOperationalStationLines } from "@/lib/metro/selectors";
+import { stationSeoPath } from "@/lib/station-seo";
 import type { MetroStation } from "@/lib/metro/types";
 import { orderLineStations } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
@@ -184,6 +185,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
               station={s}
               lang={lang}
               onSetDest={() => onSetDest(s.id)}
+              detailHref={s.status === "operational" && getOperationalStationLines(s.id).length > 0 ? stationSeoPath(s.id) : undefined}
               onShowTimetable={() => setTimetableStation(s)}
             />
           </li>
