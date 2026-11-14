@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import AppLayout from "@/app/(app)/layout";
 import { StationGuideContent } from "@/components/station-guide-content";
-import { getOperationalNeighbors } from "@/lib/metro/selectors";
+import { getOperationalNeighbors, getRouteStations } from "@/lib/metro/selectors";
 import {
   SEO_STATIONS, absoluteSeoUrl,
   breadcrumbsJsonLd, getSeoStation, safeJsonLd, stationJsonLd, stationSeoPath,
@@ -42,10 +42,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StationGuide({ params }: Props) {
   const station = await resolveStation(params);
-  const neighbors = [...new Set(getOperationalNeighbors(station.id).map(n => n.stationId))]
-    .map(id => getSeoStation(id))
-    .filter((neighbor): neighbor is NonNullable<typeof neighbor> => Boolean(neighbor))
-    .map(({ id, name }) => ({ id, name }));
+  const neighbors = getOperationalNeighbors(station.id)
+    .flatMap((edge) => {
+      const neighbor = getSeoStation(edge.stationId);
+      if (!neighbor) return [];
+      const routeStops = getRouteStations(edge.routeId);
+      const index = routeStops.indexOf(station.id);
+      const adjacentIndex = routeStops.indexOf(edge.stationId);
+      return [{
+        id: neighbor.id,
+        name: neighbor.name,
+        lineId: edge.lineId,
+        side: adjacentIndex < index ? "before" as const : "after" as const,
+      }];
+    })
+    .filter((neighbor, index, all) =>
+      all.findIndex(other => other.id === neighbor.id && other.lineId === neighbor.lineId) === index);
 
   // Breadcrumbs mirror the station list > detail flow visible in the app.
   const crumbs = [
