@@ -147,6 +147,9 @@ export function StationGuideContent({
             );
           })}
         </div>
+        <p className="px-4 pb-3 text-[11px] leading-5 text-muted-foreground">
+          {isFa ? "نمای شماتیک ایستگاه‌های مجاور؛ برای موقعیت جغرافیایی، نقشه را باز کنید." : "Simplified neighboring stops; open the map for geographic location."}
+        </p>
       </section>
 
       <StationGuideSchedule station={station} lang={lang} />
