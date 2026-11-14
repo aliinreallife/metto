@@ -1,12 +1,11 @@
 import type { MetadataRoute } from "next";
 import { availableCities } from "@/lib/city-availability";
-import { SEO_STATIONS, STATION_DIRECTORY_PATH, stationSeoPath } from "@/lib/station-seo";
+import { SEO_STATIONS, stationSeoPath } from "@/lib/station-seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://metto.ir";
 
   return [
-    { url: `${baseUrl}${STATION_DIRECTORY_PATH}`, changeFrequency: "monthly" as const, priority: 0.7 },
     ...SEO_STATIONS.map(station => ({
       url: `${baseUrl}${stationSeoPath(station.id)}`,
       changeFrequency: "monthly" as const,
