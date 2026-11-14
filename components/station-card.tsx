@@ -1,7 +1,8 @@
 "use client";
 
 import { useId, useMemo } from "react";
-import { MapPin, Flag, Clock, Zap, Calendar, Ban } from "lucide-react";
+import Link from "next/link";
+import { MapPin, Flag, Clock, Zap, Calendar, Ban, Info } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
 import { getStationLines, getOperationalStationLines } from "@/lib/metro/selectors";
@@ -21,9 +22,10 @@ type Props = {
   distance?: number;
   onSetDest: () => void;
   onShowTimetable?: () => void;
+  detailHref?: string;
 };
 
-export function StationCard({ station, lang, distance, onSetDest, onShowTimetable }: Props) {
+export function StationCard({ station, lang, distance, onSetDest, onShowTimetable, detailHref }: Props) {
   const loaded = useScheduleData();
   const { isHolidayDate } = useHolidayData();
   const boardableLines = getOperationalStationLines(station.id);
@@ -36,7 +38,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
     return grouped.filter((g) => g.departures.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- linesKey stands in for the lines array and `loaded` retriggers after the async timetable finishes loading; neither is read inside.
   }, [station.id, linesKey, loaded, isHolidayDate]);
-  return <StationCardView {...{ station, lang, distance, onSetDest, onShowTimetable }}
+  return <StationCardView {...{ station, lang, distance, onSetDest, onShowTimetable, detailHref }}
     lines={getStationLines(station.id).map(line => ({ id: String(line), label: line, color: LINE_COLORS[line], onColor: lineOnColor(line) }))}
     boardableCount={boardableLines.length} scheduleLoading={!loaded}
     departures={loaded && departures.length > 0 ? <StationDepartures departures={departures} lang={lang} /> : undefined} />;
@@ -58,7 +60,7 @@ function StationDepartures({ departures, lang }: { departures: { line: number; d
 }
 
 /** Shared station presentation. Source-specific wrappers own timetable hooks. */
-export function StationCardView({ station, lang, distance, onSetDest, onShowTimetable, lines, boardableCount, scheduleLoading = false, departures, secondaryName, reportedAmenities }: Omit<Props, "station"> & {
+export function StationCardView({ station, lang, distance, onSetDest, onShowTimetable, detailHref, lines, boardableCount, scheduleLoading = false, departures, secondaryName, reportedAmenities }: Omit<Props, "station"> & {
   station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]> };
   lines: { id: string; label: number | string; color: string; onColor: string }[];
   boardableCount: number;
@@ -90,12 +92,38 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
           ))}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold leading-tight truncate">
-            {isFa ? station.name.fa : station.name.en}
-          </h3>
-          <p className="text-xs text-muted-foreground truncate">
-            {secondaryName ?? (isFa ? station.name.en : station.name.fa)}
-          </p>
+          {detailHref ? (
+            <h3>
+              <Link
+                href={detailHref}
+                prefetch={false}
+                aria-label={isFa ? `جزئیات ایستگاه ${station.name.fa}` : `Station details: ${station.name.en}`}
+                className="group flex min-h-11 items-center justify-between gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold leading-tight group-hover:text-primary">
+                    {isFa ? station.name.fa : station.name.en}
+                  </span>
+                  <span className="block truncate text-xs font-normal text-muted-foreground">
+                    {secondaryName ?? (isFa ? station.name.en : station.name.fa)}
+                  </span>
+                </span>
+                <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-primary">
+                  <Info aria-hidden="true" className="size-3.5" />
+                  {isFa ? "جزئیات" : "Details"}
+                </span>
+              </Link>
+            </h3>
+          ) : (
+            <>
+              <h3 className="truncate text-sm font-bold leading-tight">
+                {isFa ? station.name.fa : station.name.en}
+              </h3>
+              <p className="truncate text-xs text-muted-foreground">
+                {secondaryName ?? (isFa ? station.name.en : station.name.fa)}
+              </p>
+            </>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {reviewOnly && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground/80">{t.cityPreviewLabel}</span>}
