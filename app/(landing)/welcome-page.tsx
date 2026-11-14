@@ -7,48 +7,7 @@ import { Hero } from "./components/Hero";
 import { Donate } from "./components/Donate";
 import { PwaStrip } from "./components/PwaStrip";
 import { WelcomeFooter } from "./components/WelcomeFooter";
-import { CITIES, type CityId } from "@/lib/cities";
-import { cityCounts } from "@/lib/city-catalog";
-import { persianDigits } from "@/lib/i18n";
-
-const FAQ_JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "آیا متو رایگان است؟",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "بله. همه چیز رایگان است و نیازی به ثبت‌نام یا پرداخت نیست. هیچ تبلیغی هم نمایش داده نمی‌شود.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "کدام شهرها پشتیبانی می‌شوند؟",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "در حال حاضر مترو تهران با ۱۵۱ ایستگاه و ۷ خط. شهرهای دیگر به‌مرور اضافه می‌شوند.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "آیا آفلاین کار می‌کند؟",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "بله. متو روی گوشی نصب می‌شود و پوسته برنامه و داده ایستگاه‌ها ذخیره می‌شود، بنابراین داخل مترو بدون اینترنت هم باز می‌شود.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "داده‌ها از کجاست؟",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "دادهٔ ایستگاه‌ها از مجموعه‌داده‌های باز هر شهر و OpenStreetMap تهیه شده است. زمان‌بندی قطارها برای تهران در دسترس است.",
-      },
-    },
-  ],
-};
+import type { CityId } from "@/lib/cities";
 
 export function WelcomePage({ cityId }: { cityId?: CityId }) {
   const { lang, cityIds } = useMetro();
@@ -149,7 +108,6 @@ export function WelcomePage({ cityId }: { cityId?: CityId }) {
           __html: `try{var s=location.search,h=location.hash;if(!h||h.length<=1){if(/[?&](from|to)=/.test(s)){location.replace("/route"+s)}else if(localStorage.getItem("route.seen")==="1"){location.replace((${JSON.stringify(Object.fromEntries(cityIds.map(city => [city, city === "tehran" ? "/route" : `/${city}/route`])))}[localStorage.getItem("city.last")]||"/route")+s)}}}catch(e){}`,
         }}
       />}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ ...FAQ_JSON_LD, mainEntity: FAQ_JSON_LD.mainEntity.map((q, i) => i === 1 ? { ...q, acceptedAnswer: { ...q.acceptedAnswer, text: `${CITIES.filter(c => cityIds.includes(c.slug) && (!cityId || c.slug === cityId)).map(c => c.name.fa).join("، ")} · ${persianDigits(cityCounts(cityIds, cityId).stations, "fa")} ایستگاه` } } : q) }) }} />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-primary-foreground"

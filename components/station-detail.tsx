@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
-import { X, Clock, Zap, Ban } from "lucide-react";
+import Link from "next/link";
+import { X, Clock, Zap, Ban, Info } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
 import { getStationLines, getOperationalStationLines } from "@/lib/metro/selectors";
@@ -14,17 +15,24 @@ import {
 } from "@/lib/schedule-utils";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { useScheduleData } from "@/lib/use-schedule-data";
+import { useConnectivity } from "@/lib/offline/use-connectivity";
+import { stationSeoPath } from "@/lib/station-seo";
 
 export function StationDetail({
   station,
   lang,
   onClose,
+  headingLevel,
+  fullTitle,
 }: {
   station: MetroStation;
   lang: Lang;
-  onClose: () => void;
+  onClose?: () => void;
+  headingLevel?: "h1" | "h3";
+  fullTitle?: boolean;
 }) {
   const loaded = useScheduleData();
+  const { online } = useConnectivity();
   const { isHolidayDate } = useHolidayData();
   const departures = useMemo(() => {
     const grouped = getStationDepartures(station.id, getCurrentDayType(undefined, isHolidayDate), 3);
@@ -33,7 +41,8 @@ export function StationDetail({
   }, [station.id, loaded, isHolidayDate]);
 
   const boardableLines = getOperationalStationLines(station.id);
-  return <StationDetailView station={station} lang={lang} onClose={onClose}
+  return <StationDetailView station={station} lang={lang} onClose={onClose} headingLevel={headingLevel} fullTitle={fullTitle}
+    detailHref={onClose && online && station.status === "operational" && boardableLines.length > 0 ? stationSeoPath(station.id) : undefined}
     lines={getStationLines(station.id).map(line => ({ id: String(line), label: line, color: LINE_COLORS[line], onColor: lineOnColor(line), boardable: boardableLines.includes(line) }))}
     scheduleLoading={!loaded}
     departures={loaded && departures.length > 0 ? <div className="flex flex-col gap-1.5">
@@ -43,9 +52,10 @@ export function StationDetail({
 }
 
 /** Shared map station sheet; city wrappers supply available facts and timing. */
-export function StationDetailView({ station, lang, onClose, lines, scheduleLoading = false, departures, reportedAmenities }: {
-  station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]> };
-  lang: Lang; onClose: () => void;
+export function StationDetailView({ station, lang, onClose, headingLevel = "h3", fullTitle = false, detailHref, lines, scheduleLoading = false, departures, reportedAmenities }: {
+  station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]>; amenitiesVerified?: boolean };
+  lang: Lang; onClose?: () => void;
+  headingLevel?: "h1" | "h3"; fullTitle?: boolean; detailHref?: string;
   lines: { id: string; label: number | string; color: string; onColor: string; boardable: boolean }[];
   scheduleLoading?: boolean; departures?: ReactNode;
   reportedAmenities?: Partial<MetroStation["amenities"]>;
@@ -54,14 +64,19 @@ export function StationDetailView({ station, lang, onClose, lines, scheduleLoadi
   const reviewOnly = station.status.startsWith("review_");
   const boardableLines = lines.filter(l => l.boardable);
   const unavailableLines = lines.filter(l => !l.boardable);
-  const activeAmenities = Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
+  const activeAmenities = (!reportedAmenities && station.amenitiesVerified === false)
+    ? []
+    : Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
+  const Heading = headingLevel;
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold leading-tight">
-            {isFa ? station.name.fa : station.name.en}
-          </h3>
+          <Heading className={headingLevel === "h1" ? "text-xl font-extrabold leading-relaxed sm:text-2xl" : "text-base font-bold leading-tight"}>
+            {fullTitle
+              ? isFa ? `ایستگاه مترو ${station.name.fa}` : `${station.name.en} Metro Station`
+              : isFa ? station.name.fa : station.name.en}
+          </Heading>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {isFa ? station.name.en : station.name.fa}
           </p>
@@ -79,14 +94,16 @@ export function StationDetailView({ station, lang, onClose, lines, scheduleLoadi
               </span>
             ))}
           </div>
-          <button
-            type="button"
-            aria-label={t.close}
-            onClick={onClose}
-            className="flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <X aria-hidden="true" className="size-4" />
-          </button>
+          {onClose && (
+            <button
+              type="button"
+              aria-label={t.close}
+              onClick={onClose}
+              className="flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <X aria-hidden="true" className="size-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -128,6 +145,14 @@ export function StationDetailView({ station, lang, onClose, lines, scheduleLoadi
             );
           })}
         </div>
+      )}
+
+      {detailHref && (
+        <Link href={detailHref} prefetch={false}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-xs font-semibold text-primary transition-colors hover:border-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary">
+          <Info aria-hidden="true" className="size-4" />
+          {isFa ? "صفحه و جزئیات ایستگاه" : "Open station page"}
+        </Link>
       )}
 
       {scheduleLoading && <div role="status" className="text-xs text-muted-foreground">{isFa ? "در حال بارگذاری زمان‌بندی..." : "Loading schedule..."}</div>}
