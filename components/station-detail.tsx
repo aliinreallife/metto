@@ -48,7 +48,7 @@ export function StationDetail({
 
 /** Shared map station sheet; city wrappers supply available facts and timing. */
 export function StationDetailView({ station, lang, onClose, headingLevel = "h3", fullTitle = false, lines, scheduleLoading = false, departures, reportedAmenities }: {
-  station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]> };
+  station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]>; amenitiesVerified?: boolean };
   lang: Lang; onClose?: () => void;
   headingLevel?: "h1" | "h3"; fullTitle?: boolean;
   lines: { id: string; label: number | string; color: string; onColor: string; boardable: boolean }[];
@@ -59,7 +59,9 @@ export function StationDetailView({ station, lang, onClose, headingLevel = "h3",
   const reviewOnly = station.status.startsWith("review_");
   const boardableLines = lines.filter(l => l.boardable);
   const unavailableLines = lines.filter(l => !l.boardable);
-  const activeAmenities = Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
+  const activeAmenities = (!reportedAmenities && station.amenitiesVerified === false)
+    ? []
+    : Object.entries(reportedAmenities ?? station.amenities).filter(([, value]) => value === true);
   const Heading = headingLevel;
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
