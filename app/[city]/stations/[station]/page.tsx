@@ -3,10 +3,12 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import AppLayout from "@/app/(app)/layout";
 import { StationGuideContent } from "@/components/station-guide-content";
-import { getOperationalNeighbors, getRouteStations } from "@/lib/metro/selectors";
+import { getOperationalNeighbors, getOperationalStationLines, getRouteStations } from "@/lib/metro/selectors";
+import { getStationTimetableSummary } from "@/lib/station-seo-timetable";
 import {
-  SEO_STATIONS, absoluteSeoUrl,
-  breadcrumbsJsonLd, getSeoStation, safeJsonLd, stationJsonLd, stationSeoPath,
+  SEO_STATIONS, SEO_CITY, absoluteSeoUrl,
+  breadcrumbsJsonLd, getSeoStation, safeJsonLd, stationBreadcrumbs,
+  stationJsonLd, stationPageJsonLd, stationSeoPath,
 } from "@/lib/station-seo";
 
 type Props = { params: Promise<{ city: string; station: string }> };
@@ -27,15 +29,26 @@ async function resolveStation(params: Props["params"]) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const station = await resolveStation(params);
-  const description = `اطلاعات ایستگاه مترو ${station.name.fa} تهران؛ خطوط فعال، امکانات ثبت‌شده، زمان‌بندی‌های موجود و مسیریابی در متو.`;
+  const lines = getOperationalStationLines(station.id);
+  const lineLabel = lines.map(line => `خط ${line}`).join(" و ");
+  const title = `ایستگاه مترو ${station.name.fa} ${SEO_CITY.name.fa} | ${lineLabel} و برنامه حرکت`;
+  const description = `ایستگاه مترو ${station.name.fa} در ${SEO_CITY.name.fa}، ${lineLabel}؛ برنامه حرکت قطارها برای روزهای مختلف، امکانات ثبت‌شده، ایستگاه‌های مجاور و مسیریابی در متو.`;
+  const url = absoluteSeoUrl(stationSeoPath(station.id));
   return {
-    title: `ایستگاه مترو ${station.name.fa} | خطوط، امکانات و مسیریابی`,
+    title,
     description,
-    alternates: { canonical: stationSeoPath(station.id) },
+    alternates: { canonical: url },
     openGraph: {
-      title: `ایستگاه مترو ${station.name.fa} | متو`,
+      title: `ایستگاه مترو ${station.name.fa} ${SEO_CITY.name.fa} | متو`,
       description,
-      url: absoluteSeoUrl(stationSeoPath(station.id)),
+      url,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `ایستگاه مترو ${station.name.fa} ${SEO_CITY.name.fa} | متو`,
+      description,
+      images: ["/socialprev.png"],
     },
   };
 }
@@ -59,19 +72,21 @@ export default async function StationGuide({ params }: Props) {
     .filter((neighbor, index, all) =>
       all.findIndex(other => other.id === neighbor.id && other.lineId === neighbor.lineId) === index);
 
-  // Breadcrumbs mirror the station list > detail flow visible in the app.
-  const crumbs = [
-    { name: "ایستگاه‌های مترو تهران", href: "/stations" },
-    { name: station.name.fa, href: stationSeoPath(station.id) },
+  // Static timetable facts are available in source HTML for people and
+  // crawlers; the interactive component upgrades them with hot-updated data.
+  const timetableSummary = await getStationTimetableSummary(station.id);
+  const jsonLd = [
+    breadcrumbsJsonLd(stationBreadcrumbs(station)),
+    stationPageJsonLd(station),
+    stationJsonLd(station),
   ];
-  const jsonLd = [breadcrumbsJsonLd(crumbs), stationJsonLd(station)];
 
   return (
     <Suspense>
       <AppLayout>
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-background text-foreground">
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
-          <StationGuideContent station={station} neighbors={neighbors} />
+          <StationGuideContent station={station} neighbors={neighbors} timetableSummary={timetableSummary} />
         </div>
       </AppLayout>
     </Suspense>
