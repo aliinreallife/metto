@@ -23,9 +23,11 @@ type Props = {
   onSetDest: () => void;
   onShowTimetable?: () => void;
   detailHref?: string;
+  detailOfflineFallback?: () => void;
+  detailIsOffline?: boolean;
 };
 
-export function StationCard({ station, lang, distance, onSetDest, onShowTimetable, detailHref }: Props) {
+export function StationCard({ station, lang, distance, onSetDest, onShowTimetable, detailHref, detailOfflineFallback, detailIsOffline }: Props) {
   const loaded = useScheduleData();
   const { isHolidayDate } = useHolidayData();
   const boardableLines = getOperationalStationLines(station.id);
@@ -38,7 +40,7 @@ export function StationCard({ station, lang, distance, onSetDest, onShowTimetabl
     return grouped.filter((g) => g.departures.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- linesKey stands in for the lines array and `loaded` retriggers after the async timetable finishes loading; neither is read inside.
   }, [station.id, linesKey, loaded, isHolidayDate]);
-  return <StationCardView {...{ station, lang, distance, onSetDest, onShowTimetable, detailHref }}
+  return <StationCardView {...{ station, lang, distance, onSetDest, onShowTimetable, detailHref, detailOfflineFallback, detailIsOffline }}
     lines={getStationLines(station.id).map(line => ({ id: String(line), label: line, color: LINE_COLORS[line], onColor: lineOnColor(line) }))}
     boardableCount={boardableLines.length} scheduleLoading={!loaded}
     departures={loaded && departures.length > 0 ? <StationDepartures departures={departures} lang={lang} /> : undefined} />;
@@ -60,7 +62,7 @@ function StationDepartures({ departures, lang }: { departures: { line: number; d
 }
 
 /** Shared station presentation. Source-specific wrappers own timetable hooks. */
-export function StationCardView({ station, lang, distance, onSetDest, onShowTimetable, detailHref, lines, boardableCount, scheduleLoading = false, departures, secondaryName, reportedAmenities }: Omit<Props, "station"> & {
+export function StationCardView({ station, lang, distance, onSetDest, onShowTimetable, detailHref, detailOfflineFallback, detailIsOffline, lines, boardableCount, scheduleLoading = false, departures, secondaryName, reportedAmenities }: Omit<Props, "station"> & {
   station: Pick<MetroStation, "id" | "name" | "location"> & { status: string; amenities: Partial<MetroStation["amenities"]> };
   lines: { id: string; label: number | string; color: string; onColor: string }[];
   boardableCount: number;
@@ -97,6 +99,16 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
               <Link
                 href={detailHref}
                 prefetch={false}
+                onClick={(event) => {
+                  if (!detailOfflineFallback || event.button !== 0 || event.ctrlKey ||
+                    event.metaKey || event.shiftKey || event.altKey) return;
+                  // SEO guide HTML is deliberately not precached. Never strand an
+                  // offline commuter in a failed full-page navigation.
+                  if (detailIsOffline || navigator.onLine === false) {
+                    event.preventDefault();
+                    detailOfflineFallback();
+                  }
+                }}
                 aria-label={isFa ? `جزئیات ایستگاه ${station.name.fa}` : `Station details: ${station.name.en}`}
                 className="group flex min-h-11 items-center justify-between gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
