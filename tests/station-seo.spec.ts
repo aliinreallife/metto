@@ -1,16 +1,17 @@
 import { expect, test } from "@playwright/test";
 
-// SEO content is additive. It must not steal the established metro-app routes.
-test.describe("station guides and legacy navigation", () => {
-  test("Tehran station guide renders useful static content and truthful schema", async ({ page }) => {
+// Station guides are part of Metto's original app structure, not a second website.
+test.describe("station details within the app", () => {
+  test("a station guide shares the app chrome, useful content and schema", async ({ page }) => {
     await page.goto("/tehran/stations/tajrish", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "خطوط فعال" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "مسیریابی و نقشه" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "مسیر صفحه" })).toBeVisible();
+    await expect(page.locator("footer.fixed.bottom-0")).toHaveCount(1);
     await expect(page.getByRole("link", { name: "مسیریابی به این ایستگاه" }))
-      .toHaveAttribute("href", "/tehran/route?to=tajrish");
+      .toHaveAttribute("href", "/tehran/route?to=tajrish&lang=fa");
     await expect(page.getByRole("link", { name: "نمایش روی نقشهٔ متو" }))
-      .toHaveAttribute("href", "/tehran/map?station=tajrish");
+      .toHaveAttribute("href", "/tehran/map?station=tajrish&lang=fa");
 
     const types = await page.locator('script[type="application/ld+json"]').evaluateAll(scripts =>
       scripts.flatMap(script => {
@@ -23,13 +24,28 @@ test.describe("station guides and legacy navigation", () => {
     expect(types).toContain("SubwayStation");
   });
 
-  test("station directory links to guides without replacing the old stations tab", async ({ page }) => {
-    await page.goto("/tehran/stations/directory", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "راهنمای ایستگاه‌های مترو تهران" })).toBeVisible();
-    await page.getByRole("link", { name: "تجریش", exact: true }).first().click();
-    await expect(page).toHaveURL(/\/tehran\/stations\/tajrish$/);
-
+  test("original stations tab opens the station and has a reliable way back", async ({ page }) => {
     await page.goto("/stations", { waitUntil: "domcontentloaded" });
+    const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
+    await expect(details).toBeAttached();
+    await details.click();
+    await expect(page).toHaveURL(/\/tehran\/stations\/tajrish$/);
+    await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
+
+    await page.getByRole("link", { name: "بازگشت به ایستگاه‌ها" }).click();
+    await expect(page).toHaveURL(/\/stations\?lang=fa$/);
     await expect(page.getByRole("heading", { name: "ایستگاه‌های مترو تهران" })).toHaveCount(1);
+  });
+
+  test("offline commuters get the existing details sheet, not a failed page", async ({ page, context }) => {
+    await page.goto("/stations", { waitUntil: "domcontentloaded" });
+    const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
+    await expect(details).toBeAttached();
+    await context.setOffline(true);
+    await details.click();
+    await expect(page.getByRole("dialog", { name: "تجریش" })).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/stations");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: "تجریش" })).toHaveCount(0);
   });
 });
