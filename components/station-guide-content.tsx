@@ -11,6 +11,7 @@ import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import { getOperationalStationLines, getRoutesForStation, getStationTerminalRoutes } from "@/lib/metro/selectors";
 import type { MetroStation } from "@/lib/metro/types";
 import { stationSeoPath } from "@/lib/station-seo";
+import { getCityMeta } from "@/lib/cities";
 
 type Neighbor = {
   id: string;
@@ -28,6 +29,7 @@ export function StationGuideContent({
 }) {
   const { lang } = useMetro();
   const isFa = lang === "fa";
+  const city = getCityMeta("tehran")!;
   const BackIcon = isFa ? ArrowRight : ArrowLeft;
   const lines = getOperationalStationLines(station.id);
   const terminalRoutes = new Set(getStationTerminalRoutes(station.id));
@@ -56,6 +58,19 @@ export function StationGuideContent({
       <header className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
+            <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+              <Link href={`/tehran?lang=${lang}`} prefetch={false}
+                aria-label={isFa ? "مترو تهران" : "Tehran Metro"}
+                className="rounded-sm underline-offset-2 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">
+                {isFa ? "مترو " : "Metro "}{city.name[lang]}
+              </Link>
+              <span aria-hidden="true">/</span>
+              <Link href={`/stations?lang=${lang}`} prefetch={false}
+                className="rounded-sm underline-offset-2 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">
+                {isFa ? "ایستگاه‌ها" : "Stations"}
+              </Link>
+            </div>
             <h1 className="text-xl font-extrabold leading-relaxed sm:text-2xl">
               {isFa ? `ایستگاه مترو ${station.name.fa}` : `${station.name.en} Metro Station`}
             </h1>
