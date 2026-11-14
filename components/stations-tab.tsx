@@ -32,7 +32,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
   const [branchIndex, setBranchIndex] = useState(0);
   const [timetableStation, setTimetableStation] = useState<MetroStation | null>(null);
   const [detailStation, setDetailStation] = useState<MetroStation | null>(null);
-  const { online } = useConnectivity();
+  const { state: connectivity } = useConnectivity();
   const dialogRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<HTMLElement | null>(null);
 
@@ -191,7 +191,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
               lang={lang}
               onSetDest={() => onSetDest(s.id)}
               detailHref={s.status === "operational" && getOperationalStationLines(s.id).length > 0 ? stationSeoPath(s.id) : undefined}
-              detailIsOffline={!online}
+              detailIsOffline={connectivity === "offline"}
               detailOfflineFallback={() => setDetailStation(s)}
               onShowTimetable={() => setTimetableStation(s)}
             />
