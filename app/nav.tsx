@@ -218,7 +218,11 @@ export function AppNav() {
           </span>
         </TabLink>
           <div className="min-w-0 leading-tight">
-            <h1 className="text-base font-bold md:text-lg">{t.appTitle}</h1>
+            {currentPath.startsWith("/tehran/stations/") ? (
+              <span className="text-base font-bold md:text-lg">{t.appTitle}</span>
+            ) : (
+              <h1 className="text-base font-bold md:text-lg">{t.appTitle}</h1>
+            )}
             <CitySwitcher compact />
           </div>
         </div>
