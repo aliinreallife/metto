@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import nextConfig from "./next.config.mjs";
 import sitemap from "./app/sitemap";
-import { SEO_STATIONS, STATION_DIRECTORY_PATH, stationSeoPath } from "./lib/station-seo";
+import { SEO_STATIONS, stationSeoPath } from "./lib/station-seo";
 
 // Locks the landing/app URL scheme in CI: landing at /, planner at /route,
 // old URLs redirecting, sitemap matching. Mirrors the e2e coverage in
@@ -40,12 +40,12 @@ describe("landing/app URL scheme", () => {
 
   it("lists every operational station guide without changing legacy app URLs", () => {
     const urls = sitemap().map(entry => entry.url);
-    expect(urls).toContain(`https://metto.ir${STATION_DIRECTORY_PATH}`);
     for (const station of SEO_STATIONS) {
       expect(urls).toContain(`https://metto.ir${stationSeoPath(station.id)}`);
     }
     expect(urls).toContain("https://metto.ir/stations");
     expect(urls).toContain("https://metto.ir/tehran/stations");
+    expect(urls).not.toContain("https://metto.ir/tehran/stations/directory");
     expect(new Set(urls).size).toBe(urls.length);
   });
 
