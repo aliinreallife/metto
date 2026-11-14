@@ -36,6 +36,10 @@ export default serwist({
   // bootstrap, so precaching every chunk too would duplicate ~5MB. Chunks
   // are cached on demand by the runtime CacheFirst route instead.
   globIgnores: [
+    // SEO-only static station guides must NOT increase the compulsory offline
+    // download for existing PWA users. Preserve the original interactive
+    // /tehran/stations page (stored at .../tehran/stations.html).
+    ".next/server/app/tehran/stations/*.html",
     "public/google*.html",
     "public/holidays.version.json",
     "public/metro-data-manifest.json",
