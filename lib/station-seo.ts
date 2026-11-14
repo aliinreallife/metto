@@ -4,6 +4,7 @@ import { STATIONS } from "./metro/stations";
 import { getOperationalStationLines } from "./metro/selectors";
 import type { MetroStation } from "./metro/types";
 import { AMENITY_LABELS } from "./i18n";
+import { getCityMeta } from "./cities";
 
 export const SEO_STATIONS = STATIONS.filter(
   (station) => station.status === "operational" &&
@@ -25,6 +26,8 @@ export function absoluteSeoUrl(path: string): string {
   return `https://metto.ir${path === "/" ? "" : path}`;
 }
 
+export const SEO_CITY = getCityMeta("tehran")!;
+
 export function stationJsonLd(station: MetroStation) {
   const verifiedAmenities = station.amenitiesVerified === false ? [] :
     Object.entries(station.amenities)
@@ -38,6 +41,17 @@ export function stationJsonLd(station: MetroStation) {
     name: station.name.fa,
     alternateName: station.name.en,
     url: absoluteSeoUrl(stationSeoPath(station.id)),
+    mainEntityOfPage: { "@id": `${absoluteSeoUrl(stationSeoPath(station.id))}#webpage` },
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: SEO_CITY.name.fa,
+      addressCountry: "IR",
+    },
+    containedInPlace: {
+      "@type": "City",
+      name: SEO_CITY.name.fa,
+      alternateName: SEO_CITY.name.en,
+    },
     geo: {
       "@type": "GeoCoordinates",
       latitude: station.location.lat,
@@ -49,6 +63,30 @@ export function stationJsonLd(station: MetroStation) {
       })),
     } : {}),
   };
+}
+
+/** Describes the canonical station guide as a page of the existing Metto site. */
+export function stationPageJsonLd(station: MetroStation) {
+  const url = absoluteSeoUrl(stationSeoPath(station.id));
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${url}#webpage`,
+    url,
+    name: `ایستگاه مترو ${station.name.fa} ${SEO_CITY.name.fa}`,
+    inLanguage: "fa",
+    isPartOf: { "@id": "https://metto.ir/#website" },
+    mainEntity: { "@id": `${url}#station` },
+  };
+}
+
+/** Mirrors the visible city -> station list -> station journey. */
+export function stationBreadcrumbs(station: MetroStation) {
+  return [
+    { name: `مترو ${SEO_CITY.name.fa}`, href: `/${SEO_CITY.slug}` },
+    { name: `ایستگاه‌های مترو ${SEO_CITY.name.fa}`, href: "/stations" },
+    { name: station.name.fa, href: stationSeoPath(station.id) },
+  ] as const;
 }
 
 export function breadcrumbsJsonLd(items: readonly { name: string; href: string }[]) {
