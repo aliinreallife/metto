@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { STATIONS } from "./metro/stations";
 import { getOperationalStationLines } from "./metro/selectors";
 import {
-  SEO_STATIONS, STATION_DIRECTORY_PATH, absoluteSeoUrl,
+  SEO_STATIONS, absoluteSeoUrl,
   breadcrumbsJsonLd, getSeoStation, safeJsonLd,
   stationJsonLd, stationSeoPath,
 } from "./station-seo";
@@ -40,11 +40,11 @@ describe("indexable Tehran station guides", () => {
     });
     const crumbs = breadcrumbsJsonLd([
       { name: "متو", href: "/" },
-      { name: "راهنما", href: STATION_DIRECTORY_PATH },
+      { name: "ایستگاه‌ها", href: "/stations" },
     ]);
     expect(crumbs.itemListElement).toEqual([
       { "@type": "ListItem", position: 1, name: "متو", item: "https://metto.ir" },
-      { "@type": "ListItem", position: 2, name: "راهنما", item: absoluteSeoUrl(STATION_DIRECTORY_PATH) },
+      { "@type": "ListItem", position: 2, name: "ایستگاه‌ها", item: absoluteSeoUrl("/stations") },
     ]);
   });
 
