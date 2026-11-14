@@ -5,8 +5,6 @@ import { getOperationalStationLines } from "./metro/selectors";
 import type { MetroStation } from "./metro/types";
 import { AMENITY_LABELS } from "./i18n";
 
-export const STATION_DIRECTORY_PATH = "/tehran/stations/directory";
-
 export const SEO_STATIONS = STATIONS.filter(
   (station) => station.status === "operational" &&
     getOperationalStationLines(station.id).length > 0 &&
