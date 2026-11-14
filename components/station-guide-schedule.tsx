@@ -112,7 +112,7 @@ export function StationGuideSchedule({ station, lang }: { station: MetroStation;
                   </span>
                   {dep.isExpress && <Zap aria-label={isFa ? "سریع السیر" : "Express"} className="size-3.5 shrink-0 text-amber-500" />}
                 </div>
-                <time className="tnum shrink-0 text-base font-bold" dateTime={dep.time}>
+                <time className="tnum shrink-0 text-base font-bold" dateTime={dep.time.padStart(5, "0")}>
                   {persianDigits(dep.time, lang)}
                 </time>
               </li>
