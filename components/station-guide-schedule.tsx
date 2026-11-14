@@ -13,6 +13,7 @@ import {
 import { useScheduleData } from "@/lib/use-schedule-data";
 import { useHolidayData } from "@/lib/holidays/use-holiday-data";
 import { cn } from "@/lib/utils";
+import type { StationTimetableSummary } from "@/lib/station-seo-timetable";
 
 const DAY_TYPES: DayType[] = ["saturday_wednesday", "thursday", "friday"];
 
@@ -34,7 +35,13 @@ function directionLabel(departure: Departure, lang: Lang): string {
   return getStation(departure.direction)?.name.en ?? departure.directionName;
 }
 
-export function StationGuideSchedule({ station, lang }: { station: MetroStation; lang: Lang }) {
+export function StationGuideSchedule({
+  station, lang, bundledSummary,
+}: {
+  station: MetroStation;
+  lang: Lang;
+  bundledSummary: StationTimetableSummary | null;
+}) {
   const isFa = lang === "fa";
   const loaded = useScheduleData();
   const { isHolidayDate } = useHolidayData();
@@ -65,6 +72,16 @@ export function StationGuideSchedule({ station, lang }: { station: MetroStation;
     return lines.flatMap(line => getAllDepartures(station.id, line, dayType))
       .sort((a, b) => a.minutesUntil - b.minutesUntil);
   }, [station.id, lines, dayType, loaded]);
+
+  // Bundled service-day facts are prerendered and indexable. The newest
+  // validated timetable takes over when the client data becomes available.
+  const daySummary = loaded
+    ? (scheduled.length ? {
+        count: scheduled.length,
+        first: scheduled[0].time,
+        last: scheduled[scheduled.length - 1].time,
+      } : null)
+    : bundledSummary?.[dayType] ?? null;
 
   const scheduleGroups = useMemo(() => {
     const map = new Map<string, { line: number; direction: string; directionLabel: string; times: Departure[] }>();
@@ -145,30 +162,36 @@ export function StationGuideSchedule({ station, lang }: { station: MetroStation;
             </button>
           ))}
         </div>
-        {!loaded ? (
+        {!loaded && !daySummary ? (
           <p role="status" className="py-5 text-center text-xs text-muted-foreground">
             {isFa ? "در حال بارگذاری برنامه حرکت..." : "Loading timetable..."}
           </p>
-        ) : scheduled.length ? (
+        ) : daySummary ? (
           <div className="mt-4 flex items-center justify-around gap-3 rounded-lg border border-border px-2 py-3 text-center">
             <div className="min-w-0">
               <span className="block text-xs text-muted-foreground">{isFa ? "تعداد حرکت" : "Departures"}</span>
-              <strong className="tnum mt-1 block text-base font-bold">{persianDigits(scheduled.length, lang)}</strong>
+              <strong className="tnum mt-1 block text-base font-bold">{persianDigits(daySummary.count, lang)}</strong>
             </div>
             <div className="h-9 w-px shrink-0 bg-border" aria-hidden="true" />
             <div className="min-w-0">
               <span className="block text-xs text-muted-foreground">{isFa ? "اولین حرکت" : "First"}</span>
-              <strong className="tnum mt-1 block text-sm font-semibold">{persianDigits(scheduled[0].time, lang)}</strong>
+              <strong className="tnum mt-1 block text-sm font-semibold">{persianDigits(daySummary.first, lang)}</strong>
             </div>
             <div className="h-9 w-px shrink-0 bg-border" aria-hidden="true" />
             <div className="min-w-0">
               <span className="block text-xs text-muted-foreground">{isFa ? "آخرین حرکت" : "Last"}</span>
-              <strong className="tnum mt-1 block text-sm font-semibold">{persianDigits(scheduled[scheduled.length - 1].time, lang)}</strong>
+              <strong className="tnum mt-1 block text-sm font-semibold">{persianDigits(daySummary.last, lang)}</strong>
             </div>
           </div>
         ) : (
           <p className="py-5 text-center text-xs text-muted-foreground">
             {isFa ? "برای این روز حرکت ثبت‌شده‌ای وجود ندارد." : "No timetable entries for this day."}
+          </p>
+        )}
+
+        {!loaded && daySummary && (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            {isFa ? "زمان‌ها از نسخه همراه برنامه است؛ اطلاعات جدیدتر در حال بارگذاری است." : "Bundled timetable shown while checking for newer schedule data."}
           </p>
         )}
 
