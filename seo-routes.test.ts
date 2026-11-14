@@ -44,7 +44,7 @@ describe("landing/app URL scheme", () => {
       expect(urls).toContain(`https://metto.ir${stationSeoPath(station.id)}`);
     }
     expect(urls).toContain("https://metto.ir/stations");
-    expect(urls).toContain("https://metto.ir/tehran/stations");
+    expect(urls).not.toContain("https://metto.ir/tehran/stations");
     expect(urls).not.toContain("https://metto.ir/tehran/stations/directory");
     expect(new Set(urls).size).toBe(urls.length);
   });
