@@ -4,7 +4,7 @@ import { getOperationalStationLines } from "./metro/selectors";
 import {
   SEO_STATIONS, absoluteSeoUrl,
   breadcrumbsJsonLd, getSeoStation, safeJsonLd,
-  stationJsonLd, stationSeoPath,
+  stationBreadcrumbs, stationJsonLd, stationPageJsonLd, stationSeoPath,
 } from "./station-seo";
 
 describe("indexable Tehran station guides", () => {
@@ -32,12 +32,26 @@ describe("indexable Tehran station guides", () => {
       "@type": "SubwayStation",
       name: "تجریش",
       url: "https://metto.ir/tehran/stations/tajrish",
+      address: { "@type": "PostalAddress", addressLocality: "تهران", addressCountry: "IR" },
+      containedInPlace: { "@type": "City", name: "تهران", alternateName: "Tehran" },
       geo: {
         "@type": "GeoCoordinates",
         latitude: station!.location.lat,
         longitude: station!.location.lng,
       },
     });
+    const page = stationPageJsonLd(station!);
+    expect(page).toMatchObject({
+      "@type": "WebPage",
+      "mainEntity": { "@id": "https://metto.ir/tehran/stations/tajrish#station" },
+      "isPartOf": { "@id": "https://metto.ir/#website" },
+    });
+    const visiblePath = stationBreadcrumbs(station!);
+    expect(visiblePath).toEqual([
+      { name: "مترو تهران", href: "/tehran" },
+      { name: "ایستگاه‌های مترو تهران", href: "/stations" },
+      { name: "تجریش", href: "/tehran/stations/tajrish" },
+    ]);
     const crumbs = breadcrumbsJsonLd([
       { name: "متو", href: "/" },
       { name: "ایستگاه‌ها", href: "/stations" },
