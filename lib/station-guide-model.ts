@@ -2,7 +2,9 @@
 // route planners, URLs and the UI retain their existing public contracts.
 import { CITY_LINES, type CityStation } from "./city-catalog";
 import { CITY_NETWORKS } from "./city-previews";
-import { getOperationalNeighbors, getOperationalStationLines, getRouteStations, getStationTerminalRoutes } from "./metro/selectors";
+import { getOperationalNeighbors, getOperationalStationLines, getRouteStations, getStationTerminalRoutes, getStation } from "./metro/selectors";
+import { getTehranStationDirectionsSync } from "./station-seo-timetable";
+import { regionalServicePatterns, regionalStationDepartures } from "./regional-station-schedules";
 import { getSeoCityStation } from "./station-seo";
 
 export type GuideLine = {
@@ -17,10 +19,18 @@ export type GuideNeighbor = {
   lineId: string;
   side: "before" | "after";
 };
+export type GuideDirection = {
+  lineId: string;
+  destinationId: string;
+  name: { fa: string; en: string };
+};
 export type GuideModel = {
   lines: GuideLine[];
   neighbors: GuideNeighbor[];
   terminalLineIds: string[];
+  /** Actual published train destinations departing this station, not every
+   * physical or planned end of track. Service days vary by timetable. */
+  directions: GuideDirection[];
 };
 
 export function buildStationGuideModel(station: CityStation): GuideModel {
@@ -51,14 +61,21 @@ export function buildStationGuideModel(station: CityStation): GuideModel {
           side: b < a ? "before" as const : "after" as const,
         }];
       });
+    const directions: GuideDirection[] = getTehranStationDirectionsSync(station.localId)
+      .flatMap(({ line, destinationId }) => {
+        const lineId = `tehran:line:${line}`;
+        const destination = getStation(destinationId);
+        return station.operationalLineIds.includes(lineId) && destination
+          ? [{ lineId, destinationId, name: destination.name }] : [];
+      });
     return {
-      lines, terminalLineIds,
+      lines, terminalLineIds, directions,
       neighbors: neighbors.filter((n, i) =>
         neighbors.findIndex(other => other.id === n.id && other.lineId === n.lineId) === i),
     };
   }
   const preview = CITY_NETWORKS.find(entry => entry.cityId === station.cityId);
-  if (!preview) return { lines, terminalLineIds: [], neighbors: [] };
+  if (!preview) return { lines, terminalLineIds: [], neighbors: [], directions: [] };
   const terminalLineIds: string[] = [], neighbors: GuideNeighbor[] = [];
   for (const line of lines) {
     const route = preview.network.routes.find(route => route.lineId === line.id);
@@ -84,5 +101,19 @@ export function buildStationGuideModel(station: CityStation): GuideModel {
       });
     }
   }
-  return { lines, terminalLineIds, neighbors };
+  const directions: GuideDirection[] = station.cityId === "isfahan" || station.cityId === "tabriz"
+    ? [...new Map(regionalServicePatterns(station.cityId)
+        .flatMap(pattern => regionalStationDepartures(station.cityId as "isfahan" | "tabriz", station.id, pattern.id))
+        .filter(departure => station.operationalLineIds.includes(departure.lineId))
+        .flatMap(departure => {
+          const destination = getSeoCityStation(station.cityId, departure.directionId.split(":station:")[1]);
+          return destination ? [[`${departure.lineId}:${destination.id}`, {
+            lineId: departure.lineId,
+            destinationId: destination.localId,
+            name: destination.names,
+          } satisfies GuideDirection] as const] : [];
+        }),
+      ).values()]
+    : [];
+  return { lines, terminalLineIds, neighbors, directions };
 }
