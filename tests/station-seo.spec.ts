@@ -100,9 +100,9 @@ test.describe("station details within the app", () => {
     await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
     await expect(page.getByRole("button", { name: station.pattern })).toBeVisible();
     await expect(page.getByRole("link", { name: "مسیریابی به این ایستگاه" }))
-      .toHaveAttribute("href", `/${station.city}/route?to=${station.city}:station:${station.id}&lang=fa`);
+      .toHaveAttribute("href", `/${station.city}/route?to=${encodeURIComponent(`${station.city}:station:${station.id}`)}&lang=fa`);
     await expect(page.getByRole("link", { name: "نمایش روی نقشهٔ متو" }))
-      .toHaveAttribute("href", `/${station.city}/map?station=${station.city}:station:${station.id}&lang=fa`);
+      .toHaveAttribute("href", `/${station.city}/map?station=${encodeURIComponent(`${station.city}:station:${station.id}`)}&lang=fa`);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       "href", `https://metto.ir/${station.city}/stations/${station.id}`,
     );
