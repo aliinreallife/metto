@@ -38,7 +38,18 @@ test.describe("station details within the app", () => {
     await page.goto("/stations", { waitUntil: "domcontentloaded" });
     const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
     await expect(details).toBeAttached();
+    const beforeClick = await page.evaluate(() => ({
+      navigatorOnline: navigator.onLine,
+      swControlled: Boolean(navigator.serviceWorker?.controller),
+    }));
     await details.click();
+    await page.waitForTimeout(900);
+    console.log("[station link diagnostic]", JSON.stringify({
+      beforeClick,
+      urlAfterClick: page.url(),
+      dialogs: await page.getByRole("dialog").allTextContents(),
+      href: await details.getAttribute("href").catch(() => "navigation happened"),
+    }));
     await expect(page).toHaveURL(/\/tehran\/stations\/tajrish$/);
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
 
