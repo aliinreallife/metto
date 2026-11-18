@@ -103,14 +103,12 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
                   // SEO guide HTML is deliberately not precached. Never strand an
                   // offline commuter in a failed full-page navigation.
                   const href = event.currentTarget.href;
-                  if (navigator.onLine === false) {
+                  if (navigator.onLine === false || detailIsOffline) {
                     event.preventDefault();
-                    detailOfflineFallback();
-                  } else if (detailIsOffline) {
-                    event.preventDefault();
-                    // A weak connectivity probe may flag an otherwise reachable
-                    // site as offline. Try a real document GET before opening
-                    // the already-cached station detail sheet.
+                    // Both browser onLine and connectivity probes can misreport
+                    // offline in tunnels or newly mounted PWAs. Check whether
+                    // this document is actually reachable before showing the
+                    // offline sheet or blocking an otherwise valid SEO link.
                     const controller = new AbortController();
                     const timer = window.setTimeout(() => controller.abort(), 4000);
                     void fetch(href, {
@@ -119,8 +117,9 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
                       if (response.ok) window.location.assign(href);
                       else detailOfflineFallback();
                     }).catch(() => {
-                      // A slow-but-reachable document must not be classified
-                      // as offline just because the health probe timed out.
+                      // If the probe times out, allow native navigation
+                      // whenever the browser still claims to be online.
+                      // Genuine failed/offline requests keep the cached sheet.
                       if (controller.signal.aborted && navigator.onLine !== false) {
                         window.location.assign(href);
                       } else {
