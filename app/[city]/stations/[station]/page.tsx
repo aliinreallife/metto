@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import AppLayout from "@/app/(app)/layout";
 import { StationGuideContent } from "@/components/station-guide-content";
 import { getOperationalNeighbors, getOperationalStationLines, getRouteStations } from "@/lib/metro/selectors";
 import { getStationTimetableSummary } from "@/lib/station-seo-timetable";
+import { persianDigits } from "@/lib/i18n";
 import {
   SEO_STATIONS, SEO_CITY, absoluteSeoUrl,
   breadcrumbsJsonLd, getSeoStation, safeJsonLd, stationBreadcrumbs,
@@ -30,7 +30,7 @@ async function resolveStation(params: Props["params"]) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const station = await resolveStation(params);
   const lines = getOperationalStationLines(station.id);
-  const lineLabel = lines.map(line => `خط ${line}`).join(" و ");
+  const lineLabel = lines.map(line => `خط ${persianDigits(line, "fa")}`).join(" و ");
   const title = `ایستگاه مترو ${station.name.fa} ${SEO_CITY.name.fa} | ${lineLabel} و برنامه حرکت`;
   const description = `ایستگاه مترو ${station.name.fa} در ${SEO_CITY.name.fa}، ${lineLabel}؛ برنامه حرکت قطارها برای روزهای مختلف، امکانات ثبت‌شده، ایستگاه‌های مجاور و مسیریابی در متو.`;
   const url = absoluteSeoUrl(stationSeoPath(station.id));
@@ -82,13 +82,11 @@ export default async function StationGuide({ params }: Props) {
   ];
 
   return (
-    <Suspense>
-      <AppLayout>
+    <AppLayout ssrContent>
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-background text-foreground">
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
           <StationGuideContent station={station} neighbors={neighbors} timetableSummary={timetableSummary} />
         </div>
-      </AppLayout>
-    </Suspense>
+    </AppLayout>
   );
 }
