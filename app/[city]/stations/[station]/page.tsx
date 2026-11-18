@@ -12,7 +12,7 @@ import { getCityMeta } from "@/lib/cities";
 import {
   SEO_CITY_STATIONS, absoluteSeoUrl, breadcrumbsJsonLd,
   getSeoCityStation, safeJsonLd, cityStationBreadcrumbs,
-  cityStationJsonLd, cityStationPageJsonLd, cityStationSeoPath,
+  cityStationJsonLd, cityStationPageJsonLd, cityStationSeoPath, cityStationSeoSlug,
 } from "@/lib/station-seo";
 
 type Props = { params: Promise<{ city: string; station: string }> };
@@ -23,7 +23,7 @@ export const dynamicParams = false;
 export function generateStaticParams() {
   return SEO_CITY_STATIONS.map(station => ({
     city: station.cityId,
-    station: station.localId,
+    station: cityStationSeoSlug(station.cityId, station.localId),
   }));
 }
 
