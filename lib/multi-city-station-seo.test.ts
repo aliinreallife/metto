@@ -49,6 +49,36 @@ describe("one station guide for every public timed city", () => {
     expect("amenityFeature" in schema).toBe(false); // not verified in either city's source
   });
 
+  it("labels actual boarding directions by the last stop of scheduled trains", () => {
+    const examples = [
+      { city: "isfahan", station: "qods", terminal: "defa-e-moghaddas" },
+      { city: "tabriz", station: "el-goli", terminal: "noor" },
+    ] as const;
+    for (const { city, station: id, terminal } of examples) {
+      const station = getSeoCityStation(city, id)!;
+      const model = buildStationGuideModel(station);
+      expect(model.directions).toContainEqual({
+        lineId: `${city}:line:1`,
+        destinationId: terminal,
+        name: getSeoCityStation(city, terminal)!.names,
+      });
+      expect(model.directions.every(direction =>
+        direction.destinationId !== id &&
+        model.lines.some(line => line.id === direction.lineId)
+      )).toBe(true);
+    }
+
+    const azadegan = getSeoCityStation("tehran", "azadegan")!;
+    const tehranDirections = buildStationGuideModel(azadegan).directions;
+    expect(tehranDirections.length).toBeGreaterThan(0);
+    expect(tehranDirections.every(direction => direction.lineId.startsWith("tehran:line:"))).toBe(true);
+    expect(tehranDirections.every(direction => direction.destinationId !== "azadegan")).toBe(true);
+
+    const lastStop = getSeoCityStation("tabriz", "noor")!;
+    expect(buildStationGuideModel(lastStop).directions.some(direction =>
+      direction.destinationId === lastStop.localId)).toBe(false);
+  });
+
   it("derives per-station scheduled summaries from the matching published source", () => {
     for (const [city, id, pattern] of [
       ["isfahan", "isfahan:station:qods", "saturday_thursday"],
