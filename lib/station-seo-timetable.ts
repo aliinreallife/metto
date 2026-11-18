@@ -28,20 +28,30 @@ type MutableSummary = StationServiceDaySummary & {
 };
 
 let bundledSummaryCache: Map<string, StationTimetableSummary> | null = null;
+let bundledDirectionsCache: Map<string, { line: number; destinationId: string }[]> | null = null;
 
 function readBundledSummaries(): Map<string, StationTimetableSummary> {
   const raw = readFileSync(path.join(process.cwd(), "public", "schedule-data.json"), "utf8");
   const data: LineScheduleData[] = JSON.parse(raw);
   const aggregate = new Map<string, Partial<Record<DayType, MutableSummary>>>();
+  const destinations = new Map<string, Map<string, { line: number; destinationId: string }>>();
 
   for (const group of data) {
     for (const train of group.trains) {
       if (!DAY_TYPES.includes(train.dayType)) continue;
       // Terminal arrivals are not departures. Metto's getAllDepartures
       // similarly excludes the last stop and stations where boarding is closed.
+      const destinationId = resolveStationId(train.stops.at(-1)?.stationId ?? "");
       for (const stop of train.stops.slice(0, -1)) {
         const stationId = resolveStationId(stop.stationId);
         if (!stationId || !canBoardAtStation(stationId, train.line)) continue;
+        // A direction must be an actual last stop reached by a scheduled train,
+        // not a planned geographic endpoint or an arrival at this station.
+        if (destinationId && destinationId !== stationId) {
+          const byLine = destinations.get(stationId) ?? new Map();
+          byLine.set(`${train.line}:${destinationId}`, { line: train.line, destinationId });
+          destinations.set(stationId, byLine);
+        }
         const time = minuteOfDay(stop.time);
         const days = aggregate.get(stationId) ?? {};
         const current = days[train.dayType];
@@ -68,6 +78,10 @@ function readBundledSummaries(): Map<string, StationTimetableSummary> {
       }
     }
   }
+
+  bundledDirectionsCache = new Map([...destinations].map(([id, values]) => [
+    id, [...values.values()].sort((a,b) => a.line - b.line || a.destinationId.localeCompare(b.destinationId)),
+  ]));
 
   // Strip private numeric comparison fields before serializing to a page.
   return new Map([...aggregate].map(([id, days]) => [
@@ -116,4 +130,18 @@ export function getRegionalStationTimetableSummarySync(
       last: departures[departures.length - 1].time,
     }]] : [];
   }));
+}
+
+/** Actual scheduled train destination terminals for a Tehran boarding stop.
+ * Union of published service-day patterns; the timetable determines whether
+ * a particular destination has departures on a selected day. */
+export function getTehranStationDirectionsSync(
+  stationId: string,
+): { line: number; destinationId: string }[] {
+  try {
+    bundledSummaryCache ??= readBundledSummaries();
+    return bundledDirectionsCache?.get(stationId) ?? [];
+  } catch {
+    return [];
+  }
 }
