@@ -1,0 +1,84 @@
+# Production-style browser verification for the SEO station pages.
+# Uses an isolated local server, so it does not need Vercel's preview SSO,
+# a deployment-protection bypass secret, or changes to a live project.
+name: Station Guide Browser Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/station-guides-e2e.yml"
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "data/**"
+      - "public/schedule-data.json"
+      - "tests/station-seo.spec.ts"
+      - "playwright.config.ts"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "next.config.mjs"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: station-guide-browser-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  station-guide-browser:
+    name: station page e2e (production build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build Metto for production
+        run: pnpm build
+
+      - name: Start local Metto server
+        run: |
+          pnpm start > /tmp/metto-station-test-server.log 2>&1 &
+          echo "METTO_SERVER_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3000/tehran/stations/azadegan > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/metto-station-test-server.log
+          echo "::error::Local Metto server did not start"
+          exit 1
+
+      - name: Test station pages and offline fallback
+        run: pnpm exec playwright test tests/station-seo.spec.ts
+
+      - name: Attach browser traces on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: station-guide-playwright-traces
+          path: |
+            test-results/
+            playwright-report/
+            /tmp/metto-station-test-server.log
+          if-no-files-found: ignore
+          retention-days: 7
