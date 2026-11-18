@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { CalendarDays, ChevronDown, Clock3, TrainFront } from "lucide-react";
 import { stationByCityId, CITY_LINES, type CityStation } from "@/lib/city-catalog";
 import { cityDataCredit } from "@/lib/data-credit";
@@ -25,17 +25,15 @@ export function RegionalStationGuideSchedule({ station, lang, summaries }: Props
   const isFa = lang === "fa";
   const { dataset } = useHolidayData();
   const nowMs = useRouteClock();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [selected, setSelected] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
 
   const patterns = regionalServicePatterns(city);
   const service = mounted ? regionalServiceDay(city, nowMs, dataset) : null;
   const pattern = selected ?? service?.serviceId ?? initialRegionalPattern(city);
   const summary = summaries[pattern];
-  const departures = useMemo(() =>
-    regionalStationDepartures(city, station.id, pattern), [city, station.id, pattern]);
+  const departures = regionalStationDepartures(city, station.id, pattern);
   const nowMinute = mounted ? tehranParts(nowMs).minuteOfDay : 0;
   const upcoming = service?.applicable && service.serviceId
     ? regionalStationDepartures(city, station.id, service.serviceId)
@@ -44,15 +42,13 @@ export function RegionalStationGuideSchedule({ station, lang, summaries }: Props
         return hour * 60 + minute >= nowMinute;
       }).slice(0, 3) : [];
 
-  const groups = useMemo(() => {
-    const result = new Map<string, string[]>();
-    for (const item of departures) {
-      const list = result.get(item.directionId) ?? [];
-      list.push(item.time);
-      result.set(item.directionId, list);
-    }
-    return [...result];
-  }, [departures]);
+  const groupedTimes = new Map<string, string[]>();
+  for (const departure of departures) {
+    const times = groupedTimes.get(departure.directionId) ?? [];
+    times.push(departure.time);
+    groupedTimes.set(departure.directionId, times);
+  }
+  const groups = [...groupedTimes];
   const line = CITY_LINES.find(line => line.id === `${city}:line:1`);
   const terminalName = (id: string) => stationByCityId.get(id)?.names[lang] ?? id;
   const source = cityDataCredit(city);
