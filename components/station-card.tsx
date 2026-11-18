@@ -140,7 +140,7 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
                   <Info aria-hidden="true" className="size-3.5" />
                   {isFa ? "جزئیات" : "Details"}
                 </span>
-              </Link>
+              </a>
             </h3>
           ) : (
             <>
