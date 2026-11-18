@@ -39,7 +39,7 @@ export default serwist({
     // SEO-only static station guides must NOT increase the compulsory offline
     // download for existing PWA users. Preserve the original interactive
     // /tehran/stations page (stored at .../tehran/stations.html).
-    ".next/server/app/tehran/stations/*.html",
+    ".next/server/app/*/stations/*.html",
     "public/google*.html",
     "public/holidays.version.json",
     "public/metro-data-manifest.json",
