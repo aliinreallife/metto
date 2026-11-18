@@ -126,6 +126,37 @@ export function StationGuideContent({
                     {isFa ? "ایستگاه پایانی این مسیر" : "Terminal stop on this route"}
                   </span>}
                 </div>
+                {/* Before is the physical right side in Persian RTL and left
+                    in English LTR; after is the opposite. The arrows follow
+                    the diagram's actual ordered stops, not text direction. */}
+                {directions.length > 0 && (
+                  <div className="mb-3 grid grid-cols-2 gap-3" role="group"
+                    aria-label={isFa ? "جهت‌های حرکت روی خط" : "Travel direction along the line"}>
+                    {(["before", "after"] as const).map(side => {
+                      const towards = directions.filter(direction => direction.side === side);
+                      const DirectionArrow = side === "before"
+                        ? (isFa ? ArrowRight : ArrowLeft)
+                        : (isFa ? ArrowLeft : ArrowRight);
+                      return (
+                        <div key={side} data-testid={`line-direction-${side}`}
+                          className={side === "before" ? "flex min-w-0 flex-col items-start gap-1 text-start"
+                            : "flex min-w-0 flex-col items-end gap-1 text-end"}>
+                          {towards.map(direction => (
+                            <div key={`${direction.lineId}:${direction.destinationId}`}
+                              className="inline-flex max-w-full items-center gap-1 text-[11px] leading-5">
+                              <DirectionArrow aria-hidden="true" className="size-3.5 shrink-0"
+                                style={{ color: line.color }} />
+                              <span className="min-w-0 text-muted-foreground">
+                                {isFa ? "به سمت " : "Toward "}
+                                <strong className="font-semibold text-foreground">{direction.name[lang]}</strong>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="relative">
                   {nodes.length > 1 && (
                     <span aria-hidden="true" className="absolute inset-x-[12%] top-[9px] h-0.5"
@@ -152,25 +183,6 @@ export function StationGuideContent({
                     })}
                   </ol>
                 </div>
-                {directions.length > 0 && (
-                  <div className="mt-3 border-t border-border pt-3">
-                    <p className="mb-2 text-[11px] font-medium text-muted-foreground">
-                      {isFa
-                        ? `جهت سوار شدن از ${station.names.fa}`
-                        : `Boarding directions from ${station.names.en}`}
-                    </p>
-                    <ul className="flex flex-wrap gap-2" aria-label={isFa ? "جهت حرکت قطار" : "Train travel directions"}>
-                      {directions.map(direction => (
-                        <li key={`${direction.lineId}:${direction.destinationId}`}
-                          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs">
-                          <TrainFront aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-                          <span className="text-muted-foreground">{isFa ? "به سمت" : "Toward"}</span>
-                          <strong className="font-semibold">{direction.name[lang]}</strong>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
               </div>
             );
           })}
