@@ -59,12 +59,12 @@ describe("one station guide for every public timed city", () => {
       const model = buildStationGuideModel(station);
       expect(model.directions).toContainEqual({
         lineId: `${city}:line:1`,
-        destinationId: terminal,
+        destinationId: `${city}:station:${terminal}`,
         name: getSeoCityStation(city, terminal)!.names,
         side: "after", // Start-of-line stations face the last stop to the left in RTL.
       });
       expect(model.directions.every(direction =>
-        direction.destinationId !== id &&
+        direction.destinationId !== station.localId &&
         model.lines.some(line => line.id === direction.lineId)
       )).toBe(true);
     }
@@ -72,8 +72,8 @@ describe("one station guide for every public timed city", () => {
     const middle = getSeoCityStation("tabriz", "sahand")!;
     const middleDirections = buildStationGuideModel(middle).directions;
     expect(middleDirections).toEqual(expect.arrayContaining([
-      expect.objectContaining({ destinationId: "el-goli", side: "before" }),
-      expect.objectContaining({ destinationId: "noor", side: "after" }),
+      expect.objectContaining({ destinationId: "tabriz:station:el-goli", side: "before" }),
+      expect.objectContaining({ destinationId: "tabriz:station:noor", side: "after" }),
     ]));
 
     const azadegan = getSeoCityStation("tehran", "azadegan")!;
