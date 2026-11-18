@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { AppNav } from "../nav";
+import AppLoading from "@/components/app-loading";
 import { AppSkipLink } from "./skip-link";
 
 // Layout for the functional app routes (/route, /stations, /nearby, /map).
@@ -8,9 +9,9 @@ export default function AppLayout({ children, ssrContent = false }: { children: 
   return (
     <>
       <AppSkipLink />
-      {ssrContent ? <Suspense fallback={null}><AppNav /></Suspense> : <AppNav />}
+      <Suspense fallback={null}><AppNav /></Suspense>
       <main id="main-content" tabIndex={-1} className="relative min-h-0 flex-1 flex flex-col overflow-hidden pb-[60px] pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">
-        {children}
+        {ssrContent ? children : <Suspense fallback={<AppLoading />}>{children}</Suspense>}
       </main>
     </>
   );
