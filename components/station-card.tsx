@@ -103,29 +103,23 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
                   // SEO guide HTML is deliberately not precached. Never strand an
                   // offline commuter in a failed full-page navigation.
                   const href = event.currentTarget.href;
-                  if (navigator.onLine === false || detailIsOffline) {
+                  if (navigator.onLine === false) {
                     event.preventDefault();
-                    // Both browser onLine and connectivity probes can misreport
-                    // offline in tunnels or newly mounted PWAs. Check whether
-                    // this document is actually reachable before showing the
-                    // offline sheet or blocking an otherwise valid SEO link.
+                    detailOfflineFallback();
+                  } else if (detailIsOffline) {
+                    event.preventDefault();
+                    // A weak connectivity probe may flag an otherwise reachable
+                    // site as offline. Try a real document GET before opening
+                    // the already-cached station detail sheet.
                     const controller = new AbortController();
-                    const timer = window.setTimeout(() => controller.abort(), 4000);
+                    const timer = window.setTimeout(() => controller.abort(), 1800);
                     void fetch(href, {
                       method: "GET", cache: "no-store", signal: controller.signal,
                     }).then(response => {
                       if (response.ok) window.location.assign(href);
                       else detailOfflineFallback();
-                    }).catch(() => {
-                      // If the probe times out, allow native navigation
-                      // whenever the browser still claims to be online.
-                      // Genuine failed/offline requests keep the cached sheet.
-                      if (controller.signal.aborted && navigator.onLine !== false) {
-                        window.location.assign(href);
-                      } else {
-                        detailOfflineFallback();
-                      }
-                    }).finally(() => window.clearTimeout(timer));
+                    }).catch(() => detailOfflineFallback())
+                      .finally(() => window.clearTimeout(timer));
                   }
                   // Reachable links use native full-document navigation.
                   // This also works before React hydration and keeps the
