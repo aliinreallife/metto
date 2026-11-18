@@ -15,7 +15,7 @@ describe("one station guide for every public timed city", () => {
         expect(station.operationalLineIds.length).toBeGreaterThan(0);
         expect(getSeoCityStation(cityId, station.localId)).toBe(station);
         expect(cityStationSeoPath(cityId, station.localId))
-          .toBe(`/${cityId}/stations/${station.localId}`);
+          .toBe(`/${cityId}/stations/${station.localId.split(":station:").at(-1)}`);
       }
     }
     expect(SEO_CITY_STATIONS.some(station => station.cityId === "mashhad")).toBe(false);
