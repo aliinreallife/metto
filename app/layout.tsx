@@ -125,6 +125,7 @@ export const viewport: Viewport = {
 const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
+  "@id": `${siteUrl}/#website`,
   name: "متو",
   alternateName: ["metto", "metto.ir"],
   url: `${siteUrl}/`,
@@ -134,9 +135,11 @@ const websiteJsonLd = {
 const appJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
+  "@id": `${siteUrl}/#app`,
   name: "متو",
   alternateName: ["metto", "نقشه مترو", "مسیریاب مترو"],
   url: siteUrl,
+  isPartOf: { "@id": `${siteUrl}/#website` },
   description:
     "متو — نقشه مترو با مسیریابی هوشمند، زمان‌بندی خطوط و لیست تمام ایستگاه‌ها.",
   applicationCategory: "TravelApplication",

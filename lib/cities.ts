@@ -73,7 +73,10 @@ export function cityFromPath(path: string): CityId | "all" {
 
 export function viewFromPath(path: string): CityView {
   if (path === "/cities") return "stations";
-  const last = path.split("/").filter(Boolean).at(-1);
+  const parts = path.split("/").filter(Boolean);
+  // Station guides remain part of the existing Stations tab, not Route.
+  if (parts.length >= 3 && parts[1] === "stations" && getCityMeta(parts[0])) return "stations";
+  const last = parts.at(-1);
   return last === "map" || last === "stations" || last === "nearby" ? last : "route";
 }
 

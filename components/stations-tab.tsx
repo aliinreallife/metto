@@ -4,13 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { LINE_COLORS } from "@/lib/metro/lines";
 import { getAllStations } from "@/lib/metro/selectors";
-import { getStation, getStationLines } from "@/lib/metro/selectors";
+import { getStation, getStationLines, getOperationalStationLines } from "@/lib/metro/selectors";
+import { stationSeoPath } from "@/lib/station-seo";
 import type { MetroStation } from "@/lib/metro/types";
 import { orderLineStations } from "@/lib/route";
 import { STRINGS, persianDigits, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { StationCard } from "@/components/station-card";
 import { StationTimesheet } from "@/components/station-timesheet";
+import { StationDetail } from "@/components/station-detail";
+import { useConnectivity } from "@/lib/offline/use-connectivity";
 
 const LINE_NUMBERS = Object.keys(LINE_COLORS)
   .map(Number)
@@ -28,6 +31,8 @@ export function StationsTab({ lang, onSetDest }: Props) {
   const [lineFilter, setLineFilter] = useState<number | null>(null);
   const [branchIndex, setBranchIndex] = useState(0);
   const [timetableStation, setTimetableStation] = useState<MetroStation | null>(null);
+  const [detailStation, setDetailStation] = useState<MetroStation | null>(null);
+  const { state: connectivity } = useConnectivity();
   const dialogRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<HTMLElement | null>(null);
 
@@ -35,12 +40,13 @@ export function StationsTab({ lang, onSetDest }: Props) {
   // Focus trap (#43): while open, Tab cycles inside the dialog and focus
   // returns to the opener on close. No visual change for mouse users.
   useEffect(() => {
-    if (!timetableStation) return;
+    if (!timetableStation && !detailStation) return;
     prevFocusRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setTimetableStation(null);
+        setDetailStation(null);
         return;
       }
       if (e.key !== "Tab" || !dialogRef.current) return;
@@ -71,7 +77,7 @@ export function StationsTab({ lang, onSetDest }: Props) {
       window.removeEventListener("keydown", onKey);
       prevFocusRef.current?.focus();
     };
-  }, [timetableStation]);
+  }, [timetableStation, detailStation]);
 
   const lineOrder = useMemo(
     () => (lineFilter !== null ? orderLineStations(lineFilter) : null),
@@ -184,11 +190,33 @@ export function StationsTab({ lang, onSetDest }: Props) {
               station={s}
               lang={lang}
               onSetDest={() => onSetDest(s.id)}
+              detailHref={s.status === "operational" && getOperationalStationLines(s.id).length > 0 ? stationSeoPath(s.id) : undefined}
+              detailIsOffline={connectivity === "offline"}
+              detailOfflineFallback={() => setDetailStation(s)}
               onShowTimetable={() => setTimetableStation(s)}
             />
           </li>
         ))}
       </ul>
+
+      {detailStation && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 md:items-center"
+          onClick={() => setDetailStation(null)}
+        >
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={isFa ? detailStation.name.fa : detailStation.name.en}
+            tabIndex={-1}
+            className="max-h-[85vh] w-full max-w-lg overflow-y-auto outline-none"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <StationDetail station={detailStation} lang={lang} onClose={() => setDetailStation(null)} />
+          </div>
+        </div>
+      )}
 
       {timetableStation && (
         <div
