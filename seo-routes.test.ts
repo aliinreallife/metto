@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import nextConfig from "./next.config.mjs";
 import sitemap from "./app/sitemap";
-import { SEO_STATIONS, stationSeoPath } from "./lib/station-seo";
+import { SEO_STATIONS, SEO_CITY_STATIONS, stationSeoPath, cityStationSeoPath } from "./lib/station-seo";
 
 // Locks the landing/app URL scheme in CI: landing at /, planner at /route,
 // old URLs redirecting, sitemap matching. Mirrors the e2e coverage in
@@ -43,6 +43,15 @@ describe("landing/app URL scheme", () => {
     for (const station of SEO_STATIONS) {
       expect(urls).toContain(`https://metto.ir${stationSeoPath(station.id)}`);
     }
+    // Search engines must see the same canonical URLs that are prerendered
+    // for every eligible city. No duplicate city aliases or review-only stops.
+    for (const station of SEO_CITY_STATIONS) {
+      expect(urls).toContain(`https://metto.ir${cityStationSeoPath(station.cityId, station.localId)}`);
+    }
+    expect(SEO_CITY_STATIONS.some(station => station.cityId === "isfahan")).toBe(true);
+    expect(SEO_CITY_STATIONS.some(station => station.cityId === "tabriz")).toBe(true);
+    expect(SEO_CITY_STATIONS.some(station => station.cityId === "mashhad")).toBe(false);
+    expect(urls.every(url => !url.includes("%3Astation%3A"))).toBe(true);
     expect(urls).toContain("https://metto.ir/stations");
     expect(urls).not.toContain("https://metto.ir/tehran/stations");
     expect(urls).not.toContain("https://metto.ir/tehran/stations/directory");
