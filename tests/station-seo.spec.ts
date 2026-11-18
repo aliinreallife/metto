@@ -35,9 +35,13 @@ test.describe("station details within the app", () => {
   });
 
   test("original stations tab opens the station and has a reliable way back", async ({ page }) => {
-    await page.goto("/stations", { waitUntil: "domcontentloaded" });
+    await page.goto("/stations", { waitUntil: "load" });
+    // Prove the original interactive tab has hydrated before testing its
+    // click handler. A DOM-only initial render can race SW startup.
+    await page.locator("main input").first().fill("تجریش");
+    await expect(page.getByRole("link", { name: "جزئیات ایستگاه آزادگان" })).toHaveCount(0);
     const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
-    await expect(details).toBeAttached();
+    await expect(details).toBeVisible();
     await details.click();
     await expect(page).toHaveURL(/\/tehran\/stations\/tajrish$/);
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
