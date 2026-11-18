@@ -7,6 +7,7 @@ test.describe("station details within the app", () => {
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "مسیریابی و نقشه" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "موقعیت در خط" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "جهت حرکت قطار" }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "حرکت‌های بعدی" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "مسیر صفحه" })).toBeVisible();
@@ -86,10 +87,11 @@ test.describe("station details within the app", () => {
     }
   });
 
-  test.each([
-    { city: "isfahan", id: "qods", name: "قدس", cityName: "اصفهان", pattern: "شنبه تا پنجشنبه" },
-    { city: "tabriz", id: "el-goli", name: "ائل‌گلی", cityName: "تبریز", pattern: "روزهای عادی" },
-  ])("$city station uses the same template and actual timetable", async ({ page }, station) => {
+  for (const station of [
+    { city: "isfahan", id: "qods", name: "قدس", cityName: "اصفهان", pattern: "شنبه تا پنجشنبه", terminal: "دفاع مقدس" },
+    { city: "tabriz", id: "el-goli", name: "ائل‌گلی", cityName: "تبریز", pattern: "روزهای عادی", terminal: "نور" },
+  ]) {
+    test(`${station.city} station uses the same template and actual timetable`, async ({ page }) => {
     await page.goto(`/${station.city}/stations/${station.id}`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: `ایستگاه مترو ${station.name}` })).toBeVisible();
     await expect(page.getByRole("link", { name: `مترو ${station.cityName}`, exact: true })).toBeVisible();
@@ -106,7 +108,9 @@ test.describe("station details within the app", () => {
     );
     await page.getByRole("button", { name: /نمایش برنامه کامل/ }).click();
     await expect(page.getByRole("button", { name: /بستن برنامه کامل/ })).toBeVisible();
-  });
+    await expect(page.getByRole("list", { name: "جهت حرکت قطار" }).getByText(station.terminal)).toBeVisible();
+    });
+  }
 
   test("other timed cities expose HTML timetable facts even without JavaScript", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
