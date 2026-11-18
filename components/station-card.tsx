@@ -104,27 +104,27 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
                     event.metaKey || event.shiftKey || event.altKey) return;
                   // SEO guide HTML is deliberately not precached. Never strand an
                   // offline commuter in a failed full-page navigation.
+                  event.preventDefault();
+                  const href = event.currentTarget.href;
                   if (navigator.onLine === false) {
-                    event.preventDefault();
                     detailOfflineFallback();
                   } else if (detailIsOffline) {
-                    // Connectivity probes can report offline even when this
-                    // same-origin page is reachable. Check the URL before
-                    // replacing a valid navigation with an offline sheet.
-                    event.preventDefault();
-                    const href = event.currentTarget.href;
+                    // A weak connectivity probe may flag an otherwise reachable
+                    // site as offline. Try a real document GET before opening
+                    // the already-cached station detail sheet.
                     const controller = new AbortController();
                     const timer = window.setTimeout(() => controller.abort(), 1800);
                     void fetch(href, {
-                      method: "HEAD", cache: "no-store", signal: controller.signal,
+                      method: "GET", cache: "no-store", signal: controller.signal,
                     }).then(response => {
-                      if (response.ok || response.status === 405) {
-                        window.location.assign(href);
-                      } else {
-                        detailOfflineFallback();
-                      }
+                      if (response.ok) window.location.assign(href);
+                      else detailOfflineFallback();
                     }).catch(() => detailOfflineFallback())
                       .finally(() => window.clearTimeout(timer));
+                  } else {
+                    // Station SEO pages aren't precached; a document request
+                    // avoids RSC-only transitions that can stall offline.
+                    window.location.assign(href);
                   }
                 }}
                 aria-label={isFa ? `جزئیات ایستگاه ${station.name.fa}` : `Station details: ${station.name.en}`}
