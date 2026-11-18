@@ -37,11 +37,21 @@ export const SEO_CITY_STATIONS: CityStation[] = CITY_STATIONS.filter(station =>
 const cityStationByKey = new Map(
   SEO_CITY_STATIONS.map(station => [`${station.cityId}:${station.localId}`, station]),
 );
-export function getSeoCityStation(city: string, localId: string): CityStation | undefined {
-  return cityStationByKey.get(`${city}:${localId}`);
+/** A city may use a full internal planner ID while its public URLs use a
+ * short station slug. Do not change CityStation.localId: existing route
+ * bookmarks and city planner queries depend on that full ID. */
+export function cityStationSeoSlug(cityId: CityId, localId: string): string {
+  const prefix = `${cityId}:station:`;
+  return localId.startsWith(prefix) ? localId.slice(prefix.length) : localId;
+}
+export function getSeoCityStation(city: string, stationSlugOrId: string): CityStation | undefined {
+  const exact = cityStationByKey.get(`${city}:${stationSlugOrId}`);
+  if (exact) return exact;
+  // Tehran already uses plain slugs; the other cities use full scoped IDs.
+  return cityStationByKey.get(`${city}:${city}:station:${stationSlugOrId}`);
 }
 export function cityStationSeoPath(cityId: CityId, localId: string): string {
-  return `/${cityId}/stations/${encodeURIComponent(localId)}`;
+  return `/${cityId}/stations/${encodeURIComponent(cityStationSeoSlug(cityId, localId))}`;
 }
 export function cityStationListPath(cityId: CityId): string {
   return cityId === "tehran" ? "/stations" : `/${cityId}/stations`;
