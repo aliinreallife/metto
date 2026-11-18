@@ -38,29 +38,7 @@ test.describe("station details within the app", () => {
     await page.goto("/stations", { waitUntil: "domcontentloaded" });
     const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
     await expect(details).toBeAttached();
-    page.on("request", req => {
-      if (req.url().includes("/tehran/stations/tajrish")) {
-        console.log("[station request]", req.url(), req.method(), req.resourceType(), req.isNavigationRequest());
-      }
-    });
-    page.on("response", res => {
-      if (res.url().includes("/tehran/stations/tajrish")) console.log("[station response]", res.status(), res.url());
-    });
-    page.on("requestfailed", req => {
-      if (req.url().includes("/tehran/stations/tajrish")) console.log("[station request failed]", req.failure());
-    });
-    const beforeClick = await page.evaluate(() => ({
-      navigatorOnline: navigator.onLine,
-      swControlled: Boolean(navigator.serviceWorker?.controller),
-    }));
     await details.click();
-    await page.waitForTimeout(900);
-    console.log("[station link diagnostic]", JSON.stringify({
-      beforeClick,
-      urlAfterClick: page.url(),
-      dialogs: await page.getByRole("dialog").allTextContents(),
-      href: await details.getAttribute("href").catch(() => "navigation happened"),
-    }));
     await expect(page).toHaveURL(/\/tehran\/stations\/tajrish$/);
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
 
@@ -212,9 +190,6 @@ test.describe("station details within the app", () => {
     const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
     await expect(details).toBeAttached();
     await context.setOffline(true);
-    console.log("[offline browser signal]", await page.evaluate(() => ({
-      onLine: navigator.onLine, sw: Boolean(navigator.serviceWorker?.controller),
-    })));
     await details.click();
     await expect(page.getByRole("dialog", { name: "تجریش" })).toBeVisible();
     expect(new URL(page.url()).pathname).toBe("/stations");
