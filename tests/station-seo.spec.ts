@@ -149,6 +149,23 @@ test.describe("station details within the app", () => {
     }
   });
 
+  test("city station listings expose crawlable links without JavaScript", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      for (const { city, id } of [
+        { city: "isfahan", id: "qods" },
+        { city: "tabriz", id: "el-goli" },
+      ]) {
+        const page = await context.newPage();
+        await page.goto(`/${city}/stations`, { waitUntil: "domcontentloaded" });
+        await expect(page.locator(`a[href="/${city}/stations/${id}"]`).first()).toBeAttached();
+        await page.close();
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
   test("untimed Mashhad stations are not falsely published with train schedules", async ({ request }) => {
     const response = await request.get("/mashhad/stations/koohsangi");
     expect(response.status()).toBe(404);
