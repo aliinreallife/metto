@@ -57,7 +57,7 @@ test.describe("station details within the app", () => {
     const link = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
     await expect(link).toBeAttached();
     await link.click();
-    await expect(page).toHaveURL(/\\/tehran\\/stations\\/tajrish$/);
+    await expect(page).toHaveURL(/\/tehran\/stations\/tajrish$/);
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
   });
 
