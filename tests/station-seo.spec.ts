@@ -75,16 +75,7 @@ test.describe("station details within the app", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     try {
       const page = await context.newPage();
-      const response = await page.goto("/tehran/stations/azadegan", { waitUntil: "domcontentloaded" });
-      const initialHtml = await page.content();
-      const marker = initialHtml.indexOf("ایستگاه مترو آزادگان");
-      console.log("[no-JS diagnosis]", JSON.stringify({
-        status: response?.status(), title: await page.title(),
-        body: (await page.locator("body").innerText()).slice(0, 900),
-        htmlBytes: initialHtml.length,
-        marker,
-        nearMarker: marker >= 0 ? initialHtml.slice(Math.max(0, marker - 180), marker + 450) : null,
-      }));
+      await page.goto("/tehran/stations/azadegan", { waitUntil: "domcontentloaded" });
       await expect(page.getByRole("heading", { name: "ایستگاه مترو آزادگان" })).toBeVisible();
       await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
       const content = await page.getByRole("heading", { name: "برنامه حرکت" })
