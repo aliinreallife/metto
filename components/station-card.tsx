@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useMemo } from "react";
-import Link from "next/link";
 import { MapPin, Flag, Clock, Zap, Calendar, Ban, Info } from "lucide-react";
 import { LINE_COLORS, lineOnColor } from "@/lib/metro/lines";
 import type { MetroStation } from "@/lib/metro/types";
@@ -96,19 +95,19 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
         <div className="min-w-0 flex-1">
           {detailHref ? (
             <h3>
-              <Link
+              <a
                 href={detailHref}
-                prefetch={false}
                 onClick={(event) => {
                   if (!detailOfflineFallback || event.button !== 0 || event.ctrlKey ||
                     event.metaKey || event.shiftKey || event.altKey) return;
                   // SEO guide HTML is deliberately not precached. Never strand an
                   // offline commuter in a failed full-page navigation.
-                  event.preventDefault();
                   const href = event.currentTarget.href;
                   if (navigator.onLine === false) {
+                    event.preventDefault();
                     detailOfflineFallback();
                   } else if (detailIsOffline) {
+                    event.preventDefault();
                     // A weak connectivity probe may flag an otherwise reachable
                     // site as offline. Try a real document GET before opening
                     // the already-cached station detail sheet.
@@ -121,11 +120,10 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
                       else detailOfflineFallback();
                     }).catch(() => detailOfflineFallback())
                       .finally(() => window.clearTimeout(timer));
-                  } else {
-                    // Station SEO pages aren't precached; a document request
-                    // avoids RSC-only transitions that can stall offline.
-                    window.location.assign(href);
                   }
+                  // Reachable links use native full-document navigation.
+                  // This also works before React hydration and keeps the
+                  // station URL discoverable to search crawlers.
                 }}
                 aria-label={isFa ? `جزئیات ایستگاه ${station.name.fa}` : `Station details: ${station.name.en}`}
                 className="group flex min-h-11 items-center justify-between gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-primary"
