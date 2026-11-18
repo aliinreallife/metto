@@ -61,6 +61,7 @@ describe("one station guide for every public timed city", () => {
         lineId: `${city}:line:1`,
         destinationId: terminal,
         name: getSeoCityStation(city, terminal)!.names,
+        side: "after", // Start-of-line stations face the last stop to the left in RTL.
       });
       expect(model.directions.every(direction =>
         direction.destinationId !== id &&
@@ -68,10 +69,18 @@ describe("one station guide for every public timed city", () => {
       )).toBe(true);
     }
 
+    const middle = getSeoCityStation("tabriz", "sahand")!;
+    const middleDirections = buildStationGuideModel(middle).directions;
+    expect(middleDirections).toEqual(expect.arrayContaining([
+      expect.objectContaining({ destinationId: "el-goli", side: "before" }),
+      expect.objectContaining({ destinationId: "noor", side: "after" }),
+    ]));
+
     const azadegan = getSeoCityStation("tehran", "azadegan")!;
     const tehranDirections = buildStationGuideModel(azadegan).directions;
     expect(tehranDirections.length).toBeGreaterThan(0);
     expect(tehranDirections.every(direction => direction.lineId.startsWith("tehran:line:"))).toBe(true);
+    expect(tehranDirections.every(direction => direction.side === "before" || direction.side === "after")).toBe(true);
     expect(tehranDirections.every(direction => direction.destinationId !== "azadegan")).toBe(true);
 
     const lastStop = getSeoCityStation("tabriz", "noor")!;
