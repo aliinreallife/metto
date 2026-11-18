@@ -1,5 +1,6 @@
 overrides:
   hono: 4.12.25
+  "@modelcontextprotocol/sdk": 1.32.2
 allowBuilds:
   esbuild: true
   msw: true
