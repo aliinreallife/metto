@@ -110,6 +110,7 @@ export function StationGuideContent({
           {model.lines.map(line => {
             const before = model.neighbors.filter(n => n.lineId === line.id && n.side === "before");
             const after = model.neighbors.filter(n => n.lineId === line.id && n.side === "after");
+            const directions = model.directions.filter(direction => direction.lineId === line.id);
             const nodes = [
               ...before,
               { id: station.localId, name: station.names, lineId: line.id, side: "current" as const },
@@ -151,12 +152,33 @@ export function StationGuideContent({
                     })}
                   </ol>
                 </div>
+                {directions.length > 0 && (
+                  <div className="mt-3 border-t border-border pt-3">
+                    <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+                      {isFa
+                        ? `جهت سوار شدن از ${station.names.fa}`
+                        : `Boarding directions from ${station.names.en}`}
+                    </p>
+                    <ul className="flex flex-wrap gap-2" aria-label={isFa ? "جهت حرکت قطار" : "Train travel directions"}>
+                      {directions.map(direction => (
+                        <li key={`${direction.lineId}:${direction.destinationId}`}
+                          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs">
+                          <TrainFront aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
+                          <span className="text-muted-foreground">{isFa ? "به سمت" : "Toward"}</span>
+                          <strong className="font-semibold">{direction.name[lang]}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
         <p className="px-4 pb-3 text-[11px] leading-5 text-muted-foreground">
-          {isFa ? "نمای شماتیک ایستگاه‌های مجاور؛ برای موقعیت جغرافیایی، نقشه را باز کنید." : "Simplified neighboring stops; open the map for geographic location."}
+          {isFa
+            ? "ایستگاه‌های مجاور و جهت‌های ثبت‌شدهٔ قطار نمایش داده شده‌اند؛ برای ساعت حرکت هر جهت، برنامه حرکت را بررسی کنید."
+            : "Adjacent stops and scheduled train directions are shown; check the timetable for service times in each direction."}
         </p>
       </section>
 
