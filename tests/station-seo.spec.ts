@@ -86,6 +86,52 @@ test.describe("station details within the app", () => {
     }
   });
 
+  test.each([
+    { city: "isfahan", id: "qods", name: "قدس", cityName: "اصفهان", pattern: "شنبه تا پنجشنبه" },
+    { city: "tabriz", id: "el-goli", name: "ائل‌گلی", cityName: "تبریز", pattern: "روزهای عادی" },
+  ])("$city station uses the same template and actual timetable", async ({ page }, station) => {
+    await page.goto(`/${station.city}/stations/${station.id}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: `ایستگاه مترو ${station.name}` })).toBeVisible();
+    await expect(page.getByRole("link", { name: `مترو ${station.cityName}`, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "موقعیت در خط" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "حرکت‌های بعدی" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
+    await expect(page.getByRole("button", { name: station.pattern })).toBeVisible();
+    await expect(page.getByRole("link", { name: "مسیریابی به این ایستگاه" }))
+      .toHaveAttribute("href", `/${station.city}/route?to=${station.id}&lang=fa`);
+    await expect(page.getByRole("link", { name: "نمایش روی نقشهٔ متو" }))
+      .toHaveAttribute("href", `/${station.city}/map?station=${station.id}&lang=fa`);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href", `https://metto.ir/${station.city}/stations/${station.id}`,
+    );
+    await page.getByRole("button", { name: /نمایش برنامه کامل/ }).click();
+    await expect(page.getByRole("button", { name: /بستن برنامه کامل/ })).toBeVisible();
+  });
+
+  test("other timed cities expose HTML timetable facts even without JavaScript", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      for (const [city, id, name] of [
+        ["isfahan", "qods", "قدس"],
+        ["tabriz", "el-goli", "ائل‌گلی"],
+      ]) {
+        const page = await context.newPage();
+        await page.goto(`/${city}/stations/${id}`, { waitUntil: "domcontentloaded" });
+        await expect(page.getByRole("heading", { name: `ایستگاه مترو ${name}` })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
+        await expect(page.getByText("تعداد حرکت")).toBeVisible();
+        await page.close();
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("untimed Mashhad stations are not falsely published with train schedules", async ({ request }) => {
+    const response = await request.get("/mashhad/stations/koohsangi");
+    expect(response.status()).toBe(404);
+  });
+
   test("offline commuters get the existing details sheet, not a failed page", async ({ page, context }) => {
     await page.goto("/stations", { waitUntil: "domcontentloaded" });
     const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
