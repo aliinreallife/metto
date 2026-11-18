@@ -47,6 +47,20 @@ test.describe("station details within the app", () => {
     await expect(page.getByRole("heading", { name: "ایستگاه‌های مترو تهران" })).toHaveCount(1);
   });
 
+  test("a mistaken browser offline signal cannot hide a reachable station page", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "onLine", {
+        configurable: true, get: () => false,
+      });
+    });
+    await page.goto("/stations", { waitUntil: "domcontentloaded" });
+    const link = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
+    await expect(link).toBeAttached();
+    await link.click();
+    await expect(page).toHaveURL(/\\/tehran\\/stations\\/tajrish$/);
+    await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
+  });
+
   test("uses verified Azadegan amenities and the real full timetable", async ({ page }) => {
     await page.goto("/tehran/stations/azadegan", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "ایستگاه مترو آزادگان" })).toBeVisible();
