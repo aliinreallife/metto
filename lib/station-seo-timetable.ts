@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { DayType, LineScheduleData } from "./schedule-data";
 import { canBoardAtStation, resolveStationId } from "./metro/selectors";
+import { regionalServicePatterns, regionalStationDepartures, type RegionalTimedCity } from "./regional-station-schedules";
 
 export type StationServiceDaySummary = {
   count: number;
@@ -100,4 +101,19 @@ export async function getStationTimetableSummary(
   stationId: string,
 ): Promise<StationTimetableSummary | null> {
   return getStationTimetableSummarySync(stationId);
+}
+
+/** Source-backed SEO summaries for the city-specific published timetable.
+ * These use the same adapter as the expanded, interactive station timetable. */
+export function getRegionalStationTimetableSummarySync(
+  city: RegionalTimedCity, stationId: string,
+): Record<string, StationServiceDaySummary> {
+  return Object.fromEntries(regionalServicePatterns(city).flatMap(pattern => {
+    const departures = regionalStationDepartures(city, stationId, pattern.id);
+    return departures.length ? [[pattern.id, {
+      count: departures.length,
+      first: departures[0].time,
+      last: departures[departures.length - 1].time,
+    }]] : [];
+  }));
 }
