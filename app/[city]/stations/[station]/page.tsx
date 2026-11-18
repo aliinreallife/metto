@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { use } from "react";
 import { notFound } from "next/navigation";
 import AppLayout from "@/app/(app)/layout";
 import { StationGuideContent } from "@/components/station-guide-content";
 import { getOperationalNeighbors, getOperationalStationLines, getRouteStations } from "@/lib/metro/selectors";
-import { getStationTimetableSummary } from "@/lib/station-seo-timetable";
+import { getStationTimetableSummarySync } from "@/lib/station-seo-timetable";
 import { persianDigits } from "@/lib/i18n";
 import {
   SEO_STATIONS, SEO_CITY, absoluteSeoUrl,
@@ -53,8 +54,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function StationGuide({ params }: Props) {
-  const station = await resolveStation(params);
+export default function StationGuide({ params }: Props) {
+  // generateStaticParams precomputes every ID. React reads the resolved
+  // route parameter synchronously; no server I/O suspends this page.
+  const { city, station: id } = use(params);
+  if (city !== "tehran") notFound();
+  const station = getSeoStation(id);
+  if (!station) notFound();
   const neighbors = getOperationalNeighbors(station.id)
     .flatMap((edge) => {
       const neighbor = getSeoStation(edge.stationId);
@@ -74,7 +80,7 @@ export default async function StationGuide({ params }: Props) {
 
   // Static timetable facts are available in source HTML for people and
   // crawlers; the interactive component upgrades them with hot-updated data.
-  const timetableSummary = await getStationTimetableSummary(station.id);
+  const timetableSummary = getStationTimetableSummarySync(station.id);
   const jsonLd = [
     breadcrumbsJsonLd(stationBreadcrumbs(station)),
     stationPageJsonLd(station),
