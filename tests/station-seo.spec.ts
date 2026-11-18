@@ -7,7 +7,7 @@ test.describe("station details within the app", () => {
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "مسیریابی و نقشه" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "موقعیت در خط" })).toBeVisible();
-    await expect(page.getByRole("list", { name: "جهت حرکت قطار" }).first()).toBeVisible();
+    await expect(page.getByRole("group", { name: "جهت‌های حرکت روی خط" }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "حرکت‌های بعدی" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "مسیر صفحه" })).toBeVisible();
@@ -108,9 +108,27 @@ test.describe("station details within the app", () => {
     );
     await page.getByRole("button", { name: /نمایش برنامه کامل/ }).click();
     await expect(page.getByRole("button", { name: /بستن برنامه کامل/ })).toBeVisible();
-    await expect(page.getByRole("list", { name: "جهت حرکت قطار" }).getByText(station.terminal)).toBeVisible();
+    await expect(page.getByTestId("line-direction-after").getByText(station.terminal)).toBeVisible();
     });
   }
+
+  test("line destinations occupy opposite sides in RTL and LTR", async ({ page }) => {
+    await page.goto("/tabriz/stations/sahand", { waitUntil: "domcontentloaded" });
+    const before = page.getByTestId("line-direction-before");
+    const after = page.getByTestId("line-direction-after");
+    await expect(before.getByText("ائل‌گلی")).toBeVisible();
+    await expect(after.getByText("نور")).toBeVisible();
+    const faBefore = await before.boundingBox();
+    const faAfter = await after.boundingBox();
+    expect(faBefore && faAfter && faBefore.x > faAfter.x).toBeTruthy();
+
+    await page.goto("/tabriz/stations/sahand?lang=en", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("line-direction-before").getByText("El Goli")).toBeVisible();
+    await expect(page.getByTestId("line-direction-after").getByText("Noor")).toBeVisible();
+    const enBefore = await page.getByTestId("line-direction-before").boundingBox();
+    const enAfter = await page.getByTestId("line-direction-after").boundingBox();
+    expect(enBefore && enAfter && enBefore.x < enAfter.x).toBeTruthy();
+  });
 
   test("other timed cities expose HTML timetable facts even without JavaScript", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
