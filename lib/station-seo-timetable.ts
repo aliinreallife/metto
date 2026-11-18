@@ -2,7 +2,7 @@
 // imported from the static station page, NEVER from client components.
 // It reads the same bundled timetable file as Metto's offline bootstrap.
 // The client uses the latest validated schedule when that becomes available.
-import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { DayType, LineScheduleData } from "./schedule-data";
 import { canBoardAtStation, resolveStationId } from "./metro/selectors";
@@ -26,10 +26,10 @@ type MutableSummary = StationServiceDaySummary & {
   lastMinute: number;
 };
 
-let bundledSummaryPromise: Promise<Map<string, StationTimetableSummary>> | null = null;
+let bundledSummaryCache: Map<string, StationTimetableSummary> | null = null;
 
-async function readBundledSummaries(): Promise<Map<string, StationTimetableSummary>> {
-  const raw = await readFile(path.join(process.cwd(), "public", "schedule-data.json"), "utf8");
+function readBundledSummaries(): Map<string, StationTimetableSummary> {
+  const raw = readFileSync(path.join(process.cwd(), "public", "schedule-data.json"), "utf8");
   const data: LineScheduleData[] = JSON.parse(raw);
   const aggregate = new Map<string, Partial<Record<DayType, MutableSummary>>>();
 
@@ -82,17 +82,22 @@ async function readBundledSummaries(): Promise<Map<string, StationTimetableSumma
   ]));
 }
 
-/** Returns bundled scheduled facts or null (never blocks the station page). */
-export async function getStationTimetableSummary(
+/** Synchronous cached data avoids suspending the static station render.
+ * Missing/corrupt data fails soft; never guess timetable facts. */
+export function getStationTimetableSummarySync(
   stationId: string,
-): Promise<StationTimetableSummary | null> {
+): StationTimetableSummary | null {
   try {
-    bundledSummaryPromise ??= readBundledSummaries().catch(error => {
-      bundledSummaryPromise = null; // safe retry on a later prerender
-      throw error;
-    });
-    return (await bundledSummaryPromise).get(stationId) ?? null;
+    bundledSummaryCache ??= readBundledSummaries();
+    return bundledSummaryCache.get(stationId) ?? null;
   } catch {
     return null;
   }
+}
+
+/** Retain the async API used in unit tests and other non-rendering callers. */
+export async function getStationTimetableSummary(
+  stationId: string,
+): Promise<StationTimetableSummary | null> {
+  return getStationTimetableSummarySync(stationId);
 }
