@@ -112,14 +112,21 @@ export function StationCardView({ station, lang, distance, onSetDest, onShowTime
                     // site as offline. Try a real document GET before opening
                     // the already-cached station detail sheet.
                     const controller = new AbortController();
-                    const timer = window.setTimeout(() => controller.abort(), 1800);
+                    const timer = window.setTimeout(() => controller.abort(), 4000);
                     void fetch(href, {
                       method: "GET", cache: "no-store", signal: controller.signal,
                     }).then(response => {
                       if (response.ok) window.location.assign(href);
                       else detailOfflineFallback();
-                    }).catch(() => detailOfflineFallback())
-                      .finally(() => window.clearTimeout(timer));
+                    }).catch(() => {
+                      // A slow-but-reachable document must not be classified
+                      // as offline just because the health probe timed out.
+                      if (controller.signal.aborted && navigator.onLine !== false) {
+                        window.location.assign(href);
+                      } else {
+                        detailOfflineFallback();
+                      }
+                    }).finally(() => window.clearTimeout(timer));
                   }
                   // Reachable links use native full-document navigation.
                   // This also works before React hydration and keeps the
