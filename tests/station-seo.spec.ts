@@ -18,9 +18,9 @@ test.describe("station details within the app", () => {
     );
     await expect(page.locator("footer.fixed.bottom-0")).toHaveCount(1);
     await expect(page.getByRole("link", { name: "مسیریابی به این ایستگاه" }))
-      .toHaveAttribute("href", "/tehran/route?to=tajrish&lang=fa");
+      .toHaveAttribute("href", "/route?to=tajrish&lang=fa");
     await expect(page.getByRole("link", { name: "نمایش روی نقشهٔ متو" }))
-      .toHaveAttribute("href", "/tehran/map?station=tajrish&lang=fa");
+      .toHaveAttribute("href", "/map?station=tajrish&lang=fa");
 
     const types = await page.locator('script[type="application/ld+json"]').evaluateAll(scripts =>
       scripts.flatMap(script => {
