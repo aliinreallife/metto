@@ -202,12 +202,12 @@ export function StationGuideContent({
 
       <nav aria-label={isFa ? "مسیریابی و نقشه" : "Route and map"}
         className="grid grid-cols-2 gap-2 pt-1">
-        <Link href={`/${city.slug}/route?to=${encodeURIComponent(station.localId)}&lang=${lang}`} prefetch={false}
+        <Link href={`${city.slug === "tehran" ? "" : `/${city.slug}`}/route?to=${encodeURIComponent(station.localId)}&lang=${lang}`} prefetch={false}
           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-2 py-3 text-center text-xs font-bold leading-5 text-primary-foreground transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-primary sm:text-sm">
           <RouteIcon aria-hidden="true" className="size-4 shrink-0" />
           {isFa ? "مسیریابی به این ایستگاه" : "Route to this station"}
         </Link>
-        <Link href={`/${city.slug}/map?station=${encodeURIComponent(station.localId)}&lang=${lang}`} prefetch={false}
+        <Link href={`${city.slug === "tehran" ? "" : `/${city.slug}`}/map?station=${encodeURIComponent(station.localId)}&lang=${lang}`} prefetch={false}
           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border bg-card px-2 py-3 text-center text-xs font-semibold leading-5 transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary sm:text-sm">
           <MapIcon aria-hidden="true" className="size-4 shrink-0" />
           {isFa ? "نمایش روی نقشهٔ متو" : "Show on Metto map"}
