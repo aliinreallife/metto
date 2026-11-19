@@ -7,6 +7,7 @@ test.describe("station details within the app", () => {
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "مسیریابی و نقشه" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "موقعیت در خط" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "جهت‌های حرکت روی خط" }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "حرکت‌های بعدی" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "مسیر صفحه" })).toBeVisible();
@@ -17,9 +18,9 @@ test.describe("station details within the app", () => {
     );
     await expect(page.locator("footer.fixed.bottom-0")).toHaveCount(1);
     await expect(page.getByRole("link", { name: "مسیریابی به این ایستگاه" }))
-      .toHaveAttribute("href", "/tehran/route?to=tajrish&lang=fa");
+      .toHaveAttribute("href", "/route?to=tajrish&lang=fa");
     await expect(page.getByRole("link", { name: "نمایش روی نقشهٔ متو" }))
-      .toHaveAttribute("href", "/tehran/map?station=tajrish&lang=fa");
+      .toHaveAttribute("href", "/map?station=tajrish&lang=fa");
 
     const types = await page.locator('script[type="application/ld+json"]').evaluateAll(scripts =>
       scripts.flatMap(script => {
@@ -33,10 +34,28 @@ test.describe("station details within the app", () => {
     expect(types).toContain("WebPage");
   });
 
+  test("Tehran tab aliases keep working but consistently nominate root canonicals", async ({ page }) => {
+    for (const view of ["route", "map", "stations", "nearby"]) {
+      await page.goto(`/tehran/${view}`, { waitUntil: "domcontentloaded" });
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+        "href", `https://metto.ir/${view}`,
+      );
+    }
+    // The Tehran city landing remains its own page, not a duplicate app tab.
+    await page.goto("/tehran", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href", "https://metto.ir/tehran",
+    );
+  });
+
   test("original stations tab opens the station and has a reliable way back", async ({ page }) => {
-    await page.goto("/stations", { waitUntil: "domcontentloaded" });
+    await page.goto("/stations", { waitUntil: "load" });
+    // Prove the original interactive tab has hydrated before testing its
+    // click handler. A DOM-only initial render can race SW startup.
+    await page.locator("main input").first().fill("تجریش");
+    await expect(page.getByRole("link", { name: "جزئیات ایستگاه آزادگان" })).toHaveCount(0);
     const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
-    await expect(details).toBeAttached();
+    await expect(details).toBeVisible();
     await details.click();
     await expect(page).toHaveURL(/\/tehran\/stations\/tajrish$/);
     await expect(page.getByRole("heading", { name: "ایستگاه مترو تجریش" })).toBeVisible();
@@ -86,10 +105,99 @@ test.describe("station details within the app", () => {
     }
   });
 
+  for (const station of [
+    { city: "isfahan", id: "qods", name: "قدس", cityName: "اصفهان", pattern: "شنبه تا پنجشنبه", terminal: "دفاع مقدس" },
+    { city: "tabriz", id: "el-goli", name: "ائل‌گلی", cityName: "تبریز", pattern: "روزهای عادی", terminal: "نور" },
+  ]) {
+    test(`${station.city} station uses the same template and actual timetable`, async ({ page }) => {
+    await page.goto(`/${station.city}/stations/${station.id}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: `ایستگاه مترو ${station.name}` })).toBeVisible();
+    await expect(page.getByRole("link", { name: `مترو ${station.cityName}`, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "موقعیت در خط" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "حرکت‌های بعدی" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
+    await expect(page.getByRole("button", { name: station.pattern })).toBeVisible();
+    await expect(page.getByRole("link", { name: "مسیریابی به این ایستگاه" }))
+      .toHaveAttribute("href", `/${station.city}/route?to=${encodeURIComponent(`${station.city}:station:${station.id}`)}&lang=fa`);
+    await expect(page.getByRole("link", { name: "نمایش روی نقشهٔ متو" }))
+      .toHaveAttribute("href", `/${station.city}/map?station=${encodeURIComponent(`${station.city}:station:${station.id}`)}&lang=fa`);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href", `https://metto.ir/${station.city}/stations/${station.id}`,
+    );
+    await page.getByRole("button", { name: /نمایش برنامه کامل/ }).click();
+    await expect(page.getByRole("button", { name: /بستن برنامه کامل/ })).toBeVisible();
+    await expect(page.getByTestId("line-direction-after").getByText(station.terminal)).toBeVisible();
+    });
+  }
+
+  test("line destinations occupy opposite sides in RTL and LTR", async ({ page }) => {
+    await page.goto("/tabriz/stations/sahand", { waitUntil: "domcontentloaded" });
+    const before = page.getByTestId("line-direction-before");
+    const after = page.getByTestId("line-direction-after");
+    await expect(before.getByText("ائل‌گلی")).toBeVisible();
+    await expect(after.getByText("نور")).toBeVisible();
+    const faBefore = await before.boundingBox();
+    const faAfter = await after.boundingBox();
+    expect(faBefore && faAfter && faBefore.x > faAfter.x).toBeTruthy();
+
+    await page.goto("/tabriz/stations/sahand?lang=en", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("line-direction-before").getByText("El Goli")).toBeVisible();
+    await expect(page.getByTestId("line-direction-after").getByText("Noor")).toBeVisible();
+    const enBefore = await page.getByTestId("line-direction-before").boundingBox();
+    const enAfter = await page.getByTestId("line-direction-after").boundingBox();
+    expect(enBefore && enAfter && enBefore.x < enAfter.x).toBeTruthy();
+  });
+
+  test("other timed cities expose HTML timetable facts even without JavaScript", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      for (const [city, id, name] of [
+        ["isfahan", "qods", "قدس"],
+        ["tabriz", "el-goli", "ائل‌گلی"],
+      ]) {
+        const page = await context.newPage();
+        await page.goto(`/${city}/stations/${id}`, { waitUntil: "domcontentloaded" });
+        await expect(page.getByRole("heading", { name: `ایستگاه مترو ${name}` })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "برنامه حرکت" })).toBeVisible();
+        await expect(page.getByText("تعداد حرکت")).toBeVisible();
+        await page.close();
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("city station listings expose crawlable links without JavaScript", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      for (const { city, id } of [
+        { city: "isfahan", id: "qods" },
+        { city: "tabriz", id: "el-goli" },
+      ]) {
+        const page = await context.newPage();
+        await page.goto(`/${city}/stations`, { waitUntil: "domcontentloaded" });
+        await expect(page.locator(`a[href="/${city}/stations/${id}"]`).first()).toBeAttached();
+        await page.close();
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("untimed Mashhad stations are not falsely published with train schedules", async ({ request }) => {
+    const response = await request.get("/mashhad/stations/koohsangi");
+    expect(response.status()).toBe(404);
+  });
+
   test("offline commuters get the existing details sheet, not a failed page", async ({ page, context }) => {
-    await page.goto("/stations", { waitUntil: "domcontentloaded" });
+    await page.goto("/stations", { waitUntil: "load" });
+    // Wait for the real interactive station search to hydrate before
+    // disabling the network. Otherwise a pre-hydration native link click
+    // bypasses the existing offline sheet even though the app is correct.
+    await page.locator("main input").first().fill("تجریش");
+    await expect(page.getByRole("link", { name: "جزئیات ایستگاه آزادگان" })).toHaveCount(0);
     const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
-    await expect(details).toBeAttached();
+    await expect(details).toBeVisible();
     await context.setOffline(true);
     await details.click();
     await expect(page.getByRole("dialog", { name: "تجریش" })).toBeVisible();

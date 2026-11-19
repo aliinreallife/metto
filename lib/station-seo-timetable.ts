@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { DayType, LineScheduleData } from "./schedule-data";
 import { canBoardAtStation, resolveStationId } from "./metro/selectors";
+import { regionalServicePatterns, regionalStationDepartures, type RegionalTimedCity } from "./regional-station-schedules";
 
 export type StationServiceDaySummary = {
   count: number;
@@ -27,20 +28,34 @@ type MutableSummary = StationServiceDaySummary & {
 };
 
 let bundledSummaryCache: Map<string, StationTimetableSummary> | null = null;
+let bundledDirectionsCache: Map<string, { line: number; destinationId: string; nextStopId: string }[]> | null = null;
 
 function readBundledSummaries(): Map<string, StationTimetableSummary> {
   const raw = readFileSync(path.join(process.cwd(), "public", "schedule-data.json"), "utf8");
   const data: LineScheduleData[] = JSON.parse(raw);
   const aggregate = new Map<string, Partial<Record<DayType, MutableSummary>>>();
+  const destinations = new Map<string, Map<string, { line: number; destinationId: string; nextStopId: string }>>();
 
   for (const group of data) {
     for (const train of group.trains) {
       if (!DAY_TYPES.includes(train.dayType)) continue;
       // Terminal arrivals are not departures. Metto's getAllDepartures
       // similarly excludes the last stop and stations where boarding is closed.
-      for (const stop of train.stops.slice(0, -1)) {
+      const destinationId = resolveStationId(train.stops.at(-1)?.stationId ?? "");
+      for (const [stopIndex, stop] of train.stops.entries()) {
+        if (stopIndex === train.stops.length - 1) continue;
         const stationId = resolveStationId(stop.stationId);
         if (!stationId || !canBoardAtStation(stationId, train.line)) continue;
+        // A direction must be an actual last stop reached by a scheduled train,
+        // not a planned geographic endpoint or an arrival at this station.
+        const nextStopId = resolveStationId(train.stops[stopIndex + 1]?.stationId ?? "");
+        if (destinationId && destinationId !== stationId && nextStopId) {
+          const byLine = destinations.get(stationId) ?? new Map();
+          byLine.set(`${train.line}:${destinationId}:${nextStopId}`, {
+            line: train.line, destinationId, nextStopId,
+          });
+          destinations.set(stationId, byLine);
+        }
         const time = minuteOfDay(stop.time);
         const days = aggregate.get(stationId) ?? {};
         const current = days[train.dayType];
@@ -67,6 +82,10 @@ function readBundledSummaries(): Map<string, StationTimetableSummary> {
       }
     }
   }
+
+  bundledDirectionsCache = new Map([...destinations].map(([id, values]) => [
+    id, [...values.values()].sort((a,b) => a.line - b.line || a.destinationId.localeCompare(b.destinationId)),
+  ]));
 
   // Strip private numeric comparison fields before serializing to a page.
   return new Map([...aggregate].map(([id, days]) => [
@@ -100,4 +119,33 @@ export async function getStationTimetableSummary(
   stationId: string,
 ): Promise<StationTimetableSummary | null> {
   return getStationTimetableSummarySync(stationId);
+}
+
+/** Source-backed SEO summaries for the city-specific published timetable.
+ * These use the same adapter as the expanded, interactive station timetable. */
+export function getRegionalStationTimetableSummarySync(
+  city: RegionalTimedCity, stationId: string,
+): Record<string, StationServiceDaySummary> {
+  return Object.fromEntries(regionalServicePatterns(city).flatMap(pattern => {
+    const departures = regionalStationDepartures(city, stationId, pattern.id);
+    return departures.length ? [[pattern.id, {
+      count: departures.length,
+      first: departures[0].time,
+      last: departures[departures.length - 1].time,
+    }]] : [];
+  }));
+}
+
+/** Actual scheduled train destination terminals for a Tehran boarding stop.
+ * Union of published service-day patterns; the timetable determines whether
+ * a particular destination has departures on a selected day. */
+export function getTehranStationDirectionsSync(
+  stationId: string,
+): { line: number; destinationId: string; nextStopId: string }[] {
+  try {
+    bundledSummaryCache ??= readBundledSummaries();
+    return bundledDirectionsCache?.get(stationId) ?? [];
+  } catch {
+    return [];
+  }
 }

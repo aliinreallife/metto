@@ -18,7 +18,18 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const { city, view } = await params; const meta = availableCities().find(c => c.slug === city);
   if (!meta || !views.some(v => v === view)) notFound();
   const labels = { route: "مسیریابی", map: "نقشه", stations: "ایستگاه‌ها", nearby: "نزدیک‌ترین ایستگاه" };
-  return { title: `${labels[view as keyof typeof labels]} · مترو ${meta.name.fa}`, alternates: { canonical: city === "tehran" && view === "stations" ? "/stations" : `/${city}/${view}` }, ...(meta.release === "preview" ? { robots: { index: false, follow: false } } : {}) };
+  // Root app tabs and /tehran/* show the same Tehran content. Always
+  // nominate the original root tab as canonical while preserving historic
+  // /tehran/* URLs for bookmarked journeys and existing navigation.
+  const canonical = city === "tehran" ? `/${view}` : `/${city}/${view}`;
+  const title = `${labels[view as keyof typeof labels]} · مترو ${meta.name.fa}`;
+  const description = `${labels[view as keyof typeof labels]} مترو ${meta.name.fa} در متو؛ اطلاعات خطوط و ایستگاه‌ها و مسیریابی مترو.`;
+  return {
+    title, description,
+    alternates: { canonical },
+    openGraph: { title, description, url: `https://metto.ir${canonical}` },
+    ...(meta.release === "preview" ? { robots: { index: false, follow: false } } : {}),
+  };
 }
 export default async function CityApp({ params }: { params: Promise<{ city: string; view: string }> }) {
   const { city, view } = await params;

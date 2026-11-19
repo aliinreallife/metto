@@ -37,6 +37,15 @@ const nextConfig = {
   //   Unmatched query params pass through to the destination.
   async redirects() {
     return [
+      // Both hosts are assigned to the production Vercel project. Route
+      // www -> apex permanently rather than giving Google two domains that
+      // serve identical pages and rely on canonical hints alone.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.metto.ir" }],
+        destination: "https://metto.ir/:path*",
+        permanent: true,
+      },
       { source: "/welcome", destination: "/", permanent: true },
       {
         source: "/",

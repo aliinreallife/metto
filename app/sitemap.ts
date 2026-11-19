@@ -1,17 +1,22 @@
 import type { MetadataRoute } from "next";
 import { availableCities } from "@/lib/city-availability";
-import { SEO_STATIONS, stationSeoPath } from "@/lib/station-seo";
+import { SEO_CITY_STATIONS, cityStationSeoPath } from "@/lib/station-seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://metto.ir";
 
   return [
-    ...SEO_STATIONS.map(station => ({
-      url: `${baseUrl}${stationSeoPath(station.id)}`,
+    ...SEO_CITY_STATIONS.map(station => ({
+      url: `${baseUrl}${cityStationSeoPath(station.cityId, station.localId)}`,
       changeFrequency: "monthly" as const,
       priority: 0.6,
     })),
-    ...[...availableCities().filter(city => city.release === "public").flatMap(city => ["", "/route", "/map", "/stations", "/nearby"].filter(view => !(city.slug === "tehran" && view === "/stations")).map(view => `/${city.slug}${view}`)), "/cities", "/cities/map", "/cities/route", "/cities/nearby"].map(path => ({ url: `${baseUrl}${path}`, changeFrequency: "weekly" as const, priority: 0.8 })),
+    ...[...availableCities().filter(city => city.release === "public").flatMap(city => ["", "/route", "/map", "/stations", "/nearby"]
+      // Keep /tehran landing: its city-specific content differs from /. The
+      // Tehran app tabs duplicate /route, /map, /stations, /nearby, so their
+      // aliases must not be nominated as separate canonical sitemap entries.
+      .filter(view => city.slug !== "tehran" || view === "")
+      .map(view => `/${city.slug}${view}`)), "/cities", "/cities/map", "/cities/route", "/cities/nearby"].map(path => ({ url: `${baseUrl}${path}`, changeFrequency: "weekly" as const, priority: 0.8 })),
     {
       url: baseUrl,
       changeFrequency: "weekly",

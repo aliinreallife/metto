@@ -169,7 +169,10 @@ export function AppNav() {
 
   function getHref(base: string) {
     const view = viewFromPath(base);
-    const destination = cityHref(city, view, !getCityMeta(currentPath.split("/")[1]));
+    // Tehran has canonical root tabs (/route, /map, /stations, /nearby).
+    // From station guides and /tehran/* aliases link consistently to those
+    // originals; keep all other cities on their own city-specific paths.
+    const destination = cityHref(city, view, city === "tehran" || !getCityMeta(currentPath.split("/")[1]));
     if (city !== "tehran") {
       const params = new URLSearchParams({ lang });
       for (const key of ["from", "to"]) {

@@ -23,7 +23,7 @@ import { useRouteClock } from "@/lib/use-route-clock";
 import { FilterChip } from "./stations-tab";
 import { NearbyLocation } from "./nearby-tab";
 import { CityStationPicker } from "./city-station-picker";
-import { stationSeoPath } from "@/lib/station-seo";
+import { cityStationSeoPath } from "@/lib/station-seo";
 import { useConnectivity } from "@/lib/offline/use-connectivity";
 import { getCurrentPositionTolerant, classifyGeoError, type GeoErrorKind } from "@/lib/geolocation";
 import { LocationErrorActions } from "./location-error";
@@ -116,7 +116,7 @@ function CityDirectory({ city, view }: { city: CityId | "all"; view: "stations" 
             onShowTimetable={s.cityId === "isfahan" || s.cityId === "tabriz" ? () => setTimetableStation(s) : undefined}
             distance={location ? haversineKm(location.lat, location.lng, s.location.lat, s.location.lng) : undefined}
             onSetDest={() => router.push(stationRouteHref(s, "to", lang))}
-            detailHref={connectivity !== "offline" && s.cityId === "tehran" && s.status === "operational" && s.operationalLineIds.length > 0 ? stationSeoPath(s.localId) : undefined} />
+            detailHref={connectivity !== "offline" && CITIES.some(city => city.slug === s.cityId && city.timing && city.release === "public") && s.status === "operational" && s.operationalLineIds.length > 0 ? cityStationSeoPath(s.cityId, s.localId) : undefined} />
           {city === "all" && <Link className="inline-flex min-h-11 items-center gap-1.5 text-xs text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-primary" href={`/${s.cityId}/map?${new URLSearchParams({ station: s.localId, lang })}`}><MapIcon aria-hidden="true" className="size-3.5" />{t.tabMap}</Link>}
         </li>)}</ul>);
   return <div className="flex min-h-0 flex-1 flex-col" dir={lang === "fa" ? "rtl" : "ltr"} data-testid="city-explorer">
