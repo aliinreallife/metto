@@ -9,6 +9,15 @@ import { SEO_STATIONS, SEO_CITY_STATIONS, stationSeoPath, cityStationSeoPath } f
 describe("landing/app URL scheme", () => {
   it("redirects old landing and share-link URLs, keeps plain / rendering", async () => {
     const rules = (await nextConfig.redirects?.()) ?? [];
+    // The project serves both www and apex. Every www URL should redirect
+    // to the primary HTTPS domain rather than compete as a second canonical.
+    expect(rules).toContainEqual(expect.objectContaining({
+      source: "/:path*",
+      has: [{ type: "host", value: "www.metto.ir" }],
+      destination: "https://metto.ir/:path*",
+      permanent: true,
+    }));
+
     // Old landing URL consolidates onto the new root landing.
     expect(rules).toContainEqual(
       expect.objectContaining({
