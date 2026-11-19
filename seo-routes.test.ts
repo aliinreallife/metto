@@ -53,7 +53,15 @@ describe("landing/app URL scheme", () => {
     expect(SEO_CITY_STATIONS.some(station => station.cityId === "mashhad")).toBe(false);
     expect(urls.every(url => !url.includes("%3Astation%3A"))).toBe(true);
     expect(urls).toContain("https://metto.ir/stations");
-    expect(urls).not.toContain("https://metto.ir/tehran/stations");
+    // Root Tehran app tabs are the canonical URLs. The matching /tehran/*
+    // aliases must not compete with the root URLs in Google's sitemap.
+    for (const view of ["route", "map", "stations", "nearby"]) {
+      expect(urls).toContain(`https://metto.ir/${view}`);
+      expect(urls).not.toContain(`https://metto.ir/tehran/${view}`);
+    }
+    // Unlike Tehran's duplicated tabs, the city-specific landing /tehran
+    // contains different introductory content from / and is kept indexable.
+    expect(urls).toContain("https://metto.ir/tehran");
     expect(urls).not.toContain("https://metto.ir/tehran/stations/directory");
     expect(new Set(urls).size).toBe(urls.length);
   });
