@@ -190,9 +190,14 @@ test.describe("station details within the app", () => {
   });
 
   test("offline commuters get the existing details sheet, not a failed page", async ({ page, context }) => {
-    await page.goto("/stations", { waitUntil: "domcontentloaded" });
+    await page.goto("/stations", { waitUntil: "load" });
+    // Wait for the real interactive station search to hydrate before
+    // disabling the network. Otherwise a pre-hydration native link click
+    // bypasses the existing offline sheet even though the app is correct.
+    await page.locator("main input").first().fill("تجریش");
+    await expect(page.getByRole("link", { name: "جزئیات ایستگاه آزادگان" })).toHaveCount(0);
     const details = page.getByRole("link", { name: "جزئیات ایستگاه تجریش" });
-    await expect(details).toBeAttached();
+    await expect(details).toBeVisible();
     await context.setOffline(true);
     await details.click();
     await expect(page.getByRole("dialog", { name: "تجریش" })).toBeVisible();
