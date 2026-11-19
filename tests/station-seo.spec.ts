@@ -34,6 +34,20 @@ test.describe("station details within the app", () => {
     expect(types).toContain("WebPage");
   });
 
+  test("Tehran tab aliases keep working but consistently nominate root canonicals", async ({ page }) => {
+    for (const view of ["route", "map", "stations", "nearby"]) {
+      await page.goto(`/tehran/${view}`, { waitUntil: "domcontentloaded" });
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+        "href", `https://metto.ir/${view}`,
+      );
+    }
+    // The Tehran city landing remains its own page, not a duplicate app tab.
+    await page.goto("/tehran", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href", "https://metto.ir/tehran",
+    );
+  });
+
   test("original stations tab opens the station and has a reliable way back", async ({ page }) => {
     await page.goto("/stations", { waitUntil: "load" });
     // Prove the original interactive tab has hydrated before testing its
