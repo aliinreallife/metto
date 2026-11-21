@@ -38,10 +38,10 @@ test.describe("descriptive site links", () => {
       await page.goto("/", { waitUntil: "domcontentloaded" });
       const footer = page.locator("footer").last();
       for (const { label, href } of [
-        { label: "مسیریابی مترو تهران", href: "/route?lang=fa" },
-        { label: "ایستگاه‌های مترو تهران", href: "/stations?lang=fa" },
-        { label: "نزدیک‌ترین ایستگاه مترو تهران", href: "/nearby?lang=fa" },
-        { label: "نقشه مترو تهران", href: "/map?lang=fa" },
+        { label: "مسیریابی مترو تهران", href: "/route" },
+        { label: "ایستگاه‌های مترو تهران", href: "/stations" },
+        { label: "نزدیک‌ترین ایستگاه مترو تهران", href: "/nearby" },
+        { label: "نقشه مترو تهران", href: "/map" },
       ]) {
         await expect(footer.getByRole("link", { name: label, exact: true })).toHaveAttribute("href", href);
       }
@@ -49,7 +49,7 @@ test.describe("descriptive site links", () => {
       await page.goto("/isfahan", { waitUntil: "domcontentloaded" });
       await expect(page.locator("footer").last().getByRole("link", {
         name: "نقشه مترو اصفهان", exact: true,
-      })).toHaveAttribute("href", "/isfahan/map?lang=fa");
+      })).toHaveAttribute("href", "/isfahan/map");
     } finally {
       await context.close();
     }
