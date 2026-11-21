@@ -69,7 +69,8 @@ export function MapPage() {
   const isFa = lang === "fa";
 
   useEffect(() => {
-    const title = isFa ? "نقشه مترو" : "Metro Map";
+    // Preserve the city-specific title from route metadata after hydration.
+    const title = isFa ? "نقشه مترو تهران آنلاین | خطوط و ایستگاه‌ها" : "Tehran Metro Map | Lines & Stations";
     const suffix = isFa ? " | متو" : " | metto";
     document.title = title + suffix;
   }, [isFa]);
