@@ -84,7 +84,7 @@ export function WelcomeFooter({ cityId }: { cityId?: CityId }) {
               {WELCOME_NAV.map((item) => (
                 <li key={item.key}>
                   <Link
-                    href={`${cityId && cityId !== "tehran" ? `/${cityId}` : ""}${item.href}?lang=${lang}`}
+                    href={`${cityId && cityId !== "tehran" ? `/${cityId}` : ""}${item.href}${lang === "en" ? "?lang=en" : ""}`}
                     className="text-sm font-medium transition-colors hover:text-primary"
                   >
                     {sectionLabels[item.key]}
