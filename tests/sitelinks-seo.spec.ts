@@ -43,12 +43,14 @@ test.describe("descriptive site links", () => {
         { label: "نزدیک‌ترین ایستگاه مترو تهران", href: "/nearby" },
         { label: "نقشه مترو تهران", href: "/map" },
       ]) {
-        await expect(footer.getByRole("link", { name: label, exact: true })).toHaveAttribute("href", href);
+        const link = footer.locator("a[href]").filter({ hasText: label });
+        await expect(link).toHaveCount(1);
+        await expect(link).toHaveAttribute("href", href);
       }
       // City-specific landing footers still link to that city's own tabs.
       await page.goto("/isfahan", { waitUntil: "domcontentloaded" });
-      await expect(page.locator("footer").last().getByRole("link", {
-        name: "نقشه مترو اصفهان", exact: true,
+      await expect(page.locator("footer").last().locator("a[href]").filter({
+        hasText: "نقشه مترو اصفهان",
       })).toHaveAttribute("href", "/isfahan/map");
     } finally {
       await context.close();
