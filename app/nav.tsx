@@ -221,11 +221,9 @@ export function AppNav() {
           </span>
         </TabLink>
           <div className="min-w-0 leading-tight">
-            {currentPath.startsWith("/tehran/stations/") ? (
-              <span className="text-base font-bold md:text-lg">{t.appTitle}</span>
-            ) : (
-              <h1 className="text-base font-bold md:text-lg">{t.appTitle}</h1>
-            )}
+            {/* Metto is the app brand, not the page title. Every tab
+                already has its own descriptive H1 in the content. */}
+            <span className="text-base font-bold md:text-lg">{t.appTitle}</span>
             <CitySwitcher compact />
           </div>
         </div>
