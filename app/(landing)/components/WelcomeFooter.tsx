@@ -21,6 +21,16 @@ export function WelcomeFooter({ cityId }: { cityId?: CityId }) {
   const counts = cityCounts(cityIds, cityId);
   const stations = counts.stations;
   const lines = counts.lines;
+  const cityName = CITIES.find(city => city.slug === (cityId ?? "tehran"))?.name[lang]
+    ?? (isFa ? "تهران" : "Tehran");
+  // Text visible on the landing page is a useful signal for Google sitelinks.
+  // Each target is a real, canonical working screen, not a /cities placeholder.
+  const sectionLabels = {
+    route: isFa ? `مسیریابی مترو ${cityName}` : `${cityName} Metro Route Planner`,
+    stations: isFa ? `ایستگاه‌های مترو ${cityName}` : `${cityName} Metro Stations`,
+    nearby: isFa ? `نزدیک‌ترین ایستگاه مترو ${cityName}` : `Nearby ${cityName} Metro Stations`,
+    map: isFa ? `نقشه مترو ${cityName}` : `${cityName} Metro Map`,
+  };
 
   return (
     <footer className="border-t border-border bg-muted/25">
@@ -73,11 +83,11 @@ export function WelcomeFooter({ cityId }: { cityId?: CityId }) {
             <ul className="mt-4 space-y-2.5">
               {WELCOME_NAV.map((item) => (
                 <li key={item.key}>
-                  <Link href={cityId ? `/${cityId}${item.href}?lang=${lang}` : item.key === "map" ? `/cities/map?lang=${lang}` : `/cities?lang=${lang}`} className="text-sm font-medium transition-colors hover:text-primary">
-                    {item.key === "route" && (isFa ? "مسیر" : "Route")}
-                    {item.key === "stations" && (isFa ? "ایستگاه‌ها" : "Stations")}
-                    {item.key === "nearby" && (isFa ? "نزدیک من" : "Nearby")}
-                    {item.key === "map" && (isFa ? "نقشه" : "Map")}
+                  <Link
+                    href={`${cityId && cityId !== "tehran" ? `/${cityId}` : ""}${item.href}${lang === "en" ? "?lang=en" : ""}`}
+                    className="text-sm font-medium transition-colors hover:text-primary"
+                  >
+                    {sectionLabels[item.key]}
                   </Link>
                 </li>
               ))}

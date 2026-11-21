@@ -14,6 +14,7 @@ on:
       - "data/**"
       - "public/schedule-data.json"
       - "tests/station-seo.spec.ts"
+      - "tests/sitelinks-seo.spec.ts"
       - "playwright.config.ts"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -68,8 +69,8 @@ jobs:
           echo "::error::Local Metto server did not start"
           exit 1
 
-      - name: Test station pages and offline fallback
-        run: pnpm exec playwright test tests/station-seo.spec.ts
+      - name: Test station pages, sitelinks and offline fallback
+        run: pnpm exec playwright test tests/station-seo.spec.ts tests/sitelinks-seo.spec.ts
 
       - name: Attach browser traces on failure
         if: failure()
