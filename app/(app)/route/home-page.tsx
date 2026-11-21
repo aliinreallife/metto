@@ -201,7 +201,9 @@ export function HomePage() {
   }, [isFa]);
 
   useEffect(() => {
-    const title = isFa ? "مسیریابی مترو" : "Metro Route Planner";
+    // Match the server-rendered Tehran planner title; replacing it with
+    // a generic "مسیریابی مترو" weakens distinct Google sitelink labels.
+    const title = isFa ? "مسیریاب مترو تهران | زمان رسیدن و قطار بعدی" : "Tehran Metro Route Planner | Arrival Time & Next Train";
     const suffix = isFa ? " | متو" : " | metto";
     document.title = title + suffix;
   }, [isFa]);
