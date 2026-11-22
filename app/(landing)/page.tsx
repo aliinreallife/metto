@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { WelcomePage } from "./welcome-page";
 
 export const metadata: Metadata = {
-  title: { absolute: "متو | نقشه و مسیریاب مترو شهرهای ایران" },
+  title: "نقشه و مسیریاب مترو شهرهای ایران",
   description:
     "شهرت را انتخاب کن، نقشه و ایستگاه‌ها را ببین و مسیرت را پیدا کن. رایگان و بدون تبلیغ. زمان حرکت قطارها برای تهران در دسترس است.",
   alternates: {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     siteName: "متو",
-    title: "متو | نقشه و مسیریاب مترو شهرهای ایران",
+    title: "نقشه و مسیریاب مترو شهرهای ایران | متو",
     description:
       "نقشه، ایستگاه‌ها و مسیرهای مترو را برای هر شهر جداگانه ببین.",
     url: "https://metto.ir",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "متو | نقشه و مسیریاب مترو شهرهای ایران",
+    title: "نقشه و مسیریاب مترو شهرهای ایران | متو",
     description:
       "نقشه، ایستگاه‌ها و مسیرهای مترو را برای هر شهر جداگانه ببین.",
     images: ["/socialprev.png"],
