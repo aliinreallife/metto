@@ -45,16 +45,3 @@ what only a human with Search Console access can verify.
   Judge the landing on this number, not anecdotes: regulars skip it
   (returning-visitor fast-path + installed start URLs), so the audience
   is first-timers, search traffic, and bare-domain shares.
-
-## 5. Google site name (متو)
-
-- View source of `https://metto.ir/`: the `WebSite` JSON-LD `name` is
-  `متو`, `og:site_name` is `متو`, and the homepage title and visible hero
-  mention the brand. Preserve `metto` and `metto.ir` as fallback
-  `alternateName` values, in that order.
-- In Search Console → URL Inspection, inspect `https://metto.ir/`,
-  verify the live page, and request indexing after a branding update.
-  Do not resubmit the sitemap for a homepage copy-only change.
-- Google selects the search-result site name automatically. Check again
-  after recrawling (which may take days or weeks); do not expect a guaranteed
-  or immediate replacement of `metto.ir` with `متو`.
