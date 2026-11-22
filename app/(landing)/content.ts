@@ -10,7 +10,7 @@ export const WELCOME_NAV: { key: WelcomeNavKey; href: string }[] = [
 
 const fa = {
   hero: {
-    eyebrow: "متو · مسیریاب مترو",
+    eyebrow: "مسیریاب مترو",
     city: "تهران",
     h1a: "مسیریاب مترو،",
     h1b: "ساده و سریع",
@@ -225,7 +225,7 @@ const fa = {
 
 const en: typeof fa = {
   hero: {
-    eyebrow: "metto · Metro route planner",
+    eyebrow: "Metro route planner",
     city: "Tehran",
     h1a: "Metro routing,",
     h1b: "simple and fast",
