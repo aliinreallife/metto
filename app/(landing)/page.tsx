@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     canonical: "https://metto.ir",
   },
   openGraph: {
+    siteName: "متو",
     title: "نقشه و مسیریاب مترو شهرهای ایران | متو",
     description:
       "نقشه، ایستگاه‌ها و مسیرهای مترو را برای هر شهر جداگانه ببین.",
