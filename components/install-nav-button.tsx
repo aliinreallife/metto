@@ -104,7 +104,7 @@ export function InstallNavButton({
         className={`${buttonClass} invisible pointer-events-none select-none`}
       >
         <Download className="size-4 shrink-0 md:size-5" />
-        <span className="hidden leading-none sm:inline">{label}</span>
+        <span className="hidden translate-y-[2px] leading-none sm:inline">{label}</span>
       </span>
     );
   }
@@ -113,7 +113,7 @@ export function InstallNavButton({
     return (
       <Link href="/#install" className={buttonClass} aria-label={label}>
         <Download className="size-4 shrink-0 md:size-5" />
-        <span className="hidden leading-none sm:inline">{label}</span>
+        <span className="hidden translate-y-[2px] leading-none sm:inline">{label}</span>
       </Link>
     );
   }
@@ -172,7 +172,7 @@ export function InstallNavButton({
         className={buttonClass}
       >
         <Share className="size-4 shrink-0 md:size-5" />
-        <span className="hidden leading-none sm:inline">{label}</span>
+        <span className="hidden translate-y-[2px] leading-none sm:inline">{label}</span>
       </button>
       {guidePortal}
     </>

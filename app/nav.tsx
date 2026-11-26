@@ -270,7 +270,7 @@ export function AppNav() {
             }
           >
             <Globe className="size-4 shrink-0 md:size-5" />
-            <span className="leading-none">{lang === "en" ? "فارسی" : "EN"}</span>
+            <span className="translate-y-[2px] leading-none">{lang === "en" ? "فارسی" : "EN"}</span>
           </button>
         </div>
       </header>
